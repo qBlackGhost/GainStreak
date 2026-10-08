@@ -147,8 +147,9 @@ namespace GymApp.Desktop.Migrations
                 {
                     { 1, null, true, "Push / Pull / Legs", null },
                     { 2, null, true, "Upper / Lower", null },
-                    { 3, null, false, "Full Body", null },
-                    { 4, null, false, "Bro Split", null }
+                    { 3, null, true, "PPL + Upper / Lower", null },
+                    { 4, null, false, "Full Body", null },
+                    { 5, null, false, "Bro Split", null }
                 });
 
             migrationBuilder.InsertData(
@@ -161,12 +162,17 @@ namespace GymApp.Desktop.Migrations
                     { 3, "Legs", 3, 1 },
                     { 4, "Upper", 1, 2 },
                     { 5, "Lower", 2, 2 },
-                    { 6, "Full Body", 1, 3 },
-                    { 7, "Chest", 1, 4 },
-                    { 8, "Back", 2, 4 },
-                    { 9, "Shoulders", 3, 4 },
-                    { 10, "Legs", 4, 4 },
-                    { 11, "Arms", 5, 4 }
+                    { 6, "Push", 1, 3 },
+                    { 7, "Pull", 2, 3 },
+                    { 8, "Legs", 3, 3 },
+                    { 9, "Upper", 4, 3 },
+                    { 10, "Lower", 5, 3 },
+                    { 11, "Full Body", 1, 4 },
+                    { 12, "Chest", 1, 5 },
+                    { 13, "Back", 2, 5 },
+                    { 14, "Shoulders", 3, 5 },
+                    { 15, "Legs", 4, 5 },
+                    { 16, "Arms", 5, 5 }
                 });
 
             migrationBuilder.CreateIndex(

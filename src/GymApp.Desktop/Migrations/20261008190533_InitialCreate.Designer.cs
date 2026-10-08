@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GymApp.Desktop.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261008182508_InitialCreate")]
+    [Migration("20261008190533_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -135,44 +135,79 @@ namespace GymApp.Desktop.Migrations
                         new
                         {
                             Id = 6,
-                            Name = "Full Body",
+                            Name = "Push",
                             Order = 1,
                             SplitId = 3
                         },
                         new
                         {
                             Id = 7,
-                            Name = "Chest",
+                            Name = "Pull",
+                            Order = 2,
+                            SplitId = 3
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Legs",
+                            Order = 3,
+                            SplitId = 3
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Name = "Upper",
+                            Order = 4,
+                            SplitId = 3
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Lower",
+                            Order = 5,
+                            SplitId = 3
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Full Body",
                             Order = 1,
                             SplitId = 4
                         },
                         new
                         {
-                            Id = 8,
+                            Id = 12,
+                            Name = "Chest",
+                            Order = 1,
+                            SplitId = 5
+                        },
+                        new
+                        {
+                            Id = 13,
                             Name = "Back",
                             Order = 2,
-                            SplitId = 4
+                            SplitId = 5
                         },
                         new
                         {
-                            Id = 9,
+                            Id = 14,
                             Name = "Shoulders",
                             Order = 3,
-                            SplitId = 4
+                            SplitId = 5
                         },
                         new
                         {
-                            Id = 10,
+                            Id = 15,
                             Name = "Legs",
                             Order = 4,
-                            SplitId = 4
+                            SplitId = 5
                         },
                         new
                         {
-                            Id = 11,
+                            Id = 16,
                             Name = "Arms",
                             Order = 5,
-                            SplitId = 4
+                            SplitId = 5
                         });
                 });
 
@@ -299,12 +334,18 @@ namespace GymApp.Desktop.Migrations
                         new
                         {
                             Id = 3,
+                            IsRecommended = true,
+                            Name = "PPL + Upper / Lower"
+                        },
+                        new
+                        {
+                            Id = 4,
                             IsRecommended = false,
                             Name = "Full Body"
                         },
                         new
                         {
-                            Id = 4,
+                            Id = 5,
                             IsRecommended = false,
                             Name = "Bro Split"
                         });

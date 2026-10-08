@@ -50,20 +50,31 @@ public class AppDbContext : DbContext
         b.Entity<WorkoutSplit>().HasData(
             new WorkoutSplit { Id = 1, Name = "Push / Pull / Legs", IsRecommended = true },
             new WorkoutSplit { Id = 2, Name = "Upper / Lower", IsRecommended = true },
-            new WorkoutSplit { Id = 3, Name = "Full Body" },
-            new WorkoutSplit { Id = 4, Name = "Bro Split" });
+            new WorkoutSplit { Id = 3, Name = "PPL + Upper / Lower", IsRecommended = true },
+            new WorkoutSplit { Id = 4, Name = "Full Body" },
+            new WorkoutSplit { Id = 5, Name = "Bro Split" });
 
         b.Entity<SplitDay>().HasData(
+            //PPL
             new SplitDay { Id = 1, SplitId = 1, Order = 1, Name = "Push" },
             new SplitDay { Id = 2, SplitId = 1, Order = 2, Name = "Pull" },
             new SplitDay { Id = 3, SplitId = 1, Order = 3, Name = "Legs" },
+            //Upper/Lower
             new SplitDay { Id = 4, SplitId = 2, Order = 1, Name = "Upper" },
             new SplitDay { Id = 5, SplitId = 2, Order = 2, Name = "Lower" },
-            new SplitDay { Id = 6, SplitId = 3, Order = 1, Name = "Full Body" },
-            new SplitDay { Id = 7, SplitId = 4, Order = 1, Name = "Chest" },
-            new SplitDay { Id = 8, SplitId = 4, Order = 2, Name = "Back" },
-            new SplitDay { Id = 9, SplitId = 4, Order = 3, Name = "Shoulders" },
-            new SplitDay { Id = 10, SplitId = 4, Order = 4, Name = "Legs" },
-            new SplitDay { Id = 11, SplitId = 4, Order = 5, Name = "Arms" });
+            //PPL + Upper/Lower
+            new SplitDay { Id = 6, SplitId = 3, Order = 1, Name = "Push" },
+            new SplitDay { Id = 7, SplitId = 3, Order = 2, Name = "Pull" },
+            new SplitDay { Id = 8, SplitId = 3, Order = 3, Name = "Legs" },
+            new SplitDay { Id = 9, SplitId = 3, Order = 4, Name = "Upper" },
+            new SplitDay { Id = 10, SplitId = 3, Order = 5, Name = "Lower" },
+            //Full Body
+            new SplitDay { Id = 11, SplitId = 4, Order = 1, Name = "Full Body" },
+            //Bro Split
+            new SplitDay { Id = 12, SplitId = 5, Order = 1, Name = "Chest" },
+            new SplitDay { Id = 13, SplitId = 5, Order = 2, Name = "Back" },
+            new SplitDay { Id = 14, SplitId = 5, Order = 3, Name = "Shoulders" },
+            new SplitDay { Id = 15, SplitId = 5, Order = 4, Name = "Legs" },
+            new SplitDay { Id = 16, SplitId = 5, Order = 5, Name = "Arms" });
     }
 }
