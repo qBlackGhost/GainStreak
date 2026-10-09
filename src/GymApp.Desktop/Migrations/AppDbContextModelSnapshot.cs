@@ -237,6 +237,9 @@ namespace GymApp.Desktop.Migrations
                     b.Property<int>("Points")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("RememberTokenHash")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("SelectedCity")
                         .HasColumnType("TEXT");
 

@@ -8,6 +8,7 @@
         <TextBlock Text="Sign in" FontSize="24" FontWeight="SemiBold"/>
         <TextBox Watermark="Username" Text="{Binding Username}"/>
         <TextBox Watermark="Password" PasswordChar="●" Text="{Binding Password}"/>
+        <CheckBox Content="Remember me" IsChecked="{Binding RememberMe}"/>
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         <Button Content="Log in" Command="{Binding LoginCommand}"

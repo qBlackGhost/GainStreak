@@ -28,10 +28,13 @@ public partial class App : Application
         sc.AddTransient<LoginViewModel>();
         sc.AddTransient<RegisterViewModel>();
         sc.AddTransient<HomeViewModel>();
+        sc.AddSingleton<RememberMeService>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
             db.Database.Migrate();
+        
+        Services.GetRequiredService<RememberMeService>().TryRestore();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.MainWindow = new MainWindow { DataContext = Services.GetRequiredService<MainViewModel>() };

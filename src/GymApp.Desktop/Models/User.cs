@@ -11,6 +11,7 @@ public class User
     public string Username { get; set; } = "";
     public string PasswordHash { get; set; } = "";   // never the plain password
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? RememberTokenHash { get; set; }
 
     public int? SelectedSplitId { get; set; }
     public WorkoutSplit? SelectedSplit { get; set; }
