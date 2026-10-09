@@ -13,9 +13,12 @@ public class AppDbContext : DbContext
     public DbSet<Gym> Gyms => Set<Gym>();
     public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
     public DbSet<CalorieLog> CalorieLogs => Set<CalorieLog>();
+    public AppDbContext() { }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
+        if (options.IsConfigured) return;
         var dir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GymApp");
         Directory.CreateDirectory(dir);
@@ -25,6 +28,7 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder b)
     {
         b.Entity<User>().HasIndex(u => u.Username).IsUnique();
+        b.Entity<User>().Property(u => u.Username).HasMaxLength(32).UseCollation("NOCASE");
         b.Entity<User>().Property(u => u.GoalType).HasConversion<string>();
 
         // Two separate relationships between User and WorkoutSplit, so be explicit
