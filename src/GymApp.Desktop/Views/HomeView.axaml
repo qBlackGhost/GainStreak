@@ -5,6 +5,7 @@
              x:DataType="vm:HomeViewModel">
     <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="{Binding Welcome}" FontSize="24"/>
+        <Button Content="Workout splits" Command="{Binding ShowSplitsCommand}"/>
         <Button Content="Log out" Command="{Binding LogoutCommand}"/>
     </StackPanel>
 </UserControl>

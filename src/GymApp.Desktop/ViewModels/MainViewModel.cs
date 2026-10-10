@@ -2,6 +2,7 @@ using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using GymApp.Desktop.Services;
 using Microsoft.Extensions.DependencyInjection;
+using GymApp.Desktop.Models;
 
 namespace GymApp.Desktop.ViewModels;
 
@@ -28,4 +29,13 @@ public partial class MainViewModel : ViewModelBase
 
     public void ShowRegister() => Current = _sp.GetRequiredService<RegisterViewModel>();
     public void ShowLogin() => Current = _sp.GetRequiredService<LoginViewModel>();
+    public void ShowHome() => Current = _sp.GetRequiredService<HomeViewModel>();
+    public void ShowSplits() => Current = _sp.GetRequiredService<SplitsViewModel>();
+
+    public void ShowSplitEditor(WorkoutSplit? split)
+    {
+        var vm = _sp.GetRequiredService<SplitEditorViewModel>();
+        vm.Load(split);      // null = new split, otherwise pre-fills the form
+        Current = vm;
+    }
 }

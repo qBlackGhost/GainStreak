@@ -87,6 +87,9 @@ namespace GymApp.Desktop.Migrations
                     b.Property<int>("SplitId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Weekday")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SplitId");

@@ -1,3 +1,5 @@
+using System;
+
 namespace GymApp.Desktop.Models;
 
 public class SplitDay
@@ -7,4 +9,5 @@ public class SplitDay
     public WorkoutSplit Split { get; set; } = null!;
     public int Order { get; set; }
     public string Name { get; set; } = "";           // "Push", "Legs", ...
+    public DayOfWeek? Weekday { get; set; }          // null = rotation-based (presets)
 }
