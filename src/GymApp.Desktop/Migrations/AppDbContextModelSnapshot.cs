@@ -352,6 +352,36 @@ namespace GymApp.Desktop.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GymApp.Desktop.Models.UserSchedule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SplitId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("WeekPattern")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SplitId");
+
+                    b.HasIndex("UserId", "EffectiveFrom")
+                        .IsUnique();
+
+                    b.ToTable("UserSchedules");
+                });
+
             modelBuilder.Entity("GymApp.Desktop.Models.WorkoutLog", b =>
                 {
                     b.Property<int>("Id")
@@ -491,6 +521,24 @@ namespace GymApp.Desktop.Migrations
                     b.Navigation("SelectedSplit");
 
                     b.Navigation("SelectedVariant");
+                });
+
+            modelBuilder.Entity("GymApp.Desktop.Models.UserSchedule", b =>
+                {
+                    b.HasOne("GymApp.Desktop.Models.WorkoutSplit", "Split")
+                        .WithMany()
+                        .HasForeignKey("SplitId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GymApp.Desktop.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Split");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Desktop.Models.WorkoutLog", b =>

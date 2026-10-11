@@ -33,6 +33,7 @@ public partial class App : Application
         sc.AddTransient<SplitsViewModel>();
         sc.AddTransient<SplitEditorViewModel>();
         sc.AddTransient<SplitDetailViewModel>();
+        sc.AddTransient<StreakService>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

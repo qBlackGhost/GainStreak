@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Gym> Gyms => Set<Gym>();
     public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
     public DbSet<CalorieLog> CalorieLogs => Set<CalorieLog>();
+    public DbSet<UserSchedule> UserSchedules => Set<UserSchedule>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -54,6 +55,13 @@ public class AppDbContext : DbContext
         // One workout entry and one calorie entry per user per day
         b.Entity<WorkoutLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
         b.Entity<CalorieLog>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
+        
+        b.Entity<UserSchedule>().HasIndex(s => new { s.UserId, s.EffectiveFrom }).IsUnique();
+        b.Entity<UserSchedule>().Property(s => s.WeekPattern).HasMaxLength(7);
+        b.Entity<UserSchedule>().HasOne(s => s.User).WithMany()
+            .HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserSchedule>().HasOne(s => s.Split).WithMany()
+            .HasForeignKey(s => s.SplitId).OnDelete(DeleteBehavior.SetNull);
 
         SeedSplits(b);
         SeedVariants(b);

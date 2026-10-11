@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using GymApp.Core;
 using GymApp.Desktop.Data;
 using GymApp.Desktop.Models;
 using Microsoft.EntityFrameworkCore;
@@ -87,6 +88,12 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
         }
 
         await db.SaveChangesAsync();
+
+        // Editing the active split changes the user's week from today on (past days keep their old schedule)
+        if (await db.Users.AnyAsync(u => u.Id == userId && u.SelectedSplitId == splitId))
+            await UpsertScheduleAsync(db, userId, splitId,
+                WeekPattern.From(WeekSchedule.FromWeekdays(wanted.Select(w => w.Weekday))));
+
         return new(true);
     }
 
@@ -98,25 +105,34 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
 
     /// <summary>
     /// Presets need a variant (their weekly layout) and a start day; custom splits carry their own
-    /// weekdays, so both are stored as null for them.
+    /// weekdays, so both are stored as null for them. Also records the new week in the schedule history.
     /// </summary>
     public async Task<bool> SelectAsync(int userId, int splitId, int? variantId, DayOfWeek? startDay)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var split = await db.WorkoutSplits.AsNoTracking().FirstOrDefaultAsync(s =>
+        var split = await db.WorkoutSplits.AsNoTracking().Include(s => s.Days).FirstOrDefaultAsync(s =>
             s.Id == splitId && (s.OwnerUserId == null || s.OwnerUserId == userId));
         if (split is null) return false;
 
+        string weekPattern;
         if (split.OwnerUserId is null)
         {
-            if (variantId is null) return false;
-            if (!await db.SplitVariants.AnyAsync(v => v.Id == variantId && v.SplitId == splitId)) return false;
+            var variant = variantId is null ? null
+                : await db.SplitVariants.AsNoTracking()
+                    .FirstOrDefaultAsync(v => v.Id == variantId && v.SplitId == splitId);
+            if (variant is null) return false;
+
             startDay ??= DayOfWeek.Monday;
+            weekPattern = WeekPattern.From(WeekSchedule.Build(variant.Pattern, startDay.Value, 1));
         }
         else
         {
+            var weekdays = split.Days.Where(d => d.Weekday is not null).Select(d => d.Weekday!.Value).ToList();
+            if (weekdays.Count == 0) return false;
+
             variantId = null;
             startDay = null;
+            weekPattern = WeekPattern.From(WeekSchedule.FromWeekdays(weekdays));
         }
 
         await db.Users.Where(u => u.Id == userId)
@@ -124,7 +140,25 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
                 .SetProperty(x => x.SelectedSplitId, (int?)splitId)
                 .SetProperty(x => x.SelectedVariantId, variantId)
                 .SetProperty(x => x.SplitStartDay, startDay));
+
+        await UpsertScheduleAsync(db, userId, splitId, weekPattern);
         return true;
+    }
+
+    /// <summary>One history row per user per day: changing the schedule twice in a day updates the same row.</summary>
+    private static async Task UpsertScheduleAsync(AppDbContext db, int userId, int splitId, string weekPattern)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var row = await db.UserSchedules.FirstOrDefaultAsync(s => s.UserId == userId && s.EffectiveFrom == today);
+        if (row is null)
+            db.UserSchedules.Add(new UserSchedule
+                { UserId = userId, EffectiveFrom = today, WeekPattern = weekPattern, SplitId = splitId });
+        else
+        {
+            row.WeekPattern = weekPattern;
+            row.SplitId = splitId;
+        }
+        await db.SaveChangesAsync();
     }
 
     // Monday-first, trimmed
