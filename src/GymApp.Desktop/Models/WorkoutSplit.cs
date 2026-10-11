@@ -11,4 +11,5 @@ public class WorkoutSplit
     public int? OwnerUserId { get; set; }             // null = built-in preset
     public User? Owner { get; set; }
     public List<SplitDay> Days { get; set; } = new();
+    public List<SplitVariant> Variants { get; set; } = new();
 }

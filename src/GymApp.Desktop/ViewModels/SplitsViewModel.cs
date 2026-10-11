@@ -1,6 +1,5 @@
 using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -41,14 +40,8 @@ public partial class SplitsViewModel : ViewModelBase
         CustomCounter = $"{custom.Count} / {SplitService.MaxCustomSplits} custom splits";
     }
 
-    internal async Task SelectAsync(SplitItemViewModel item)
-    {
-        var user = _session.CurrentUser!;
-        if (!await _splits.SelectAsync(user.Id, item.Split.Id)) { Error = "Could not select that split."; return; }
-
-        user.SelectedSplitId = item.Split.Id;   // keep the in-memory session user in sync
-        foreach (var i in Presets.Concat(Custom)) i.IsSelected = i == item;
-    }
+    // Selecting a split now happens on its detail page (variant + start day live there)
+    internal void Open(SplitItemViewModel item) => _shell().ShowSplitDetail(item.Split);
 
     internal void Edit(SplitItemViewModel item) => _shell().ShowSplitEditor(item.Split);
 
@@ -56,7 +49,12 @@ public partial class SplitsViewModel : ViewModelBase
     {
         var user = _session.CurrentUser!;
         await _splits.DeleteAsync(user.Id, item.Split.Id);
-        if (user.SelectedSplitId == item.Split.Id) user.SelectedSplitId = null;
+        if (user.SelectedSplitId == item.Split.Id)
+        {
+            user.SelectedSplitId = null;
+            user.SelectedVariantId = null;
+            user.SplitStartDay = null;
+        }
         await LoadAsync();
     }
 

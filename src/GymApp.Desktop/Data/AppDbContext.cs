@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<WorkoutSplit> WorkoutSplits => Set<WorkoutSplit>();
     public DbSet<SplitDay> SplitDays => Set<SplitDay>();
+    public DbSet<SplitVariant> SplitVariants => Set<SplitVariant>();
     public DbSet<Gym> Gyms => Set<Gym>();
     public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
     public DbSet<CalorieLog> CalorieLogs => Set<CalorieLog>();
@@ -37,6 +38,14 @@ public class AppDbContext : DbContext
         b.Entity<WorkoutSplit>().HasOne(s => s.Owner).WithMany()
             .HasForeignKey(s => s.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
 
+        // Preset layouts (e.g. Full Body 2 / 3 days) and the user's chosen one
+        b.Entity<SplitVariant>().HasOne(v => v.Split).WithMany(s => s.Variants)
+            .HasForeignKey(v => v.SplitId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<SplitVariant>().Property(v => v.Name).HasMaxLength(40);
+        b.Entity<SplitVariant>().Property(v => v.Pattern).HasMaxLength(7);
+        b.Entity<User>().HasOne(u => u.SelectedVariant).WithMany()
+            .HasForeignKey(u => u.SelectedVariantId).OnDelete(DeleteBehavior.SetNull);
+
         b.Entity<WorkoutLog>().HasOne(w => w.Gym).WithMany()
             .HasForeignKey(w => w.GymId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<WorkoutLog>().HasOne(w => w.SplitDay).WithMany()
@@ -47,6 +56,7 @@ public class AppDbContext : DbContext
         b.Entity<CalorieLog>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
 
         SeedSplits(b);
+        SeedVariants(b);
     }
 
     private static void SeedSplits(ModelBuilder b)
@@ -80,5 +90,22 @@ public class AppDbContext : DbContext
             new SplitDay { Id = 14, SplitId = 5, Order = 3, Name = "Shoulders" },
             new SplitDay { Id = 15, SplitId = 5, Order = 4, Name = "Legs" },
             new SplitDay { Id = 16, SplitId = 5, Order = 5, Name = "Arms" });
+    }
+
+    // Pattern: 7 days starting on the day the user picks. W = workout, R = rest.
+    private static void SeedVariants(ModelBuilder b)
+    {
+        b.Entity<SplitVariant>().HasData(
+            // PPL: 3 workout, 1 rest, 3 workout
+            new SplitVariant { Id = 1, SplitId = 1, Name = "6 days / week", Pattern = "WWWRWWW", IsDefault = true },
+            // Upper/Lower: 2 workout, 1 rest, 2 workout, 2 rest
+            new SplitVariant { Id = 2, SplitId = 2, Name = "4 days / week", Pattern = "WWRWWRR", IsDefault = true },
+            // PPL + Upper/Lower: 3 workout, 1 rest, 2 workout, 1 rest
+            new SplitVariant { Id = 3, SplitId = 3, Name = "5 days / week", Pattern = "WWWRWWR", IsDefault = true },
+            // Full Body: 2 days (W, 2 rest, W, 3 rest) or 3 days (W, R, W, R, W, 2 rest)
+            new SplitVariant { Id = 4, SplitId = 4, Name = "2 days / week", Pattern = "WRRWRRR" },
+            new SplitVariant { Id = 5, SplitId = 4, Name = "3 days / week", Pattern = "WRWRWRR", IsDefault = true },
+            // Bro Split: 5 workout, 2 rest
+            new SplitVariant { Id = 6, SplitId = 5, Name = "5 days / week", Pattern = "WWWWWRR", IsDefault = true });
     }
 }

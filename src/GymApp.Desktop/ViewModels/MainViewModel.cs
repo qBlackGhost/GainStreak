@@ -38,4 +38,11 @@ public partial class MainViewModel : ViewModelBase
         vm.Load(split);      // null = new split, otherwise pre-fills the form
         Current = vm;
     }
+    
+    public void ShowSplitDetail(WorkoutSplit split)
+    {
+        var vm = _sp.GetRequiredService<SplitDetailViewModel>();
+        vm.Load(split);
+        Current = vm;
+    }
 }

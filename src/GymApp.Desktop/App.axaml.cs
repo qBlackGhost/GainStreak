@@ -32,6 +32,7 @@ public partial class App : Application
         sc.AddTransient<SplitService>();
         sc.AddTransient<SplitsViewModel>();
         sc.AddTransient<SplitEditorViewModel>();
+        sc.AddTransient<SplitDetailViewModel>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

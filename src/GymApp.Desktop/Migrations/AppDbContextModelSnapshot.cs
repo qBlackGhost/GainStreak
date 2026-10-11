@@ -211,6 +211,85 @@ namespace GymApp.Desktop.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Desktop.Models.SplitVariant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Pattern")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SplitId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SplitId");
+
+                    b.ToTable("SplitVariants");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            IsDefault = true,
+                            Name = "6 days / week",
+                            Pattern = "WWWRWWW",
+                            SplitId = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            IsDefault = true,
+                            Name = "4 days / week",
+                            Pattern = "WWRWWRR",
+                            SplitId = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            IsDefault = true,
+                            Name = "5 days / week",
+                            Pattern = "WWWRWWR",
+                            SplitId = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            IsDefault = false,
+                            Name = "2 days / week",
+                            Pattern = "WRRWRRR",
+                            SplitId = 4
+                        },
+                        new
+                        {
+                            Id = 5,
+                            IsDefault = true,
+                            Name = "3 days / week",
+                            Pattern = "WRWRWRR",
+                            SplitId = 4
+                        },
+                        new
+                        {
+                            Id = 6,
+                            IsDefault = true,
+                            Name = "5 days / week",
+                            Pattern = "WWWWWRR",
+                            SplitId = 5
+                        });
+                });
+
             modelBuilder.Entity("GymApp.Desktop.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -249,6 +328,12 @@ namespace GymApp.Desktop.Migrations
                     b.Property<int?>("SelectedSplitId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("SelectedVariantId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SplitStartDay")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -258,6 +343,8 @@ namespace GymApp.Desktop.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SelectedSplitId");
+
+                    b.HasIndex("SelectedVariantId");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -378,6 +465,17 @@ namespace GymApp.Desktop.Migrations
                     b.Navigation("Split");
                 });
 
+            modelBuilder.Entity("GymApp.Desktop.Models.SplitVariant", b =>
+                {
+                    b.HasOne("GymApp.Desktop.Models.WorkoutSplit", "Split")
+                        .WithMany("Variants")
+                        .HasForeignKey("SplitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Split");
+                });
+
             modelBuilder.Entity("GymApp.Desktop.Models.User", b =>
                 {
                     b.HasOne("GymApp.Desktop.Models.WorkoutSplit", "SelectedSplit")
@@ -385,7 +483,14 @@ namespace GymApp.Desktop.Migrations
                         .HasForeignKey("SelectedSplitId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("GymApp.Desktop.Models.SplitVariant", "SelectedVariant")
+                        .WithMany()
+                        .HasForeignKey("SelectedVariantId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("SelectedSplit");
+
+                    b.Navigation("SelectedVariant");
                 });
 
             modelBuilder.Entity("GymApp.Desktop.Models.WorkoutLog", b =>
@@ -433,6 +538,8 @@ namespace GymApp.Desktop.Migrations
             modelBuilder.Entity("GymApp.Desktop.Models.WorkoutSplit", b =>
                 {
                     b.Navigation("Days");
+
+                    b.Navigation("Variants");
                 });
 #pragma warning restore 612, 618
         }

@@ -33,4 +33,10 @@
     <ProjectReference Include="..\GymApp.Data\GymApp.Data.csproj" />
     <ProjectReference Include="..\GymApp.Services\GymApp.Services.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\SplitDetailView.axaml.cs">
+      <DependentUpon>SplitDetailView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
 </Project>

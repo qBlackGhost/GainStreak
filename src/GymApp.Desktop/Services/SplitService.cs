@@ -20,6 +20,7 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
         await using var db = await dbFactory.CreateDbContextAsync();
         return await db.WorkoutSplits.AsNoTracking()
             .Include(s => s.Days.OrderBy(d => d.Order))
+            .Include(s => s.Variants.OrderBy(v => v.Id))
             .Where(s => s.OwnerUserId == null)
             .OrderByDescending(s => s.IsRecommended).ThenBy(s => s.Id)
             .ToListAsync();
@@ -95,15 +96,34 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
         await db.WorkoutSplits.Where(s => s.Id == splitId && s.OwnerUserId == userId).ExecuteDeleteAsync();
     }
 
-    public async Task<bool> SelectAsync(int userId, int splitId)
+    /// <summary>
+    /// Presets need a variant (their weekly layout) and a start day; custom splits carry their own
+    /// weekdays, so both are stored as null for them.
+    /// </summary>
+    public async Task<bool> SelectAsync(int userId, int splitId, int? variantId, DayOfWeek? startDay)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var ok = await db.WorkoutSplits.AnyAsync(s =>
+        var split = await db.WorkoutSplits.AsNoTracking().FirstOrDefaultAsync(s =>
             s.Id == splitId && (s.OwnerUserId == null || s.OwnerUserId == userId));
-        if (!ok) return false;
+        if (split is null) return false;
+
+        if (split.OwnerUserId is null)
+        {
+            if (variantId is null) return false;
+            if (!await db.SplitVariants.AnyAsync(v => v.Id == variantId && v.SplitId == splitId)) return false;
+            startDay ??= DayOfWeek.Monday;
+        }
+        else
+        {
+            variantId = null;
+            startDay = null;
+        }
 
         await db.Users.Where(u => u.Id == userId)
-            .ExecuteUpdateAsync(u => u.SetProperty(x => x.SelectedSplitId, (int?)splitId));
+            .ExecuteUpdateAsync(u => u
+                .SetProperty(x => x.SelectedSplitId, (int?)splitId)
+                .SetProperty(x => x.SelectedVariantId, variantId)
+                .SetProperty(x => x.SplitStartDay, startDay));
         return true;
     }
 

@@ -15,6 +15,9 @@ public class User
 
     public int? SelectedSplitId { get; set; }
     public WorkoutSplit? SelectedSplit { get; set; }
+    public int? SelectedVariantId { get; set; }
+    public SplitVariant? SelectedVariant { get; set; }
+    public DayOfWeek? SplitStartDay { get; set; }   // null = Monday; only used for presets
     public string? SelectedCity { get; set; }
 
     public int Points { get; set; }                   // level is derived from this

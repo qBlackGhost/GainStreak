@@ -16,25 +16,25 @@ public partial class SplitItemViewModel : ObservableObject
         Summary = split.Days.Any(d => d.Weekday is not null)
             ? string.Join("  ·  ", split.Days.Select(d => $"{d.Weekday.ToString()![..3]} {d.Name}"))
             : string.Join(" → ", split.Days.Select(d => d.Name));
+        VariantsText = string.Join("  ·  ", split.Variants.OrderBy(v => v.Id).Select(v => v.Name));
     }
 
     public string Name => Split.Name;
     public bool IsRecommended => Split.IsRecommended;
     public bool IsCustom => Split.OwnerUserId is not null;
     public string Summary { get; }
+    public string VariantsText { get; }          // "2 days / week  ·  3 days / week", empty for custom splits
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UseLabel))]
     public partial bool IsSelected { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(DeleteLabel))]
     public partial bool IsConfirmingDelete { get; set; }
 
-    public string UseLabel => IsSelected ? "Selected" : "Use";
     public string DeleteLabel => IsConfirmingDelete ? "Confirm?" : "Delete";
 
-    [RelayCommand] private System.Threading.Tasks.Task Use() => _owner.SelectAsync(this);
+    [RelayCommand] private void Open() => _owner.Open(this);
     [RelayCommand] private void Edit() => _owner.Edit(this);
 
     [RelayCommand]
