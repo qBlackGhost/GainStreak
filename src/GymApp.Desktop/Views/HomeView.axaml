@@ -3,9 +3,35 @@
              xmlns:vm="using:GymApp.Desktop.ViewModels"
              x:Class="GymApp.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
-    <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock Text="{Binding Welcome}" FontSize="24"/>
-        <Button Content="Workout splits" Command="{Binding ShowSplitsCommand}"/>
-        <Button Content="Log out" Command="{Binding LogoutCommand}"/>
+    <StackPanel Spacing="14" Width="360"
+                HorizontalAlignment="Center" VerticalAlignment="Center">
+        <TextBlock Text="{Binding Welcome}" FontSize="24" HorizontalAlignment="Center"/>
+
+        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Today" Opacity="0.7"/>
+                <TextBlock Text="{Binding TodayTitle}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding TodayHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                <Button Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
+                        IsEnabled="{Binding CanLog}" Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Streak" Opacity="0.7"/>
+                <TextBlock Text="{Binding StreakText}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding StreakNote}" Opacity="0.8" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <Button Content="Workout splits" Command="{Binding ShowSplitsCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <Button Content="Log out" Command="{Binding LogoutCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
     </StackPanel>
 </UserControl>

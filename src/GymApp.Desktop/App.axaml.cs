@@ -34,6 +34,7 @@ public partial class App : Application
         sc.AddTransient<SplitEditorViewModel>();
         sc.AddTransient<SplitDetailViewModel>();
         sc.AddTransient<StreakService>();
+        sc.AddTransient<WorkoutService>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

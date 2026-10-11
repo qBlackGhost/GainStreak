@@ -55,19 +55,7 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
         var split = await db.WorkoutSplits.AsNoTracking()
             .Include(s => s.Days).Include(s => s.Variants)
             .FirstOrDefaultAsync(s => s.Id == splitId);
-        if (split is null) return null;
-
-        if (split.OwnerUserId is null)
-        {
-            var variant = split.Variants.FirstOrDefault(v => v.Id == user.SelectedVariantId)
-                          ?? split.Variants.FirstOrDefault(v => v.IsDefault)
-                          ?? split.Variants.FirstOrDefault();
-            return variant is null
-                ? null
-                : WeekPattern.From(WeekSchedule.Build(variant.Pattern, user.SplitStartDay ?? DayOfWeek.Monday, 1));
-        }
-
-        var weekdays = split.Days.Where(d => d.Weekday is not null).Select(d => d.Weekday!.Value).ToList();
-        return weekdays.Count == 0 ? null : WeekPattern.From(WeekSchedule.FromWeekdays(weekdays));
+        var resolved = split is null ? null : SplitSchedule.Resolve(split, user);
+        return resolved is null ? null : WeekPattern.From(resolved.Week);
     }
 }
