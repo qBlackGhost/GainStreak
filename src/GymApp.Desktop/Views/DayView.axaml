@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.DayView"
+             x:DataType="vm:DayViewModel">
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Center">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Subtitle}" Opacity="0.7" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Info}" Foreground="SeaGreen" TextWrapping="Wrap"
+                       IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="+ Add exercise" Command="{Binding TogglePickerCommand}"/>
+                <Button Content="Copy from another day" Command="{Binding ToggleCopyCommand}"/>
+            </StackPanel>
+
+            <!-- Picker: search + exercises grouped by muscle group -->
+            <Border IsVisible="{Binding IsPickerOpen}" BorderBrush="#40808080" BorderThickness="1"
+                    CornerRadius="8" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBox Watermark="Search exercises" Text="{Binding Search}"/>
+                    <TextBlock Text="No exercises match." Opacity="0.7" IsVisible="{Binding NoPickerResults}"/>
+                    <ScrollViewer MaxHeight="320">
+                        <ItemsControl ItemsSource="{Binding PickerGroups}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PickerGroup">
+                                    <StackPanel Spacing="4" Margin="0,4,0,0">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" Opacity="0.8"/>
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:PickerItemViewModel">
+                                                    <Button Content="{Binding Name}" Command="{Binding AddCommand}"
+                                                            Margin="0,0,6,6"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
+            <!-- Copy from another day -->
+            <Border IsVisible="{Binding IsCopyOpen}" BorderBrush="#40808080" BorderThickness="1"
+                    CornerRadius="8" Padding="12">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Copy the exercise list from" FontWeight="SemiBold"/>
+                    <TextBlock Text="You don't have exercises on other days yet." Opacity="0.7"
+                               IsVisible="{Binding !HasCopySources}"/>
+                    <ItemsControl ItemsSource="{Binding CopySources}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CopySourceItemViewModel">
+                                <Button Command="{Binding ChooseCommand}" HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Left" Margin="0,0,0,6">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Label}"/>
+                                        <TextBlock Text="{Binding CountText}" Opacity="0.7" FontSize="12"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Spacing="6" IsVisible="{Binding HasPendingCopy}">
+                        <TextBlock Text="{Binding PendingCopyText}" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Add to end" Command="{Binding ConfirmAppendCommand}"/>
+                            <Button Content="Replace list" Command="{Binding ConfirmReplaceCommand}"/>
+                            <Button Content="Cancel" Command="{Binding CancelCopyCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- This day's exercises -->
+            <TextBlock Text="Exercises" FontSize="18" FontWeight="SemiBold"/>
+            <TextBlock Text="No exercises yet. Add some above." Opacity="0.7" IsVisible="{Binding IsEmpty}"/>
+            <ItemsControl ItemsSource="{Binding Items}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DayExerciseItemViewModel">
+                        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8"
+                                Padding="12" Margin="0,0,0,8">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <TextBlock Text="{Binding Number}" Opacity="0.6" Margin="0,0,12,0"
+                                           VerticalAlignment="Center"/>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding Group}" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding Planned}" Opacity="0.7"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                                            VerticalAlignment="Center">
+                                    <Button Content="↑" Command="{Binding MoveUpCommand}" IsEnabled="{Binding CanMoveUp}"/>
+                                    <Button Content="↓" Command="{Binding MoveDownCommand}" IsEnabled="{Binding CanMoveDown}"/>
+                                    <Button Content="Remove" Command="{Binding RemoveCommand}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

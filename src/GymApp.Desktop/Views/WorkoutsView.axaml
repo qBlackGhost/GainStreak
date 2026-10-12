@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.WorkoutsView"
+             x:DataType="vm:WorkoutsViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+        </Style>
+        <Style Selector="Border.card.today">
+            <Setter Property="Background" Value="#334A90D9"/>
+            <Setter Property="BorderBrush" Value="#804A90D9"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Center">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <TextBlock Text="Workouts" FontSize="24" FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBlock Text="{Binding Subtitle}" Opacity="0.7" HorizontalAlignment="Center"
+                       IsVisible="{Binding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <StackPanel Spacing="8" IsVisible="{Binding ShowEmpty}">
+                <TextBlock Text="No split selected" FontSize="18" FontWeight="SemiBold"/>
+                <TextBlock Text="Pick a workout split first, then its days show up here."
+                           Opacity="0.7" TextWrapping="Wrap"/>
+                <Button Content="Choose a split" Command="{Binding ChooseSplitCommand}"
+                        HorizontalAlignment="Left"/>
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding Days}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DayCardViewModel">
+                        <Border Classes="card" Classes.today="{Binding IsToday}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="4">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Name}" FontSize="18" FontWeight="SemiBold"/>
+                                        <TextBlock Text="● Today" Foreground="SeaGreen"
+                                                   VerticalAlignment="Center" IsVisible="{Binding IsToday}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding Weekdays}" Opacity="0.7"/>
+                                    <TextBlock Text="{Binding CountText}" Opacity="0.7"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Open" Command="{Binding OpenCommand}"
+                                        VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

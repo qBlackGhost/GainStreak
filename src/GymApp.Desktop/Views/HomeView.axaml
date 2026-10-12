@@ -28,7 +28,9 @@
 
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
+        
+        <Button Content="Workouts" Command="{Binding ShowWorkoutsCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
         <Button Content="Workout splits" Command="{Binding ShowSplitsCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
         <Button Content="Log out" Command="{Binding LogoutCommand}"

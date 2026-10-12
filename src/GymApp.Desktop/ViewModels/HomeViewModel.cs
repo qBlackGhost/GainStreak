@@ -95,4 +95,7 @@ public partial class HomeViewModel : ViewModelBase
 
     [RelayCommand]
     private void ShowSplits() => _shell().ShowSplits();
+    
+    [RelayCommand]
+    private void ShowWorkouts() => _shell().ShowWorkouts();
 }
