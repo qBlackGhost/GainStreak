@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using GymApp.Desktop.Models;
-using GymApp.Desktop.Services;
+using GymApp.Data.Models;
+using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 

@@ -1,8 +1,8 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
-using GymApp.Desktop.Services;
+using GymApp.Services;
 using Microsoft.Extensions.DependencyInjection;
-using GymApp.Desktop.Models;
+using GymApp.Data.Models;
 
 namespace GymApp.Desktop.ViewModels;
 

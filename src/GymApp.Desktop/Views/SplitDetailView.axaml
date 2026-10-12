@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
-             xmlns:m="using:GymApp.Desktop.Models"
+             xmlns:m="using:GymApp.Data.Models"
              x:Class="GymApp.Desktop.Views.SplitDetailView"
              x:DataType="vm:SplitDetailViewModel">
     <UserControl.Styles>

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\GymApp.Core\GymApp.Core.csproj" />
+    <ProjectReference Include="..\GymApp.Data\GymApp.Data.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
