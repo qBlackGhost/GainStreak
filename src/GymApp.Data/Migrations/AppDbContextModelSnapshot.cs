@@ -43,6 +43,425 @@ namespace GymApp.Data.Migrations
                     b.ToTable("CalorieLogs");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.Exercise", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("MuscleGroup")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<int?>("OwnerUserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Exercises");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            MuscleGroup = "Chest",
+                            Name = "Bench Press"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            MuscleGroup = "Chest",
+                            Name = "Incline Bench Press"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            MuscleGroup = "Chest",
+                            Name = "Dumbbell Bench Press"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            MuscleGroup = "Chest",
+                            Name = "Incline Dumbbell Press"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            MuscleGroup = "Chest",
+                            Name = "Cable Fly"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            MuscleGroup = "Chest",
+                            Name = "Push-Up"
+                        },
+                        new
+                        {
+                            Id = 49,
+                            MuscleGroup = "Chest",
+                            Name = "Smith Press"
+                        },
+                        new
+                        {
+                            Id = 50,
+                            MuscleGroup = "Chest",
+                            Name = "Incline Smith Press"
+                        },
+                        new
+                        {
+                            Id = 51,
+                            MuscleGroup = "Chest",
+                            Name = "Wide Grip Dips"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            MuscleGroup = "Back",
+                            Name = "Pull-Up"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            MuscleGroup = "Back",
+                            Name = "Lat Pulldown"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            MuscleGroup = "Back",
+                            Name = "Barbell Row"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            MuscleGroup = "Back",
+                            Name = "Seated Cable Row"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            MuscleGroup = "Back",
+                            Name = "One-Arm Dumbbell Row"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            MuscleGroup = "Back",
+                            Name = "Deadlift"
+                        },
+                        new
+                        {
+                            Id = 52,
+                            MuscleGroup = "Back",
+                            Name = "T-Bar Row"
+                        },
+                        new
+                        {
+                            Id = 53,
+                            MuscleGroup = "Back",
+                            Name = "Low Row"
+                        },
+                        new
+                        {
+                            Id = 54,
+                            MuscleGroup = "Back",
+                            Name = "Close Grip Cable Row"
+                        },
+                        new
+                        {
+                            Id = 55,
+                            MuscleGroup = "Back",
+                            Name = "Wide Grip Cable Row"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            MuscleGroup = "Shoulders",
+                            Name = "Overhead Press"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            MuscleGroup = "Shoulders",
+                            Name = "Dumbbell Shoulder Press"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            MuscleGroup = "Shoulders",
+                            Name = "Cable Lateral Raise"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            MuscleGroup = "Shoulders",
+                            Name = "Rear Delt Fly"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            MuscleGroup = "Shoulders",
+                            Name = "Face Pull"
+                        },
+                        new
+                        {
+                            Id = 56,
+                            MuscleGroup = "Shoulders",
+                            Name = "Dumbbell Lateral Raise"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            MuscleGroup = "Biceps",
+                            Name = "Barbell Curl"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            MuscleGroup = "Biceps",
+                            Name = "Dumbbell Curl"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            MuscleGroup = "Biceps",
+                            Name = "Hammer Curl"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            MuscleGroup = "Biceps",
+                            Name = "Preacher Curl"
+                        },
+                        new
+                        {
+                            Id = 57,
+                            MuscleGroup = "Biceps",
+                            Name = "Preacher Hammer Curl"
+                        },
+                        new
+                        {
+                            Id = 58,
+                            MuscleGroup = "Biceps",
+                            Name = "Incline Dumbbell Curl"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            MuscleGroup = "Triceps",
+                            Name = "Triceps Pushdown"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            MuscleGroup = "Triceps",
+                            Name = "Skull Crusher"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            MuscleGroup = "Triceps",
+                            Name = "Overhead Triceps Extension"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            MuscleGroup = "Triceps",
+                            Name = "JM Bench Press"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            MuscleGroup = "Triceps",
+                            Name = "Close Grip Dips"
+                        },
+                        new
+                        {
+                            Id = 59,
+                            MuscleGroup = "Triceps",
+                            Name = "One Arm Cable Pushdown"
+                        },
+                        new
+                        {
+                            Id = 27,
+                            MuscleGroup = "Quads",
+                            Name = "Squat"
+                        },
+                        new
+                        {
+                            Id = 28,
+                            MuscleGroup = "Quads",
+                            Name = "Leg Press"
+                        },
+                        new
+                        {
+                            Id = 29,
+                            MuscleGroup = "Quads",
+                            Name = "Leg Extension"
+                        },
+                        new
+                        {
+                            Id = 30,
+                            MuscleGroup = "Quads",
+                            Name = "Bulgarian Split Squat"
+                        },
+                        new
+                        {
+                            Id = 31,
+                            MuscleGroup = "Quads",
+                            Name = "Front Squat"
+                        },
+                        new
+                        {
+                            Id = 60,
+                            MuscleGroup = "Quads",
+                            Name = "Hack Squat"
+                        },
+                        new
+                        {
+                            Id = 32,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Romanian Deadlift"
+                        },
+                        new
+                        {
+                            Id = 33,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Lying Leg Curl"
+                        },
+                        new
+                        {
+                            Id = 34,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Seated Leg Curl"
+                        },
+                        new
+                        {
+                            Id = 35,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Good Morning"
+                        },
+                        new
+                        {
+                            Id = 36,
+                            MuscleGroup = "Glutes",
+                            Name = "Hip Thrust"
+                        },
+                        new
+                        {
+                            Id = 37,
+                            MuscleGroup = "Glutes",
+                            Name = "Glute Bridge"
+                        },
+                        new
+                        {
+                            Id = 38,
+                            MuscleGroup = "Glutes",
+                            Name = "Cable Kickback"
+                        },
+                        new
+                        {
+                            Id = 39,
+                            MuscleGroup = "Glutes",
+                            Name = "Walking Lunge"
+                        },
+                        new
+                        {
+                            Id = 40,
+                            MuscleGroup = "Calves",
+                            Name = "Standing Calf Raise"
+                        },
+                        new
+                        {
+                            Id = 41,
+                            MuscleGroup = "Calves",
+                            Name = "Seated Calf Raise"
+                        },
+                        new
+                        {
+                            Id = 42,
+                            MuscleGroup = "Calves",
+                            Name = "Leg Press Calf Raise"
+                        },
+                        new
+                        {
+                            Id = 43,
+                            MuscleGroup = "Core",
+                            Name = "Plank"
+                        },
+                        new
+                        {
+                            Id = 44,
+                            MuscleGroup = "Core",
+                            Name = "Hanging Leg Raise"
+                        },
+                        new
+                        {
+                            Id = 45,
+                            MuscleGroup = "Core",
+                            Name = "Cable Crunch"
+                        },
+                        new
+                        {
+                            Id = 46,
+                            MuscleGroup = "Core",
+                            Name = "Ab Wheel Rollout"
+                        },
+                        new
+                        {
+                            Id = 47,
+                            MuscleGroup = "Core",
+                            Name = "Russian Twist"
+                        },
+                        new
+                        {
+                            Id = 48,
+                            MuscleGroup = "Core",
+                            Name = "Decline Crunches"
+                        },
+                        new
+                        {
+                            Id = 61,
+                            MuscleGroup = "Forearms",
+                            Name = "Forearm Cable Curl"
+                        },
+                        new
+                        {
+                            Id = 62,
+                            MuscleGroup = "Forearms",
+                            Name = "Forearm Cable Extension"
+                        },
+                        new
+                        {
+                            Id = 63,
+                            MuscleGroup = "Forearms",
+                            Name = "Reverse Curls"
+                        },
+                        new
+                        {
+                            Id = 64,
+                            MuscleGroup = "Forearms",
+                            Name = "Wrist Curls"
+                        },
+                        new
+                        {
+                            Id = 65,
+                            MuscleGroup = "Forearms",
+                            Name = "Reverse Wrist Curls"
+                        });
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.Gym", b =>
                 {
                     b.Property<int>("Id")
@@ -69,6 +488,78 @@ namespace GymApp.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Gyms");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.PrAdjustment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ExerciseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("OneRepMaxKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Reps")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("WeightKg")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("UserId", "ExerciseId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("PrAdjustments");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.SetLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ExerciseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Reps")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SetNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("WeightKg")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("UserId", "ExerciseId", "Date", "SetNumber")
+                        .IsUnique();
+
+                    b.ToTable("SetLogs");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.SplitDay", b =>
@@ -352,6 +843,42 @@ namespace GymApp.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.UserDayExercise", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ExerciseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SplitDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WarmupSets")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("WorkingSets")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("SplitDayId");
+
+                    b.HasIndex("UserId", "SplitDayId", "ExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("UserDayExercises");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.UserSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -484,6 +1011,54 @@ namespace GymApp.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.Exercise", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.PrAdjustment", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.SetLog", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.SplitDay", b =>
                 {
                     b.HasOne("GymApp.Data.Models.WorkoutSplit", "Split")
@@ -521,6 +1096,33 @@ namespace GymApp.Data.Migrations
                     b.Navigation("SelectedSplit");
 
                     b.Navigation("SelectedVariant");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.UserDayExercise", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.SplitDay", "SplitDay")
+                        .WithMany()
+                        .HasForeignKey("SplitDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+
+                    b.Navigation("SplitDay");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.UserSchedule", b =>
