@@ -41,6 +41,7 @@ public partial class App : Application
         sc.AddTransient<WorkoutMenuService>();
         sc.AddTransient<WorkoutsViewModel>();
         sc.AddTransient<DayViewModel>();
+        sc.AddTransient<ExerciseViewModel>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

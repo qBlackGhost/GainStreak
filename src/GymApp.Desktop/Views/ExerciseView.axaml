@@ -1,0 +1,165 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.ExerciseView"
+             x:DataType="vm:ExerciseViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="TextBlock.prompt">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.75"/>
+        </Style>
+        <Style Selector="TextBlock.prompt.newpr">
+            <Setter Property="Foreground" Value="SeaGreen"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+        <Style Selector="TextBlock.prompt.tie">
+            <Setter Property="Foreground" Value="Goldenrod"/>
+            <Setter Property="Opacity" Value="1"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <StackPanel HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding Subtitle}" Opacity="0.7" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </DockPanel>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Info}" Foreground="SeaGreen" TextWrapping="Wrap"
+                       IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- Personal record -->
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Personal record" Opacity="0.7"/>
+                    <TextBlock Text="{Binding BestText}" FontSize="28" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding OneRmText}" Opacity="0.7" FontSize="12"
+                               IsVisible="{Binding OneRmText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding BestNote}" Opacity="0.7" FontSize="12"/>
+
+                    <Button Content="Edit PR" Command="{Binding StartEditPrCommand}"
+                            IsVisible="{Binding !IsEditingPr}" HorizontalAlignment="Left"/>
+                    <StackPanel Spacing="8" IsVisible="{Binding IsEditingPr}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox Watermark="Weight (kg)" Width="130" Text="{Binding PrWeightText}"/>
+                            <TextBox Watermark="Reps" Width="90" Text="{Binding PrRepsText}"/>
+                            <TextBox Watermark="1RM (optional)" Width="140" Text="{Binding PrOneRmInput}"/>
+                        </StackPanel>
+                        <TextBlock Text="Leave the 1RM empty to estimate it from the weight and reps."
+                                   Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Save PR" Command="{Binding SavePrCommand}"/>
+                            <Button Content="Cancel" Command="{Binding CancelEditPrCommand}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="History" FontWeight="SemiBold" Margin="0,8,0,0"
+                               IsVisible="{Binding HasPrEntries}"/>
+                    <ItemsControl ItemsSource="{Binding PrEntries}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PrRowViewModel">
+                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
+                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DateText}"/>
+                                            <TextBlock Text="{Binding KindText}" Opacity="0.7" FontSize="12"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding BestText}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center" Margin="12,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding OneRmText}" Opacity="0.7"
+                                                   VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                        <Button Grid.Column="3" Content="Undo" Command="{Binding UndoCommand}"
+                                                IsVisible="{Binding IsManual}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Planned sets -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Planned sets" FontWeight="SemiBold"/>
+                    <WrapPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,24,0">
+                            <TextBlock Text="Warm-up" VerticalAlignment="Center"/>
+                            <Button Content="−" Command="{Binding FewerWarmupCommand}"/>
+                            <TextBlock Text="{Binding WarmupSets}" MinWidth="20" TextAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            <Button Content="+" Command="{Binding MoreWarmupCommand}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Working" VerticalAlignment="Center"/>
+                            <Button Content="−" Command="{Binding FewerWorkingCommand}"/>
+                            <TextBlock Text="{Binding WorkingSets}" MinWidth="20" TextAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                            <Button Content="+" Command="{Binding MoreWorkingCommand}"/>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Today's sets -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Fill from last time"
+                                Command="{Binding PrefillCommand}" VerticalAlignment="Center"/>
+                        <StackPanel>
+                            <TextBlock Text="Today's sets" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="Weight in kg. Warm-up sets never count toward your PR."
+                                       Opacity="0.7" FontSize="12"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SetRowViewModel">
+                                <StackPanel Spacing="2" Margin="0,0,0,8">
+                                    <Grid ColumnDefinitions="28,100,110,90,Auto">
+                                        <TextBlock Text="{Binding Number}" Opacity="0.6" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="{Binding KindLabel}"
+                                                Command="{Binding ToggleKindCommand}"
+                                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                Margin="0,0,8,0"/>
+                                        <TextBox Grid.Column="2" Watermark="kg" Text="{Binding WeightText}"
+                                                 Margin="0,0,8,0"/>
+                                        <TextBox Grid.Column="3" Watermark="reps" Text="{Binding RepsText}"
+                                                 Margin="0,0,8,0"/>
+                                        <Button Grid.Column="4" Content="✕" Command="{Binding RemoveCommand}"
+                                                ToolTip.Tip="Remove this set"/>
+                                    </Grid>
+                                    <TextBlock Classes="prompt" Classes.newpr="{Binding IsNewPr}"
+                                               Classes.tie="{Binding IsTie}" Text="{Binding Prompt}"
+                                               TextWrapping="Wrap" Margin="28,0,0,0"
+                                               IsVisible="{Binding HasPrompt}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="+ Add set" Command="{Binding AddRowCommand}"/>
+                        <Button Content="Save sets" Command="{Binding SaveCommand}"/>
+                    </StackPanel>
+                    <TextBlock Text="Saving sets does not count as going to the gym. Use “I went today” on Home for that."
+                               Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

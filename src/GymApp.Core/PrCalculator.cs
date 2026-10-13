@@ -29,13 +29,14 @@ public static class PrCalculator
     /// <summary>
     /// Replays the working sets in date order. The first set is the baseline; after that, a set is a PR
     /// if it is heavier than the best, or equally heavy with more reps. Warmups never count.
-    /// On the same day, sets are applied before adjustments.
+    /// On the same day, adjustments are applied before sets, so a PR you edit first is what that day's sets
+    /// are compared against.
     /// </summary>
     public static PrHistory Compute(IEnumerable<SetEntry> sets, IEnumerable<PrAdjustment>? adjustments = null)
     {
         var steps = sets.Where(s => s.Kind == SetKind.Working)
-            .Select(s => new Step(s.Date, 0, s.SetNumber, s.WeightKg, s.Reps, null, false))
-            .Concat((adjustments ?? []).Select(a => new Step(a.Date, 1, 0, a.WeightKg, a.Reps, a.OneRepMaxKg, true)))
+            .Select(s => new Step(s.Date, 1, s.SetNumber, s.WeightKg, s.Reps, null, false))
+            .Concat((adjustments ?? []).Select(a => new Step(a.Date, 0, 0, a.WeightKg, a.Reps, a.OneRepMaxKg, true)))
             .OrderBy(s => s.Date).ThenBy(s => s.Order).ThenBy(s => s.Num);
 
         var entries = new List<PrEntry>();

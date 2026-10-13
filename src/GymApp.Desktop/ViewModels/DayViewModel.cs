@@ -39,20 +39,38 @@ public partial class DayExerciseItemViewModel : ObservableObject
     [RelayCommand] private Task MoveUp() => _owner.MoveAsync(this, -1);
     [RelayCommand] private Task MoveDown() => _owner.MoveAsync(this, +1);
     [RelayCommand] private Task Remove() => _owner.RemoveAsync(this);
+    [RelayCommand] private void Open() => _owner.OpenExercise(this);
 }
 
+/// <summary>One tile in the picker. Exercises already in the day stay visible but can't be clicked;
+/// the button's disabled look is what greys them out.</summary>
 public partial class PickerItemViewModel : ObservableObject
 {
     private readonly DayViewModel _owner;
-    public PickerItemViewModel(Exercise exercise, DayViewModel owner) { ExerciseId = exercise.Id; Name = exercise.Name; _owner = owner; }
+
+    public PickerItemViewModel(Exercise exercise, bool isAdded, DayViewModel owner)
+    {
+        ExerciseId = exercise.Id;
+        Name = exercise.Name;
+        IsAdded = isAdded;
+        _owner = owner;
+    }
 
     public int ExerciseId { get; }
     public string Name { get; }
+    public bool IsAdded { get; }
+    public string Glyph => IsAdded ? "✓" : "+";
 
-    [RelayCommand] private Task Add() => _owner.AddAsync(this);
+    private bool CanAdd => !IsAdded;
+
+    [RelayCommand(CanExecute = nameof(CanAdd))]
+    private Task Add() => _owner.AddAsync(this);
 }
 
 public record PickerGroup(string Name, IReadOnlyList<PickerItemViewModel> Items);
+
+/// <summary>A muscle group button above the picker. Group null = "All".</summary>
+public record GroupFilter(string Label, MuscleGroup? Group);
 
 public partial class CopySourceItemViewModel : ObservableObject
 {
@@ -73,20 +91,28 @@ public partial class DayViewModel : ViewModelBase
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
     private int _dayId;
+    private MenuDay? _menuDay;
+    private string _splitName = "";
     private List<Exercise> _catalog = [];
 
     public ObservableCollection<DayExerciseItemViewModel> Items { get; } = new();
     public ObservableCollection<PickerGroup> PickerGroups { get; } = new();
     public ObservableCollection<CopySourceItemViewModel> CopySources { get; } = new();
 
+    public IReadOnlyList<GroupFilter> Filters { get; } =
+        new[] { new GroupFilter("All", null) }
+            .Concat(Enum.GetValues<MuscleGroup>().Select(g => new GroupFilter(g.ToString(), g)))
+            .ToList();
+
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
+    [ObservableProperty] public partial string CountText { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
     [ObservableProperty] public partial bool IsEmpty { get; set; }
 
-    [ObservableProperty] public partial bool IsPickerOpen { get; set; }
     [ObservableProperty] public partial string Search { get; set; } = "";
+    [ObservableProperty] public partial GroupFilter? SelectedFilter { get; set; }
     [ObservableProperty] public partial bool NoPickerResults { get; set; }
 
     [ObservableProperty] public partial bool IsCopyOpen { get; set; }
@@ -107,11 +133,14 @@ public partial class DayViewModel : ViewModelBase
     public DayViewModel(DayExerciseService days, ExerciseService exercises, SessionService session, Func<MainViewModel> shell)
     {
         _days = days; _exercises = exercises; _session = session; _shell = shell;
+        SelectedFilter = Filters[0];
     }
 
     /// <summary>Call right after resolving from DI.</summary>
     public void Load(MenuDay day, string splitName)
     {
+        _menuDay = day;
+        _splitName = splitName;
         _dayId = day.SplitDayId;
         Title = day.Name;
         Subtitle = day.Weekdays.Length > 0 ? $"{splitName} · {day.Weekdays}" : splitName;
@@ -127,6 +156,7 @@ public partial class DayViewModel : ViewModelBase
             for (var i = 0; i < rows.Count; i++)
                 Items.Add(new DayExerciseItemViewModel(rows[i], i, rows.Count, this));
             IsEmpty = rows.Count == 0;
+            CountText = rows.Count == 1 ? "1 exercise" : $"{rows.Count} exercises";
 
             if (reloadCatalog) _catalog = await _exercises.GetAvailableAsync(UserId);
             RebuildPicker();
@@ -137,16 +167,20 @@ public partial class DayViewModel : ViewModelBase
         }
     }
 
-    // The picker lists the exercises not yet in this day, grouped by muscle group (the catalog is already in enum order)
+    // The picker lists every exercise in the selected group (or all of them), narrowed by the search box.
+    // The ones already in this day stay in place, marked as added, so the list never reshuffles.
     private void RebuildPicker()
     {
         var inDay = Items.Select(i => i.ExerciseId).ToHashSet();
         var term = Search?.Trim();
+        var group = SelectedFilter?.Group;
         var groups = _catalog
-            .Where(e => !inDay.Contains(e.Id))
+            .Where(e => group is null || e.MuscleGroup == group)
             .Where(e => string.IsNullOrEmpty(term) || e.Name.Contains(term, StringComparison.OrdinalIgnoreCase))
             .GroupBy(e => e.MuscleGroup)
-            .Select(g => new PickerGroup(g.Key.ToString(), g.Select(e => new PickerItemViewModel(e, this)).ToList()))
+            .Select(g => new PickerGroup(
+                g.Key.ToString(),
+                g.Select(e => new PickerItemViewModel(e, inDay.Contains(e.Id), this)).ToList()))
             .ToList();
 
         PickerGroups.Clear();
@@ -156,6 +190,12 @@ public partial class DayViewModel : ViewModelBase
 
     partial void OnSearchChanged(string value) => RebuildPicker();
 
+    partial void OnSelectedFilterChanged(GroupFilter? value)
+    {
+        if (value is null) { SelectedFilter = Filters[0]; return; }   // never leave the filter empty
+        RebuildPicker();
+    }
+
     internal async Task AddAsync(PickerItemViewModel item)
     {
         var r = await _days.AddAsync(UserId, _dayId, item.ExerciseId);
@@ -163,7 +203,7 @@ public partial class DayViewModel : ViewModelBase
 
         Error = null;
         Info = $"Added {item.Name}.";
-        await ReloadAsync();      // the picker stays open so several can be added in a row
+        await ReloadAsync();
     }
 
     internal async Task RemoveAsync(DayExerciseItemViewModel item)
@@ -185,13 +225,9 @@ public partial class DayViewModel : ViewModelBase
         Error = null; Info = null;
         await ReloadAsync();
     }
-
-    [RelayCommand]
-    private void TogglePicker()
-    {
-        IsPickerOpen = !IsPickerOpen;
-        if (IsPickerOpen) { IsCopyOpen = false; PendingCopy = null; }
-    }
+    
+    internal void OpenExercise(DayExerciseItemViewModel item) =>
+        _shell().ShowExercise(_menuDay!, _splitName, item.ExerciseId);
 
     [RelayCommand]
     private async Task ToggleCopyAsync()
@@ -199,7 +235,6 @@ public partial class DayViewModel : ViewModelBase
         IsCopyOpen = !IsCopyOpen;
         PendingCopy = null;
         if (!IsCopyOpen) return;
-        IsPickerOpen = false;
 
         var sources = await _days.GetCopySourcesAsync(UserId, _dayId);
         CopySources.Clear();

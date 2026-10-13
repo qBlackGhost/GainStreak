@@ -39,6 +39,13 @@ public partial class MainViewModel : ViewModelBase
         vm.Load(day, splitName);
         Current = vm;
     }
+    
+    public void ShowExercise(MenuDay day, string splitName, int exerciseId)
+    {
+        var vm = _sp.GetRequiredService<ExerciseViewModel>();
+        vm.Load(day, splitName, exerciseId);
+        Current = vm;
+    }
 
     public void ShowSplitEditor(WorkoutSplit? split)
     {

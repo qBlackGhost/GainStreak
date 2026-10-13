@@ -247,4 +247,14 @@ public class SetServiceTests : IDisposable
         Assert.Empty(h.Sets);
         Assert.Empty(h.Adjustments);
     }
+    
+    [Fact] public async Task SetPr_ThenAHeavierSetTheSameDay_IsComparedToIt()
+    {
+        await _svc.SetPrAsync(_alice, 1, 55, 10, null, D(1));
+        await Save(_alice, 1, 1, Work(60, 10));
+
+        var current = (await _svc.GetHistoryAsync(_alice, 1)).Pr.Current!;
+        Assert.Equal(60, current.WeightKg);
+        Assert.Equal(PrEntryKind.Pr, current.Kind);
+    }
 }

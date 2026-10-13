@@ -122,4 +122,20 @@ public class PrCalculatorTests
 
     [Fact] public void LastSession_IgnoresTodayAndTheFuture() =>
         Assert.Empty(PrCalculator.LastSession([W(0, 1, 60, 10)], D(0)));
+    
+    [Fact] public void SameDay_AnAdjustmentComesBeforeTheSets()
+    {
+        // corrected to 55 first, then a 60 x 10 the same day: the set beats the corrected PR
+        var h = PrCalculator.Compute([W(0, 1, 60, 10)], [new PrAdjustment(D(0), 55, 10)]);
+        Assert.Equal(60, h.Current!.WeightKg);
+        Assert.Equal(PrEntryKind.Pr, h.Current.Kind);
+        Assert.Equal(2, h.Entries.Count);
+    }
+
+    [Fact] public void SameDay_ALighterSetDoesNotBeatTheAdjustment()
+    {
+        var h = PrCalculator.Compute([W(0, 1, 50, 10)], [new PrAdjustment(D(0), 55, 10)]);
+        Assert.Equal(PrEntryKind.Manual, h.Current!.Kind);
+        Assert.Equal(55, h.Current.WeightKg);
+    }
 }
