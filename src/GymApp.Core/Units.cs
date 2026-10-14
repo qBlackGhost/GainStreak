@@ -42,12 +42,12 @@ public static class Units
     public static bool TryParseNumber(string? text, out double value) =>
         NumberParsing.TryParseKg(text, out value);
 
-    /// <summary>A whole number of steps. Spaces and thousands separators are ignored ("8,000", "8 000").</summary>
-    public static bool TryParseSteps(string? text, out int steps)
+    /// <summary>A whole number, e.g. kcal. Spaces and thousands separators are ignored ("2,200", "2 200").</summary>
+    public static bool TryParseWholeNumber(string? text, out int value)
     {
-        steps = 0;
+        value = 0;
         if (string.IsNullOrWhiteSpace(text)) return false;
         var digits = text.Trim().Replace(",", "").Replace(".", "").Replace(" ", "");
-        return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out steps);
+        return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out value);
     }
 }

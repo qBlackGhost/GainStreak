@@ -23,7 +23,7 @@ public class ProfileServiceTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private static ProfileInput Full(UnitSystem units = UnitSystem.Metric) =>
-        new(Sex.Male, new DateOnly(1996, 1, 1), 180, 8_000, units);
+        new(Sex.Male, new DateOnly(1996, 1, 1), 180, ActivityLevel.Active, units);
 
     [Fact] public async Task NewUser_GetsAnEmptyProfile_AndNoEstimate()
     {
@@ -42,7 +42,7 @@ public class ProfileServiceTests : IDisposable
         Assert.Equal(Sex.Male, p.Sex);
         Assert.Equal(new DateOnly(1996, 1, 1), p.BirthDate);
         Assert.Equal(180, p.HeightCm);
-        Assert.Equal(8_000, p.StepsPerDay);
+        Assert.Equal(ActivityLevel.Active, p.ActivityLevel);
         Assert.Equal(UnitSystem.Imperial, p.Units);
     }
 
@@ -63,7 +63,7 @@ public class ProfileServiceTests : IDisposable
     {
         Assert.False((await _svc.SaveAsync(_alice, Full() with { HeightCm = 90 }, Today)).Success);
         Assert.False((await _svc.SaveAsync(_alice, Full() with { HeightCm = double.NaN }, Today)).Success);
-        Assert.False((await _svc.SaveAsync(_alice, Full() with { StepsPerDay = -1 }, Today)).Success);
+        Assert.False((await _svc.SaveAsync(_alice, Full() with { ActivityLevel = (ActivityLevel)99 }, Today)).Success);
         Assert.False((await _svc.SaveAsync(_alice, Full() with { BirthDate = Today.AddDays(1) }, Today)).Success);
         Assert.False((await _svc.SaveAsync(_alice, Full() with { BirthDate = new DateOnly(2020, 1, 1) }, Today)).Success);
     }
@@ -105,7 +105,7 @@ public class ProfileServiceTests : IDisposable
 
     [Fact] public async Task Estimate_WithEverything_GivesMaintenance()
     {
-        await _svc.SaveAsync(_alice, Full(), Today);   // male, 30, 180 cm, 8,000 steps
+        await _svc.SaveAsync(_alice, Full(), Today);   // male, 30, 180 cm, Active
         await _svc.LogWeightAsync(_alice, 80, Today);
 
         var m = (await _svc.GetAsync(_alice, Today))!.Maintenance;
@@ -116,7 +116,7 @@ public class ProfileServiceTests : IDisposable
 
     [Fact] public void Estimate_UnderAdultAge_GivesNoNumber()
     {
-        var profile = new UserProfile { Sex = Sex.Female, BirthDate = new DateOnly(2010, 1, 1), HeightCm = 160, StepsPerDay = 6_000 };
+        var profile = new UserProfile { Sex = Sex.Female, BirthDate = new DateOnly(2010, 1, 1), HeightCm = 160, ActivityLevel = ActivityLevel.LessActive };
         var m = ProfileService.Estimate(profile, 55, Today);   // 16
         Assert.Null(m.Kcal);
         Assert.Contains("18", m.Reason);
@@ -126,7 +126,7 @@ public class ProfileServiceTests : IDisposable
     {
         var profile = new UserProfile { Sex = Sex.Male, BirthDate = new DateOnly(1996, 1, 1), HeightCm = 180 };
         var m = ProfileService.Estimate(profile, null, Today);
-        Assert.Equal("Add your weight and daily steps to see your maintenance calories.", m.Reason);
+        Assert.Equal("Add your weight and activity level to see your maintenance calories.", m.Reason);
     }
 
     [Fact] public async Task Summary_ShowsTheSelectedSplit()

@@ -48,6 +48,76 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== Calorie goal ===== -->
+            <Border Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Calorie goal" FontSize="18" FontWeight="SemiBold"/>
+
+                    <Grid ColumnDefinitions="120,*" ColumnSpacing="12">
+                        <TextBlock Text="Goal" Classes="label"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding GoalOptions}"
+                                  SelectedItem="{Binding SelectedGoal}" HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:GoalOption">
+                                    <TextBlock Text="{Binding Name}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </Grid>
+
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding GoalText}" FontSize="22" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding GoalRule}" Classes="small"
+                                   IsVisible="{Binding GoalRule, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <!-- The suggestion moved since the user last answered it: ask before overwriting -->
+                    <Border Background="#20DAA520" BorderBrush="#80DAA520" BorderThickness="1"
+                            CornerRadius="8" Padding="12" IsVisible="{Binding SuggestionChanged}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding SuggestionChangedText}" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="{Binding UseSuggestionLabel}" Command="{Binding UseSuggestionCommand}"/>
+                                <Button Content="{Binding KeepGoalLabel}" Command="{Binding KeepGoalCommand}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="{Binding SuggestionText}"
+                                   IsVisible="{Binding SuggestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding SuggestionNote}" Classes="small"/>
+                        <Button Content="{Binding UseSuggestionLabel}" Command="{Binding UseSuggestionCommand}"
+                                IsVisible="{Binding CanUseSuggestion}" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox Watermark="Your own goal (kcal)" Width="180" Text="{Binding CustomGoalInput}"/>
+                        <Button Content="Set my own goal" Command="{Binding SetCustomGoalCommand}"/>
+                    </StackPanel>
+                    <TextBlock Classes="small"
+                               Text="Safe limits: at least 1,500 kcal for men and 1,200 kcal for women, and never more than 25% under your maintenance."/>
+
+                    <TextBlock Text="Recent days" Opacity="0.7" Margin="0,6,0,0"
+                               IsVisible="{Binding HasCalorieHistory}"/>
+                    <ItemsControl ItemsSource="{Binding CalorieHistory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CalorieDayRow">
+                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                        <TextBlock Text="{Binding DateText}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding ConsumedText}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding ResultText}" Opacity="0.7"
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <!-- ===== Body data ===== -->
             <Border Classes="card">
                 <StackPanel Spacing="10">
@@ -79,12 +149,23 @@
                             </StackPanel>
                         </Panel>
 
-                        <TextBlock Grid.Row="4" Text="Daily steps" Classes="label"/>
-                        <TextBox Grid.Row="4" Grid.Column="1" Watermark="e.g. 8000" Text="{Binding StepsText}"/>
+                        <TextBlock Grid.Row="4" Text="Activity" Classes="label"/>
+                        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding ActivityOptions}"
+                                  SelectedItem="{Binding SelectedActivity}" PlaceholderText="How much do you walk?"
+                                  HorizontalAlignment="Stretch">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ActivityOption">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}"/>
+                                        <TextBlock Text="{Binding Range}" FontSize="12" Opacity="0.7"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                     </Grid>
 
                     <TextBlock Classes="small"
-                               Text="Your body data stays in the app's local database on this computer. Steps are your typical daily average."/>
+                               Text="Your body data stays in the app's local database on this computer. Pick the activity level that matches your typical daily steps outside the gym."/>
                     <Button Content="Save profile" Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>

@@ -32,6 +32,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("GoalAtTime")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("GoalTypeAtTime")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
@@ -800,6 +803,9 @@ namespace GymApp.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("LastSuggestedGoal")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("LongestStreak")
                         .HasColumnType("INTEGER");
 
@@ -885,6 +891,9 @@ namespace GymApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ActivityLevel")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("TEXT");
 
@@ -893,9 +902,6 @@ namespace GymApp.Data.Migrations
 
                     b.Property<string>("Sex")
                         .HasColumnType("TEXT");
-
-                    b.Property<int?>("StepsPerDay")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Units")
                         .IsRequired()

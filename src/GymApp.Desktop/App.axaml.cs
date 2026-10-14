@@ -44,6 +44,7 @@ public partial class App : Application
         sc.AddTransient<ExerciseViewModel>();
         sc.AddTransient<CustomExercisesViewModel>();
         sc.AddTransient<ProfileService>();
+        sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
         Services = sc.BuildServiceProvider();
 

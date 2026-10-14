@@ -1,10 +1,32 @@
-using System.Globalization;
-
 namespace GymApp.Core;
 
 public enum Sex { Male, Female }
 
 public enum UnitSystem { Metric, Imperial }
+
+/// <summary>How active the user is outside the gym, picked from three step bands.
+/// Stored as its name in the database, so don't rename the members.</summary>
+public enum ActivityLevel { LessActive, Active, VeryActive }
+
+/// <summary>Names and step ranges for the activity picker.</summary>
+public static class ActivityLevels
+{
+    public static string DisplayName(ActivityLevel level) => level switch
+    {
+        ActivityLevel.LessActive => "Less Active",
+        ActivityLevel.Active => "Active",
+        ActivityLevel.VeryActive => "Very Active",
+        _ => level.ToString()
+    };
+
+    public static string StepRange(ActivityLevel level) => level switch
+    {
+        ActivityLevel.LessActive => "under 7,500 steps / day",
+        ActivityLevel.Active => "7,500 - 12,500 steps / day",
+        ActivityLevel.VeryActive => "over 12,500 steps / day",
+        _ => ""
+    };
+}
 
 /// <summary>Sane ranges for body data. Everything is stored metric.</summary>
 public static class BodyLimits
@@ -15,7 +37,6 @@ public static class BodyLimits
     public const double MaxWeightKg = 350;
     public const int MinAge = 13;
     public const int MaxAge = 100;
-    public const int MaxSteps = 60_000;
 
     /// <summary>Automatic calorie estimates are only shown from this age.</summary>
     public const int AdultAge = 18;
@@ -36,19 +57,19 @@ public static class BodyMetrics
     public static double Bmr(Sex sex, double weightKg, double heightCm, int age) =>
         10 * weightKg + 6.25 * heightCm - 5 * age + (sex == Sex.Male ? 5 : -161);
 
-    /// <summary>Starting step bands (tune later).</summary>
-    public static double ActivityFactor(int stepsPerDay) => stepsPerDay switch
+    /// <summary>Lightly / moderately / very active factors. No 1.2 "sedentary" band:
+    /// everyone using the app also trains.</summary>
+    public static double ActivityFactor(ActivityLevel level) => level switch
     {
-        < 5_000 => 1.2,
-        < 7_500 => 1.375,
-        < 10_000 => 1.55,
-        < 12_500 => 1.725,
-        _ => 1.9
+        ActivityLevel.LessActive => 1.375,
+        ActivityLevel.Active => 1.55,
+        ActivityLevel.VeryActive => 1.725,
+        _ => throw new ArgumentOutOfRangeException(nameof(level))
     };
 
     /// <summary>Maintenance calories (TDEE), rounded to the nearest 10.</summary>
-    public static int Maintenance(Sex sex, double weightKg, double heightCm, int age, int stepsPerDay) =>
-        RoundTo10(Bmr(sex, weightKg, heightCm, age) * ActivityFactor(stepsPerDay));
+    public static int Maintenance(Sex sex, double weightKg, double heightCm, int age, ActivityLevel level) =>
+        RoundTo10(Bmr(sex, weightKg, heightCm, age) * ActivityFactor(level));
 
     public static int RoundTo10(double kcal) =>
         (int)(Math.Round(kcal / 10, MidpointRounding.AwayFromZero) * 10);
@@ -72,9 +93,4 @@ public static class BodyMetrics
             ? $"Age must be between {BodyLimits.MinAge} and {BodyLimits.MaxAge}."
             : null;
     }
-
-    public static string? CheckSteps(int steps) =>
-        steps is < 0 or > BodyLimits.MaxSteps
-            ? $"Daily steps must be between 0 and {BodyLimits.MaxSteps.ToString("N0", CultureInfo.InvariantCulture)}."
-            : null;
 }

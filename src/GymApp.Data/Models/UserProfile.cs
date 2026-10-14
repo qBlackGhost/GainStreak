@@ -13,7 +13,7 @@ public class UserProfile
     public Sex? Sex { get; set; }
     public DateOnly? BirthDate { get; set; }          // the date, not the age, so the age stays right
     public double? HeightCm { get; set; }
-    public int? StepsPerDay { get; set; }              // typed in by the user
+    public ActivityLevel? ActivityLevel { get; set; }  // picked from three step bands
     public UnitSystem Units { get; set; } = UnitSystem.Metric;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

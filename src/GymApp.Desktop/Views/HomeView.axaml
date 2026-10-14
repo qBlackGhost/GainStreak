@@ -3,7 +3,8 @@
              xmlns:vm="using:GymApp.Desktop.ViewModels"
              x:Class="GymApp.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
-    <StackPanel Spacing="14" Width="360"
+    <ScrollViewer>
+    <StackPanel Spacing="14" Width="360" Margin="0,24"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="{Binding Welcome}" FontSize="24" HorizontalAlignment="Center"/>
 
@@ -26,6 +27,20 @@
             </StackPanel>
         </Border>
 
+        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
+            <StackPanel Spacing="6">
+                <TextBlock Text="Calories today" Opacity="0.7"/>
+                <TextBlock Text="{Binding CaloriesTitle}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding CaloriesHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding GoalReviewHint}" Foreground="DarkGoldenrod" TextWrapping="Wrap"
+                           IsVisible="{Binding GoalReviewHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                    <TextBox Watermark="Eaten today (kcal)" Text="{Binding CaloriesInput}"/>
+                    <Button Grid.Column="1" Content="{Binding LogCaloriesLabel}" Command="{Binding LogCaloriesCommand}"/>
+                </Grid>
+            </StackPanel>
+        </Border>
+
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         
@@ -38,4 +53,5 @@
         <Button Content="Log out" Command="{Binding LogoutCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
     </StackPanel>
+    </ScrollViewer>
 </UserControl>

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GymApp.Services;
 
 /// <summary>What the profile form saves. Everything is metric; empty fields are allowed.</summary>
-public record ProfileInput(Sex? Sex, DateOnly? BirthDate, double? HeightCm, int? StepsPerDay, UnitSystem Units);
+public record ProfileInput(Sex? Sex, DateOnly? BirthDate, double? HeightCm, ActivityLevel? ActivityLevel, UnitSystem Units);
 
 public record ProfileResult(bool Success, string? Error = null);
 
@@ -85,7 +85,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         profile.Sex = input.Sex;
         profile.BirthDate = input.BirthDate;
         profile.HeightCm = input.HeightCm is { } h ? Math.Round(h, 1) : null;
-        profile.StepsPerDay = input.StepsPerDay;
+        profile.ActivityLevel = input.ActivityLevel;
         profile.Units = input.Units;
         profile.UpdatedAt = DateTime.UtcNow;
 
@@ -133,7 +133,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         if (profile.BirthDate is null) missing.Add("birth date");
         if (profile.HeightCm is null) missing.Add("height");
         if (weightKg is null) missing.Add("weight");
-        if (profile.StepsPerDay is null) missing.Add("daily steps");
+        if (profile.ActivityLevel is null) missing.Add("activity level");
         if (missing.Count > 0)
             return new(null, $"Add your {JoinList(missing)} to see your maintenance calories.");
 
@@ -143,7 +143,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
                              "You can still set your own calorie goal.");
 
         var bmr = BodyMetrics.Bmr(profile.Sex!.Value, weightKg!.Value, profile.HeightCm!.Value, age);
-        var factor = BodyMetrics.ActivityFactor(profile.StepsPerDay!.Value);
+        var factor = BodyMetrics.ActivityFactor(profile.ActivityLevel!.Value);
         return new(BodyMetrics.RoundTo10(bmr * factor), Bmr: BodyMetrics.RoundTo10(bmr), ActivityFactor: factor);
     }
 
@@ -154,7 +154,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         if (input.BirthDate is { } b && BodyMetrics.CheckBirthDate(b, today) is { } e1) return e1;
         if (input.HeightCm is { } h && !double.IsFinite(h)) return "Enter a valid height.";
         if (input.HeightCm is { } h2 && BodyMetrics.CheckHeight(h2) is { } e2) return e2;
-        if (input.StepsPerDay is { } s && BodyMetrics.CheckSteps(s) is { } e3) return e3;
+        if (input.ActivityLevel is { } a && !Enum.IsDefined(a)) return "Pick an activity level.";
         return null;
     }
 

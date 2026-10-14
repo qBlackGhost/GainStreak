@@ -61,6 +61,7 @@ public class AppDbContext : DbContext
         // One workout entry and one calorie entry per user per day
         b.Entity<WorkoutLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
         b.Entity<CalorieLog>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
+        b.Entity<CalorieLog>().Property(c => c.GoalTypeAtTime).HasConversion<string>();
         
         b.Entity<UserSchedule>().HasIndex(s => new { s.UserId, s.EffectiveFrom }).IsUnique();
         b.Entity<UserSchedule>().Property(s => s.WeekPattern).HasMaxLength(7);
@@ -103,6 +104,7 @@ public class AppDbContext : DbContext
             .HasForeignKey<UserProfile>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<UserProfile>().Property(p => p.Sex).HasConversion<string>();
         b.Entity<UserProfile>().Property(p => p.Units).HasConversion<string>();
+        b.Entity<UserProfile>().Property(p => p.ActivityLevel).HasConversion<string>();
 
         b.Entity<WeightLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
         b.Entity<WeightLog>().HasOne(w => w.User).WithMany()

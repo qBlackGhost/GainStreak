@@ -30,15 +30,15 @@ public class UnitsTests
     [InlineData("8,000", 8000)]
     [InlineData("8.000", 8000)]
     [InlineData(" 8 000 ", 8000)]
-    public void Steps_Parse(string text, int expected)
+    public void WholeNumber_Parse(string text, int expected)
     {
-        Assert.True(Units.TryParseSteps(text, out var steps));
-        Assert.Equal(expected, steps);
+        Assert.True(Units.TryParseWholeNumber(text, out var value));
+        Assert.Equal(expected, value);
     }
 
     [Theory]
     [InlineData("")]
     [InlineData("abc")]
     [InlineData("-5")]
-    public void Steps_RejectGarbage(string text) => Assert.False(Units.TryParseSteps(text, out _));
+    public void WholeNumber_RejectGarbage(string text) => Assert.False(Units.TryParseWholeNumber(text, out _));
 }

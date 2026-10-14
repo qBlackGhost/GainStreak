@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
+using GymApp.Core;
 
 namespace GymApp.Data.Models;
-
-public enum GoalType { Lose, Maintain, Gain }
 
 public class User
 {
@@ -26,6 +25,7 @@ public class User
 
     public int? DailyCalorieGoal { get; set; }
     public GoalType GoalType { get; set; } = GoalType.Maintain;
+    public int? LastSuggestedGoal { get; set; }       // the suggestion the user last accepted or declined, so we only ask again when it changes
 
     public List<WorkoutLog> WorkoutLogs { get; set; } = new();
     public List<CalorieLog> CalorieLogs { get; set; } = new();

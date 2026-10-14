@@ -11,23 +11,16 @@ public class BodyMetricsTests
         Assert.Equal(1345.25, BodyMetrics.Bmr(Sex.Female, 60, 165, 25), 6); // 600 + 1031.25 - 125 - 161
 
     [Theory]
-    [InlineData(0, 1.2)]
-    [InlineData(4_999, 1.2)]
-    [InlineData(5_000, 1.375)]
-    [InlineData(7_499, 1.375)]
-    [InlineData(7_500, 1.55)]
-    [InlineData(9_999, 1.55)]
-    [InlineData(10_000, 1.725)]
-    [InlineData(12_499, 1.725)]
-    [InlineData(12_500, 1.9)]
-    [InlineData(30_000, 1.9)]
-    public void ActivityFactor_FollowsTheStepBands(int steps, double expected) =>
-        Assert.Equal(expected, BodyMetrics.ActivityFactor(steps));
+    [InlineData(ActivityLevel.LessActive, 1.375)]
+    [InlineData(ActivityLevel.Active, 1.55)]
+    [InlineData(ActivityLevel.VeryActive, 1.725)]
+    public void ActivityFactor_PerLevel(ActivityLevel level, double expected) =>
+        Assert.Equal(expected, BodyMetrics.ActivityFactor(level));
 
     [Fact] public void Maintenance_IsBmrTimesFactor_RoundedTo10()
     {
-        Assert.Equal(2760, BodyMetrics.Maintenance(Sex.Male, 80, 180, 30, 8_000));    // 1780 x 1.55 = 2759
-        Assert.Equal(1610, BodyMetrics.Maintenance(Sex.Female, 60, 165, 25, 3_000));  // 1345.25 x 1.2 = 1614.3
+        Assert.Equal(2760, BodyMetrics.Maintenance(Sex.Male, 80, 180, 30, ActivityLevel.Active));        // 1780 x 1.55 = 2759
+        Assert.Equal(1850, BodyMetrics.Maintenance(Sex.Female, 60, 165, 25, ActivityLevel.LessActive));  // 1345.25 x 1.375 = 1849.7
     }
 
     [Theory]
@@ -74,11 +67,4 @@ public class BodyMetricsTests
         Assert.Null(BodyMetrics.CheckBirthDate(new DateOnly(1926, 10, 14), today));  // 100
         Assert.NotNull(BodyMetrics.CheckBirthDate(new DateOnly(1925, 10, 13), today)); // 101
     }
-
-    [Theory]
-    [InlineData(-1, false)]
-    [InlineData(0, true)]
-    [InlineData(60_000, true)]
-    [InlineData(60_001, false)]
-    public void Steps_Range(int steps, bool ok) => Assert.Equal(ok, BodyMetrics.CheckSteps(steps) is null);
 }

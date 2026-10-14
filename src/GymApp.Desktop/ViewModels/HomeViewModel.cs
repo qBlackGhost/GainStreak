@@ -13,14 +13,16 @@ public partial class HomeViewModel : ViewModelBase
     private readonly Func<MainViewModel> _shell;
     private readonly WorkoutService _workouts;
     private readonly StreakService _streaks;
+    private readonly CalorieService _calories;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
-                         WorkoutService workouts, StreakService streaks)
+                         WorkoutService workouts, StreakService streaks, CalorieService calories)
     {
         _session = session;
         _shell = shell;
         _workouts = workouts;
         _streaks = streaks;
+        _calories = calories;
         _ = RefreshAsync();   // also recalculates the streak, so one that broke overnight shows correctly
     }
 
@@ -32,6 +34,11 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial bool CanLog { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string StreakNote { get; set; } = "";
+    [ObservableProperty] public partial string CaloriesTitle { get; set; } = "";
+    [ObservableProperty] public partial string CaloriesHint { get; set; } = "";
+    [ObservableProperty] public partial string? GoalReviewHint { get; set; }
+    [ObservableProperty] public partial string CaloriesInput { get; set; } = "";
+    [ObservableProperty] public partial string LogCaloriesLabel { get; set; } = "Log";
     [ObservableProperty] public partial string? Error { get; set; }
 
     private async Task RefreshAsync()
@@ -42,11 +49,48 @@ public partial class HomeViewModel : ViewModelBase
             var today = await _workouts.GetTodayAsync(user.Id);
             var streak = await _streaks.RecalculateAsync(user.Id);
             Apply(today, streak);
+            await RefreshCaloriesAsync(user.Id);
         }
         catch (Exception)
         {
             Error = "Could not load today's workout.";
         }
+    }
+
+    private async Task RefreshCaloriesAsync(int userId)
+    {
+        var o = await _calories.GetAsync(userId);
+        if (o is null) return;
+        var g = o.Goal;
+
+        CaloriesTitle = o.Today is { } t ? $"{CalorieGoals.K(t.Consumed)} kcal" : "Not logged yet";
+        CaloriesHint = (o.Today, g.Goal) switch
+        {
+            ({ Hit: true }, _) => "Target hit ✓",
+            ({ Hit: false } t2, _) => $"Target missed: aim for {CalorieGoals.TargetRule(t2.GoalType!.Value, t2.Goal!.Value)}.",
+            (_, { } goal) => $"Goal: {CalorieGoals.TargetRule(g.GoalType, goal)}. Log what you ate at the end of the day.",
+            _ => "No calorie goal yet. Set one on your profile."
+        };
+        GoalReviewHint = g.SuggestionChanged ? "Your suggested goal changed. Review it on your profile." : null;
+        LogCaloriesLabel = o.Today is null ? "Log" : "Update";
+    }
+
+    [RelayCommand]
+    private async Task LogCaloriesAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        if (!Units.TryParseWholeNumber(CaloriesInput, out var kcal))
+        {
+            Error = "Enter what you ate today as a whole number of kcal, e.g. 2100.";
+            return;
+        }
+
+        var r = await _calories.LogTodayAsync(user.Id, kcal);
+        if (!r.Success) { Error = r.Error; return; }
+
+        Error = null;
+        CaloriesInput = "";
+        await RefreshCaloriesAsync(user.Id);
     }
 
     private void Apply(TodayInfo today, StreakResult streak)
