@@ -38,5 +38,11 @@
     <Compile Update="Views\SplitDetailView.axaml.cs">
       <DependentUpon>SplitDetailView.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\CustomExercisesView.axaml.cs">
+      <DependentUpon>CustomExercisesView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ProfileView.axaml.cs">
+      <DependentUpon>ProfileView.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

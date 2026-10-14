@@ -31,7 +31,9 @@
         
         <Button Content="Workouts" Command="{Binding ShowWorkoutsCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        <Button Content="Workout splits" Command="{Binding ShowSplitsCommand}"
+        <Button Content="Splits" Command="{Binding ShowSplitsCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <Button Content="Profile" Command="{Binding ShowProfileCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
         <Button Content="Log out" Command="{Binding LogoutCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>

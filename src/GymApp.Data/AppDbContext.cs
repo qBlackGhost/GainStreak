@@ -19,6 +19,8 @@ public class AppDbContext : DbContext
     public DbSet<UserDayExercise> UserDayExercises => Set<UserDayExercise>();
     public DbSet<SetLog> SetLogs => Set<SetLog>();
     public DbSet<PrAdjustment> PrAdjustments => Set<PrAdjustment>();
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -96,6 +98,15 @@ public class AppDbContext : DbContext
             .HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<PrAdjustment>().HasOne(a => a.Exercise).WithMany()
             .HasForeignKey(a => a.ExerciseId).OnDelete(DeleteBehavior.Cascade);
+        
+        b.Entity<UserProfile>().HasOne(p => p.User).WithOne()
+            .HasForeignKey<UserProfile>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserProfile>().Property(p => p.Sex).HasConversion<string>();
+        b.Entity<UserProfile>().Property(p => p.Units).HasConversion<string>();
+
+        b.Entity<WeightLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
+        b.Entity<WeightLog>().HasOne(w => w.User).WithMany()
+            .HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
 
         SeedExercises(b);
         SeedSplits(b);

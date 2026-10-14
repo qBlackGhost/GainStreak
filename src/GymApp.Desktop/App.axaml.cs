@@ -43,6 +43,8 @@ public partial class App : Application
         sc.AddTransient<DayViewModel>();
         sc.AddTransient<ExerciseViewModel>();
         sc.AddTransient<CustomExercisesViewModel>();
+        sc.AddTransient<ProfileService>();
+        sc.AddTransient<ProfileViewModel>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

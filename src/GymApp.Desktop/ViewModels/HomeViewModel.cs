@@ -92,10 +92,10 @@ public partial class HomeViewModel : ViewModelBase
 
     [RelayCommand]
     private void Logout() => _session.SignOut();
-
     [RelayCommand]
     private void ShowSplits() => _shell().ShowSplits();
-    
     [RelayCommand]
     private void ShowWorkouts() => _shell().ShowWorkouts();
+    [RelayCommand]
+    private void ShowProfile() => _shell().ShowProfile();
 }

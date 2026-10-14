@@ -879,6 +879,42 @@ namespace GymApp.Data.Migrations
                     b.ToTable("UserDayExercises");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.UserProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly?>("BirthDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("HeightCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Sex")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("StepsPerDay")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Units")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserProfiles");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.UserSchedule", b =>
                 {
                     b.Property<int>("Id")
@@ -907,6 +943,29 @@ namespace GymApp.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("UserSchedules");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.WeightLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("WeightKg")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("WeightLogs");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.WorkoutLog", b =>
@@ -1125,6 +1184,17 @@ namespace GymApp.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.UserProfile", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("GymApp.Data.Models.UserProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.UserSchedule", b =>
                 {
                     b.HasOne("GymApp.Data.Models.WorkoutSplit", "Split")
@@ -1139,6 +1209,17 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Split");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.WeightLog", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
