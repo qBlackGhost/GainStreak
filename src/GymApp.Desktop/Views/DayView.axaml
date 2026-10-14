@@ -119,7 +119,13 @@
                 <!-- ===== Right: add exercises ===== -->
                 <Border Grid.Column="2" Classes="card">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="Add exercises" FontSize="18" FontWeight="SemiBold"/>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="+ New exercise"
+                                    Command="{Binding NewExerciseCommand}" VerticalAlignment="Center"
+                                    ToolTip.Tip="Create or manage your own exercises"/>
+                            <TextBlock Text="Add exercises" FontSize="18" FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                        </DockPanel>
                         <TextBox Watermark="Search exercises" Text="{Binding Search}"/>
 
                         <!-- Muscle group buttons: All + one per group -->

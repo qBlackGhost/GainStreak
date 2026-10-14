@@ -272,5 +272,7 @@ public partial class DayViewModel : ViewModelBase
         await ReloadAsync();
     }
 
+    [RelayCommand] private void NewExercise() => _shell().ShowCustomExercises(_menuDay!, _splitName);
+
     [RelayCommand] private void Back() => _shell().ShowWorkouts();
 }
