@@ -170,6 +170,53 @@
                 </StackPanel>
             </Border>
 
+            <!-- ===== Home city ===== -->
+            <Border Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Home city" FontSize="18" FontWeight="SemiBold"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearHomeCityCommand}"
+                                IsVisible="{Binding HasHomeCity}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding HomeCityText}" TextWrapping="Wrap" VerticalAlignment="Center"
+                                   FontWeight="SemiBold"/>
+                    </DockPanel>
+
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0"
+                                Command="{Binding SearchCityCommand}"/>
+                        <TextBox Watermark="Search for a city, e.g. Timișoara" Text="{Binding CitySearchText}"
+                                 MaxLength="100">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchCityCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                    </DockPanel>
+                    <TextBlock Text="{Binding CitySearchMessage}" Classes="small"
+                               IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <ItemsControl ItemsSource="{Binding CityCandidates}" IsVisible="{Binding HasCityCandidates}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CityCandidateViewModel">
+                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="12" Opacity="0.7"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Choose" Command="{Binding ChooseCommand}"
+                                                VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Classes="small"
+                               Text="The gym picker opens on this city. You can still pick gyms in other cities. City search uses OpenStreetMap (Nominatim)."/>
+                </StackPanel>
+            </Border>
+
             <!-- ===== Weight ===== -->
             <Border Classes="card">
                 <StackPanel Spacing="10">

@@ -47,16 +47,30 @@ public partial class WeightEntryViewModel : ObservableObject
     [RelayCommand] private Task Delete() => _owner.DeleteWeightAsync(this);
 }
 
+/// <summary>One city in the home city search results.</summary>
+public partial class CityCandidateViewModel(CityCandidate candidate, ProfileViewModel owner) : ObservableObject
+{
+    public CityCandidate Candidate { get; } = candidate;
+    public string Name => Candidate.Name;
+    public string DisplayName => Candidate.DisplayName;
+
+    [RelayCommand] private Task Choose() => owner.ChooseHomeCityAsync(this);
+}
+
 public partial class ProfileViewModel : ViewModelBase
 {
     private readonly ProfileService _profiles;
     private readonly CalorieService _calories;
+    private readonly GeocodingService _geocoding;
+    private readonly CityService _cities;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public ProfileViewModel(ProfileService profiles, CalorieService calories, SessionService session, Func<MainViewModel> shell)
+    public ProfileViewModel(ProfileService profiles, CalorieService calories, GeocodingService geocoding,
+        CityService cities, SessionService session, Func<MainViewModel> shell)
     {
-        _profiles = profiles; _calories = calories; _session = session; _shell = shell;
+        _profiles = profiles; _calories = calories; _geocoding = geocoding; _cities = cities;
+        _session = session; _shell = shell;
         _ = ReloadAsync();
     }
 
@@ -71,6 +85,7 @@ public partial class ProfileViewModel : ViewModelBase
     public IReadOnlyList<GoalOption> GoalOptions { get; } =
         Array.ConvertAll(Enum.GetValues<GoalType>(), g => new GoalOption(g));
     public ObservableCollection<CalorieDayRow> CalorieHistory { get; } = new();
+    public ObservableCollection<CityCandidateViewModel> CityCandidates { get; } = new();
 
     // The birth date picker only offers years that pass validation
     public DateTimeOffset MinBirthYear { get; } = new(DateTime.Today.Year - BodyLimits.MaxAge, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -121,6 +136,13 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string CustomGoalInput { get; set; } = "";
     [ObservableProperty] public partial bool HasCalorieHistory { get; set; }
 
+    // ===== Home city =====
+    [ObservableProperty] public partial string HomeCityText { get; set; } = "";
+    [ObservableProperty] public partial bool HasHomeCity { get; set; }
+    [ObservableProperty] public partial string CitySearchText { get; set; } = "";
+    [ObservableProperty] public partial string? CitySearchMessage { get; set; }
+    [ObservableProperty] public partial bool HasCityCandidates { get; set; }
+
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
 
@@ -138,6 +160,7 @@ public partial class ProfileViewModel : ViewModelBase
             StreakText = $"{s.CurrentStreak} day streak · best {s.LongestStreak}";
 
             if (refillForm) FillForm(s.Profile);
+            ApplyHomeCity(s.Profile.HomeCity);
 
             // Weight and history are shown in the saved unit, so they match what the form says after a reload
             var units = s.Profile.Units;
@@ -282,6 +305,67 @@ public partial class ProfileViewModel : ViewModelBase
         Error = null;
         Info = "Weigh-in deleted.";
         await ReloadAsync(refillForm: false);
+    }
+
+    // ===== Home city =====
+
+    private void ApplyHomeCity(City? city)
+    {
+        HasHomeCity = city is not null;
+        HomeCityText = city?.DisplayName ?? "Not set. The gym picker will ask for a city.";
+    }
+
+    // Runs on the Search button or Enter, never per keystroke: Nominatim allows one request per second
+    [RelayCommand]
+    private async Task SearchCityAsync()
+    {
+        Info = null;
+        CitySearchMessage = null;
+        CityCandidates.Clear();
+        HasCityCandidates = false;
+
+        var query = CitySearchText.Trim();
+        var r = await _geocoding.SearchAsync(query);
+        if (!r.Success) { CitySearchMessage = r.Error; return; }
+        if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
+
+        foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, this));
+        HasCityCandidates = true;
+    }
+
+    internal async Task ChooseHomeCityAsync(CityCandidateViewModel item)
+    {
+        Info = null;
+        try
+        {
+            var city = await _cities.UpsertAsync(item.Candidate);
+            var r = await _profiles.SetHomeCityAsync(UserId, city.Id);
+            if (!r.Success) { Error = r.Error; return; }
+            ApplyHomeCity(city);
+        }
+        catch (Exception)
+        {
+            Error = "Could not save your home city.";
+            return;
+        }
+
+        Error = null;
+        CityCandidates.Clear();
+        HasCityCandidates = false;
+        CitySearchText = "";
+        CitySearchMessage = null;
+        Info = $"Home city set to {item.Name}.";
+    }
+
+    [RelayCommand]
+    private async Task ClearHomeCityAsync()
+    {
+        Info = null;
+        var r = await _profiles.SetHomeCityAsync(UserId, null);
+        if (!r.Success) { Error = r.Error; return; }
+        Error = null;
+        ApplyHomeCity(null);
+        Info = "Home city cleared.";
     }
 
     // ===== Calorie goal =====

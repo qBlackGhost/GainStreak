@@ -46,6 +46,56 @@ namespace GymApp.Data.Migrations
                     b.ToTable("CalorieLogs");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.City", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("CenterLatitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("CenterLongitude")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("East")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime?>("GymsFetchedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("North")
+                        .HasColumnType("REAL");
+
+                    b.Property<long>("OsmId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OsmType")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("South")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("West")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OsmType", "OsmId")
+                        .IsUnique();
+
+                    b.ToTable("Cities");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.Exercise", b =>
                 {
                     b.Property<int>("Id")
@@ -474,21 +524,45 @@ namespace GymApp.Data.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
+                    b.Property<int>("CityId")
+                        .HasColumnType("INTEGER");
 
-                    b.Property<double>("Latitude")
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
+                    b.Property<double?>("Latitude")
                         .HasColumnType("REAL");
 
-                    b.Property<double>("Longitude")
+                    b.Property<double?>("Longitude")
                         .HasColumnType("REAL");
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.Property<long?>("OsmId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("OsmType")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("OwnerUserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("CityId");
+
+                    b.HasIndex("OsmType", "OsmId")
+                        .IsUnique()
+                        .HasFilter("\"OsmType\" IS NOT NULL AND \"OsmId\" IS NOT NULL");
+
+                    b.HasIndex("OwnerUserId", "CityId", "Name")
+                        .IsUnique()
+                        .HasFilter("\"OwnerUserId\" IS NOT NULL");
 
                     b.ToTable("Gyms");
                 });
@@ -931,11 +1005,19 @@ namespace GymApp.Data.Migrations
                     b.Property<string>("ActivityLevel")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("AskForGymAfterCheckIn")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
+
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("TEXT");
 
                     b.Property<double?>("HeightCm")
                         .HasColumnType("REAL");
+
+                    b.Property<int?>("HomeCityId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Sex")
                         .HasColumnType("TEXT");
@@ -951,6 +1033,8 @@ namespace GymApp.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("HomeCityId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1120,6 +1204,24 @@ namespace GymApp.Data.Migrations
                     b.Navigation("Owner");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.Gym", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.City", "City")
+                        .WithMany()
+                        .HasForeignKey("CityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("City");
+
+                    b.Navigation("Owner");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.PointsEntry", b =>
                 {
                     b.HasOne("GymApp.Data.Models.User", "User")
@@ -1237,11 +1339,18 @@ namespace GymApp.Data.Migrations
 
             modelBuilder.Entity("GymApp.Data.Models.UserProfile", b =>
                 {
+                    b.HasOne("GymApp.Data.Models.City", "HomeCity")
+                        .WithMany()
+                        .HasForeignKey("HomeCityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("GymApp.Data.Models.User", "User")
                         .WithOne()
                         .HasForeignKey("GymApp.Data.Models.UserProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("HomeCity");
 
                     b.Navigation("User");
                 });
@@ -1280,7 +1389,7 @@ namespace GymApp.Data.Migrations
                     b.HasOne("GymApp.Data.Models.Gym", "Gym")
                         .WithMany()
                         .HasForeignKey("GymId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("GymApp.Data.Models.SplitDay", "SplitDay")
                         .WithMany()

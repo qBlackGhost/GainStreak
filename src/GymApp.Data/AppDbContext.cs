@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
+    public DbSet<City> Cities => Set<City>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -54,8 +55,9 @@ public class AppDbContext : DbContext
         b.Entity<User>().HasOne(u => u.SelectedVariant).WithMany()
             .HasForeignKey(u => u.SelectedVariantId).OnDelete(DeleteBehavior.SetNull);
 
+        // A gym a log points to is deactivated, never deleted; Restrict makes a mistake fail loudly
         b.Entity<WorkoutLog>().HasOne(w => w.Gym).WithMany()
-            .HasForeignKey(w => w.GymId).OnDelete(DeleteBehavior.SetNull);
+            .HasForeignKey(w => w.GymId).OnDelete(DeleteBehavior.Restrict);
         b.Entity<WorkoutLog>().HasOne(w => w.SplitDay).WithMany()
             .HasForeignKey(w => w.SplitDayId).OnDelete(DeleteBehavior.SetNull);
 
@@ -118,6 +120,29 @@ public class AppDbContext : DbContext
         b.Entity<PointsEntry>().HasIndex(p => new { p.UserId, p.Date });
         b.Entity<PointsEntry>().HasOne(p => p.User).WithMany()
             .HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
+
+        // Gym map: cities picked from Nominatim, gyms from Overpass plus users' custom gyms
+        b.Entity<City>().Property(c => c.OsmType).HasConversion<string>();
+        b.Entity<City>().HasIndex(c => new { c.OsmType, c.OsmId }).IsUnique();
+
+        b.Entity<Gym>().Property(g => g.OsmType).HasConversion<string>();
+        b.Entity<Gym>().Property(g => g.Name).UseCollation("NOCASE");
+        // Existing rows get true; the sentinel matches the C# initializer so an explicit false is still saved
+        b.Entity<Gym>().Property(g => g.IsActive).HasDefaultValue(true).HasSentinel(true);
+        // OSM ids are only unique per type; custom gyms have neither, so filter them out
+        b.Entity<Gym>().HasIndex(g => new { g.OsmType, g.OsmId }).IsUnique()
+            .HasFilter("\"OsmType\" IS NOT NULL AND \"OsmId\" IS NOT NULL");
+        // Custom gym names are unique per user within a city, case-insensitive (OSM gyms can share names)
+        b.Entity<Gym>().HasIndex(g => new { g.OwnerUserId, g.CityId, g.Name }).IsUnique()
+            .HasFilter("\"OwnerUserId\" IS NOT NULL");
+        b.Entity<Gym>().HasOne(g => g.City).WithMany()
+            .HasForeignKey(g => g.CityId).OnDelete(DeleteBehavior.Restrict);
+        b.Entity<Gym>().HasOne(g => g.Owner).WithMany()
+            .HasForeignKey(g => g.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<UserProfile>().HasOne(p => p.HomeCity).WithMany()
+            .HasForeignKey(p => p.HomeCityId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<UserProfile>().Property(p => p.AskForGymAfterCheckIn).HasDefaultValue(true).HasSentinel(true);
 
         SeedExercises(b);
         SeedSplits(b);

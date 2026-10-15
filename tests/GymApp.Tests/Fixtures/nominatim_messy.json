@@ -1,0 +1,17 @@
+[
+  { "osm_type": "relation", "osm_id": 1, "lat": "45.75", "lon": "21.22",
+    "name": "", "display_name": "Lugoj, Timiș, România",
+    "boundingbox": ["45.66", "45.73", "21.86", "21.97"] },
+  { "osm_type": "relation", "osm_id": 1, "lat": "45.75", "lon": "21.22",
+    "name": "Lugoj", "display_name": "Lugoj, Timiș, România",
+    "boundingbox": ["45.66", "45.73", "21.86", "21.97"] },
+  { "osm_type": "way", "osm_id": 2, "lat": 46.1, "lon": 21.3,
+    "name": "Arad", "display_name": "Arad, România",
+    "boundingbox": [46.1, 46.2, 21.2, 21.4] },
+  { "osm_type": "planet", "osm_id": 3, "lat": "1", "lon": "1", "name": "Bad type", "boundingbox": ["0","1","0","1"] },
+  { "osm_type": "node", "lat": "1", "lon": "1", "name": "No id", "boundingbox": ["0","1","0","1"] },
+  { "osm_type": "node", "osm_id": 4, "lat": "abc", "lon": "1", "name": "Bad lat", "boundingbox": ["0","1","0","1"] },
+  { "osm_type": "node", "osm_id": 5, "lat": "1", "lon": "1", "name": "Short box", "boundingbox": ["0","1","0"] },
+  { "osm_type": "node", "osm_id": 6, "lat": "1", "lon": "1", "name": "No box" },
+  "not an object"
+]

@@ -48,6 +48,8 @@ public partial class App : Application
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
+        sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
+        sc.AddTransient<CityService>();
         sc.AddTransient<PointsHistoryViewModel>();
         Services = sc.BuildServiceProvider();
 

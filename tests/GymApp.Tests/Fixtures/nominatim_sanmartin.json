@@ -1,0 +1,107 @@
+[
+  {
+    "place_id": 63156002,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "relation",
+    "osm_id": 11318310,
+    "lat": "47.0051671",
+    "lon": "21.9741651",
+    "category": "boundary",
+    "type": "administrative",
+    "place_rank": 16,
+    "importance": 0.45073450619556543,
+    "addresstype": "municipality",
+    "name": "Sânmartin",
+    "display_name": "Sânmartin, Zona Metropolitană Oradea, Bihor, România",
+    "boundingbox": [
+      "46.9245140",
+      "47.0261213",
+      "21.9200231",
+      "22.0505209"
+    ]
+  },
+  {
+    "place_id": 62694429,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "relation",
+    "osm_id": 14879155,
+    "lat": "46.2656811",
+    "lon": "25.9375013",
+    "category": "boundary",
+    "type": "administrative",
+    "place_rank": 16,
+    "importance": 0.4351905570353818,
+    "addresstype": "municipality",
+    "name": "Sânmartin",
+    "display_name": "Sânmartin, Harghita, România",
+    "boundingbox": [
+      "46.2317148",
+      "46.2886218",
+      "25.9114169",
+      "26.0568796"
+    ]
+  },
+  {
+    "place_id": 63372863,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "node",
+    "osm_id": 422877931,
+    "lat": "46.4165305",
+    "lon": "21.3482142",
+    "category": "place",
+    "type": "village",
+    "place_rank": 19,
+    "importance": 0.43106034210224703,
+    "addresstype": "village",
+    "name": "Sânmartin",
+    "display_name": "Sânmartin, Macea, Arad, 317211, România",
+    "boundingbox": [
+      "46.3965305",
+      "46.4365305",
+      "21.3282142",
+      "21.3682142"
+    ]
+  },
+  {
+    "place_id": 62590762,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "relation",
+    "osm_id": 14879060,
+    "lat": "47.0178607",
+    "lon": "24.0714819",
+    "category": "boundary",
+    "type": "administrative",
+    "place_rank": 16,
+    "importance": 0.48847835278521046,
+    "addresstype": "municipality",
+    "name": "Sânmărtin",
+    "display_name": "Sânmărtin, Cluj, România",
+    "boundingbox": [
+      "46.9589428",
+      "47.0761820",
+      "24.0067656",
+      "24.1264256"
+    ]
+  },
+  {
+    "place_id": 63128721,
+    "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+    "osm_type": "node",
+    "osm_id": 460371968,
+    "lat": "46.8994923",
+    "lon": "23.5684101",
+    "category": "place",
+    "type": "village",
+    "place_rank": 19,
+    "importance": 0.44771027162293786,
+    "addresstype": "village",
+    "name": "Sânmărtin",
+    "display_name": "Sânmărtin, Chinteni, Zona Metropolitană Cluj, Cluj, 407520, România",
+    "boundingbox": [
+      "46.8794923",
+      "46.9194923",
+      "23.5484101",
+      "23.5884101"
+    ]
+  }
+]

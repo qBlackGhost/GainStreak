@@ -48,7 +48,8 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
             .FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return null;
 
-        var profile = await db.UserProfiles.AsNoTracking().FirstOrDefaultAsync(p => p.UserId == userId)
+        var profile = await db.UserProfiles.AsNoTracking().Include(p => p.HomeCity)
+                          .FirstOrDefaultAsync(p => p.UserId == userId)
                       ?? new UserProfile { UserId = userId };
 
         var recent = await db.WeightLogs.AsNoTracking()
@@ -91,6 +92,28 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
 
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException) { return new(false, "Could not save your profile."); }
+        return new(true);
+    }
+
+    /// <summary>Sets the home city the gym picker opens with, or clears it (null). Saved straight away,
+    /// separately from the body data form. Creates the profile row if there is none yet.</summary>
+    public async Task<ProfileResult> SetHomeCityAsync(int userId, int? cityId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        if (!await db.Users.AnyAsync(u => u.Id == userId)) return new(false, "User not found.");
+        if (cityId is { } id && !await db.Cities.AnyAsync(c => c.Id == id)) return new(false, "That city is no longer available.");
+
+        var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId };
+            db.UserProfiles.Add(profile);
+        }
+        profile.HomeCityId = cityId;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save your home city."); }
         return new(true);
     }
 
