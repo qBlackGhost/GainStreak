@@ -11,5 +11,5 @@ public class CalorieLog
     public DateOnly Date { get; set; }
     public int CaloriesConsumed { get; set; }
     public int? GoalAtTime { get; set; }              // snapshot, since the goal can change later
-    public GoalType? GoalTypeAtTime { get; set; }     // snapshot too, so "hit the target" can be judged later
+    public GoalType? GoalTypeAtTime { get; set; }     // snapshot too, of what the user was aiming for that day
 }

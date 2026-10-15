@@ -141,4 +141,49 @@ public class StreakCalculatorTests
     [Fact] public void WeekPattern_FromCustomWeekdays() =>
         Assert.Equal("WRWRWRR",
             WeekPattern.From(WeekSchedule.FromWeekdays(new[] { DayOfWeek.Friday, DayOfWeek.Monday, DayOfWeek.Wednesday })));
+
+    // Timeline (Done / Graced / Missed / Pending per training day)
+
+    private static string Timeline(int[] logged, int today, IReadOnlyList<ScheduleChange> schedule, int from = 0, int until = 6) =>
+        string.Join(" ", StreakCalculator.Timeline(logged.Select(D), schedule, D(today), D(from), D(until))
+            .Select(t => $"{t.Date.Day}:{t.Outcome}"));
+
+    [Fact] public void Timeline_AllLogged_IsDone() =>
+        Assert.Equal("5:Done 6:Done 8:Done 9:Done", Timeline([0, 1, 3, 4], 6, UpperLower));
+
+    [Fact] public void Timeline_MissPaidByARestDayWorkout_IsGraced() =>
+        Assert.Equal("5:Done 6:Graced 8:Done 9:Done", Timeline([0, 2, 3, 4], 6, UpperLower));
+
+    [Fact] public void Timeline_ShiftChain_GracesEachShiftedDay() =>
+        // PPL: Tue missed, Wed pays it (its own training shifts), Thu rest pays Wed
+        Assert.Equal("5:Done 6:Graced 7:Graced 9:Done 10:Done 11:Done", Timeline([0, 2, 3, 4, 5, 6], 6, Ppl));
+
+    [Fact] public void Timeline_ChainEndingInAnUnloggedRestDay_IsMissed() =>
+        // PPL: Tue paid by Wed, but Thu (rest) isn't logged, so Wed's shifted training is missed; today Fri pending
+        Assert.Equal("5:Done 6:Graced 7:Missed 9:Pending 10:Pending 11:Pending", Timeline([0, 2], 4, Ppl));
+
+    [Fact] public void Timeline_TwoMissesInARow_AreBothMissed() =>
+        Assert.Equal("5:Done 6:Missed 7:Missed 9:Pending 10:Pending 11:Pending", Timeline([0], 4, Ppl));
+
+    [Fact] public void Timeline_OwedDay_StaysPendingUntilPaid() =>
+        // Upper/Lower: Tue missed, today Wed not logged yet (AtRisk)
+        Assert.Equal("5:Done 6:Pending 8:Pending 9:Pending", Timeline([0], 2, UpperLower));
+
+    [Fact] public void Timeline_ShiftedToday_IsPending() =>
+        // PPL: Tue missed, Wed logged today: Tue is paid, Wed's own training is owed
+        Assert.Equal("5:Done 6:Graced 7:Pending", Timeline([0, 2], 2, Ppl, until: 2));
+
+    [Fact] public void Timeline_DaysBeforeTheFirstWorkout_AreMissed_AndFutureDaysPending() =>
+        Assert.Equal("5:Missed 6:Missed 8:Done 9:Pending", Timeline([3], 3, UpperLower));
+
+    [Fact] public void Timeline_NoLogs_PastDaysMissed() =>
+        Assert.Equal("5:Missed 6:Missed 8:Pending 9:Pending", Timeline([], 3, UpperLower));
+
+    [Fact] public void Timeline_MatchesCalculate()
+    {
+        // the same replay: a broken streak shows a Missed day, a shifted one a Pending day
+        Assert.Equal(StreakStatus.Shifted, Run([0, 2], 2, Ppl).Status);
+        Assert.Contains("Missed", Timeline([0, 2], 4, Ppl));
+        Assert.Equal(1, Run([0, 2, 4], 4, Ppl).Current);
+    }
 }

@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,16 +16,19 @@ public partial class HomeViewModel : ViewModelBase
     private readonly WorkoutService _workouts;
     private readonly StreakService _streaks;
     private readonly CalorieService _calories;
+    private readonly PointsService _points;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
-                         WorkoutService workouts, StreakService streaks, CalorieService calories)
+                         WorkoutService workouts, StreakService streaks, CalorieService calories,
+                         PointsService points)
     {
         _session = session;
         _shell = shell;
         _workouts = workouts;
         _streaks = streaks;
         _calories = calories;
-        _ = RefreshAsync();   // also recalculates the streak, so one that broke overnight shows correctly
+        _points = points;
+        _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
     public string Welcome => $"Welcome, {_session.CurrentUser?.Username}!";
@@ -41,6 +46,12 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string LogCaloriesLabel { get; set; } = "Log";
     [ObservableProperty] public partial string? Error { get; set; }
 
+    [ObservableProperty] public partial string LevelTitle { get; set; } = "";
+    [ObservableProperty] public partial string PointsText { get; set; } = "";
+    [ObservableProperty] public partial double LevelProgress { get; set; }
+    [ObservableProperty] public partial string LevelHint { get; set; } = "";
+    [ObservableProperty] public partial string? PointsNotice { get; set; }
+
     private async Task RefreshAsync()
     {
         if (_session.CurrentUser is not { } user) return;
@@ -48,7 +59,9 @@ public partial class HomeViewModel : ViewModelBase
         {
             var today = await _workouts.GetTodayAsync(user.Id);
             var streak = await _streaks.RecalculateAsync(user.Id);
+            var points = await _points.SyncAsync(user.Id);   // catches a week that ended while the app was closed
             Apply(today, streak);
+            ApplyPoints(points);
             await RefreshCaloriesAsync(user.Id);
         }
         catch (Exception)
@@ -67,8 +80,8 @@ public partial class HomeViewModel : ViewModelBase
         CaloriesHint = (o.Today, g.Goal) switch
         {
             ({ Hit: true }, _) => "Target hit ✓",
-            ({ Hit: false } t2, _) => $"Target missed: aim for {CalorieGoals.TargetRule(t2.GoalType!.Value, t2.Goal!.Value)}.",
-            (_, { } goal) => $"Goal: {CalorieGoals.TargetRule(g.GoalType, goal)}. Log what you ate at the end of the day.",
+            ({ Hit: false } t2, _) => $"Target missed: aim for {CalorieGoals.TargetRule(t2.Goal!.Value)}.",
+            (_, { } goal) => $"Goal: {CalorieGoals.TargetRule(goal)}. Log what you ate at the end of the day.",
             _ => "No calorie goal yet. Set one on your profile."
         };
         GoalReviewHint = g.SuggestionChanged ? "Your suggested goal changed. Review it on your profile." : null;
@@ -90,6 +103,7 @@ public partial class HomeViewModel : ViewModelBase
 
         Error = null;
         CaloriesInput = "";
+        ApplyPoints(r.Points);
         await RefreshCaloriesAsync(user.Id);
     }
 
@@ -133,8 +147,37 @@ public partial class HomeViewModel : ViewModelBase
 
         Error = null;
         Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
+        ApplyPoints(result.Points);
     }
 
+    /// <summary>Updates the level card. A sync that added points shows a short notice (and "Level up" when the
+    /// level rose); a drop only updates the card, without a message.</summary>
+    private void ApplyPoints(PointsSync? sync)
+    {
+        if (sync is null) return;
+        var level = sync.NewLevel;
+
+        LevelTitle = $"Level {level.Number} · {level.Name}";
+        PointsText = $"{N(sync.NewTotal)} points";
+        LevelProgress = level.Progress;
+        LevelHint = level.PointsToNext(sync.NewTotal) is { } left ? $"{N(left)} points to {level.NextName}" : "Max level";
+
+        if (sync.Added.Count > 0)
+        {
+            var parts = sync.Added.GroupBy(a => a.Reason)
+                .Select(g => $"+{N(g.Sum(a => a.Amount))} {PointsCalculator.DisplayName(g.Key)}")
+                .ToList();
+            if (sync.LeveledUp) parts.Add($"Level up: {level.Name}");
+            PointsNotice = string.Join(" · ", parts);
+        }
+
+        if (_session.CurrentUser is { } u) u.Points = sync.NewTotal;   // keep the in-memory session user in sync
+    }
+
+    private static string N(int n) => n.ToString("N0", CultureInfo.InvariantCulture);
+
+    [RelayCommand]
+    private void ShowPointsHistory() => _shell().ShowPointsHistory();
     [RelayCommand]
     private void Logout() => _session.SignOut();
     [RelayCommand]

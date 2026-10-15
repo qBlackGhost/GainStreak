@@ -11,9 +11,9 @@ namespace GymApp.Services;
 /// <summary>What Home shows for today. Title is empty when the user has no split.</summary>
 public record TodayInfo(DateOnly Date, bool HasSplit, bool IsTraining, string Title, bool Logged);
 
-public record LogResult(bool Success, string? Error = null, StreakResult? Streak = null);
+public record LogResult(bool Success, string? Error = null, StreakResult? Streak = null, PointsSync? Points = null);
 
-public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakService streaks)
+public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakService streaks, PointsService points)
 {
     private record Plan(TodayWorkout Workout, SplitDay? Day);
 
@@ -57,7 +57,8 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
             }
         }
 
-        return new LogResult(true, Streak: await streaks.RecalculateAsync(userId));
+        var streak = await streaks.RecalculateAsync(userId);
+        return new LogResult(true, Streak: streak, Points: await points.SyncAsync(userId));
     }
 
     private static async Task<Plan?> PlanAsync(AppDbContext db, int userId, DateOnly date)

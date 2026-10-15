@@ -33,6 +33,7 @@ public partial class MainViewModel : ViewModelBase
     public void ShowSplits() => Current = _sp.GetRequiredService<SplitsViewModel>();
     public void ShowWorkouts() => Current = _sp.GetRequiredService<WorkoutsViewModel>();
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
+    public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
 
     public void ShowDay(MenuDay day, string splitName)
     {

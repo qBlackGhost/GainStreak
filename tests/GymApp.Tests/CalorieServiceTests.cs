@@ -14,7 +14,7 @@ public class CalorieServiceTests : IDisposable
 
     public CalorieServiceTests()
     {
-        _svc = new CalorieService(_db);
+        _svc = new CalorieService(_db, new PointsService(_db));
         _profiles = new ProfileService(_db);
         _alice = _db.AddUser("alice");
     }

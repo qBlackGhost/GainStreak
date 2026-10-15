@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -34,6 +35,7 @@ public partial class App : Application
         sc.AddTransient<SplitEditorViewModel>();
         sc.AddTransient<SplitDetailViewModel>();
         sc.AddTransient<StreakService>();
+        sc.AddTransient<PointsService>();
         sc.AddTransient<WorkoutService>();
         sc.AddTransient<ExerciseService>();
         sc.AddTransient<DayExerciseService>();
@@ -46,10 +48,16 @@ public partial class App : Application
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
+        sc.AddTransient<PointsHistoryViewModel>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
             db.Database.Migrate();
+
+        // One-time points rebuild for users from before the ledger existed. Off the UI thread so the
+        // async EF calls can't deadlock on the dispatcher.
+        var pointsService = Services.GetRequiredService<PointsService>();
+        Task.Run(() => pointsService.BackfillAllAsync()).GetAwaiter().GetResult();
         
         Services.GetRequiredService<RememberMeService>().TryRestore();
 

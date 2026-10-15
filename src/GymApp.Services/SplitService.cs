@@ -12,7 +12,7 @@ namespace GymApp.Services;
 public record DayInput(DayOfWeek Weekday, string Name);
 public record SplitResult(bool Success, string? Error = null);
 
-public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
+public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsService points)
 {
     public const int MaxCustomSplits = 5;
 
@@ -91,8 +91,11 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
 
         // Editing the active split changes the user's week from today on (past days keep their old schedule)
         if (await db.Users.AnyAsync(u => u.Id == userId && u.SelectedSplitId == splitId))
+        {
             await UpsertScheduleAsync(db, userId, splitId,
                 WeekPattern.From(WeekSchedule.FromWeekdays(wanted.Select(w => w.Weekday))));
+            await points.SyncAsync(userId);   // the new week can complete (or no longer complete) this week's bonus
+        }
 
         return new(true);
     }
@@ -142,6 +145,7 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory)
                 .SetProperty(x => x.SplitStartDay, startDay));
 
         await UpsertScheduleAsync(db, userId, splitId, weekPattern);
+        await points.SyncAsync(userId);
         return true;
     }
 

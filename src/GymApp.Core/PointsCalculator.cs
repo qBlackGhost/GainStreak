@@ -8,8 +8,8 @@ public enum PointsReason { Workout, WeekComplete, WeekCompleteGrace, CalorieTarg
 /// <summary>One ledger entry. <see cref="DedupKey"/> is unique per user, so a day or week can only earn once.</summary>
 public record PointsAward(PointsReason Reason, int Amount, DateOnly Date, string DedupKey);
 
-/// <summary>A calorie log with the goal and goal type that were in force when it was saved.</summary>
-public record CalorieDay(DateOnly Date, int Consumed, int? Goal, GoalType? GoalType);
+/// <summary>A calorie log with the goal that was in force when it was saved.</summary>
+public record CalorieRecord(DateOnly Date, int Consumed, int? Goal);
 
 /// <summary>Points rules. Points come only from "I went today" logs, full weeks and calorie targets,
 /// never from sets or PRs.</summary>
@@ -20,8 +20,15 @@ public static class PointsCalculator
     public const int WeekCompleteGracePoints = 25;
     public const int CalorieTargetPoints = 10;
 
-    /// <summary>A calorie log only counts when it is at least this share of the goal, so logging 0 kcal never hits.</summary>
-    public const double CalorieMinimumShare = 0.5;
+    /// <summary>The name the UI shows for a reason, e.g. "Week complete (grace)" for the 25-point bonus.</summary>
+    public static string DisplayName(PointsReason reason) => reason switch
+    {
+        PointsReason.Workout => "Workout",
+        PointsReason.WeekComplete => "Week complete",
+        PointsReason.WeekCompleteGrace => "Week complete (grace)",
+        PointsReason.CalorieTarget => "Calorie target",
+        _ => reason.ToString()
+    };
 
     /// <summary>
     /// The entries that should exist from <paramref name="windowStart"/> to <paramref name="today"/>.
@@ -32,8 +39,8 @@ public static class PointsCalculator
     ///    All training days Done: +50, dated the last training day, even before Sunday.
     ///    All Done or Graced with at least one Graced: +25, dated Sunday, only once the week has ended.
     ///    Anything Missed or still Pending: nothing (yet). Both bonuses share one key, so a week earns one of them.
-    ///  - +10 for each calorie log that hits its target (see <see cref="CalorieGoals.HitTarget"/>) and is at least
-    ///    half the goal. The goal and goal type are the ones saved with the log.
+    ///  - +10 for each calorie log within the leeway of its goal (see <see cref="CalorieGoals.HitTarget"/>).
+    ///    The goal is the one saved with the log.
     /// </summary>
     /// <param name="timeline">From <see cref="StreakCalculator.Timeline"/>, covering at least every day of every
     /// week in the window, including the rest of the current week.</param>
@@ -42,7 +49,7 @@ public static class PointsCalculator
         IEnumerable<DateOnly> workoutDates,
         IReadOnlyList<TrainingDayOutcome> timeline,
         DateOnly? scheduleStart,
-        IEnumerable<CalorieDay> calories,
+        IEnumerable<CalorieRecord> calories,
         DateOnly today,
         DateOnly windowStart)
     {
@@ -63,10 +70,8 @@ public static class PointsCalculator
         return awards;
     }
 
-    public static bool HitsTarget(CalorieDay c) =>
-        c is { Goal: { } goal and > 0, GoalType: { } type }
-        && c.Consumed >= goal * CalorieMinimumShare
-        && CalorieGoals.HitTarget(type, goal, c.Consumed);
+    public static bool HitsTarget(CalorieRecord c) =>
+        c.Goal is { } goal and > 0 && CalorieGoals.HitTarget(goal, c.Consumed);
 
     private static PointsAward? Week(DateOnly monday, IReadOnlyList<TrainingDayOutcome> timeline, DateOnly? scheduleStart, DateOnly today)
     {

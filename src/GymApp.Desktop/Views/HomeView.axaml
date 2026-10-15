@@ -21,6 +21,21 @@
 
         <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
             <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Level" Opacity="0.7" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="History" Command="{Binding ShowPointsHistoryCommand}"/>
+                </Grid>
+                <TextBlock Text="{Binding LevelTitle}" FontSize="22" FontWeight="SemiBold"/>
+                <TextBlock Text="{Binding PointsText}" Opacity="0.8"/>
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding LevelProgress}" Height="8"/>
+                <TextBlock Text="{Binding LevelHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding PointsNotice}" Foreground="SeaGreen" FontWeight="SemiBold" TextWrapping="Wrap"
+                           IsVisible="{Binding PointsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+        </Border>
+
+        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
+            <StackPanel Spacing="6">
                 <TextBlock Text="Streak" Opacity="0.7"/>
                 <TextBlock Text="{Binding StreakText}" FontSize="22" FontWeight="SemiBold"/>
                 <TextBlock Text="{Binding StreakNote}" Opacity="0.8" TextWrapping="Wrap"/>

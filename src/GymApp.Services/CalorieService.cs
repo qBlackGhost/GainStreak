@@ -25,9 +25,9 @@ public record CalorieDay(int Id, DateOnly Date, int Consumed, int? Goal, GoalTyp
 
 public record CalorieOverview(CalorieGoalInfo Goal, CalorieDay? Today, IReadOnlyList<CalorieDay> Recent);
 
-public record CalorieResult(bool Success, string? Error = null);
+public record CalorieResult(bool Success, string? Error = null, PointsSync? Points = null);
 
-public class CalorieService(IDbContextFactory<AppDbContext> dbFactory)
+public class CalorieService(IDbContextFactory<AppDbContext> dbFactory, PointsService points)
 {
     public const int RecentDayCount = 7;
 
@@ -122,23 +122,25 @@ public class CalorieService(IDbContextFactory<AppDbContext> dbFactory)
         var day = today ?? Today;
         if (CalorieGoals.CheckConsumed(consumed) is { } error) return new(false, error);
 
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-        if (user is null) return new(false, "User not found.");
-
-        var entry = await db.CalorieLogs.FirstOrDefaultAsync(c => c.UserId == userId && c.Date == day);
-        if (entry is null)
+        await using (var db = await dbFactory.CreateDbContextAsync())
         {
-            entry = new CalorieLog { UserId = userId, Date = day };
-            db.CalorieLogs.Add(entry);
-        }
-        entry.CaloriesConsumed = consumed;
-        entry.GoalAtTime = user.DailyCalorieGoal;
-        entry.GoalTypeAtTime = user.DailyCalorieGoal is null ? null : user.GoalType;
+            var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            if (user is null) return new(false, "User not found.");
 
-        try { await db.SaveChangesAsync(); }
-        catch (DbUpdateException) { return new(false, "Could not save your calories."); }
-        return new(true);
+            var entry = await db.CalorieLogs.FirstOrDefaultAsync(c => c.UserId == userId && c.Date == day);
+            if (entry is null)
+            {
+                entry = new CalorieLog { UserId = userId, Date = day };
+                db.CalorieLogs.Add(entry);
+            }
+            entry.CaloriesConsumed = consumed;
+            entry.GoalAtTime = user.DailyCalorieGoal;
+            entry.GoalTypeAtTime = user.DailyCalorieGoal is null ? null : user.GoalType;
+
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateException) { return new(false, "Could not save your calories."); }
+        }
+        return new(true, Points: await points.SyncAsync(userId, day));
     }
 
     private static async Task<CalorieGoalInfo> GoalInfoAsync(AppDbContext db, User user, DateOnly today)
@@ -164,5 +166,5 @@ public class CalorieService(IDbContextFactory<AppDbContext> dbFactory)
 
     private static CalorieDay ToDay(CalorieLog c) =>
         new(c.Id, c.Date, c.CaloriesConsumed, c.GoalAtTime, c.GoalTypeAtTime,
-            c.GoalAtTime is { } g && c.GoalTypeAtTime is { } t ? CalorieGoals.HitTarget(t, g, c.CaloriesConsumed) : null);
+            c.GoalAtTime is { } g ? CalorieGoals.HitTarget(g, c.CaloriesConsumed) : null);
 }

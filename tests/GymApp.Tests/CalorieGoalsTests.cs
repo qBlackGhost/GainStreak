@@ -53,25 +53,33 @@ public class CalorieGoalsTests
         Assert.Equal(ok, CalorieGoals.CheckGoal(kcal, sex, maintenance) is null);
 
     [Theory]
-    [InlineData(GoalType.Lose, 2000, 2000, true)]
-    [InlineData(GoalType.Lose, 2000, 2001, false)]
-    [InlineData(GoalType.Gain, 3000, 3000, true)]
-    [InlineData(GoalType.Gain, 3000, 2999, false)]
-    [InlineData(GoalType.Maintain, 2000, 2150, true)]
-    [InlineData(GoalType.Maintain, 2000, 2151, false)]
-    [InlineData(GoalType.Maintain, 2000, 1850, true)]
-    [InlineData(GoalType.Maintain, 2000, 1849, false)]
-    public void HitTarget(GoalType goal, int target, int consumed, bool hit) =>
-        Assert.Equal(hit, CalorieGoals.HitTarget(goal, target, consumed));
+    [InlineData(1800, 270)]    // 15 percent
+    [InlineData(2000, 300)]
+    [InlineData(3000, 300)]    // capped at 300
+    [InlineData(1333, 200)]
+    [InlineData(1200, 200)]    // never under 200
+    public void Leeway(int target, int leeway) =>
+        Assert.Equal(leeway, CalorieGoals.Leeway(target));
 
-    [Fact] public void MaintainRange_MatchesHitTarget() =>
-        Assert.Equal((1850, 2150), CalorieGoals.MaintainRange(2000));
+    [Theory]
+    [InlineData(1800, 1530, true)]
+    [InlineData(1800, 1529, false)]
+    [InlineData(1800, 2070, true)]
+    [InlineData(1800, 2071, false)]
+    [InlineData(1800, 1800, true)]
+    [InlineData(2000, 1700, true)]
+    [InlineData(2000, 1699, false)]
+    [InlineData(2000, 2300, true)]
+    [InlineData(2000, 2301, false)]
+    [InlineData(1800, 0, false)]       // eating far under the goal is not a hit
+    public void HitTarget(int target, int consumed, bool hit) =>
+        Assert.Equal(hit, CalorieGoals.HitTarget(target, consumed));
 
-    [Fact] public void TargetRule_Text()
-    {
-        Assert.Equal("at or under 2,260 kcal", CalorieGoals.TargetRule(GoalType.Lose, 2260));
-        Assert.Equal("between 1,850 and 2,150 kcal", CalorieGoals.TargetRule(GoalType.Maintain, 2000));
-    }
+    [Fact] public void TargetRange_MatchesHitTarget() =>
+        Assert.Equal((1530, 2070), CalorieGoals.TargetRange(1800));
+
+    [Fact] public void TargetRule_Text() =>
+        Assert.Equal("between 1,530 and 2,070 kcal", CalorieGoals.TargetRule(1800));
 
     [Theory]
     [InlineData(-1, false)]

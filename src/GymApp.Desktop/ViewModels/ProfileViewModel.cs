@@ -299,7 +299,7 @@ public partial class ProfileViewModel : ViewModelBase
         _applyingGoal = false;
 
         GoalText = g.Goal is { } goal ? $"{CalorieGoals.K(goal)} kcal / day" : "No goal set yet";
-        GoalRule = g.Goal is { } target ? $"A day counts as hit when you eat {CalorieGoals.TargetRule(g.GoalType, target)}." : "";
+        GoalRule = g.Goal is { } target ? $"A day counts as hit when you eat {CalorieGoals.TargetRule(target)}." : "";
 
         if (g.Suggestion is { } s)
         {

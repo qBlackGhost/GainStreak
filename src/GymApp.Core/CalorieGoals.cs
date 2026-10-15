@@ -8,7 +8,7 @@ public enum GoalType { Lose, Maintain, Gain }
 /// <summary>A suggested daily goal. <see cref="Note"/> says when a safety limit changed the number.</summary>
 public record CalorieSuggestion(int Kcal, int Maintenance, string? Note = null);
 
-/// <summary>Suggested calorie goals, safety limits, and what "hit the target" means per goal.</summary>
+/// <summary>Suggested calorie goals, safety limits, and what "hit the target" means.</summary>
 public static class CalorieGoals
 {
     // Lose: about 500 kcal under maintenance, kept between 15 and 20 percent of it
@@ -29,8 +29,10 @@ public static class CalorieGoals
     public const int MaxGoal = 6000;
     public const int MaxConsumed = 15000;
 
-    /// <summary>Maintain counts as hit within this share of the goal, either way.</summary>
-    public const double MaintainTolerance = 0.075;
+    // A day counts as hit within the leeway of the goal, either way: 15 percent of it, kept between 200 and 300 kcal
+    public const double LeewayShare = 0.15;
+    public const int MinLeeway = 200;
+    public const int MaxLeeway = 300;
 
     /// <summary>Whole kcal with thousands separators, e.g. 2,260.</summary>
     public static string K(int kcal) => kcal.ToString("N0", CultureInfo.InvariantCulture);
@@ -103,29 +105,25 @@ public static class CalorieGoals
     public static string? CheckConsumed(int kcal) =>
         kcal is < 0 or > MaxConsumed ? $"Calories must be between 0 and {K(MaxConsumed)}." : null;
 
-    /// <summary>Lose: at or under the goal. Gain: at or over. Maintain: within the tolerance either way.</summary>
-    public static bool HitTarget(GoalType goal, int target, int consumed) => goal switch
-    {
-        GoalType.Lose => consumed <= target,
-        GoalType.Gain => consumed >= target,
-        GoalType.Maintain => Math.Abs(consumed - target) <= target * MaintainTolerance,
-        _ => false
-    };
+    /// <summary>How far from the goal still counts, in whole kcal: e.g. 270 for 1,800, 300 for 2,000 or more.</summary>
+    public static int Leeway(int target) =>
+        Math.Clamp((int)Math.Round(target * LeewayShare, MidpointRounding.AwayFromZero), MinLeeway, MaxLeeway);
 
-    /// <summary>The window that counts as a hit for maintain, rounded inwards to whole kcal.</summary>
-    public static (int Low, int High) MaintainRange(int target) =>
-        ((int)Math.Ceiling(target * (1 - MaintainTolerance)), (int)Math.Floor(target * (1 + MaintainTolerance)));
+    /// <summary>The window that counts as hit, the same for every goal type, e.g. 1,530 to 2,070 for 1,800.</summary>
+    public static (int Low, int High) TargetRange(int target) =>
+        (target - Leeway(target), target + Leeway(target));
 
-    /// <summary>One line for the UI, e.g. "at or under 2,260 kcal".</summary>
-    public static string TargetRule(GoalType goal, int target)
+    /// <summary>Hit means inside <see cref="TargetRange"/>, so eating far under a lose goal doesn't count either.</summary>
+    public static bool HitTarget(int target, int consumed)
     {
-        var (lo, hi) = MaintainRange(target);
-        return goal switch
-        {
-            GoalType.Lose => $"at or under {K(target)} kcal",
-            GoalType.Gain => $"at or over {K(target)} kcal",
-            GoalType.Maintain => $"between {K(lo)} and {K(hi)} kcal",
-            _ => ""
-        };
+        var (lo, hi) = TargetRange(target);
+        return consumed >= lo && consumed <= hi;
+    }
+
+    /// <summary>One line for the UI, e.g. "between 1,530 and 2,070 kcal".</summary>
+    public static string TargetRule(int target)
+    {
+        var (lo, hi) = TargetRange(target);
+        return $"between {K(lo)} and {K(hi)} kcal";
     }
 }
