@@ -493,6 +493,40 @@ namespace GymApp.Data.Migrations
                     b.ToTable("Gyms");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.PointsEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DedupKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.HasIndex("UserId", "DedupKey")
+                        .IsUnique();
+
+                    b.ToTable("PointsEntries");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.PrAdjustment", b =>
                 {
                     b.Property<int>("Id")
@@ -816,6 +850,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int>("Points")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("PointsBackfilled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("RememberTokenHash")
                         .HasColumnType("TEXT");
 
@@ -986,9 +1023,6 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("GymId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("PointsAwarded")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int?>("SplitDayId")
                         .HasColumnType("INTEGER");
 
@@ -1084,6 +1118,17 @@ namespace GymApp.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.PointsEntry", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.PrAdjustment", b =>

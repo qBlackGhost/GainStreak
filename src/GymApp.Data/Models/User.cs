@@ -19,7 +19,8 @@ public class User
     public DayOfWeek? SplitStartDay { get; set; }   // null = Monday; only used for presets
     public string? SelectedCity { get; set; }
 
-    public int Points { get; set; }                   // level is derived from this
+    public int Points { get; set; }                   // cached sum of PointsEntries; level is derived from this
+    public bool PointsBackfilled { get; set; }        // the one-time full points rebuild has run
     public int CurrentStreak { get; set; }
     public int LongestStreak { get; set; }
 

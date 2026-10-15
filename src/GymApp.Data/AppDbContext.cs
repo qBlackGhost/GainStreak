@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
     public DbSet<PrAdjustment> PrAdjustments => Set<PrAdjustment>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
+    public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -109,6 +110,14 @@ public class AppDbContext : DbContext
         b.Entity<WeightLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
         b.Entity<WeightLog>().HasOne(w => w.User).WithMany()
             .HasForeignKey(w => w.UserId).OnDelete(DeleteBehavior.Cascade);
+
+        // Points ledger: the unique key stops a day or week from being paid twice, even if the sync has a bug
+        b.Entity<PointsEntry>().Property(p => p.Reason).HasConversion<string>();
+        b.Entity<PointsEntry>().Property(p => p.DedupKey).HasMaxLength(40);
+        b.Entity<PointsEntry>().HasIndex(p => new { p.UserId, p.DedupKey }).IsUnique();
+        b.Entity<PointsEntry>().HasIndex(p => new { p.UserId, p.Date });
+        b.Entity<PointsEntry>().HasOne(p => p.User).WithMany()
+            .HasForeignKey(p => p.UserId).OnDelete(DeleteBehavior.Cascade);
 
         SeedExercises(b);
         SeedSplits(b);

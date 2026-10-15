@@ -12,5 +12,4 @@ public class WorkoutLog
     public SplitDay? SplitDay { get; set; }
     public int? GymId { get; set; }
     public Gym? Gym { get; set; }
-    public int PointsAwarded { get; set; }
 }

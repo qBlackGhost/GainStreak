@@ -109,8 +109,9 @@ public partial class HomeViewModel : ViewModelBase
             StreakStatus.NotStarted => "Log your first workout to start a streak.",
             StreakStatus.Active => "Streak alive, nice.",
             StreakStatus.PendingToday => "Log today's workout to keep your streak.",
-            StreakStatus.AtRisk => "Work out today to save your streak.",
-            StreakStatus.Broken => "Streak broken. Your next workout starts a new one.",
+            StreakStatus.AtRisk => "Work out today to keep your streak",
+            StreakStatus.Shifted => "You're one day behind, so train tomorrow (or on your next rest day)",
+            StreakStatus.Broken => "Streak broken. Log today's workout to start a new one.",
             _ => ""
         };
 
