@@ -554,9 +554,7 @@ namespace GymApp.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CityId");
-
-                    b.HasIndex("OsmType", "OsmId")
+                    b.HasIndex("CityId", "OsmType", "OsmId")
                         .IsUnique()
                         .HasFilter("\"OsmType\" IS NOT NULL AND \"OsmId\" IS NOT NULL");
 

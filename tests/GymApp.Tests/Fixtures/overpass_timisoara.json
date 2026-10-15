@@ -1,0 +1,228 @@
+{
+ "version": 0.6,
+ "generator": "Overpass API 0.7.62.11 87bfad18",
+ "elements": [
+  {
+   "type": "node",
+   "id": 4179532756,
+   "lat": 45.7325049,
+   "lon": 21.2617934,
+   "tags": {
+    "addr:housenumber": "11",
+    "addr:street": "Calea Buziașului",
+    "leisure": "fitness_centre",
+    "name": "Smartfit Studio 2"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4371190992,
+   "lat": 45.7450624,
+   "lon": 21.2289385,
+   "tags": {
+    "addr:street": "Strada Traian Lalescu",
+    "leisure": "fitness_centre",
+    "name": "Fit Force One Gym"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4578303549,
+   "lat": 45.7286673,
+   "lon": 21.2353947,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Extreme Fitness"
+   }
+  },
+  {
+   "type": "node",
+   "id": 4734478338,
+   "lat": 45.7488831,
+   "lon": 21.2396212,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Gym One 3"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5224923392,
+   "lat": 45.7687945,
+   "lon": 21.2345211,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Gym One"
+   }
+  },
+  {
+   "type": "node",
+   "id": 5690958842,
+   "lat": 45.7687644,
+   "lon": 21.2190605,
+   "tags": {
+    "addr:housenumber": "97",
+    "addr:street": "Bulevardul Cetății",
+    "leisure": "fitness_centre",
+    "name": "Smartfit Studio"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6529801465,
+   "lat": 45.73283,
+   "lon": 21.2117612,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Iguana"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6637001995,
+   "lat": 45.7658704,
+   "lon": 21.2272598,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "World Class"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6703100298,
+   "lat": 45.774775,
+   "lon": 21.2130439,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "World Class"
+   }
+  },
+  {
+   "type": "node",
+   "id": 6705087878,
+   "lat": 45.7547674,
+   "lon": 21.2321619,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Continental Fitness Spa"
+   }
+  },
+  {
+   "type": "node",
+   "id": 7205756121,
+   "lat": 45.7571605,
+   "lon": 21.2180992,
+   "tags": {
+    "addr:housenumber": "8-10",
+    "addr:street": "Calea Circumvalațiunii",
+    "leisure": "fitness_centre",
+    "name": "Gym One 5"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10687727237,
+   "lat": 45.7871086,
+   "lon": 21.2361608,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "World Class"
+   }
+  },
+  {
+   "type": "node",
+   "id": 10801059118,
+   "lat": 45.7785539,
+   "lon": 21.2429006,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Gym One 6"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11383257541,
+   "lat": 45.7204144,
+   "lon": 21.2993836,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Stay Fit Gym"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11449154508,
+   "lat": 45.7594095,
+   "lon": 21.2434497,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "World Class"
+   }
+  },
+  {
+   "type": "node",
+   "id": 11881818750,
+   "lat": 45.795769,
+   "lon": 21.2430039,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Play Sports Club"
+   }
+  },
+  {
+   "type": "node",
+   "id": 12328803373,
+   "lat": 45.7298173,
+   "lon": 21.2201464,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Fitness Planet"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13321949057,
+   "lat": 45.7125831,
+   "lon": 21.2747583,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "YogaShala Shangri La"
+   }
+  },
+  {
+   "type": "node",
+   "id": 13825752338,
+   "lat": 45.7377609,
+   "lon": 21.2360117,
+   "tags": {
+    "leisure": "fitness_centre",
+    "name": "Befit"
+   }
+  },
+  {
+   "type": "way",
+   "id": 109687449,
+   "center": {
+    "lat": 45.7593991,
+    "lon": 21.2405377
+   },
+   "tags": {
+    "building": "yes",
+    "leisure": "fitness_centre",
+    "name": "Clubul Sportiv Timpolis"
+   }
+  },
+  {
+   "type": "way",
+   "id": 229395714,
+   "center": {
+    "lat": 45.7801626,
+    "lon": 21.2219352
+   },
+   "tags": {
+    "building": "yes",
+    "leisure": "fitness_centre"
+   }
+  }
+ ]
+}

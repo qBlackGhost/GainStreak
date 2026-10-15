@@ -66,6 +66,21 @@ public class GymMapSchemaTests : IDisposable
         Assert.Throws<DbUpdateException>(() => dup.SaveChanges());
     }
 
+    [Fact] public void SameOsmGym_IsAllowedOncePerCity()
+    {
+        using (var db = _db.CreateDbContext())
+        {
+            var other = new City { OsmType = OsmElementType.Relation, OsmId = 2, Name = "Dumbrăvița", DisplayName = "Dumbrăvița" };
+            db.Cities.Add(other);
+            db.SaveChanges();
+            db.Gyms.AddRange(Osm(7), new Gym { OsmType = OsmElementType.Node, OsmId = 7, CityId = other.Id, Name = "Gym" });
+            db.SaveChanges();
+        }
+        using var dup = _db.CreateDbContext();
+        dup.Gyms.Add(Osm(7));
+        Assert.Throws<DbUpdateException>(() => dup.SaveChanges());
+    }
+
     [Fact] public void CustomGymNames_AreUniquePerUserAndCity_IgnoringCase_OsmGymsMayRepeat()
     {
         var bob = _db.AddUser("bob");

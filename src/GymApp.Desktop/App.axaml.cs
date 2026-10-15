@@ -50,6 +50,7 @@ public partial class App : Application
         sc.AddTransient<ProfileViewModel>();
         sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
         sc.AddTransient<CityService>();
+        sc.AddSingleton(sp => new GymFetchService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
         sc.AddTransient<PointsHistoryViewModel>();
         Services = sc.BuildServiceProvider();
 

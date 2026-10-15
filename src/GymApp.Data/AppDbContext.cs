@@ -129,8 +129,9 @@ public class AppDbContext : DbContext
         b.Entity<Gym>().Property(g => g.Name).UseCollation("NOCASE");
         // Existing rows get true; the sentinel matches the C# initializer so an explicit false is still saved
         b.Entity<Gym>().Property(g => g.IsActive).HasDefaultValue(true).HasSentinel(true);
-        // OSM ids are only unique per type; custom gyms have neither, so filter them out
-        b.Entity<Gym>().HasIndex(g => new { g.OsmType, g.OsmId }).IsUnique()
+        // One row per OSM gym per city: city boxes overlap (Dumbrăvița lies inside Timișoara's), and each city
+        // must list every gym in its box. OSM ids are only unique per type; custom gyms have neither, so filter them out
+        b.Entity<Gym>().HasIndex(g => new { g.CityId, g.OsmType, g.OsmId }).IsUnique()
             .HasFilter("\"OsmType\" IS NOT NULL AND \"OsmId\" IS NOT NULL");
         // Custom gym names are unique per user within a city, case-insensitive (OSM gyms can share names)
         b.Entity<Gym>().HasIndex(g => new { g.OwnerUserId, g.CityId, g.Name }).IsUnique()

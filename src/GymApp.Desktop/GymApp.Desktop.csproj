@@ -10,6 +10,12 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <!-- macOS: use Network.framework for HTTPS, which supports TLS 1.3. The default (SecureTransport) stops at
+       TLS 1.2, and overpass-api.de (gym fetch) only accepts TLS 1.3. No effect on Windows or Linux. -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.Security.UseNetworkFramework" Value="true" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.3" />
     <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />

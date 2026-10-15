@@ -3,7 +3,7 @@ using GymApp.Core;
 namespace GymApp.Data.Models;
 
 /// <summary>A gym from OpenStreetMap (shared, OwnerUserId null) or a user's custom gym (no OSM id, no coordinates).
-/// Gyms that a WorkoutLog points to are never deleted, only deactivated.</summary>
+/// An OSM gym has one row per city whose box contains it. Gyms that a WorkoutLog points to are never deleted, only deactivated.</summary>
 public class Gym
 {
     public int Id { get; set; }
