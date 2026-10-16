@@ -170,10 +170,11 @@
                 </StackPanel>
             </Border>
 
-            <!-- ===== Home city ===== -->
+            <!-- ===== Gym: home city and check-in prompt ===== -->
             <Border Classes="card">
                 <StackPanel Spacing="10">
-                    <TextBlock Text="Home city" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="Gym" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="Home city" Opacity="0.7"/>
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearHomeCityCommand}"
                                 IsVisible="{Binding HasHomeCity}" VerticalAlignment="Center"/>
@@ -211,6 +212,11 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+
+                    <ToggleSwitch IsChecked="{Binding AskForGym}" OnContent="" OffContent=""
+                                  Content="Ask which gym after check-in"/>
+                    <Button Content="Gyms visited per month" Command="{Binding ShowGymSummaryCommand}"
+                            HorizontalAlignment="Left"/>
 
                     <TextBlock Classes="small"
                                Text="The gym picker opens on this city. You can still pick gyms in other cities. City search uses OpenStreetMap (Nominatim)."/>

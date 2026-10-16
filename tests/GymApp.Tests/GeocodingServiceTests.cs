@@ -52,7 +52,7 @@ public class GeocodingServiceTests
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.TooManyRequests, "Too many searches")]
+    [InlineData(HttpStatusCode.TooManyRequests, "Too many requests")]
     [InlineData(HttpStatusCode.ServiceUnavailable, "HTTP 503")]
     public async Task HttpErrors_ComeBackAsAResult(HttpStatusCode status, string expected)
     {
@@ -110,5 +110,75 @@ public class GeocodingServiceTests
         var times = h.SentAt.Order().ToList();
         for (var i = 1; i < times.Count; i++)
             Assert.True(times[i] - times[i - 1] >= TimeSpan.FromMilliseconds(280), $"gap {i}: {times[i] - times[i - 1]}");
+    }
+
+    // ===== Address search and reverse lookup =====
+
+    private static GymApp.Data.Models.City Timisoara() => new()
+    {
+        Name = "Timișoara", South = 45.6838246, West = 21.1116821, North = 45.8341735, East = 21.3272446
+    };
+
+    [Fact] public async Task AddressSearch_IsBoundedToTheCitysBox()
+    {
+        var h = FakeHttpHandler.Json(Fixtures.Read("nominatim_address_calea_aradului.json"));
+        var r = await Svc(h).SearchAddressAsync(" Calea Aradului 1 ", Timisoara());
+
+        Assert.True(r.Success);
+        Assert.Equal("Calea Aradului 1, Circumvalațiunii", Assert.Single(r.Candidates).Text);
+        var url = Uri.UnescapeDataString(Assert.Single(h.Requests).RequestUri!.AbsoluteUri);
+        Assert.Contains("q=Calea Aradului 1&", url);
+        Assert.Contains("viewbox=21.1116821,45.8341735,21.3272446,45.6838246", url);   // left,top,right,bottom
+        Assert.Contains("bounded=1", url);
+        Assert.Contains("addressdetails=1", url);
+    }
+
+    [Fact] public async Task AddressSearch_EmptyQuery_FailsWithoutARequest()
+    {
+        var h = FakeHttpHandler.Json("[]");
+        Assert.False((await Svc(h).SearchAddressAsync("  ", Timisoara())).Success);
+        Assert.Empty(h.Requests);
+    }
+
+    [Fact] public async Task Reverse_FindsTheAddress()
+    {
+        var h = FakeHttpHandler.Json(Fixtures.Read("nominatim_reverse_worldclass.json"));
+        var r = await Svc(h).ReverseAsync(45.7658704, 21.2272598);
+
+        Assert.True(r.Success);
+        Assert.Equal("Piața Consiliul Europei, Lipovei", r.Address);
+        var url = Assert.Single(h.Requests).RequestUri!.AbsoluteUri;
+        Assert.Contains("/reverse?lat=45.7658704&lon=21.2272598", url);   // invariant culture
+        Assert.Equal(OsmHttp.UserAgent, h.Requests[0].Headers.UserAgent.ToString());
+    }
+
+    [Fact] public async Task Reverse_NothingThere_IsASuccessWithNoAddress()
+    {
+        var r = await Svc(FakeHttpHandler.Json(Fixtures.Read("nominatim_reverse_nothing.json"))).ReverseAsync(45, 30);
+        Assert.True(r.Success);
+        Assert.Null(r.Address);
+    }
+
+    [Fact] public async Task Reverse_NetworkError_IsAFailure()
+    {
+        var r = await Svc(FakeHttpHandler.Throws(new HttpRequestException("offline"))).ReverseAsync(45, 21);
+        Assert.False(r.Success);
+        Assert.NotNull(r.Error);
+    }
+
+    [Fact] public async Task SearchAndReverse_ShareOneRateLimit()
+    {
+        var h = new FakeHttpHandler((req, _) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(req.RequestUri!.AbsolutePath.Contains("reverse") ? "{}" : "[]")
+        }));
+        var svc = Svc(h, minIntervalMs: 300);
+
+        await Task.WhenAll(svc.SearchAsync("a"), svc.ReverseAsync(45, 21), svc.SearchAddressAsync("b", Timisoara()));
+
+        var times = h.SentAt.Order().ToList();
+        Assert.Equal(3, times.Count);
+        for (var i = 1; i < times.Count; i++)
+            Assert.True(times[i] - times[i - 1] >= TimeSpan.FromMilliseconds(280));
     }
 }

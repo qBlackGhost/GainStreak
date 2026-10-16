@@ -1,0 +1,33 @@
+{
+ "place_id": 64857316,
+ "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+ "osm_type": "node",
+ "osm_id": 6637001995,
+ "lat": "45.7658704",
+ "lon": "21.2272598",
+ "category": "leisure",
+ "type": "fitness_centre",
+ "place_rank": 30,
+ "importance": 7.018921187147353e-05,
+ "addresstype": "leisure",
+ "name": "World Class",
+ "display_name": "World Class, Piața Consiliul Europei, Antene, Lipovei, Timișoara, Timiș, 300278, România",
+ "address": {
+  "leisure": "World Class",
+  "road": "Piața Consiliul Europei",
+  "quarter": "Antene",
+  "suburb": "Lipovei",
+  "city": "Timișoara",
+  "county": "Timiș",
+  "ISO3166-2-lvl4": "RO-TM",
+  "postcode": "300278",
+  "country": "România",
+  "country_code": "ro"
+ },
+ "boundingbox": [
+  "45.7658204",
+  "45.7659204",
+  "21.2272098",
+  "21.2273098"
+ ]
+}

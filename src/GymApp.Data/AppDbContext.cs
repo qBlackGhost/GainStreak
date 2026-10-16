@@ -26,11 +26,17 @@ public class AppDbContext : DbContext
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    /// <summary>Where the database and remember-me file live. GYMAPP_DATA_DIR overrides it, so a test run
+    /// can use a copy of the data instead of the real one.</summary>
+    public static string DataDirectory =>
+        Environment.GetEnvironmentVariable("GYMAPP_DATA_DIR") is { Length: > 0 } custom
+            ? custom
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GymApp");
+
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
         if (options.IsConfigured) return;
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GymApp");
+        var dir = DataDirectory;
         Directory.CreateDirectory(dir);
         options.UseSqlite($"Data Source={Path.Combine(dir, "gymapp.db")}");
     }

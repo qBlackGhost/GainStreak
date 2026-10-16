@@ -353,4 +353,25 @@ public class GymFetchServiceTests : IDisposable
         Assert.Equal(GymRefreshOutcome.Failed, (await Svc(h).RefreshAsync(999)).Outcome);
         Assert.Empty(h.Requests);
     }
+
+    [Fact] public async Task Refetch_KeepsTheLookedUpAddress_UnlessTheGymMoved()
+    {
+        var body = Elements(Node(1, "A", lat: 45.75), Node(2, "B", lat: 45.76));
+        var svc = Svc(new FakeHttpHandler((_, _) => Task.FromResult(Resp(body))));
+        await svc.RefreshAsync(_timisoara);
+        using (var db = _db.CreateDbContext())
+        {
+            foreach (var g in db.Gyms) { g.LookedUpAddress = "Strada X, Fabric"; g.AddressLookedUpAt = _clock.Utc; }
+            db.SaveChanges();
+        }
+
+        body = Elements(Node(1, "A", lat: 45.75), Node(2, "B", lat: 45.77));   // B moved
+        await svc.RefreshAsync(_timisoara);
+
+        var gyms = Gyms(_timisoara);
+        Assert.Equal("Strada X, Fabric", gyms.Single(g => g.Name == "A").LookedUpAddress);
+        var b = gyms.Single(g => g.Name == "B");
+        Assert.Null(b.LookedUpAddress);
+        Assert.Null(b.AddressLookedUpAt);
+    }
 }

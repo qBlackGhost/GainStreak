@@ -131,6 +131,12 @@ public class GymFetchService
         foreach (var u in plan.ToUpdate)
         {
             var g = byId[u.Id];
+            if (g.Latitude != u.Data.Latitude || g.Longitude != u.Data.Longitude)
+            {
+                // The gym moved, so the approximate address may be wrong: look it up again
+                g.LookedUpAddress = null;
+                g.AddressLookedUpAt = null;
+            }
             g.Name = u.Data.Name;
             g.Address = u.Data.Address;
             g.Latitude = u.Data.Latitude;

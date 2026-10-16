@@ -524,6 +524,9 @@ namespace GymApp.Data.Migrations
                     b.Property<string>("Address")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("AddressLookedUpAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("CityId")
                         .HasColumnType("INTEGER");
 
@@ -537,6 +540,9 @@ namespace GymApp.Data.Migrations
 
                     b.Property<double?>("Longitude")
                         .HasColumnType("REAL");
+
+                    b.Property<string>("LookedUpAddress")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()

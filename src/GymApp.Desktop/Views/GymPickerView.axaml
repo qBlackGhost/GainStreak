@@ -1,0 +1,241 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.GymPickerView"
+             x:DataType="vm:GymPickerViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="TextBlock.small">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Border.tag">
+            <Setter Property="Background" Value="#304682B4"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="640" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <TextBlock Text="Pick your gym" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Info}" Foreground="SeaGreen" TextWrapping="Wrap"
+                       IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- ===== Today's gym ===== -->
+            <DockPanel IsVisible="{Binding HasCurrentGym}">
+                <Button DockPanel.Dock="Right" Content="Remove gym" Command="{Binding ClearGymCommand}"/>
+                <TextBlock Text="{Binding CurrentGymText}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <!-- ===== Choosing a city ===== -->
+            <Border Classes="card" IsVisible="{Binding IsChoosingCity}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding CityPrompt}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0"
+                                Command="{Binding SearchCityCommand}"/>
+                        <TextBox Watermark="City name, e.g. Timișoara" Text="{Binding CitySearchText}" MaxLength="100">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchCityCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                    </DockPanel>
+                    <TextBlock Text="{Binding CitySearchMessage}" Classes="small"
+                               IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <ItemsControl ItemsSource="{Binding CityCandidates}" IsVisible="{Binding HasCityCandidates}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CityCandidateViewModel">
+                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding DisplayName}" FontSize="12" Opacity="0.7"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Choose" Command="{Binding ChooseCommand}"
+                                                VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <CheckBox Content="Also make this my home city" IsChecked="{Binding SaveAsHomeCity}"/>
+                    <Button Content="Cancel" Command="{Binding CancelChangeCityCommand}" IsVisible="{Binding HasCity}"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Gym list ===== -->
+            <StackPanel Spacing="10" IsVisible="{Binding ShowList}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Change city" Command="{Binding ChangeCityCommand}"/>
+                    <TextBlock Text="{Binding CityName}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </DockPanel>
+
+                <TextBox Watermark="Search gyms by name" Text="{Binding SearchText}"/>
+
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}"
+                            IsEnabled="{Binding !IsFetching}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="Sort by" Opacity="0.7" VerticalAlignment="Center"/>
+                        <RadioButton GroupName="gymSort" Content="Name" IsChecked="{Binding SortByName}"/>
+                        <RadioButton GroupName="gymSort" Content="Distance" IsChecked="{Binding SortByDistance}"/>
+                    </StackPanel>
+                </DockPanel>
+
+                <StackPanel Spacing="2">
+                    <TextBlock Text="{Binding LastUpdatedText}" Classes="small"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsFetching}">
+                        <ProgressBar IsIndeterminate="True" Width="80" Height="4" VerticalAlignment="Center"/>
+                        <TextBlock Text="Loading gyms from OpenStreetMap…" Classes="small"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding AddressLookupText}" Classes="small"
+                               IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding RefreshNote}" Classes="small" Foreground="DarkGoldenrod"
+                               IsVisible="{Binding RefreshNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+
+                <!-- No cache and the fetch failed: the error and Retry -->
+                <Border Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="1" CornerRadius="8" Padding="12"
+                        IsVisible="{Binding FetchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding FetchError}" TextWrapping="Wrap"/>
+                        <Button Content="Retry" Command="{Binding RetryCommand}" IsEnabled="{Binding !IsFetching}"
+                                HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{Binding EmptyText}" Classes="small" IsVisible="{Binding !HasGyms}"/>
+
+                <ItemsControl ItemsSource="{Binding Gyms}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:GymRowViewModel">
+                            <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,8">
+                                <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <Border Classes="tag" IsVisible="{Binding IsCustom}">
+                                                <TextBlock Text="custom" FontSize="11"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding AddressText}" FontSize="12" Opacity="0.7"
+                                                   IsVisible="{Binding HasAddress}" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding DistanceText}" Opacity="0.7" VerticalAlignment="Center"/>
+                                        <!-- Custom gyms are always the user's own -->
+                                        <Button Content="Edit" Command="{Binding EditCommand}" IsVisible="{Binding IsCustom}"/>
+                                        <Button Content="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding IsCustom}"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Content="{Binding PickLabel}" Command="{Binding PickCommand}"
+                                            VerticalAlignment="Center" MinWidth="72" HorizontalContentAlignment="Center"/>
+                                    <Border Grid.Row="1" Grid.ColumnSpan="3" Margin="0,8,0,0" Padding="10" CornerRadius="8"
+                                            Background="#20CD5C5C" IsVisible="{Binding IsConfirmingDelete}">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                                                <Button Content="Delete" Command="{Binding ConfirmDeleteCommand}"/>
+                                                <Button Content="Cancel" Command="{Binding CancelDeleteCommand}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="Delete this gym? If you logged workouts there, it stays in your history."
+                                                       TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                        </DockPanel>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ===== Add / edit a custom gym ===== -->
+                <Button Content="+ Add custom gym" Command="{Binding StartAddGymCommand}" HorizontalAlignment="Left"
+                        IsVisible="{Binding !IsGymFormOpen}"/>
+                <Border Classes="card" IsVisible="{Binding IsGymFormOpen}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding GymFormTitle}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBox Watermark="Name" Text="{Binding GymFormName}" MaxLength="{Binding MaxNameLength}"/>
+
+                        <!-- Address: picked from a search inside the city, never typed freely -->
+                        <TextBlock Text="Address (optional)" Opacity="0.7" Margin="0,4,0,0"/>
+                        <StackPanel Spacing="6" IsVisible="{Binding HasFormAddress}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Change" Command="{Binding ChangeFormAddressCommand}"/>
+                                    <Button Content="Remove" Command="{Binding ClearFormAddressCommand}"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding FormAddressText}" FontWeight="SemiBold" TextWrapping="Wrap"
+                                           VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowHouseNumber}">
+                                <TextBlock Text="No." VerticalAlignment="Center"/>
+                                <TextBox Watermark="optional" Width="100" Text="{Binding FormHouseNumber}"
+                                         MaxLength="{Binding MaxHouseNumberLength}"/>
+                                <TextBlock Classes="small" VerticalAlignment="Center"
+                                           Text="OpenStreetMap only knows the street here."/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Spacing="6" IsVisible="{Binding ShowAddressSearch}">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="Find" Margin="8,0,0,0"
+                                        Command="{Binding SearchAddressCommand}"/>
+                                <TextBox Watermark="Street and number, e.g. Calea Aradului 1" Text="{Binding AddressQuery}"
+                                         MaxLength="100">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding SearchAddressCommand}"/>
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                            </DockPanel>
+                            <TextBlock Text="{Binding AddressSearchMessage}" Classes="small"
+                                       IsVisible="{Binding AddressSearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <ItemsControl ItemsSource="{Binding AddressCandidates}" IsVisible="{Binding HasAddressCandidates}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AddressCandidateViewModel">
+                                        <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                <StackPanel VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Text}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" Opacity="0.7"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="Use" Command="{Binding PickCommand}"
+                                                        VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <TextBlock Text="{Binding GymFormError}" Foreground="IndianRed" TextWrapping="Wrap"
+                                   IsVisible="{Binding GymFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Content="Save" Command="{Binding SaveGymFormCommand}"/>
+                            <Button Content="Cancel" Command="{Binding CancelGymFormCommand}"/>
+                        </StackPanel>
+                        <TextBlock Classes="small"
+                                   Text="Only you see your custom gyms (up to 10). With an address they get a distance; without one they sort last."/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Classes="small"
+                           Text="Gyms come from OpenStreetMap and are saved on this computer, so the list works offline. Missing your gym? Add it as a custom gym."/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

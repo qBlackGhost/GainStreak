@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.GymSummaryView"
+             x:DataType="vm:GymSummaryViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Border.tag">
+            <Setter Property="Background" Value="#30808080"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="640" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <TextBlock Text="Gyms visited" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            </DockPanel>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <Button Content="‹ Previous" Command="{Binding PreviousMonthCommand}"/>
+                <TextBlock Grid.Column="1" Text="{Binding MonthTitle}" FontSize="20" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                <Button Grid.Column="2" Content="Next ›" Command="{Binding NextMonthCommand}"/>
+            </Grid>
+
+            <Border Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding TotalsText}" FontSize="18" FontWeight="SemiBold"
+                               IsVisible="{Binding TotalsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding EmptyText}" Opacity="0.7" TextWrapping="Wrap"
+                               IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <ItemsControl ItemsSource="{Binding Gyms}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:GymVisitRow">
+                                <StackPanel Spacing="4" Margin="0,4">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding VisitsText}" FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <Border Classes="tag" IsVisible="{Binding IsCustom}">
+                                                <TextBlock Text="custom" FontSize="11"/>
+                                            </Border>
+                                            <Border Classes="tag" IsVisible="{Binding IsInactive}">
+                                                <TextBlock Text="no longer listed" FontSize="11"/>
+                                            </Border>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <TextBlock Text="{Binding Address}" FontSize="12" Opacity="0.7" TextWrapping="Wrap"
+                                               IsVisible="{Binding HasAddress}"/>
+                                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding Share}" Height="8"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding NoGymText}" Opacity="0.8" IsVisible="{Binding HasNoGym}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

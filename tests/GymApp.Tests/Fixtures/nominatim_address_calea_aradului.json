@@ -1,0 +1,100 @@
+[
+ {
+  "place_id": 64697508,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 831922843,
+  "lat": "45.7626979",
+  "lon": "21.2234723",
+  "category": "building",
+  "type": "apartments",
+  "place_rank": 30,
+  "importance": 7.018921187147353e-05,
+  "addresstype": "building",
+  "name": "Nord One",
+  "display_name": "Nord One, 1, Calea Aradului, Circumvalațiunii, Timișoara, Timiș, 300673, România",
+  "address": {
+   "building": "Nord One",
+   "house_number": "1",
+   "road": "Calea Aradului",
+   "suburb": "Circumvalațiunii",
+   "city": "Timișoara",
+   "county": "Timiș",
+   "ISO3166-2-lvl4": "RO-TM",
+   "postcode": "300673",
+   "country": "România",
+   "country_code": "ro"
+  },
+  "boundingbox": [
+   "45.7624518",
+   "45.7629274",
+   "21.2232426",
+   "21.2237733"
+  ]
+ },
+ {
+  "place_id": 64511181,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 1015087059,
+  "lat": "45.7620948",
+  "lon": "21.2239750",
+  "category": "building",
+  "type": "yes",
+  "place_rank": 30,
+  "importance": 7.018921187147353e-05,
+  "addresstype": "building",
+  "name": "Nord One II",
+  "display_name": "Nord One II, 1, Calea Aradului, Circumvalațiunii, Timișoara, Timiș, 300673, România",
+  "address": {
+   "building": "Nord One II",
+   "house_number": "1",
+   "road": "Calea Aradului",
+   "suburb": "Circumvalațiunii",
+   "city": "Timișoara",
+   "county": "Timiș",
+   "ISO3166-2-lvl4": "RO-TM",
+   "postcode": "300673",
+   "country": "România",
+   "country_code": "ro"
+  },
+  "boundingbox": [
+   "45.7618920",
+   "45.7622987",
+   "21.2236742",
+   "21.2241936"
+  ]
+ },
+ {
+  "place_id": 430842628,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "node",
+  "osm_id": 14283480912,
+  "lat": "45.7621390",
+  "lon": "21.2239393",
+  "category": "place",
+  "type": "house",
+  "place_rank": 30,
+  "importance": 7.018921187147353e-05,
+  "addresstype": "place",
+  "name": "",
+  "display_name": "1, Calea Aradului, Circumvalațiunii, Timișoara, Timiș, 300673, România",
+  "address": {
+   "house_number": "1",
+   "road": "Calea Aradului",
+   "suburb": "Circumvalațiunii",
+   "city": "Timișoara",
+   "county": "Timiș",
+   "ISO3166-2-lvl4": "RO-TM",
+   "postcode": "300673",
+   "country": "România",
+   "country_code": "ro"
+  },
+  "boundingbox": [
+   "45.7620890",
+   "45.7621890",
+   "21.2238893",
+   "21.2239893"
+  ]
+ }
+]

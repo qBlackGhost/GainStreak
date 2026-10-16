@@ -34,6 +34,14 @@ public partial class MainViewModel : ViewModelBase
     public void ShowWorkouts() => Current = _sp.GetRequiredService<WorkoutsViewModel>();
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
     public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
+    public void ShowGymPicker() => Current = _sp.GetRequiredService<GymPickerViewModel>();
+
+    public void ShowGymSummary(bool fromProfile = false)
+    {
+        var vm = _sp.GetRequiredService<GymSummaryViewModel>();
+        if (fromProfile) vm.OpenedFromProfile();
+        Current = vm;
+    }
 
     public void ShowDay(MenuDay day, string splitName)
     {

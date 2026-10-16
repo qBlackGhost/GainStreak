@@ -1,0 +1,33 @@
+[
+ {
+  "place_id": 64840527,
+  "licence": "Data © OpenStreetMap contributors, ODbL 1.0. http://osm.org/copyright",
+  "osm_type": "way",
+  "osm_id": 4266872,
+  "lat": "45.7459261",
+  "lon": "21.2295667",
+  "category": "highway",
+  "type": "residential",
+  "place_rank": 26,
+  "importance": 0.05340352254520482,
+  "addresstype": "road",
+  "name": "Strada Traian Lalescu",
+  "display_name": "Strada Traian Lalescu, Elisabetin, Timișoara, Timiș, 300223, România",
+  "address": {
+   "road": "Strada Traian Lalescu",
+   "suburb": "Elisabetin",
+   "city": "Timișoara",
+   "county": "Timiș",
+   "ISO3166-2-lvl4": "RO-TM",
+   "postcode": "300223",
+   "country": "România",
+   "country_code": "ro"
+  },
+  "boundingbox": [
+   "45.7444434",
+   "45.7474216",
+   "21.2292906",
+   "21.2298952"
+  ]
+ }
+]

@@ -50,5 +50,8 @@
     <Compile Update="Views\ProfileView.axaml.cs">
       <DependentUpon>ProfileView.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\GymSummaryView.axaml.cs">
+      <DependentUpon>GymSummaryView.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

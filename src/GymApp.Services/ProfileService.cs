@@ -117,6 +117,35 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         return new(true);
     }
 
+    /// <summary>The user's home city, or null when none is set.</summary>
+    public async Task<City?> GetHomeCityAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.UserProfiles.AsNoTracking().Where(p => p.UserId == userId)
+            .Select(p => p.HomeCity).FirstOrDefaultAsync();
+    }
+
+    /// <summary>Turns the "Want to log your gym?" prompt after check-in on or off ("Don't ask me again" turns it off).
+    /// Creates the profile row if there is none yet.</summary>
+    public async Task<ProfileResult> SetAskForGymAfterCheckInAsync(int userId, bool ask)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        if (!await db.Users.AnyAsync(u => u.Id == userId)) return new(false, "User not found.");
+
+        var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId };
+            db.UserProfiles.Add(profile);
+        }
+        profile.AskForGymAfterCheckIn = ask;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save that setting."); }
+        return new(true);
+    }
+
     /// <summary>Logs today's weight. Today only, like workouts and sets; a second weigh-in today
     /// replaces the first one.</summary>
     public async Task<WeightResult> LogWeightAsync(int userId, double weightKg, DateOnly? today = null)

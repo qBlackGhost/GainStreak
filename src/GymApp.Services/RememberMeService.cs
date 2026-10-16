@@ -13,8 +13,7 @@ public record RememberedLogin(int UserId, string Token);
 
 public class RememberMeService(IDbContextFactory<AppDbContext> dbFactory, SessionService session)
 {
-    private static string FilePath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GymApp", "remember.json");
+    private static string FilePath => Path.Combine(AppDbContext.DataDirectory, "remember.json");
 
     private static string Hash(string token) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));

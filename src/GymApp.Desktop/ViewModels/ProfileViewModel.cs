@@ -47,16 +47,6 @@ public partial class WeightEntryViewModel : ObservableObject
     [RelayCommand] private Task Delete() => _owner.DeleteWeightAsync(this);
 }
 
-/// <summary>One city in the home city search results.</summary>
-public partial class CityCandidateViewModel(CityCandidate candidate, ProfileViewModel owner) : ObservableObject
-{
-    public CityCandidate Candidate { get; } = candidate;
-    public string Name => Candidate.Name;
-    public string DisplayName => Candidate.DisplayName;
-
-    [RelayCommand] private Task Choose() => owner.ChooseHomeCityAsync(this);
-}
-
 public partial class ProfileViewModel : ViewModelBase
 {
     private readonly ProfileService _profiles;
@@ -142,6 +132,7 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string CitySearchText { get; set; } = "";
     [ObservableProperty] public partial string? CitySearchMessage { get; set; }
     [ObservableProperty] public partial bool HasCityCandidates { get; set; }
+    [ObservableProperty] public partial bool AskForGym { get; set; } = true;
 
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
@@ -161,6 +152,9 @@ public partial class ProfileViewModel : ViewModelBase
 
             if (refillForm) FillForm(s.Profile);
             ApplyHomeCity(s.Profile.HomeCity);
+            _applyingAskForGym = true;   // so filling the toggle does not save it again
+            AskForGym = s.Profile.AskForGymAfterCheckIn;
+            _applyingAskForGym = false;
 
             // Weight and history are shown in the saved unit, so they match what the form says after a reload
             var units = s.Profile.Units;
@@ -307,6 +301,26 @@ public partial class ProfileViewModel : ViewModelBase
         await ReloadAsync(refillForm: false);
     }
 
+    // ===== Gym prompt =====
+
+    private bool _applyingAskForGym;
+
+    // Saved straight away, like the goal picker
+    partial void OnAskForGymChanged(bool value)
+    {
+        if (_applyingAskForGym) return;
+        _ = SaveAskForGymAsync(value);
+    }
+
+    private async Task SaveAskForGymAsync(bool value)
+    {
+        Info = null;
+        var r = await _profiles.SetAskForGymAfterCheckInAsync(UserId, value);
+        if (!r.Success) { Error = r.Error; return; }
+        Error = null;
+        Info = value ? "We'll ask which gym after you check in." : "We won't ask which gym after check-in.";
+    }
+
     // ===== Home city =====
 
     private void ApplyHomeCity(City? city)
@@ -329,16 +343,16 @@ public partial class ProfileViewModel : ViewModelBase
         if (!r.Success) { CitySearchMessage = r.Error; return; }
         if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
 
-        foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, this));
+        foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, ChooseHomeCityAsync));
         HasCityCandidates = true;
     }
 
-    internal async Task ChooseHomeCityAsync(CityCandidateViewModel item)
+    private async Task ChooseHomeCityAsync(CityCandidate candidate)
     {
         Info = null;
         try
         {
-            var city = await _cities.UpsertAsync(item.Candidate);
+            var city = await _cities.UpsertAsync(candidate);
             var r = await _profiles.SetHomeCityAsync(UserId, city.Id);
             if (!r.Success) { Error = r.Error; return; }
             ApplyHomeCity(city);
@@ -354,7 +368,7 @@ public partial class ProfileViewModel : ViewModelBase
         HasCityCandidates = false;
         CitySearchText = "";
         CitySearchMessage = null;
-        Info = $"Home city set to {item.Name}.";
+        Info = $"Home city set to {candidate.Name}.";
     }
 
     [RelayCommand]
@@ -476,6 +490,9 @@ public partial class ProfileViewModel : ViewModelBase
 
     [RelayCommand]
     private void Back() => _shell().ShowHome();
+
+    [RelayCommand]
+    private void ShowGymSummary() => _shell().ShowGymSummary(fromProfile: true);
 
     private static string DayLabel(DateOnly date)
     {

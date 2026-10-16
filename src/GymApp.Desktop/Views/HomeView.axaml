@@ -16,6 +16,33 @@
                 <Button Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
                         IsEnabled="{Binding CanLog}" Margin="0,8,0,0"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
+                <Border Background="#204682B4" BorderBrush="#804682B4" BorderThickness="1" CornerRadius="8"
+                        Padding="12" Margin="0,8,0,0" IsVisible="{Binding ShowGymPrompt}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Want to log your gym?" FontWeight="SemiBold"/>
+                        <Button Command="{Binding UseLastGymCommand}" IsVisible="{Binding HasLastGym}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                            <TextBlock Text="{Binding LastGymLabel}" TextTrimming="CharacterEllipsis"/>
+                        </Button>
+                        <Button Content="Choose another…" Command="{Binding ChooseGymCommand}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Content="Skip" Command="{Binding SkipGymPromptCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Don't ask me again" Command="{Binding NeverAskForGymCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Today's log only: works until midnight, then the log is read-only -->
+                <Button Classes="link" Content="{Binding GymLinkText}" Command="{Binding ChooseGymCommand}"
+                        IsVisible="{Binding ShowGymLink}" HorizontalAlignment="Left" Padding="0"
+                        Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
+                <TextBlock Text="{Binding GymNotice}" Opacity="0.8" FontSize="12" TextWrapping="Wrap"
+                           IsVisible="{Binding GymNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             </StackPanel>
         </Border>
 
@@ -62,6 +89,8 @@
         <Button Content="Workouts" Command="{Binding ShowWorkoutsCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
         <Button Content="Splits" Command="{Binding ShowSplitsCommand}"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <Button Content="Gyms visited" Command="{Binding ShowGymSummaryCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
         <Button Content="Profile" Command="{Binding ShowProfileCommand}"
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>

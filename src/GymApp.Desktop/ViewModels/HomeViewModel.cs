@@ -17,10 +17,12 @@ public partial class HomeViewModel : ViewModelBase
     private readonly StreakService _streaks;
     private readonly CalorieService _calories;
     private readonly PointsService _points;
+    private readonly GymService _gyms;
+    private readonly ProfileService _profiles;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
-                         PointsService points)
+                         PointsService points, GymService gyms, ProfileService profiles)
     {
         _session = session;
         _shell = shell;
@@ -28,6 +30,8 @@ public partial class HomeViewModel : ViewModelBase
         _streaks = streaks;
         _calories = calories;
         _points = points;
+        _gyms = gyms;
+        _profiles = profiles;
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
@@ -52,6 +56,16 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string LevelHint { get; set; } = "";
     [ObservableProperty] public partial string? PointsNotice { get; set; }
 
+    // ===== Gym (optional, after check-in; never affects points or the streak) =====
+    [ObservableProperty] public partial bool ShowGymPrompt { get; set; }
+    [ObservableProperty] public partial bool HasLastGym { get; set; }
+    [ObservableProperty] public partial string LastGymLabel { get; set; } = "";
+    [ObservableProperty] public partial bool ShowGymLink { get; set; }
+    [ObservableProperty] public partial string GymLinkText { get; set; } = "";
+    [ObservableProperty] public partial string? GymNotice { get; set; }
+
+    private GymChoice? _lastGym;
+
     private async Task RefreshAsync()
     {
         if (_session.CurrentUser is not { } user) return;
@@ -62,6 +76,7 @@ public partial class HomeViewModel : ViewModelBase
             var points = await _points.SyncAsync(user.Id);   // catches a week that ended while the app was closed
             Apply(today, streak);
             ApplyPoints(points);
+            await RefreshGymAsync(user.Id);
             await RefreshCaloriesAsync(user.Id);
         }
         catch (Exception)
@@ -148,6 +163,59 @@ public partial class HomeViewModel : ViewModelBase
         Error = null;
         Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
         ApplyPoints(result.Points);
+
+        // The workout is saved; now (optionally) ask for the gym
+        var gym = await RefreshGymAsync(user.Id);
+        ShowGymPrompt = gym is { LoggedToday: true, Gym: null, AskAfterCheckIn: true };
+    }
+
+    /// <summary>Updates the "Add gym" / "Change gym" link under today's log. Only today's log has it, so after
+    /// midnight yesterday's log is read-only.</summary>
+    private async Task<TodayGymInfo?> RefreshGymAsync(int userId)
+    {
+        try
+        {
+            var info = await _gyms.GetTodayAsync(userId);
+            ShowGymLink = info.LoggedToday;
+            GymLinkText = info.Gym is { } g ? $"Change gym: {g.Name}" : "Add gym";
+            _lastGym = info.LastUsed;
+            HasLastGym = info.LastUsed is not null;
+            LastGymLabel = info.LastUsed is { } last ? last.Name : "";
+            return info;
+        }
+        catch (Exception)
+        {
+            ShowGymLink = false;
+            return null;
+        }
+    }
+
+    [RelayCommand]
+    private async Task UseLastGymAsync()
+    {
+        if (_session.CurrentUser is not { } user || _lastGym is not { } gym) return;
+        var r = await _gyms.SetGymForTodayAsync(user.Id, gym.Id);
+        if (!r.Success) { Error = r.Error; return; }
+        Error = null;
+        ShowGymPrompt = false;
+        await RefreshGymAsync(user.Id);
+    }
+
+    [RelayCommand]
+    private void ChooseGym() => _shell().ShowGymPicker();
+
+    // Skip only hides it: the prompt appears right after "I went today", which can't happen twice in a day
+    [RelayCommand]
+    private void SkipGymPrompt() => ShowGymPrompt = false;
+
+    [RelayCommand]
+    private async Task NeverAskForGymAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        ShowGymPrompt = false;
+        var r = await _profiles.SetAskForGymAfterCheckInAsync(user.Id, false);
+        if (!r.Success) { Error = r.Error; return; }
+        GymNotice = "Okay, no more gym questions. You can turn this back on in your profile.";
     }
 
     /// <summary>Updates the level card. A sync that added points shows a short notice (and "Level up" when the
@@ -186,4 +254,6 @@ public partial class HomeViewModel : ViewModelBase
     private void ShowWorkouts() => _shell().ShowWorkouts();
     [RelayCommand]
     private void ShowProfile() => _shell().ShowProfile();
+    [RelayCommand]
+    private void ShowGymSummary() => _shell().ShowGymSummary();
 }
