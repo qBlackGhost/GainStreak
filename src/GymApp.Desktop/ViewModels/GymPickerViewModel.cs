@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -14,6 +15,7 @@ namespace GymApp.Desktop.ViewModels;
 public partial class GymRowViewModel(GymRow row, bool isCurrent, GymPickerViewModel owner) : ObservableObject
 {
     public GymListItem Gym => row.Gym;
+    public bool HasPosition => row.Gym is { Latitude: not null, Longitude: not null };
     public string Name => row.Gym.Name;
     public string? Address => row.Gym.Address;
     public bool HasAddress => !string.IsNullOrEmpty(row.Gym.Address);
@@ -34,6 +36,9 @@ public partial class GymRowViewModel(GymRow row, bool isCurrent, GymPickerViewMo
     [RelayCommand] private void CancelDelete() => IsConfirmingDelete = false;
     [RelayCommand] private Task ConfirmDelete() => owner.DeleteGymAsync(this);
 }
+
+/// <summary>The city's box and centre, for the map view.</summary>
+public record CityBox(double South, double West, double North, double East, double CenterLatitude, double CenterLongitude);
 
 /// <summary>One result of the custom gym address search.</summary>
 public partial class AddressCandidateViewModel(AddressCandidate candidate, Action<AddressCandidate> pick) : ObservableObject
@@ -95,6 +100,12 @@ public partial class GymPickerViewModel : ViewModelBase
     [ObservableProperty] public partial bool HasGyms { get; set; }
     [ObservableProperty] public partial string EmptyText { get; set; } = "";
     [ObservableProperty] public partial bool HasCurrentGym { get; set; }
+
+    // ===== List or map =====
+    [ObservableProperty] public partial bool ShowAsList { get; set; } = true;
+    [ObservableProperty] public partial bool ShowAsMap { get; set; }
+    [ObservableProperty] public partial CityBox? MapBox { get; set; }
+    [ObservableProperty] public partial string? NoPositionText { get; set; }
     [ObservableProperty] public partial string CurrentGymText { get; set; } = "";
 
     // ===== Fetch status =====
@@ -163,6 +174,7 @@ public partial class GymPickerViewModel : ViewModelBase
     {
         _cityId = city.Id;
         _city = city;
+        MapBox = new CityBox(city.South, city.West, city.North, city.East, city.CenterLatitude, city.CenterLongitude);
         CityName = city.Name;
         AddressLookupText = null;
         HasCity = true;
@@ -214,6 +226,10 @@ public partial class GymPickerViewModel : ViewModelBase
         Gyms.Clear();
         foreach (var row in r.Rows) Gyms.Add(new GymRowViewModel(row, row.Gym.Id == _currentGymId, this));
         HasGyms = Gyms.Count > 0;
+        var unplaced = Gyms.Count(g => !g.HasPosition);
+        NoPositionText = unplaced == 0 ? null
+            : unplaced == 1 ? "1 gym has no map position, so it's only in the list."
+            : $"{unplaced} gyms have no map position, so they're only in the list.";
         EmptyText = !string.IsNullOrWhiteSpace(SearchText) ? $"No gyms match \"{SearchText.Trim()}\"."
                   : r.City.GymsFetchedAt is null ? ""
                   : "No gyms found in this city on OpenStreetMap.";
@@ -269,6 +285,15 @@ public partial class GymPickerViewModel : ViewModelBase
     }
 
     partial void OnSortByNameChanged(bool value) => SortByDistance = !value;
+
+    partial void OnShowAsListChanged(bool value) => ShowAsMap = !value;
+    partial void OnShowAsMapChanged(bool value) => ShowAsList = !value;
+
+    /// <summary>A marker on the map was clicked: same as Pick in the list.</summary>
+    internal void PickFromMap(GymRowViewModel row)
+    {
+        if (row.PickCommand.CanExecute(null)) row.PickCommand.Execute(null);
+    }
 
     [RelayCommand]
     private async Task RefreshAsync()

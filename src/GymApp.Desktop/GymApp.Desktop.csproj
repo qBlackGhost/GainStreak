@@ -32,6 +32,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <!-- Map view in the gym picker. The Avalonia 12 build of Mapsui; only the map tiles need the network -->
+    <PackageReference Include="Mapsui.Avalonia12" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>

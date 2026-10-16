@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
+             xmlns:mapsui="clr-namespace:Mapsui.UI.Avalonia;assembly=Mapsui.UI.Avalonia"
              x:Class="GymApp.Desktop.Views.GymPickerView"
              x:DataType="vm:GymPickerViewModel">
     <UserControl.Styles>
@@ -94,9 +95,14 @@
                     <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}"
                             IsEnabled="{Binding !IsFetching}"/>
                     <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Text="Sort by" Opacity="0.7" VerticalAlignment="Center"/>
-                        <RadioButton GroupName="gymSort" Content="Name" IsChecked="{Binding SortByName}"/>
-                        <RadioButton GroupName="gymSort" Content="Distance" IsChecked="{Binding SortByDistance}"/>
+                        <RadioButton GroupName="gymView" Content="List" IsChecked="{Binding ShowAsList}"/>
+                        <RadioButton GroupName="gymView" Content="Map" IsChecked="{Binding ShowAsMap}"/>
+                        <Border Width="1" Background="#40808080" Margin="4,6"/>
+                        <TextBlock Text="Sort by" Opacity="0.7" VerticalAlignment="Center" IsVisible="{Binding ShowAsList}"/>
+                        <RadioButton GroupName="gymSort" Content="Name" IsChecked="{Binding SortByName}"
+                                     IsVisible="{Binding ShowAsList}"/>
+                        <RadioButton GroupName="gymSort" Content="Distance" IsChecked="{Binding SortByDistance}"
+                                     IsVisible="{Binding ShowAsList}"/>
                     </StackPanel>
                 </DockPanel>
 
@@ -124,7 +130,18 @@
 
                 <TextBlock Text="{Binding EmptyText}" Classes="small" IsVisible="{Binding !HasGyms}"/>
 
-                <ItemsControl ItemsSource="{Binding Gyms}">
+                <!-- Map: the same cached (and searched) gyms as markers; click one to pick it. Only tiles need the network -->
+                <StackPanel Spacing="6" IsVisible="{Binding ShowAsMap}">
+                    <Border CornerRadius="12" ClipToBounds="True" BorderBrush="#40808080" BorderThickness="1">
+                        <mapsui:MapControl x:Name="GymMap" Height="420"/>
+                    </Border>
+                    <TextBlock Classes="small"
+                               Text="Click a marker to pick that gym. The map needs internet for its background; without it, use the list."/>
+                    <TextBlock Text="{Binding NoPositionText}" Classes="small"
+                               IsVisible="{Binding NoPositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+
+                <ItemsControl ItemsSource="{Binding Gyms}" IsVisible="{Binding ShowAsList}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:GymRowViewModel">
                             <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,8">
