@@ -35,6 +35,14 @@ public partial class MainViewModel : ViewModelBase
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
     public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
     public void ShowGymPicker() => Current = _sp.GetRequiredService<GymPickerViewModel>();
+    public void ShowFriends() => Current = _sp.GetRequiredService<FriendsViewModel>();
+
+    public void ShowLeaderboard(bool fromFriends = false)
+    {
+        var vm = _sp.GetRequiredService<LeaderboardViewModel>();
+        if (fromFriends) vm.OpenedFromFriends();
+        Current = vm;
+    }
 
     public void ShowGymSummary(bool fromProfile = false)
     {

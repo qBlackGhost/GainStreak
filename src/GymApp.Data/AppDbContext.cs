@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
     public DbSet<City> Cities => Set<City>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -150,6 +151,16 @@ public class AppDbContext : DbContext
         b.Entity<UserProfile>().HasOne(p => p.HomeCity).WithMany()
             .HasForeignKey(p => p.HomeCityId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<UserProfile>().Property(p => p.AskForGymAfterCheckIn).HasDefaultValue(true).HasSentinel(true);
+
+        // Friends: one row per pair (UserAId < UserBId, kept by the service), so a pair can only exist once.
+        // Two relationships to User, so be explicit; deleting either user removes the friendship
+        b.Entity<Friendship>().Property(f => f.Status).HasConversion<string>().HasMaxLength(10);
+        b.Entity<Friendship>().HasIndex(f => new { f.UserAId, f.UserBId }).IsUnique();
+        b.Entity<Friendship>().HasIndex(f => f.UserBId);
+        b.Entity<Friendship>().HasOne(f => f.UserA).WithMany()
+            .HasForeignKey(f => f.UserAId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Friendship>().HasOne(f => f.UserB).WithMany()
+            .HasForeignKey(f => f.UserBId).OnDelete(DeleteBehavior.Cascade);
 
         SeedExercises(b);
         SeedSplits(b);

@@ -58,6 +58,11 @@ public partial class App : Application
         sc.AddTransient<GymSummaryService>();
         sc.AddTransient<GymSummaryViewModel>();
         sc.AddTransient<PointsHistoryViewModel>();
+        sc.AddTransient<ISocialStore, LocalSocialStore>();   // 10f may swap in a server-backed store here
+        sc.AddTransient<FriendService>();
+        sc.AddTransient<LeaderboardService>();
+        sc.AddTransient<FriendsViewModel>();
+        sc.AddTransient<LeaderboardViewModel>();
         Services = sc.BuildServiceProvider();
 
         using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())

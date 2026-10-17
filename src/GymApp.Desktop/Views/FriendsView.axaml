@@ -1,0 +1,156 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             x:Class="GymApp.Desktop.Views.FriendsView"
+             x:DataType="vm:FriendsViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="Border.row">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="0,8"/>
+        </Style>
+        <Style Selector="TextBlock.section">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="Opacity" Value="0.7"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
+                <Button DockPanel.Dock="Right" Content="Leaderboard" Command="{Binding ShowLeaderboardCommand}"/>
+                <TextBlock Text="Friends" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            </DockPanel>
+            <TextBlock Classes="hint" HorizontalAlignment="Center" TextAlignment="Center"
+                       Text="Friends see your username, level, points and streak. Nothing else."/>
+
+            <TextBlock Text="{Binding Notice}" Foreground="SeaGreen" FontWeight="SemiBold" TextWrapping="Wrap"
+                       IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- ===== Friends ===== -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="section" Text="{Binding FriendsTitle}"/>
+                    <TextBlock Classes="hint" IsVisible="{Binding HasNoFriends}"
+                               Text="No friends yet. Search for a username below to send a request."/>
+
+                    <ItemsControl ItemsSource="{Binding Friends}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FriendRowViewModel">
+                                <Border Classes="row">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Username}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SinceText}" FontSize="12" Opacity="0.7"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Remove" Command="{Binding RemoveCommand}"
+                                                VerticalAlignment="Center" IsVisible="{Binding !IsConfirmingRemove}"/>
+                                        <Border Grid.Row="1" Grid.ColumnSpan="2" Margin="0,8,0,0" Padding="10" CornerRadius="8"
+                                                Background="#20CD5C5C" IsVisible="{Binding IsConfirmingRemove}">
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="8">
+                                                    <Button Content="Remove" Command="{Binding ConfirmRemoveCommand}"/>
+                                                    <Button Content="Cancel" Command="{Binding CancelRemoveCommand}"/>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            </DockPanel>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Requests ===== -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="section" Text="Requests"/>
+                    <TextBlock Classes="hint" Text="No pending requests." IsVisible="{Binding HasNoRequests}"/>
+
+                    <ItemsControl ItemsSource="{Binding Incoming}" IsVisible="{Binding HasIncoming}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RequestRowViewModel">
+                                <Border Classes="row">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Username}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SentText}" FontSize="12" Opacity="0.7"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <Button Content="Accept" Command="{Binding AcceptCommand}"/>
+                                            <Button Content="Decline" Command="{Binding DeclineCommand}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="Sent" Opacity="0.7" Margin="0,4,0,0" IsVisible="{Binding HasOutgoing}"/>
+                    <ItemsControl ItemsSource="{Binding Outgoing}" IsVisible="{Binding HasOutgoing}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RequestRowViewModel">
+                                <Border Classes="row">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Username}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding SentText}" FontSize="12" Opacity="0.7"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}"
+                                                VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Add friend ===== -->
+            <Border Classes="card">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="section" Text="Add friend"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox PlaceholderText="Username (at least 3 letters)" Text="{Binding Query}">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Grid.Column="1" Content="Search" Command="{Binding SearchCommand}"/>
+                    </Grid>
+                    <TextBlock Classes="hint" Text="{Binding SearchHint}"
+                               IsVisible="{Binding SearchHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <ItemsControl ItemsSource="{Binding Results}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FoundUserViewModel">
+                                <Border Classes="row">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{Binding Username}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="{Binding ActionLabel}" Command="{Binding ActCommand}"
+                                                MinWidth="96" HorizontalContentAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -19,10 +19,13 @@ public partial class HomeViewModel : ViewModelBase
     private readonly PointsService _points;
     private readonly GymService _gyms;
     private readonly ProfileService _profiles;
+    private readonly FriendService _friends;
+    private readonly LeaderboardService _leaderboard;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
-                         PointsService points, GymService gyms, ProfileService profiles)
+                         PointsService points, GymService gyms, ProfileService profiles,
+                         FriendService friends, LeaderboardService leaderboard)
     {
         _session = session;
         _shell = shell;
@@ -32,6 +35,8 @@ public partial class HomeViewModel : ViewModelBase
         _points = points;
         _gyms = gyms;
         _profiles = profiles;
+        _friends = friends;
+        _leaderboard = leaderboard;
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
@@ -64,6 +69,12 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string GymLinkText { get; set; } = "";
     [ObservableProperty] public partial string? GymNotice { get; set; }
 
+    // ===== Friends card =====
+    [ObservableProperty] public partial string FriendsTitle { get; set; } = "Add friends";
+    [ObservableProperty] public partial bool HasFriends { get; set; }
+    [ObservableProperty] public partial int IncomingRequests { get; set; }
+    [ObservableProperty] public partial bool HasIncomingRequests { get; set; }
+
     private GymChoice? _lastGym;
 
     private async Task RefreshAsync()
@@ -82,6 +93,29 @@ public partial class HomeViewModel : ViewModelBase
         catch (Exception)
         {
             Error = "Could not load today's workout.";
+        }
+        await RefreshFriendsAsync(user.Id);
+    }
+
+    /// <summary>"#2 of 5 this week" and the incoming-requests badge. Runs after the user's own sync, so their
+    /// weekly points are already current. A failure only hides the card's details.</summary>
+    private async Task RefreshFriendsAsync(int userId)
+    {
+        try
+        {
+            IncomingRequests = await _friends.IncomingCountAsync(userId);
+            HasIncomingRequests = IncomingRequests > 0;
+
+            var board = await _leaderboard.GetAsync(userId, LeaderboardPeriod.ThisWeek);
+            HasFriends = board is { IsAlone: false };
+            FriendsTitle = board is { IsAlone: false, You: { } you }
+                ? $"#{you.Rank} of {board.Rows.Count} this week"
+                : "Add friends";
+        }
+        catch (Exception)
+        {
+            HasFriends = false;
+            FriendsTitle = "Friends";
         }
     }
 
@@ -256,4 +290,8 @@ public partial class HomeViewModel : ViewModelBase
     private void ShowProfile() => _shell().ShowProfile();
     [RelayCommand]
     private void ShowGymSummary() => _shell().ShowGymSummary();
+    [RelayCommand]
+    private void ShowFriends() => _shell().ShowFriends();
+    [RelayCommand]
+    private void ShowLeaderboard() => _shell().ShowLeaderboard();
 }
