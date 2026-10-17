@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.Desktop.ViewModels"
+             xmlns:svc="using:GymApp.Services"
+             x:Class="GymApp.Desktop.Views.CheckInView"
+             x:DataType="vm:CheckInViewModel">
+    <!-- The "I went today" popup, shown over Home -->
+    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16"
+            Width="400" MaxHeight="640" HorizontalAlignment="Center" VerticalAlignment="Center">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
+                <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/>
+
+                <!-- Rest day: pick which day you trained -->
+                <StackPanel Spacing="4" IsVisible="{Binding ShowDayPicker}">
+                    <TextBlock Text="Rest day. Which workout did you do?" Opacity="0.8" TextWrapping="Wrap"/>
+                    <ComboBox ItemsSource="{Binding PickableDays}" SelectedItem="{Binding PickedDay}"
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="svc:CheckInDay">
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <TextBlock Text="Enter kg and reps for what you did. Warm-ups are optional."
+                           Opacity="0.8" TextWrapping="Wrap" IsVisible="{Binding HasExercises}"/>
+            </StackPanel>
+
+            <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
+                <TextBlock Text="{Binding CounterText}" FontWeight="SemiBold" IsVisible="{Binding HasExercises}"/>
+                <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Grid.Column="1" Content="Log workout" Command="{Binding LogCommand}"
+                            IsEnabled="{Binding CanLog}" IsVisible="{Binding HasExercises}" Classes="accent"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Grid.Column="1" Content="Go to Workouts" Command="{Binding OpenWorkoutsCommand}"
+                            IsVisible="{Binding CanOpenWorkouts}" Classes="accent"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    <Button Grid.Column="1" Content="Go to Splits" Command="{Binding OpenSplitsCommand}"
+                            IsVisible="{Binding CanOpenSplits}" Classes="accent"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Nothing to fill in yet -->
+            <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" Opacity="0.8" VerticalAlignment="Top"
+                       IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <ScrollViewer IsVisible="{Binding HasExercises}">
+                <ItemsControl ItemsSource="{Binding Exercises}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CheckInExerciseViewModel">
+                            <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,8" Margin="0,0,12,0">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <StackPanel Spacing="0">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                                <TextBlock Text="✓" Foreground="SeaGreen" FontWeight="SemiBold"
+                                                           IsVisible="{Binding IsFilled}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding PlanSummary}" FontSize="12" Opacity="0.7"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Same as last time" FontSize="12"
+                                                Command="{Binding SameAsLastTimeCommand}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ItemsControl ItemsSource="{Binding Rows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:CheckInSetRowViewModel">
+                                                <Grid ColumnDefinitions="90,*,*" ColumnSpacing="8" Margin="0,0,0,4">
+                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Opacity="0.8"/>
+                                                    <TextBox Grid.Column="1" Text="{Binding WeightText}" PlaceholderText="kg"/>
+                                                    <TextBox Grid.Column="2" Text="{Binding RepsText}" PlaceholderText="reps"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <TextBlock Text="{Binding Info}" FontSize="12" Opacity="0.8" TextWrapping="Wrap"
+                                               IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>
