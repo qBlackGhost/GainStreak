@@ -174,8 +174,9 @@ public class PointsServiceTests : IDisposable
 
     [Fact] public async Task HooksInTheServices_KeepPointsInStep()
     {
+        _db.ReadyToCheckIn(_alice, D(0));
         var workouts = new WorkoutService(_db, new StreakService(_db), _svc);
-        var log = await workouts.LogTodayAsync(_alice);
+        var log = await workouts.LogTodayAsync(_alice, today: D(0));
         Assert.True(log.Success);
         Assert.Contains(log.Points!.Added, a => a.Reason == PointsReason.Workout);
         AssertCachedSum(_alice);

@@ -3,7 +3,8 @@
              xmlns:vm="using:GymApp.Desktop.ViewModels"
              x:Class="GymApp.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
-    <ScrollViewer>
+    <Grid>
+    <ScrollViewer IsEnabled="{Binding !IsCheckingIn}">
     <StackPanel Spacing="14" Width="360" Margin="0,24"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="{Binding Welcome}" FontSize="24" HorizontalAlignment="Center"/>
@@ -16,6 +17,23 @@
                 <Button Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
                         IsEnabled="{Binding CanLog}" Margin="0,8,0,0"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                <!-- Today only: undo the check-in (the sets stay) -->
+                <Button Classes="link" Content="Undo" Command="{Binding StartUndoCommand}"
+                        IsVisible="{Binding CanUndo}" HorizontalAlignment="Left" Padding="0"
+                        Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
+                <Border Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="1" CornerRadius="8"
+                        Padding="12" IsVisible="{Binding IsConfirmingUndo}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{x:Static vm:HomeViewModel.UndoConfirmText}" TextWrapping="Wrap"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Content="Keep it" Command="{Binding CancelUndoCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            <Button Grid.Column="1" Content="Undo check-in" Command="{Binding ConfirmUndoCommand}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
                 <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
                 <Border Background="#204682B4" BorderBrush="#804682B4" BorderThickness="1" CornerRadius="8"
@@ -119,4 +137,10 @@
                 HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
     </StackPanel>
     </ScrollViewer>
+
+    <!-- Check-in popup over Home -->
+    <Border Background="#80000000" IsVisible="{Binding IsCheckingIn}">
+        <ContentControl Content="{Binding CheckIn}" Margin="16"/>
+    </Border>
+    </Grid>
 </UserControl>

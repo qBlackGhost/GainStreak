@@ -21,11 +21,14 @@ public partial class HomeViewModel : ViewModelBase
     private readonly ProfileService _profiles;
     private readonly FriendService _friends;
     private readonly LeaderboardService _leaderboard;
+    private readonly SetService _sets;
+    private readonly WorkoutMenuService _menu;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
                          PointsService points, GymService gyms, ProfileService profiles,
-                         FriendService friends, LeaderboardService leaderboard)
+                         FriendService friends, LeaderboardService leaderboard,
+                         SetService sets, WorkoutMenuService menu)
     {
         _session = session;
         _shell = shell;
@@ -37,6 +40,8 @@ public partial class HomeViewModel : ViewModelBase
         _profiles = profiles;
         _friends = friends;
         _leaderboard = leaderboard;
+        _sets = sets;
+        _menu = menu;
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
@@ -46,6 +51,17 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string TodayHint { get; set; } = "";
     [ObservableProperty] public partial string LogLabel { get; set; } = "I went today";
     [ObservableProperty] public partial bool CanLog { get; set; }
+    [ObservableProperty] public partial bool CanUndo { get; set; }
+    [ObservableProperty] public partial bool IsConfirmingUndo { get; set; }
+
+    /// <summary>The check-in popup while it's open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCheckingIn))]
+    public partial CheckInViewModel? CheckIn { get; set; }
+
+    public bool IsCheckingIn => CheckIn is not null;
+
+    public const string UndoConfirmText = "Undo today's check-in? You'll lose today's +5 points and your streak goes back.";
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string StreakNote { get; set; } = "";
     [ObservableProperty] public partial string CaloriesTitle { get; set; } = "";
@@ -165,6 +181,8 @@ public partial class HomeViewModel : ViewModelBase
                   : "Rest day. You can still log an extra workout.";
         LogLabel = today.Logged ? "Logged ✓" : "I went today";
         CanLog = !today.Logged;
+        CanUndo = today.Logged;   // today only: after midnight yesterday's log is read-only
+        if (!today.Logged) IsConfirmingUndo = false;
 
         StreakText = $"{streak.Current} day streak · best {streak.Longest}";
         StreakNote = streak.Status switch
@@ -186,14 +204,20 @@ public partial class HomeViewModel : ViewModelBase
         }
     }
 
+    /// <summary>"I went today" opens the check-in popup; the popup saves the sets and logs the workout.</summary>
     [RelayCommand]
-    private async Task LogTodayAsync()
+    private void LogToday()
     {
         if (!CanLog || _session.CurrentUser is not { } user) return;
+        Error = null;
+        CheckIn = new CheckInViewModel(_workouts, _sets, _menu, _shell, user.Id, r => _ = CheckedInAsync(r),
+            () => CheckIn = null);
+    }
 
-        var result = await _workouts.LogTodayAsync(user.Id);
-        if (!result.Success) { Error = result.Error; return; }
-
+    private async Task CheckedInAsync(LogResult result)
+    {
+        CheckIn = null;
+        if (_session.CurrentUser is not { } user) return;
         Error = null;
         Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
         ApplyPoints(result.Points);
@@ -201,6 +225,36 @@ public partial class HomeViewModel : ViewModelBase
         // The workout is saved; now (optionally) ask for the gym
         var gym = await RefreshGymAsync(user.Id);
         ShowGymPrompt = gym is { LoggedToday: true, Gym: null, AskAfterCheckIn: true };
+        await RefreshFriendsAsync(user.Id);
+    }
+
+    [RelayCommand] private void StartUndo() => IsConfirmingUndo = true;
+    [RelayCommand] private void CancelUndo() => IsConfirmingUndo = false;
+
+    [RelayCommand]
+    private async Task ConfirmUndoAsync()
+    {
+        IsConfirmingUndo = false;
+        if (_session.CurrentUser is not { } user) return;
+        try
+        {
+            var result = await _workouts.UndoTodayAsync(user.Id);
+            if (!result.Success) { Error = result.Error; return; }
+
+            Error = null;
+            PointsNotice = null;
+            GymNotice = null;
+            ShowGymPrompt = false;
+            Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
+            user.LongestStreak = result.Streak!.Longest;   // undo may lower the best streak
+            ApplyPoints(result.Points);
+            await RefreshGymAsync(user.Id);
+        }
+        catch (Exception)
+        {
+            Error = "Could not undo today's check-in.";
+        }
+        await RefreshFriendsAsync(user.Id);
     }
 
     /// <summary>Updates the "Add gym" / "Change gym" link under today's log. Only today's log has it, so after

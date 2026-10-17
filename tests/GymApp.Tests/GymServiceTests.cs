@@ -186,8 +186,9 @@ public class GymServiceTests : IDisposable
     [Fact] public async Task PickingAGym_ChangesNoPointsAndNoStreak()
     {
         var points = new PointsService(_db);
+        _db.ReadyToCheckIn(_alice, DateOnly.FromDateTime(DateTime.Now));
         var workouts = new WorkoutService(_db, new StreakService(_db), points);
-        await workouts.LogTodayAsync(_alice);
+        Assert.True((await workouts.LogTodayAsync(_alice)).Success);
         int Entries() { using var db = _db.CreateDbContext(); return db.PointsEntries.Count(p => p.UserId == _alice); }
         (int, int, int) UserState() { using var db = _db.CreateDbContext(); var u = db.Users.Single(x => x.Id == _alice); return (u.Points, u.CurrentStreak, u.LongestStreak); }
         var before = (Entries(), UserState());
