@@ -105,6 +105,21 @@ public class WorkoutServiceTests : IDisposable
         Assert.Equal(new CheckInStatus(1, 2, 3, false), info.Status);
     }
 
+    [Fact] public async Task GetCheckIn_IncludesTheMostRecentEarlierSession()
+    {
+        var ex = _db.AddDayExercises(_alice, _arms, 2);
+        await Fill(ex[0], D(-7), working: 3, warmups: 1);
+        await Fill(ex[0], D(-3), working: 2);
+        await Fill(ex[0], Fri, working: 1);   // today's sets aren't "previous"
+
+        var info = await _svc.GetCheckInAsync(_alice, today: Fri);
+
+        var last = info.Exercises[0].LastSession;
+        Assert.Equal(2, last.Count);
+        Assert.All(last, s => Assert.Equal(D(-3), s.Date));
+        Assert.Empty(info.Exercises[1].LastSession);
+    }
+
     [Fact] public async Task GetCheckIn_RestDay_OffersOnlyDaysWithExercises_AndFollowsThePick()
     {
         _db.AddDayExercises(_alice, _push, 2);
@@ -260,6 +275,8 @@ public class WorkoutServiceTests : IDisposable
         Assert.DoesNotContain(Entries(_alice), p => p.Reason == PointsReason.WeekComplete);
         Assert.Equal(3 * 5, CachedPoints(_alice));
         Assert.Equal(3 * 5, undone.Points!.NewTotal);
+        Assert.Equal([(PointsReason.Workout, 5), (PointsReason.WeekComplete, 50)],
+            undone.Points.Removed.Select(r => (r.Reason, r.Amount)).OrderBy(r => r.Reason));
     }
 
     [Fact] public async Task Undo_KeepsAnOlderBestStreak()

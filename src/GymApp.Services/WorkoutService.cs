@@ -17,8 +17,10 @@ public record LogResult(bool Success, string? Error = null, StreakResult? Streak
 /// <summary>A split day that can be checked in.</summary>
 public record CheckInDay(int SplitDayId, string Name);
 
-/// <summary>One exercise in the check-in popup, with the sets already logged for it today.</summary>
-public record CheckInExerciseInfo(int ExerciseId, string Name, int WarmupSets, int WorkingSets, IReadOnlyList<SetEntry> TodaySets);
+/// <summary>One exercise in the check-in popup, with the sets already logged for it today and the sets of the most
+/// recent earlier session (empty when there is none).</summary>
+public record CheckInExerciseInfo(int ExerciseId, string Name, int WarmupSets, int WorkingSets, IReadOnlyList<SetEntry> TodaySets,
+    IReadOnlyList<SetEntry> LastSession);
 
 /// <summary>
 /// What the check-in popup shows. <see cref="PlannedDay"/> is null on a rest day or with no split; then
@@ -162,13 +164,17 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
             .ToListAsync();
         var ids = rows.Select(r => r.ExerciseId).ToList();
         var sets = await db.SetLogs.AsNoTracking()
-            .Where(s => s.UserId == userId && s.Date == date && ids.Contains(s.ExerciseId))
-            .OrderBy(s => s.SetNumber)
+            .Where(s => s.UserId == userId && s.Date <= date && ids.Contains(s.ExerciseId))
             .ToListAsync();
         var byExercise = sets.ToLookup(s => s.ExerciseId, s => new SetEntry(s.Date, s.SetNumber, s.Kind, s.Reps, s.WeightKg));
 
-        return rows.Select(r => new CheckInExerciseInfo(r.ExerciseId, r.Name, r.WarmupSets, r.WorkingSets,
-            byExercise[r.ExerciseId].ToList())).ToList();
+        return rows.Select(r =>
+        {
+            var all = byExercise[r.ExerciseId].ToList();
+            return new CheckInExerciseInfo(r.ExerciseId, r.Name, r.WarmupSets, r.WorkingSets,
+                all.Where(s => s.Date == date).OrderBy(s => s.SetNumber).ToList(),
+                PrCalculator.LastSession(all, date));
+        }).ToList();
     }
 
     /// <summary>The selected split's days that have at least one exercise, for the rest-day picker.</summary>

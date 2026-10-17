@@ -58,5 +58,8 @@
     <Compile Update="Views\FriendsView.axaml.cs">
       <DependentUpon>FriendsView.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\CheckInView.axaml.cs">
+      <DependentUpon>CheckInView.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

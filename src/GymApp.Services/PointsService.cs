@@ -9,8 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Services;
 
-/// <summary>What a sync changed, for the points notice. <see cref="Added"/> is in date order.</summary>
-public record PointsSync(int OldTotal, int NewTotal, LevelInfo OldLevel, LevelInfo NewLevel, IReadOnlyList<PointsAward> Added)
+/// <summary>What a sync changed, for the points notice. <see cref="Added"/> is in date order; <see cref="Removed"/>
+/// are the entries the rules no longer want (e.g. after undoing a check-in).</summary>
+public record PointsSync(int OldTotal, int NewTotal, LevelInfo OldLevel, LevelInfo NewLevel, IReadOnlyList<PointsAward> Added,
+    IReadOnlyList<PointsAward> Removed)
 {
     public bool LeveledUp => NewLevel.Number > OldLevel.Number;
 }
@@ -112,6 +114,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
 
         var oldTotal = user.Points;
         var added = new List<PointsAward>();
+        var removed = new List<PointsAward>();
 
         await using var tx = await db.Database.BeginTransactionAsync();
 
@@ -120,7 +123,12 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
 
         foreach (var entry in stored.Where(p => p.Date >= windowStart))
         {
-            if (!wanted.TryGetValue(entry.DedupKey, out var w)) { db.PointsEntries.Remove(entry); continue; }
+            if (!wanted.TryGetValue(entry.DedupKey, out var w))
+            {
+                db.PointsEntries.Remove(entry);
+                removed.Add(new PointsAward(entry.Reason, entry.Amount, entry.Date, entry.DedupKey));
+                continue;
+            }
             // A +50 week can't turn into +25 by the rules, but keep the entry exact if it ever does
             entry.Reason = w.Reason;
             entry.Amount = w.Amount;
@@ -141,6 +149,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
         await db.SaveChangesAsync();
         await tx.CommitAsync();
 
-        return new PointsSync(oldTotal, user.Points, LevelCalculator.For(oldTotal), LevelCalculator.For(user.Points), added);
+        return new PointsSync(oldTotal, user.Points, LevelCalculator.For(oldTotal), LevelCalculator.For(user.Points), added,
+            removed.OrderBy(r => r.Date).ToList());
     }
 }

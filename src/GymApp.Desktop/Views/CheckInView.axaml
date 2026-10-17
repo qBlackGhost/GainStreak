@@ -25,8 +25,6 @@
                     </ComboBox>
                 </StackPanel>
 
-                <TextBlock Text="Enter kg and reps for what you did. Warm-ups are optional."
-                           Opacity="0.8" TextWrapping="Wrap" IsVisible="{Binding HasExercises}"/>
             </StackPanel>
 
             <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
@@ -66,17 +64,21 @@
                                                            IsVisible="{Binding IsFilled}"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding PlanSummary}" FontSize="12" Opacity="0.7"/>
+                                            <TextBlock Text="{Binding LastSessionText}" FontSize="12"
+                                                       Foreground="{DynamicResource TextControlPlaceholderForeground}"
+                                                       TextWrapping="Wrap" IsVisible="{Binding HasLastSession}"/>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="Same as last time" FontSize="12"
-                                                Command="{Binding SameAsLastTimeCommand}" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Content="Fill from previous workout" FontSize="12"
+                                                Command="{Binding FillFromPreviousCommand}" IsVisible="{Binding HasLastSession}"
+                                                VerticalAlignment="Center"/>
                                     </Grid>
                                     <ItemsControl ItemsSource="{Binding Rows}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:CheckInSetRowViewModel">
                                                 <Grid ColumnDefinitions="90,*,*" ColumnSpacing="8" Margin="0,0,0,4">
                                                     <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Opacity="0.8"/>
-                                                    <TextBox Grid.Column="1" Text="{Binding WeightText}" PlaceholderText="kg"/>
-                                                    <TextBox Grid.Column="2" Text="{Binding RepsText}" PlaceholderText="reps"/>
+                                                    <TextBox Grid.Column="1" Text="{Binding WeightText}" PlaceholderText="{Binding WeightHint}"/>
+                                                    <TextBox Grid.Column="2" Text="{Binding RepsText}" PlaceholderText="{Binding RepsHint}"/>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>

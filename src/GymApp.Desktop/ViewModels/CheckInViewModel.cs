@@ -16,17 +16,24 @@ public partial class CheckInSetRowViewModel : ObservableObject
 {
     private readonly CheckInViewModel _owner;
 
-    public CheckInSetRowViewModel(CheckInViewModel owner, SetKind kind, int number, string weightText, string repsText)
+    public CheckInSetRowViewModel(CheckInViewModel owner, SetKind kind, int number, string weightText, string repsText,
+                                  SetEntry? previous)
     {
         _owner = owner;
         Kind = kind;
         Label = kind == SetKind.Warmup ? $"Warm-up {number}" : $"Set {number}";
         WeightText = weightText;
         RepsText = repsText;
+        WeightHint = previous is null ? "kg" : $"{NumberParsing.FormatKg(previous.WeightKg)} kg";
+        RepsHint = previous is null ? "reps" : $"{previous.Reps} reps";
     }
 
     public SetKind Kind { get; }
     public string Label { get; }
+
+    /// <summary>Placeholders: the same set from the previous workout, only a suggestion until "Fill from previous workout".</summary>
+    public string WeightHint { get; }
+    public string RepsHint { get; }
 
     [ObservableProperty] public partial string WeightText { get; set; } = "";
     [ObservableProperty] public partial string RepsText { get; set; } = "";
@@ -57,6 +64,8 @@ public partial class CheckInExerciseViewModel : ObservableObject
         PlanSummary = info.WarmupSets > 0
             ? $"{info.WarmupSets} warm-up · {info.WorkingSets} working"
             : $"{info.WorkingSets} working";
+        _lastSession = info.LastSession;
+        LastSessionText = LastSessionSummary(info.LastSession);
         Fill(info.TodaySets.Count > 0 ? info.TodaySets : null, info.WarmupSets, info.WorkingSets);
     }
 
@@ -65,6 +74,24 @@ public partial class CheckInExerciseViewModel : ObservableObject
     public int WorkingSets { get; }
     public string PlanSummary { get; }
     public ObservableCollection<CheckInSetRowViewModel> Rows { get; } = new();
+
+    private readonly IReadOnlyList<SetEntry> _lastSession;
+
+    /// <summary>"Last time (12 Oct): warm-up 20×10 | 60×8 · 60×8" (kg×reps), or null with no earlier session.</summary>
+    public string? LastSessionText { get; }
+    public bool HasLastSession => LastSessionText is not null;
+
+    internal static string? LastSessionSummary(IReadOnlyList<SetEntry> sets)
+    {
+        if (sets.Count == 0) return null;
+        static string Set(SetEntry s) => $"{NumberParsing.FormatKg(s.WeightKg)}×{s.Reps}";
+        var warmups = sets.Where(s => s.Kind == SetKind.Warmup).Select(Set).ToList();
+        var working = sets.Where(s => s.Kind == SetKind.Working).Select(Set).ToList();
+        var parts = new List<string>();
+        if (warmups.Count > 0) parts.Add("warm-up " + string.Join(" · ", warmups));
+        if (working.Count > 0) parts.Add(string.Join(" · ", working));
+        return $"Last time ({sets[0].Date.ToString("d MMM", CultureInfo.InvariantCulture)}): {string.Join(" | ", parts)}";
+    }
 
     [ObservableProperty] public partial bool IsFilled { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
@@ -83,17 +110,21 @@ public partial class CheckInExerciseViewModel : ObservableObject
             Rows.Add(Row(SetKind.Working, i, working));
     }
 
-    private CheckInSetRowViewModel Row(SetKind kind, int i, List<SetEntry> sets) =>
-        i < sets.Count
-            ? new(_owner, kind, i + 1, NumberParsing.FormatKg(sets[i].WeightKg), sets[i].Reps.ToString(CultureInfo.InvariantCulture))
-            : new(_owner, kind, i + 1, "", "");
+    private CheckInSetRowViewModel Row(SetKind kind, int i, List<SetEntry> sets)
+    {
+        // The same set last time (n-th warm-up or n-th working set), shown as the placeholder
+        var previous = _lastSession.Where(s => s.Kind == kind).ElementAtOrDefault(i);
+        return i < sets.Count
+            ? new(_owner, kind, i + 1, NumberParsing.FormatKg(sets[i].WeightKg), sets[i].Reps.ToString(CultureInfo.InvariantCulture), previous)
+            : new(_owner, kind, i + 1, "", "", previous);
+    }
 
     /// <summary>The fully filled rows, as the rule sees them.</summary>
     internal CheckInExercise ToRuleInput(DateOnly today) =>
         new(ExerciseId, WorkingSets, Rows.Select(r => r.ToInput()).OfType<SetInput>()
             .Select((s, i) => new SetEntry(today, i + 1, s.Kind, s.Reps, s.WeightKg)).ToList());
 
-    [RelayCommand] private Task SameAsLastTimeAsync() => _owner.PrefillAsync(this);
+    [RelayCommand] private void FillFromPrevious() => _owner.Prefill(this, _lastSession);
 }
 
 /// <summary>
@@ -207,25 +238,17 @@ public partial class CheckInViewModel : ViewModelBase
         CanLog = status.CanLog && !IsSaving;
     }
 
-    internal async Task PrefillAsync(CheckInExerciseViewModel exercise)
+    internal void Prefill(CheckInExerciseViewModel exercise, IReadOnlyList<SetEntry> last)
     {
-        try
-        {
-            var last = await _sets.GetLastSessionAsync(_userId, exercise.ExerciseId, _today);
-            if (last.Count == 0) { exercise.Info = "No earlier session to copy yet."; return; }
+        if (last.Count == 0) { exercise.Info = "No previous workout to copy yet."; return; }
 
-            _loading = true;
-            var plannedWarmups = exercise.Rows.Count(r => r.Kind == SetKind.Warmup);
-            exercise.Fill(last, plannedWarmups, exercise.WorkingSets);
-            _loading = false;
-            exercise.Info = $"Filled from {ExerciseViewModel.FormatDate(last[0].Date)}.";
-            Refresh();
-        }
-        catch (Exception)
-        {
-            _loading = false;
-            Error = "Could not load your last session.";
-        }
+        _loading = true;
+        var plannedWarmups = exercise.Rows.Count(r => r.Kind == SetKind.Warmup);
+        exercise.Fill(last, plannedWarmups, exercise.WorkingSets);
+        _loading = false;
+        exercise.Info = null;
+        Error = null;
+        Refresh();
     }
 
     [RelayCommand]

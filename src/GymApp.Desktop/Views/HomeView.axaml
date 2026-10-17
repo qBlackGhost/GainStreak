@@ -25,7 +25,7 @@
                 <Border Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="1" CornerRadius="8"
                         Padding="12" IsVisible="{Binding IsConfirmingUndo}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="{x:Static vm:HomeViewModel.UndoConfirmText}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding UndoConfirmText}" TextWrapping="Wrap"/>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                             <Button Content="Keep it" Command="{Binding CancelUndoCommand}"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
@@ -76,6 +76,8 @@
                 <TextBlock Text="{Binding LevelHint}" Opacity="0.8" TextWrapping="Wrap"/>
                 <TextBlock Text="{Binding PointsNotice}" Foreground="SeaGreen" FontWeight="SemiBold" TextWrapping="Wrap"
                            IsVisible="{Binding PointsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding PointsLostNotice}" Foreground="IndianRed" FontWeight="SemiBold" TextWrapping="Wrap"
+                           IsVisible="{Binding PointsLostNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             </StackPanel>
         </Border>
 

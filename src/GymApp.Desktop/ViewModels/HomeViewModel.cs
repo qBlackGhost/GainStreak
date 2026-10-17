@@ -61,7 +61,10 @@ public partial class HomeViewModel : ViewModelBase
 
     public bool IsCheckingIn => CheckIn is not null;
 
-    public const string UndoConfirmText = "Undo today's check-in? You'll lose today's +5 points and your streak goes back.";
+    [ObservableProperty] public partial string UndoConfirmText { get; set; } = "";
+
+    /// <summary>What the last undo took away, e.g. "−5 Workout · −50 Week complete".</summary>
+    [ObservableProperty] public partial string? PointsLostNotice { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string StreakNote { get; set; } = "";
     [ObservableProperty] public partial string CaloriesTitle { get; set; } = "";
@@ -219,6 +222,7 @@ public partial class HomeViewModel : ViewModelBase
         CheckIn = null;
         if (_session.CurrentUser is not { } user) return;
         Error = null;
+        PointsLostNotice = null;
         Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
         ApplyPoints(result.Points);
 
@@ -228,7 +232,29 @@ public partial class HomeViewModel : ViewModelBase
         await RefreshFriendsAsync(user.Id);
     }
 
-    [RelayCommand] private void StartUndo() => IsConfirmingUndo = true;
+    /// <summary>Names everything today's check-in earned (the +5, and a week bonus when it completed the week).</summary>
+    [RelayCommand]
+    private async Task StartUndoAsync()
+    {
+        var earned = "today's +5";
+        if (_session.CurrentUser is { } user)
+        {
+            try
+            {
+                var today = DateOnly.FromDateTime(DateTime.Now);
+                var lines = (await _points.GetAsync(user.Id))?.History.Where(l => l.Date == today).ToList() ?? [];
+                if (lines.Count > 0)
+                    earned = "today's " + string.Join(" and ", lines.GroupBy(l => l.Reason)
+                        .Select(g => $"+{N(g.Sum(l => l.Amount))} {PointsCalculator.DisplayName(g.Key)}"));
+            }
+            catch (Exception)
+            {
+                // keep the generic text
+            }
+        }
+        UndoConfirmText = $"Undo today's check-in? You'll lose {earned} points and your streak goes back.";
+        IsConfirmingUndo = true;
+    }
     [RelayCommand] private void CancelUndo() => IsConfirmingUndo = false;
 
     [RelayCommand]
@@ -244,6 +270,10 @@ public partial class HomeViewModel : ViewModelBase
             Error = null;
             PointsNotice = null;
             GymNotice = null;
+            PointsLostNotice = result.Points is { Removed.Count: > 0 } sync
+                ? string.Join(" · ", sync.Removed.GroupBy(a => a.Reason)
+                    .Select(g => $"−{N(g.Sum(a => a.Amount))} {PointsCalculator.DisplayName(g.Key)}"))
+                : null;
             ShowGymPrompt = false;
             Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
             user.LongestStreak = result.Streak!.Longest;   // undo may lower the best streak
