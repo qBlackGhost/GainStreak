@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GymApp.Services;
 
 public record DayInput(DayOfWeek Weekday, string Name);
-public record SplitResult(bool Success, string? Error = null);
+public record SplitResult(bool Success, string? Error = null, string? Field = null);
 
 public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsService points)
 {
@@ -39,14 +39,14 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
 
     public async Task<SplitResult> CreateAsync(int userId, string name, IReadOnlyList<DayInput> days)
     {
-        if (Validate(name, days) is { } error) return new(false, error);
+        if (Validate(name, days) is ({ } error, var field)) return new(false, error, field);
         name = name.Trim();
 
         await using var db = await dbFactory.CreateDbContextAsync();
         if (await db.WorkoutSplits.CountAsync(s => s.OwnerUserId == userId) >= MaxCustomSplits)
             return new(false, $"You can have at most {MaxCustomSplits} custom splits.");
         if (await NameTakenAsync(db, userId, name, exceptId: 0))
-            return new(false, "You already have a split with that name.");
+            return new(false, "You already have a split with that name.", FormField.Name);
 
         var split = new WorkoutSplit { Name = name, OwnerUserId = userId };
         var order = 1;
@@ -60,7 +60,7 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
 
     public async Task<SplitResult> UpdateAsync(int userId, int splitId, string name, IReadOnlyList<DayInput> days)
     {
-        if (Validate(name, days) is { } error) return new(false, error);
+        if (Validate(name, days) is ({ } error, var field)) return new(false, error, field);
         name = name.Trim();
 
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -68,7 +68,7 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
             .FirstOrDefaultAsync(s => s.Id == splitId && s.OwnerUserId == userId);
         if (split is null) return new(false, "Split not found.");
         if (await NameTakenAsync(db, userId, name, splitId))
-            return new(false, "You already have a split with that name.");
+            return new(false, "You already have a split with that name.", FormField.Name);
 
         split.Name = name;
         var wanted = Normalize(days);
@@ -178,14 +178,14 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
             s.OwnerUserId == userId && s.Id != exceptId && s.Name.ToLower() == lowered);
     }
 
-    private static string? Validate(string name, IReadOnlyList<DayInput> days)
+    private static (string? Error, string? Field) Validate(string name, IReadOnlyList<DayInput> days)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "Give your split a name.";
-        if (name.Trim().Length > 40) return "Split name must be at most 40 characters.";
-        if (days.Count == 0) return "Pick at least one training day.";
-        if (days.Any(d => string.IsNullOrWhiteSpace(d.Name))) return "Every selected day needs a name.";
-        if (days.Any(d => d.Name.Trim().Length > 20)) return "Day names must be at most 20 characters.";
-        if (days.Select(d => d.Weekday).Distinct().Count() != days.Count) return "A weekday was selected twice.";
-        return null;
+        if (string.IsNullOrWhiteSpace(name)) return ("Give your split a name.", FormField.Name);
+        if (name.Trim().Length > 40) return ("Split name must be at most 40 characters.", FormField.Name);
+        if (days.Count == 0) return ("Pick at least one training day.", FormField.Days);
+        if (days.Any(d => string.IsNullOrWhiteSpace(d.Name))) return ("Every selected day needs a name.", FormField.Days);
+        if (days.Any(d => d.Name.Trim().Length > 20)) return ("Day names must be at most 20 characters.", FormField.Days);
+        if (days.Select(d => d.Weekday).Distinct().Count() != days.Count) return ("A weekday was selected twice.", FormField.Days);
+        return (null, null);
     }
 }

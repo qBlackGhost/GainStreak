@@ -12,7 +12,7 @@ namespace GymApp.Services;
 /// <summary>What the profile form saves. Everything is metric; empty fields are allowed.</summary>
 public record ProfileInput(Sex? Sex, DateOnly? BirthDate, double? HeightCm, ActivityLevel? ActivityLevel, UnitSystem Units);
 
-public record ProfileResult(bool Success, string? Error = null);
+public record ProfileResult(bool Success, string? Error = null, string? Field = null);
 
 public record WeightResult(bool Success, string? Error = null, WeightLog? Entry = null);
 
@@ -71,7 +71,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<ProfileResult> SaveAsync(int userId, ProfileInput input, DateOnly? today = null)
     {
         var day = today ?? Today;
-        if (Validate(input, day) is { } error) return new(false, error);
+        if (Validate(input, day) is ({ } error, var field)) return new(false, error, field);
 
         await using var db = await dbFactory.CreateDbContextAsync();
         if (!await db.Users.AnyAsync(u => u.Id == userId)) return new(false, "User not found.");
@@ -199,15 +199,15 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         return new(BodyMetrics.RoundTo10(bmr * factor), Bmr: BodyMetrics.RoundTo10(bmr), ActivityFactor: factor);
     }
 
-    private static string? Validate(ProfileInput input, DateOnly today)
+    private static (string? Error, string? Field) Validate(ProfileInput input, DateOnly today)
     {
-        if (input.Sex is { } sex && !Enum.IsDefined(sex)) return "Pick male or female.";
-        if (!Enum.IsDefined(input.Units)) return "Pick a unit system.";
-        if (input.BirthDate is { } b && BodyMetrics.CheckBirthDate(b, today) is { } e1) return e1;
-        if (input.HeightCm is { } h && !double.IsFinite(h)) return "Enter a valid height.";
-        if (input.HeightCm is { } h2 && BodyMetrics.CheckHeight(h2) is { } e2) return e2;
-        if (input.ActivityLevel is { } a && !Enum.IsDefined(a)) return "Pick an activity level.";
-        return null;
+        if (input.Sex is { } sex && !Enum.IsDefined(sex)) return ("Pick male or female.", FormField.Sex);
+        if (!Enum.IsDefined(input.Units)) return ("Pick a unit system.", FormField.Units);
+        if (input.BirthDate is { } b && BodyMetrics.CheckBirthDate(b, today) is { } e1) return (e1, FormField.BirthDate);
+        if (input.HeightCm is { } h && !double.IsFinite(h)) return ("Enter a valid height.", FormField.Height);
+        if (input.HeightCm is { } h2 && BodyMetrics.CheckHeight(h2) is { } e2) return (e2, FormField.Height);
+        if (input.ActivityLevel is { } a && !Enum.IsDefined(a)) return ("Pick an activity level.", FormField.ActivityLevel);
+        return (null, null);
     }
 
     private static string JoinList(List<string> items) => items.Count switch

@@ -26,11 +26,18 @@ public partial class LoginViewModel : ViewModelBase
     [RelayCommand]
     private async Task LoginAsync()
     {
-        var result = await _auth.LoginAsync(Username, Password);
-        if (!result.Success) { Error = result.Error; return; }
+        try
+        {
+            var result = await _auth.LoginAsync(Username, Password);
+            if (!result.Success) { Error = result.Error; return; }
 
-        _remember.Remember(result.User!, RememberMe);   // before SignIn, which triggers navigation
-        _session.SignIn(result.User!);
+            _remember.Remember(result.User!, RememberMe);   // before SignIn, which triggers navigation
+            _session.SignIn(result.User!);
+        }
+        catch (Exception)
+        {
+            Error = "Could not sign in. Try again.";
+        }
     }
 
     [RelayCommand]

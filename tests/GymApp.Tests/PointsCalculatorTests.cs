@@ -13,13 +13,15 @@ public class PointsCalculatorTests
     // PPL: Mon W, Tue W, Wed W, Thu R, Fri W, Sat W, Sun W
     private static readonly ScheduleChange[] Ppl = { new ScheduleChange(Mon, "WWWRWWW") };
 
+    private static readonly Dictionary<DateOnly, MissChoice> NoChoices = new();
+
     /// <summary>Runs the calculator on the real streak replay, like PointsService does.</summary>
     private static IReadOnlyList<PointsAward> Run(int[] logged, int today, IReadOnlyList<ScheduleChange>? schedule = null,
         CalorieRecord[]? calories = null, int windowStart = 0)
     {
         var s = schedule ?? UpperLower;
         var dates = logged.Select(D).ToList();
-        var timeline = StreakCalculator.Timeline(dates, s, D(today), D(windowStart),
+        var timeline = StreakCalculator.Timeline(dates, s, NoChoices, D(today), D(windowStart),
             PointsCalculator.MondayOf(D(today)).AddDays(6));
         DateOnly? start = s.Count == 0 ? null : s.Min(c => c.EffectiveFrom);
         return PointsCalculator.Calculate(dates, timeline, start, calories ?? [], D(today), D(windowStart));

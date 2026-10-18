@@ -28,16 +28,24 @@ public partial class SplitsViewModel : ViewModelBase
 
     private async Task LoadAsync()
     {
-        var user = _session.CurrentUser!;
-        var presets = await _splits.GetPresetsAsync();
-        var custom = await _splits.GetCustomAsync(user.Id);
+        try
+        {
+            var user = _session.CurrentUser!;
+            var presets = await _splits.GetPresetsAsync();
+            var custom = await _splits.GetCustomAsync(user.Id);
 
-        Presets.Clear(); Custom.Clear();
-        foreach (var s in presets) Presets.Add(new(s, s.Id == user.SelectedSplitId, this));
-        foreach (var s in custom) Custom.Add(new(s, s.Id == user.SelectedSplitId, this));
+            Presets.Clear(); Custom.Clear();
+            foreach (var s in presets) Presets.Add(new(s, s.Id == user.SelectedSplitId, this));
+            foreach (var s in custom) Custom.Add(new(s, s.Id == user.SelectedSplitId, this));
 
-        CanAddCustom = custom.Count < SplitService.MaxCustomSplits;
-        CustomCounter = $"{custom.Count} / {SplitService.MaxCustomSplits} custom splits";
+            CanAddCustom = custom.Count < SplitService.MaxCustomSplits;
+            CustomCounter = $"{custom.Count} / {SplitService.MaxCustomSplits} custom splits";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load your splits.";
+        }
     }
 
     // Selecting a split now happens on its detail page (variant + start day live there)
@@ -47,15 +55,23 @@ public partial class SplitsViewModel : ViewModelBase
 
     internal async Task DeleteAsync(SplitItemViewModel item)
     {
-        var user = _session.CurrentUser!;
-        await _splits.DeleteAsync(user.Id, item.Split.Id);
-        if (user.SelectedSplitId == item.Split.Id)
+        try
         {
-            user.SelectedSplitId = null;
-            user.SelectedVariantId = null;
-            user.SplitStartDay = null;
+            var user = _session.CurrentUser!;
+            await _splits.DeleteAsync(user.Id, item.Split.Id);
+            if (user.SelectedSplitId == item.Split.Id)
+            {
+                user.SelectedSplitId = null;
+                user.SelectedVariantId = null;
+                user.SplitStartDay = null;
+            }
+            await LoadAsync();
+
         }
-        await LoadAsync();
+        catch (Exception)
+        {
+            Error = "Could not delete that split.";
+        }
     }
 
     [RelayCommand] private void New() => _shell().ShowSplitEditor(null);

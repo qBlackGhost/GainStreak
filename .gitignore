@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Word lock files (e.g. ~$mApp_Implementation_Plan.docx while the plan is open)
+~$*
+
+# dotnet publish output (see README)
+publish/

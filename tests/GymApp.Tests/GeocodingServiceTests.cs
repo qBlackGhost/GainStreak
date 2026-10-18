@@ -69,6 +69,14 @@ public class GeocodingServiceTests
         Assert.Contains("internet", r.Error);
     }
 
+    [Fact] public async Task NetworkError_CanBeRetried_ButABadQueryCant()
+    {
+        Assert.True((await Svc(FakeHttpHandler.Throws(new HttpRequestException("no route"))).SearchAsync("Timișoara")).CanRetry);
+        Assert.True((await Svc(FakeHttpHandler.Throws(new HttpRequestException("no route")))
+            .SearchAddressAsync("Calea Aradului", new GymApp.Data.Models.City { Name = "Timișoara", DisplayName = "Timișoara" })).CanRetry);
+        Assert.False((await Svc(FakeHttpHandler.Json("[]")).SearchAsync("   ")).CanRetry);
+    }
+
     [Fact] public async Task BrokenJson_ComesBackAsAResult()
     {
         var r = await Svc(FakeHttpHandler.Json("<html>oops</html>")).SearchAsync("Timișoara");

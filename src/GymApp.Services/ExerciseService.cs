@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Services;
 
-public record ExerciseResult(bool Success, string? Error = null, Exercise? Exercise = null);
+public record ExerciseResult(bool Success, string? Error = null, Exercise? Exercise = null, string? Field = null);
 
 /// <summary>How much of the user's data points at an exercise. Deleting it removes all of this too.</summary>
 public record ExerciseUsage(int DayLists, int Sets);
@@ -48,19 +48,19 @@ public class ExerciseService(IDbContextFactory<AppDbContext> dbFactory)
 
     public async Task<ExerciseResult> CreateAsync(int userId, string name, MuscleGroup group)
     {
-        if (Validate(name, group) is { } error) return new(false, error);
+        if (Validate(name, group) is ({ } error, var field)) return new(false, error, Field: field);
         name = name.Trim();
 
         await using var db = await dbFactory.CreateDbContextAsync();
         if (await db.Exercises.CountAsync(e => e.OwnerUserId == userId) >= MaxCustomExercises)
             return new(false, $"You can have at most {MaxCustomExercises} custom exercises.");
         if (await NameTakenAsync(db, userId, name, exceptId: 0))
-            return new(false, "An exercise with that name already exists.");
+            return new(false, "An exercise with that name already exists.", Field: FormField.Name);
 
         var exercise = new Exercise { Name = name, MuscleGroup = group, OwnerUserId = userId };
         db.Exercises.Add(exercise);
         try { await db.SaveChangesAsync(); }
-        catch (DbUpdateException) { return new(false, "An exercise with that name already exists."); }
+        catch (DbUpdateException) { return new(false, "An exercise with that name already exists.", Field: FormField.Name); }
 
         return new(true, Exercise: exercise);
     }
@@ -68,19 +68,19 @@ public class ExerciseService(IDbContextFactory<AppDbContext> dbFactory)
     /// <summary>Only the user's own exercises can be edited, never built-ins.</summary>
     public async Task<ExerciseResult> UpdateAsync(int userId, int exerciseId, string name, MuscleGroup group)
     {
-        if (Validate(name, group) is { } error) return new(false, error);
+        if (Validate(name, group) is ({ } error, var field)) return new(false, error, Field: field);
         name = name.Trim();
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var exercise = await db.Exercises.FirstOrDefaultAsync(e => e.Id == exerciseId && e.OwnerUserId == userId);
         if (exercise is null) return new(false, "Exercise not found.");
         if (await NameTakenAsync(db, userId, name, exerciseId))
-            return new(false, "An exercise with that name already exists.");
+            return new(false, "An exercise with that name already exists.", Field: FormField.Name);
 
         exercise.Name = name;
         exercise.MuscleGroup = group;
         try { await db.SaveChangesAsync(); }
-        catch (DbUpdateException) { return new(false, "An exercise with that name already exists."); }
+        catch (DbUpdateException) { return new(false, "An exercise with that name already exists.", Field: FormField.Name); }
 
         return new(true, Exercise: exercise);
     }
@@ -111,11 +111,11 @@ public class ExerciseService(IDbContextFactory<AppDbContext> dbFactory)
         db.Exercises.AnyAsync(e =>
             (e.OwnerUserId == null || e.OwnerUserId == userId) && e.Id != exceptId && e.Name == name);
 
-    private static string? Validate(string name, MuscleGroup group)
+    private static (string? Error, string? Field) Validate(string name, MuscleGroup group)
     {
-        if (string.IsNullOrWhiteSpace(name)) return "Give your exercise a name.";
-        if (name.Trim().Length > MaxNameLength) return $"Exercise name must be at most {MaxNameLength} characters.";
-        if (!Enum.IsDefined(group)) return "Pick a muscle group.";
-        return null;
+        if (string.IsNullOrWhiteSpace(name)) return ("Give your exercise a name.", FormField.Name);
+        if (name.Trim().Length > MaxNameLength) return ($"Exercise name must be at most {MaxNameLength} characters.", FormField.Name);
+        if (!Enum.IsDefined(group)) return ("Pick a muscle group.", FormField.MuscleGroup);
+        return (null, null);
     }
 }

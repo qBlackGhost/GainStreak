@@ -21,15 +21,31 @@ public partial class RegisterViewModel : ViewModelBase
     [ObservableProperty] public partial string Password { get; set; } = "";
     [ObservableProperty] public partial string ConfirmPassword { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? UsernameError { get; set; }
+    [ObservableProperty] public partial string? PasswordError { get; set; }
+    [ObservableProperty] public partial string? ConfirmPasswordError { get; set; }
 
     [RelayCommand]
     private async Task RegisterAsync()
     {
-        if (Password != ConfirmPassword) { Error = "Passwords do not match."; return; }
+        Error = UsernameError = PasswordError = ConfirmPasswordError = null;
+        if (Password != ConfirmPassword) { ConfirmPasswordError = "Passwords do not match."; return; }
 
-        var result = await _auth.RegisterAsync(Username, Password);
-        if (result.Success) _session.SignIn(result.User!);   // log in straight after registering
-        else Error = result.Error;
+        try
+        {
+            var result = await _auth.RegisterAsync(Username, Password);
+            if (result.Success) { _session.SignIn(result.User!); return; }   // log in straight after registering
+            switch (result.Field)
+            {
+                case FormField.Username: UsernameError = result.Error; break;
+                case FormField.Password: PasswordError = result.Error; break;
+                default: Error = result.Error; break;
+            }
+        }
+        catch (Exception)
+        {
+            Error = "Could not create your account. Try again.";
+        }
     }
 
     [RelayCommand]

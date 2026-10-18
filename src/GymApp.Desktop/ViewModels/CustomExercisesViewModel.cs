@@ -58,6 +58,8 @@ public partial class CustomExercisesViewModel : ViewModelBase
     [ObservableProperty] public partial bool CanAdd { get; set; } = true;
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
+    [ObservableProperty] public partial string? NameError { get; set; }
+    [ObservableProperty] public partial string? GroupError { get; set; }
 
     public int MaxNameLength => ExerciseService.MaxNameLength;
 
@@ -103,7 +105,7 @@ public partial class CustomExercisesViewModel : ViewModelBase
         SaveLabel = "Save changes";
         IsEditing = true;
         CanAdd = true;
-        Error = null; Info = null;
+        Error = null; Info = null; NameError = null; GroupError = null;
         foreach (var i in Items) i.IsConfirmingDelete = false;
     }
 
@@ -120,17 +122,34 @@ public partial class CustomExercisesViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveAsync()
     {
-        Info = null;
-        if (SelectedGroup is not { } group) { Error = "Pick a muscle group."; return; }
+        Info = null; Error = null; NameError = null; GroupError = null;
+        if (SelectedGroup is not { } group) { GroupError = "Pick a muscle group."; return; }
 
         var name = (Name ?? "").Trim();
-        var r = _editingId is { } id
-            ? await _exercises.UpdateAsync(UserId, id, name, group)
-            : await _exercises.CreateAsync(UserId, name, group);
+        ExerciseResult r;
+        try
+        {
+            r = _editingId is { } id
+                ? await _exercises.UpdateAsync(UserId, id, name, group)
+                : await _exercises.CreateAsync(UserId, name, group);
+        }
+        catch (Exception)
+        {
+            Error = "Could not save the exercise.";
+            return;
+        }
 
-        if (!r.Success) { Error = r.Error; return; }
+        if (!r.Success)
+        {
+            switch (r.Field)
+            {
+                case FormField.Name: NameError = r.Error; break;
+                case FormField.MuscleGroup: GroupError = r.Error; break;
+                default: Error = r.Error; break;
+            }
+            return;
+        }
 
-        Error = null;
         Info = _editingId is null
             ? $"Added {r.Exercise!.Name}. Go back to the day to put it in your list."
             : $"Saved {r.Exercise!.Name}.";
@@ -142,7 +161,7 @@ public partial class CustomExercisesViewModel : ViewModelBase
     private void CancelEdit()
     {
         ResetForm();
-        Error = null; Info = null;
+        Error = null; Info = null; NameError = null; GroupError = null;
         CanAdd = Items.Count < ExerciseService.MaxCustomExercises;
     }
 
@@ -150,7 +169,9 @@ public partial class CustomExercisesViewModel : ViewModelBase
     {
         foreach (var i in Items) i.IsConfirmingDelete = false;
 
-        var usage = await _exercises.GetUsageAsync(UserId, item.Exercise.Id);
+        ExerciseUsage usage;
+        try { usage = await _exercises.GetUsageAsync(UserId, item.Exercise.Id); }
+        catch (Exception) { Error = "Could not check where that exercise is used."; return; }
         item.ConfirmText = DeleteWarning(item.Name, usage);
         item.IsConfirmingDelete = true;
         Error = null; Info = null;
@@ -172,7 +193,10 @@ public partial class CustomExercisesViewModel : ViewModelBase
 
     internal async Task DeleteAsync(CustomExerciseItemViewModel item)
     {
-        if (!await _exercises.DeleteAsync(UserId, item.Exercise.Id))
+        bool deleted;
+        try { deleted = await _exercises.DeleteAsync(UserId, item.Exercise.Id); }
+        catch (Exception) { deleted = false; }
+        if (!deleted)
         {
             Error = "Could not delete that exercise.";
             return;

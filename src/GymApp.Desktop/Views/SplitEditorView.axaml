@@ -6,7 +6,11 @@
     <ScrollViewer>
         <StackPanel Spacing="16" Margin="24" MaxWidth="900" HorizontalAlignment="Center">
             <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
-            <TextBox Watermark="Split name" MaxLength="40" Text="{Binding Name}"/>
+            <StackPanel Spacing="4">
+                <TextBox Watermark="Split name" MaxLength="40" Text="{Binding Name}"/>
+                <TextBlock Classes="fieldError" Text="{Binding NameError}"
+                           IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
 
             <TextBlock Text="Pick your training days and name each one" FontWeight="SemiBold"/>
             <ItemsControl ItemsSource="{Binding Days}">
@@ -26,6 +30,8 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock Text="{Binding DaysSummary}" Opacity="0.7"/>
+            <TextBlock Classes="fieldError" Text="{Binding DaysError}"
+                       IsVisible="{Binding DaysError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
             <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

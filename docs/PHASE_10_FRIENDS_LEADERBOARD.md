@@ -213,7 +213,10 @@ The view models only read results from `FriendService` and `LeaderboardService`.
 
 ## Known issues (to look at later)
 
-### Inactive users' streaks flip between 1 and 0
+### Inactive users' streaks flip between 1 and 0 — fixed in Phase 12a
+
+> **Fixed in 12a** with the rule "no streak, nothing to save": a training day missed while the count is 0 changes nothing, and after a break rest days don't count until the next logged workout. See `docs/streak-grace-rule.md` and `LeaderboardServiceTests.InactiveFriend_ShowsZero_OnADayThatUsedToGiveOne`.
+
 
 Found while testing 10d. It comes from the existing `StreakCalculator` rules, not from Phase 10, and this phase didn't change them.
 

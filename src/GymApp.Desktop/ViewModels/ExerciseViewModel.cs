@@ -128,6 +128,11 @@ public partial class ExerciseViewModel : ViewModelBase
     [ObservableProperty] public partial string PrWeightText { get; set; } = "";
     [ObservableProperty] public partial string PrRepsText { get; set; } = "";
     [ObservableProperty] public partial string PrOneRmInput { get; set; } = "";
+    [ObservableProperty] public partial string? PrWeightError { get; set; }
+    [ObservableProperty] public partial string? PrRepsError { get; set; }
+    [ObservableProperty] public partial string? PrOneRmError { get; set; }
+
+    private void ClearPrErrors() => PrWeightError = PrRepsError = PrOneRmError = null;
 
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
@@ -184,10 +189,18 @@ public partial class ExerciseViewModel : ViewModelBase
     // Sets saved today, or empty rows following the plan when nothing is saved yet
     private async Task RebuildFromSavedAsync()
     {
-        var saved = await _sets.GetDayAsync(UserId, _exerciseId, _today);
-        RebuildRows(saved.Count > 0
-            ? saved.Select(s => new RowData(s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture)))
-            : PlanRows());
+        try
+        {
+            var saved = await _sets.GetDayAsync(UserId, _exerciseId, _today);
+            RebuildRows(saved.Count > 0
+                ? saved.Select(s => new RowData(s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture)))
+                : PlanRows());
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load today's sets.";
+        }
     }
 
     private void RebuildRows(IEnumerable<RowData> data)
@@ -244,13 +257,21 @@ public partial class ExerciseViewModel : ViewModelBase
     [RelayCommand]
     private async Task PrefillAsync()
     {
-        var last = await _sets.GetLastSessionAsync(UserId, _exerciseId, _today);
-        if (last.Count == 0) { Error = null; Info = "No earlier session to copy yet."; return; }
+        try
+        {
+            var last = await _sets.GetLastSessionAsync(UserId, _exerciseId, _today);
+            if (last.Count == 0) { Error = null; Info = "No earlier session to copy yet."; return; }
 
-        RebuildRows(last.Select(s => new RowData(
-            s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
-        Error = null;
-        Info = $"Filled from {FormatDate(last[0].Date)}. Change anything, then save.";
+            RebuildRows(last.Select(s => new RowData(
+                s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
+            Error = null;
+            Info = $"Filled from {FormatDate(last[0].Date)}. Change anything, then save.";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load your last session.";
+        }
     }
 
     [RelayCommand]
@@ -299,19 +320,27 @@ public partial class ExerciseViewModel : ViewModelBase
 
     private async Task ChangePlanAsync(int deltaWarmup, int deltaWorking)
     {
-        var warmup = WarmupSets + deltaWarmup;
-        var working = WorkingSets + deltaWorking;
+        try
+        {
+            var warmup = WarmupSets + deltaWarmup;
+            var working = WorkingSets + deltaWorking;
 
-        var r = await _days.SetPlannedSetsAsync(UserId, _day.SplitDayId, _exerciseId, warmup, working);
-        if (!r.Success) { Error = r.Error; return; }
+            var r = await _days.SetPlannedSetsAsync(UserId, _day.SplitDayId, _exerciseId, warmup, working);
+            if (!r.Success) { Error = r.Error; return; }
 
-        Error = null;
-        WarmupSets = warmup;
-        WorkingSets = working;
+            Error = null;
+            WarmupSets = warmup;
+            WorkingSets = working;
 
-        // An untouched draft follows the plan; anything you typed is left alone
-        if (Rows.All(x => string.IsNullOrWhiteSpace(x.WeightText) && string.IsNullOrWhiteSpace(x.RepsText)))
-            RebuildRows(PlanRows());
+            // An untouched draft follows the plan; anything you typed is left alone
+            if (Rows.All(x => string.IsNullOrWhiteSpace(x.WeightText) && string.IsNullOrWhiteSpace(x.RepsText)))
+                RebuildRows(PlanRows());
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not change the planned sets.";
+        }
     }
 
     // ---------- PR ----------
@@ -345,67 +374,94 @@ public partial class ExerciseViewModel : ViewModelBase
         PrRepsText = cur is null ? "" : cur.Reps.ToString(CultureInfo.InvariantCulture);
         PrOneRmInput = "";      // empty = estimate from weight and reps
         Error = null;
+        ClearPrErrors();
         Info = null;
         IsEditingPr = true;
     }
 
-    [RelayCommand] private void CancelEditPr() { IsEditingPr = false; Error = null; }
+    [RelayCommand] private void CancelEditPr() { IsEditingPr = false; Error = null; ClearPrErrors(); }
 
     [RelayCommand]
     private async Task SavePrAsync()
     {
-        if (!NumberParsing.TryParseKg(PrWeightText, out var kg) || !NumberParsing.TryParseReps(PrRepsText, out var reps))
+        try
         {
-            Error = "Enter the weight and the number of reps.";
-            return;
-        }
+            ClearPrErrors();
+            Error = null;
+            if (!NumberParsing.TryParseKg(PrWeightText, out var kg)) PrWeightError = "Enter the weight in kg, e.g. 100 or 82.5.";
+            if (!NumberParsing.TryParseReps(PrRepsText, out var reps)) PrRepsError = "Enter the number of reps.";
+            if (PrWeightError is not null || PrRepsError is not null) return;
 
-        double? oneRm = null;
-        if (!string.IsNullOrWhiteSpace(PrOneRmInput))
-        {
-            if (!NumberParsing.TryParseKg(PrOneRmInput, out var rm))
+            double? oneRm = null;
+            if (!string.IsNullOrWhiteSpace(PrOneRmInput))
             {
-                Error = "The 1RM must be a number, or leave it empty.";
+                if (!NumberParsing.TryParseKg(PrOneRmInput, out var rm))
+                {
+                    PrOneRmError = "The 1RM must be a number, or leave it empty.";
+                    return;
+                }
+                oneRm = rm;
+            }
+
+            var result = await _sets.SetPrAsync(UserId, _exerciseId, kg, reps, oneRm);
+            if (!result.Success)
+            {
+                switch (result.Field)
+                {
+                    case FormField.Weight: PrWeightError = result.Error; break;
+                    case FormField.Reps: PrRepsError = result.Error; break;
+                    case FormField.OneRepMax: PrOneRmError = result.Error; break;
+                    default: Error = result.Error; break;
+                }
                 return;
             }
-            oneRm = rm;
+
+            _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
+            ShowPr();
+            RefreshPrompts();
+            IsEditingPr = false;
+
+            // Sets logged today are applied after today's edit, so a heavier one today wins
+            var cur = _history.Pr.Current;
+            if (cur is null || cur.WeightKg != Math.Round(kg, 2) || cur.Reps != reps)
+            {
+                Info = null;
+                Error = "Sets you logged today are heavier than that, so the PR stays. Edit those sets to lower it today.";
+            }
+            else
+            {
+                Error = null;
+                Info = "PR updated.";
+            }
+
         }
-
-        var result = await _sets.SetPrAsync(UserId, _exerciseId, kg, reps, oneRm);
-        if (!result.Success) { Error = result.Error; return; }
-
-        _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
-        ShowPr();
-        RefreshPrompts();
-        IsEditingPr = false;
-
-        // Sets logged today are applied after today's edit, so a heavier one today wins
-        var cur = _history.Pr.Current;
-        if (cur is null || cur.WeightKg != Math.Round(kg, 2) || cur.Reps != reps)
+        catch (Exception)
         {
-            Info = null;
-            Error = "Sets you logged today are heavier than that, so the PR stays. Edit those sets to lower it today.";
-        }
-        else
-        {
-            Error = null;
-            Info = "PR updated.";
+            Error = "Could not save the PR.";
         }
     }
 
     internal async Task RemoveAdjustmentAsync(DateOnly date)
     {
-        if (!await _sets.RemovePrAdjustmentAsync(UserId, _exerciseId, date))
+        try
+        {
+            if (!await _sets.RemovePrAdjustmentAsync(UserId, _exerciseId, date))
+            {
+                Error = "Could not undo that edit.";
+                return;
+            }
+
+            _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
+            ShowPr();
+            RefreshPrompts();
+            Error = null;
+            Info = "Edit undone. The PR follows your logged sets again.";
+
+        }
+        catch (Exception)
         {
             Error = "Could not undo that edit.";
-            return;
         }
-
-        _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
-        ShowPr();
-        RefreshPrompts();
-        Error = null;
-        Info = "Edit undone. The PR follows your logged sets again.";
     }
 
     [RelayCommand] private void Back() => _shell().ShowDay(_day, _splitName);

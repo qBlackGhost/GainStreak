@@ -23,12 +23,13 @@ public partial class HomeViewModel : ViewModelBase
     private readonly LeaderboardService _leaderboard;
     private readonly SetService _sets;
     private readonly WorkoutMenuService _menu;
+    private readonly MissedDayService _missedDays;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
                          PointsService points, GymService gyms, ProfileService profiles,
                          FriendService friends, LeaderboardService leaderboard,
-                         SetService sets, WorkoutMenuService menu)
+                         SetService sets, WorkoutMenuService menu, MissedDayService missedDays)
     {
         _session = session;
         _shell = shell;
@@ -42,10 +43,17 @@ public partial class HomeViewModel : ViewModelBase
         _leaderboard = leaderboard;
         _sets = sets;
         _menu = menu;
+        _missedDays = missedDays;
+        TodayWorkout = new TodayWorkoutCardViewModel(shell);
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
     public string Welcome => $"Welcome, {_session.CurrentUser?.Username}!";
+
+    // ===== Dashboard cards =====
+    public TodayWorkoutCardViewModel TodayWorkout { get; }
+    public WeekCardViewModel Week { get; } = new();
+    public RecentPrsCardViewModel RecentPrs { get; } = new();
 
     [ObservableProperty] public partial string TodayTitle { get; set; } = "";
     [ObservableProperty] public partial string TodayHint { get; set; } = "";
@@ -67,11 +75,22 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string? PointsLostNotice { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string StreakNote { get; set; } = "";
+
+    /// <summary>The missed-day card, while yesterday's missed workout needs a choice. Check-in waits for it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMissedDay))]
+    public partial MissedDayViewModel? MissedDay { get; set; }
+
+    public bool HasMissedDay => MissedDay is not null;
+
+    /// <summary>"Your streak ended on Tuesday, 6 Oct." Shown once, on the first refresh after the streak broke.</summary>
+    [ObservableProperty] public partial string? StreakEndedNotice { get; set; }
     [ObservableProperty] public partial string CaloriesTitle { get; set; } = "";
     [ObservableProperty] public partial string CaloriesHint { get; set; } = "";
     [ObservableProperty] public partial string? GoalReviewHint { get; set; }
     [ObservableProperty] public partial string CaloriesInput { get; set; } = "";
     [ObservableProperty] public partial string LogCaloriesLabel { get; set; } = "Log";
+    [ObservableProperty] public partial string? CaloriesError { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
     [ObservableProperty] public partial string LevelTitle { get; set; } = "";
@@ -101,10 +120,14 @@ public partial class HomeViewModel : ViewModelBase
         if (_session.CurrentUser is not { } user) return;
         try
         {
+            var cached = user.CurrentStreak;   // before the recalculation, to notice a streak that broke overnight
             var today = await _workouts.GetTodayAsync(user.Id);
             var streak = await _streaks.RecalculateAsync(user.Id);
             var points = await _points.SyncAsync(user.Id);   // catches a week that ended while the app was closed
+            await RefreshMissedDayAsync(user.Id);
             Apply(today, streak);
+            await RefreshStreakEndedAsync(user.Id, cached, streak);
+            await RefreshDashboardAsync(user.Id);
             ApplyPoints(points);
             await RefreshGymAsync(user.Id);
             await RefreshCaloriesAsync(user.Id);
@@ -114,6 +137,58 @@ public partial class HomeViewModel : ViewModelBase
             Error = "Could not load today's workout.";
         }
         await RefreshFriendsAsync(user.Id);
+    }
+
+    /// <summary>Today's workout, this week's row and recent PRs. They change with a check-in, an undo or a missed-day
+    /// choice, so those refresh them too. A failure only empties the cards.</summary>
+    private async Task RefreshDashboardAsync(int userId)
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            TodayWorkout.Apply(await _workouts.GetTodayWorkoutAsync(userId, today));
+            Week.Apply(await _streaks.GetWeekAsync(userId, today));
+            RecentPrs.Apply(await _sets.GetRecentPrsAsync(userId));
+        }
+        catch (Exception)
+        {
+            Error = "Could not load your dashboard.";
+        }
+    }
+
+    private async Task RefreshMissedDayAsync(int userId)
+    {
+        var prompt = await _missedDays.GetPromptAsync(userId);
+        MissedDay = prompt is null ? null : new MissedDayViewModel(_missedDays, userId, prompt, ChoseAsync);
+    }
+
+    private async Task RefreshStreakEndedAsync(int userId, int cached, StreakResult streak)
+    {
+        StreakEndedNotice = null;
+        if (cached == 0 || streak.Status != StreakStatus.Broken) return;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        if (await _streaks.LastBreakAsync(userId, today) is { } missed)
+            StreakEndedNotice = $"Your streak ended on {missed.ToString("dddd, d MMM", CultureInfo.InvariantCulture)}.";
+    }
+
+    /// <summary>After a missed-day choice: the card goes away and today's workout and the streak update.</summary>
+    private async Task ChoseAsync(MissedDayResult result)
+    {
+        try
+        {
+            if (_session.CurrentUser is not { } user) return;
+            MissedDay = null;
+            Error = null;
+            Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
+            ApplyPoints(result.Points);
+            await RefreshDashboardAsync(user.Id);
+            await RefreshFriendsAsync(user.Id);
+
+        }
+        catch (Exception)
+        {
+            Error = "Your choice was saved, but Home couldn't refresh. Reopen Home to see it.";
+        }
     }
 
     /// <summary>"#2 of 5 this week" and the incoming-requests badge. Runs after the user's own sync, so their
@@ -159,20 +234,28 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task LogCaloriesAsync()
     {
-        if (_session.CurrentUser is not { } user) return;
-        if (!Units.TryParseWholeNumber(CaloriesInput, out var kcal))
+        try
         {
-            Error = "Enter what you ate today as a whole number of kcal, e.g. 2100.";
-            return;
+            if (_session.CurrentUser is not { } user) return;
+            CaloriesError = null;
+            if (!NumberParsing.TryParseWhole(CaloriesInput, out var kcal))
+            {
+                CaloriesError = "Enter what you ate today as a whole number of kcal, e.g. 2100.";
+                return;
+            }
+
+            var r = await _calories.LogTodayAsync(user.Id, kcal);
+            if (!r.Success) { CaloriesError = r.Error; return; }
+
+            CaloriesInput = "";
+            ApplyPoints(r.Points);
+            await RefreshCaloriesAsync(user.Id);
+
         }
-
-        var r = await _calories.LogTodayAsync(user.Id, kcal);
-        if (!r.Success) { Error = r.Error; return; }
-
-        Error = null;
-        CaloriesInput = "";
-        ApplyPoints(r.Points);
-        await RefreshCaloriesAsync(user.Id);
+        catch (Exception)
+        {
+            CaloriesError = "Could not save your calories.";
+        }
     }
 
     private void Apply(TodayInfo today, StreakResult streak)
@@ -180,10 +263,11 @@ public partial class HomeViewModel : ViewModelBase
         TodayTitle = !today.HasSplit ? "No split selected" : today.Title;
         TodayHint = !today.HasSplit ? "Pick a split to get a weekly schedule."
                   : today.Logged ? "Workout logged ✓"
+                  : HasMissedDay ? WorkoutService.NeedsChoiceError
                   : today.IsTraining ? "Workout still needed today."
                   : "Rest day. You can still log an extra workout.";
         LogLabel = today.Logged ? "Logged ✓" : "I went today";
-        CanLog = !today.Logged;
+        CanLog = !today.Logged && !HasMissedDay;
         CanUndo = today.Logged;   // today only: after midnight yesterday's log is read-only
         if (!today.Logged) IsConfirmingUndo = false;
 
@@ -193,7 +277,9 @@ public partial class HomeViewModel : ViewModelBase
             StreakStatus.NotStarted => "Log your first workout to start a streak.",
             StreakStatus.Active => "Streak alive, nice.",
             StreakStatus.PendingToday => "Log today's workout to keep your streak.",
-            StreakStatus.AtRisk => "Work out today to keep your streak",
+            StreakStatus.NeedsChoice => "You missed yesterday. Choose what to do to keep your streak.",
+            StreakStatus.AtRisk => today.HasSplit ? $"Do {today.Title} today to keep your streak."
+                                                  : "Work out today to keep your streak.",
             StreakStatus.Shifted => "You're one day behind, so train tomorrow (or on your next rest day)",
             StreakStatus.Broken => "Streak broken. Log today's workout to start a new one.",
             _ => ""
@@ -219,17 +305,26 @@ public partial class HomeViewModel : ViewModelBase
 
     private async Task CheckedInAsync(LogResult result)
     {
-        CheckIn = null;
-        if (_session.CurrentUser is not { } user) return;
-        Error = null;
-        PointsLostNotice = null;
-        Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
-        ApplyPoints(result.Points);
+        try
+        {
+            CheckIn = null;
+            if (_session.CurrentUser is not { } user) return;
+            Error = null;
+            PointsLostNotice = null;
+            Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
+            ApplyPoints(result.Points);
 
-        // The workout is saved; now (optionally) ask for the gym
-        var gym = await RefreshGymAsync(user.Id);
-        ShowGymPrompt = gym is { LoggedToday: true, Gym: null, AskAfterCheckIn: true };
-        await RefreshFriendsAsync(user.Id);
+            // The workout is saved; now (optionally) ask for the gym
+            var gym = await RefreshGymAsync(user.Id);
+            ShowGymPrompt = gym is { LoggedToday: true, Gym: null, AskAfterCheckIn: true };
+            await RefreshDashboardAsync(user.Id);
+            await RefreshFriendsAsync(user.Id);
+
+        }
+        catch (Exception)
+        {
+            Error = "Your workout was saved, but Home couldn't refresh. Reopen Home to see it.";
+        }
     }
 
     /// <summary>Names everything today's check-in earned (the +5, and a week bonus when it completed the week).</summary>
@@ -279,6 +374,7 @@ public partial class HomeViewModel : ViewModelBase
             user.LongestStreak = result.Streak!.Longest;   // undo may lower the best streak
             ApplyPoints(result.Points);
             await RefreshGymAsync(user.Id);
+            await RefreshDashboardAsync(user.Id);
         }
         catch (Exception)
         {
@@ -311,12 +407,20 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task UseLastGymAsync()
     {
-        if (_session.CurrentUser is not { } user || _lastGym is not { } gym) return;
-        var r = await _gyms.SetGymForTodayAsync(user.Id, gym.Id);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        ShowGymPrompt = false;
-        await RefreshGymAsync(user.Id);
+        try
+        {
+            if (_session.CurrentUser is not { } user || _lastGym is not { } gym) return;
+            var r = await _gyms.SetGymForTodayAsync(user.Id, gym.Id);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            ShowGymPrompt = false;
+            await RefreshGymAsync(user.Id);
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save the gym.";
+        }
     }
 
     [RelayCommand]
@@ -329,11 +433,19 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private async Task NeverAskForGymAsync()
     {
-        if (_session.CurrentUser is not { } user) return;
-        ShowGymPrompt = false;
-        var r = await _profiles.SetAskForGymAfterCheckInAsync(user.Id, false);
-        if (!r.Success) { Error = r.Error; return; }
-        GymNotice = "Okay, no more gym questions. You can turn this back on in your profile.";
+        try
+        {
+            if (_session.CurrentUser is not { } user) return;
+            ShowGymPrompt = false;
+            var r = await _profiles.SetAskForGymAfterCheckInAsync(user.Id, false);
+            if (!r.Success) { Error = r.Error; return; }
+            GymNotice = "Okay, no more gym questions. You can turn this back on in your profile.";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save that setting.";
+        }
     }
 
     /// <summary>Updates the level card. A sync that added points shows a short notice (and "Level up" when the

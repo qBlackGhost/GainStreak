@@ -118,14 +118,22 @@ public partial class FriendsViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchAsync()
     {
-        if (UserId is not { } me) return;
-        Notice = null;
-        var r = await _friends.SearchAsync(me, Query);
-        Results.Clear();
-        if (!r.Success) { SearchHint = r.Error; return; }
+        try
+        {
+            if (UserId is not { } me) return;
+            Notice = null;
+            var r = await _friends.SearchAsync(me, Query);
+            Results.Clear();
+            if (!r.Success) { SearchHint = r.Error; return; }
 
-        foreach (var u in r.Users) Results.Add(new FoundUserViewModel(u, this));
-        SearchHint = r.Users.Count == 0 ? $"No one found starting with \"{Query.Trim()}\"." : null;
+            foreach (var u in r.Users) Results.Add(new FoundUserViewModel(u, this));
+            SearchHint = r.Users.Count == 0 ? $"No one found starting with \"{Query.Trim()}\"." : null;
+
+        }
+        catch (Exception)
+        {
+            SearchHint = "Could not search for users.";
+        }
     }
 
     internal Task SendRequestAsync(int otherId) =>
@@ -163,10 +171,18 @@ public partial class FriendsViewModel : ViewModelBase
 
     private async Task RefreshResultsAsync(int me)
     {
-        var r = await _friends.SearchAsync(me, Query);
-        if (!r.Success) return;
-        Results.Clear();
-        foreach (var u in r.Users) Results.Add(new FoundUserViewModel(u, this));
+        try
+        {
+            var r = await _friends.SearchAsync(me, Query);
+            if (!r.Success) return;
+            Results.Clear();
+            foreach (var u in r.Users) Results.Add(new FoundUserViewModel(u, this));
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not refresh the search results.";
+        }
     }
 
     [RelayCommand]

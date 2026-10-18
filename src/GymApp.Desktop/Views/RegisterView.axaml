@@ -6,9 +6,21 @@
     <StackPanel Spacing="12" Width="320"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="Create account" FontSize="24" FontWeight="SemiBold"/>
-        <TextBox Watermark="Username" Text="{Binding Username}"/>
-        <TextBox Watermark="Password (min 8 characters)" PasswordChar="●" Text="{Binding Password}"/>
-        <TextBox Watermark="Confirm password" PasswordChar="●" Text="{Binding ConfirmPassword}"/>
+        <StackPanel Spacing="4">
+            <TextBox Watermark="Username (letters, digits, _ . -)" MaxLength="32" Text="{Binding Username}"/>
+            <TextBlock Classes="fieldError" Text="{Binding UsernameError}"
+                       IsVisible="{Binding UsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+        <StackPanel Spacing="4">
+            <TextBox Watermark="Password (8 to 128 characters)" MaxLength="128" PasswordChar="●" Text="{Binding Password}"/>
+            <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
+                       IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+        <StackPanel Spacing="4">
+            <TextBox Watermark="Confirm password" MaxLength="128" PasswordChar="●" Text="{Binding ConfirmPassword}"/>
+            <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
+                       IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         <Button Content="Register" Command="{Binding RegisterCommand}"

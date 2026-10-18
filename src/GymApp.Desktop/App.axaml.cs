@@ -1,6 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using GymApp.Data;
@@ -14,6 +16,22 @@ namespace GymApp.Desktop;
 
 public partial class App : Application
 {
+    private static Window StartupErrorWindow() => new()
+    {
+        Title = "GymApp",
+        Width = 460,
+        SizeToContent = SizeToContent.Height,
+        WindowStartupLocation = WindowStartupLocation.CenterScreen,
+        CanResize = false,
+        Content = new TextBlock
+        {
+            Margin = new Thickness(24),
+            TextWrapping = TextWrapping.Wrap,
+            Text = "GymApp couldn't open its data, so it can't start. The details were saved to errors.log in " +
+                   $"{AppDbContext.DataDirectory}. Close any other copy of GymApp and try again."
+        }
+    };
+
     public static IServiceProvider Services { get; private set; } = null!;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
@@ -37,6 +55,7 @@ public partial class App : Application
         sc.AddTransient<StreakService>();
         sc.AddTransient<PointsService>();
         sc.AddTransient<WorkoutService>();
+        sc.AddTransient<MissedDayService>();
         sc.AddTransient<ExerciseService>();
         sc.AddTransient<DayExerciseService>();
         sc.AddTransient<SetService>();
@@ -65,18 +84,34 @@ public partial class App : Application
         sc.AddTransient<LeaderboardViewModel>();
         Services = sc.BuildServiceProvider();
 
-        using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
-            db.Database.Migrate();
+        var log = new ErrorLog(AppDbContext.DataDirectory);
+        var desktop = ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
-        // One-time points rebuild for users from before the ledger existed. Off the UI thread so the
-        // async EF calls can't deadlock on the dispatcher.
-        var pointsService = Services.GetRequiredService<PointsService>();
-        Task.Run(() => pointsService.BackfillAllAsync()).GetAwaiter().GetResult();
-        
+        try
+        {
+            using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
+                db.Database.Migrate();
+
+            // One-time points rebuild for users from before the ledger existed. Off the UI thread so the
+            // async EF calls can't deadlock on the dispatcher.
+            var pointsService = Services.GetRequiredService<PointsService>();
+            Task.Run(() => pointsService.BackfillAllAsync()).GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            // The data can't be opened (locked, corrupt, read-only...): say so instead of crashing with no window
+            log.Write(e, "Startup");
+            if (desktop is not null) desktop.MainWindow = StartupErrorWindow();
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
+
         Services.GetRequiredService<RememberMeService>().TryRestore();
 
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = new MainWindow { DataContext = Services.GetRequiredService<MainViewModel>() };
+        var main = Services.GetRequiredService<MainViewModel>();
+        ErrorHandling.Install(log, message => main.GlobalError = message);
+        if (desktop is not null)
+            desktop.MainWindow = new MainWindow { DataContext = main };
 
         base.OnFrameworkInitializationCompleted();
     }

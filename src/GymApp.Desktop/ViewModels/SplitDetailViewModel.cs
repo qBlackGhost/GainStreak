@@ -113,22 +113,30 @@ public partial class SplitDetailViewModel : ViewModelBase
     [RelayCommand]
     private async Task UseAsync()
     {
-        var user = _session.CurrentUser!;
-        var variantId = IsPreset ? SelectedVariant?.Id : null;
-        DayOfWeek? startDay = IsPreset ? StartDay : null;
+        try
+        {
+            var user = _session.CurrentUser!;
+            var variantId = IsPreset ? SelectedVariant?.Id : null;
+            DayOfWeek? startDay = IsPreset ? StartDay : null;
 
-        if (!await _splits.SelectAsync(user.Id, _split.Id, variantId, startDay))
+            if (!await _splits.SelectAsync(user.Id, _split.Id, variantId, startDay))
+            {
+                Error = "Could not select that split.";
+                return;
+            }
+
+            // keep the in-memory session user in sync
+            user.SelectedSplitId = _split.Id;
+            user.SelectedVariantId = variantId;
+            user.SplitStartDay = startDay;
+            Error = null;
+            IsActive = true;
+
+        }
+        catch (Exception)
         {
             Error = "Could not select that split.";
-            return;
         }
-
-        // keep the in-memory session user in sync
-        user.SelectedSplitId = _split.Id;
-        user.SelectedVariantId = variantId;
-        user.SplitStartDay = startDay;
-        Error = null;
-        IsActive = true;
     }
 
     [RelayCommand] private void Edit() => _shell().ShowSplitEditor(_split);

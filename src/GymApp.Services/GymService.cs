@@ -22,7 +22,7 @@ public record GymResult(bool Success, string? Error = null);
 
 /// <summary>Reactivated = the name matched one of the user's deleted-but-kept gyms in that city, so that gym came back
 /// (with its history) instead of a new one being made.</summary>
-public record CustomGymResult(bool Success, string? Error = null, int? GymId = null, bool Reactivated = false);
+public record CustomGymResult(bool Success, string? Error = null, int? GymId = null, bool Reactivated = false, string? Field = null);
 
 /// <summary>An address the user picked from an address search inside the city, with its position.</summary>
 public record PickedAddress(string Text, double Latitude, double Longitude);
@@ -120,7 +120,8 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<CustomGymResult> AddCustomGymAsync(int userId, int cityId, string name, PickedAddress? address)
     {
         var cleanName = CustomGyms.Clean(name);
-        if ((CustomGyms.CheckName(cleanName) ?? CheckAddress(address)) is { } error) return new(false, error);
+        if (CustomGyms.CheckName(cleanName) is { } nameError) return new(false, nameError, Field: FormField.Name);
+        if (CheckAddress(address) is { } addressError) return new(false, addressError, Field: FormField.Address);
 
         await using var db = await dbFactory.CreateDbContextAsync();
         if (!await db.Cities.AnyAsync(c => c.Id == cityId)) return new(false, "That city is no longer available.");
@@ -129,7 +130,7 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         var mineHere = await db.Gyms.Where(g => g.OwnerUserId == userId && g.CityId == cityId).ToListAsync();
         var same = mineHere.FirstOrDefault(g => CustomGyms.SameName(g.Name, cleanName));
 
-        if (same is { IsActive: true }) return new(false, $"You already have a gym called \"{same.Name}\" here.");
+        if (same is { IsActive: true }) return new(false, $"You already have a gym called \"{same.Name}\" here.", Field: FormField.Name);
         if (activeCount >= CustomGyms.MaxPerUser)
             return new(false, $"You can have up to {CustomGyms.MaxPerUser} custom gyms. Delete one to add another.");
 
@@ -156,8 +157,8 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         bool keepAddress = false)
     {
         var cleanName = CustomGyms.Clean(name);
-        if ((CustomGyms.CheckName(cleanName) ?? (keepAddress ? null : CheckAddress(address))) is { } error)
-            return new(false, error);
+        if (CustomGyms.CheckName(cleanName) is { } nameError) return new(false, nameError, Field: FormField.Name);
+        if (!keepAddress && CheckAddress(address) is { } addressError) return new(false, addressError, Field: FormField.Address);
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var gym = await db.Gyms.FirstOrDefaultAsync(g => g.Id == gymId && g.OwnerUserId == userId && g.IsActive);
@@ -166,7 +167,7 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         var others = await db.Gyms.Where(g => g.OwnerUserId == userId && g.CityId == gym.CityId && g.Id != gymId)
             .Select(g => g.Name).ToListAsync();
         if (others.FirstOrDefault(n => CustomGyms.SameName(n, cleanName)) is { } taken)
-            return new(false, $"You already have a gym called \"{taken}\" here.");
+            return new(false, $"You already have a gym called \"{taken}\" here.", Field: FormField.Name);
 
         gym.Name = cleanName;
         if (!keepAddress) SetAddress(gym, address);

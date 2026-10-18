@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GymApp.Core;
@@ -44,7 +45,8 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
             }
         }
 
-        var result = StreakCalculator.Calculate(dates, schedule, day);
+        var choices = await LoadChoicesAsync(db, userId);
+        var result = StreakCalculator.Calculate(dates, schedule, choices, day);
 
         // The cached values still describe the streak with today's log in it
         var todayWasBest = undoneToday && user.LongestStreak <= user.CurrentStreak;
@@ -56,6 +58,67 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
         await db.SaveChangesAsync();
         return undoneToday ? result with { Longest = user.LongestStreak } : result;
     }
+
+    /// <summary>The streak as of <paramref name="today"/>, without saving anything. With <paramref name="beforeTodaysLog"/>
+    /// today's log is left out, which gives the state the user was in when they checked in.</summary>
+    public async Task<StreakResult> GetAsync(int userId, DateOnly today, bool beforeTodaysLog = false)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        if (beforeTodaysLog) dates.Remove(today);
+        return StreakCalculator.Calculate(dates, schedule, choices, today);
+    }
+
+    /// <summary>
+    /// The day whose workout is done today, when it isn't today: while a "make it up before my next rest day" chain
+    /// (or an old miss with no choice) is open, today's workout is yesterday's. That holds before and after today's
+    /// check-in, and on the rest day that ends the chain. Null otherwise, including after "Shift my whole schedule"
+    /// (the schedule itself moved) and while the choice is still to be made.
+    /// </summary>
+    public async Task<DateOnly?> MakeUpDayAsync(int userId, DateOnly today)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        dates.Remove(today);
+        var before = StreakCalculator.Calculate(dates, schedule, choices, today);
+        var yesterday = today.AddDays(-1);
+        return before is { Status: StreakStatus.AtRisk, OwedDay: { } owed } && owed == yesterday
+               && (!choices.TryGetValue(owed, out var c) || c != MissChoice.ShiftWeek)
+            ? owed
+            : null;
+    }
+
+    /// <summary>The dashboard's "This week" row: Monday to Sunday of the week containing <paramref name="today"/>.</summary>
+    public async Task<IReadOnlyList<WeekChip>> GetWeekAsync(int userId, DateOnly today)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        var monday = PointsCalculator.MondayOf(today);
+        return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6)), today);
+    }
+
+    /// <summary>The missed day the streak last broke on, or null if it never broke.</summary>
+    public async Task<DateOnly?> LastBreakAsync(int userId, DateOnly today)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        return StreakCalculator.LastBreak(dates, schedule, choices, today);
+    }
+
+    private static async Task<(List<DateOnly> Dates, List<ScheduleChange> Schedule, Dictionary<DateOnly, MissChoice> Choices)>
+        LoadAsync(AppDbContext db, int userId)
+    {
+        var dates = await db.WorkoutLogs.Where(w => w.UserId == userId).Select(w => w.Date).ToListAsync();
+        var schedule = await db.UserSchedules.Where(s => s.UserId == userId)
+            .OrderBy(s => s.EffectiveFrom)
+            .Select(s => new ScheduleChange(s.EffectiveFrom, s.WeekPattern))
+            .ToListAsync();
+        return (dates, schedule, await LoadChoicesAsync(db, userId));
+    }
+
+    /// <summary>The user's missed-day choices, keyed by the missed date, as the calculator takes them.</summary>
+    internal static async Task<Dictionary<DateOnly, MissChoice>> LoadChoicesAsync(AppDbContext db, int userId) =>
+        await db.MissedDayChoices.Where(c => c.UserId == userId).ToDictionaryAsync(c => c.Date, c => c.Choice);
 
     private static async Task<string?> PatternFromSelectionAsync(AppDbContext db, User user, int splitId)
     {

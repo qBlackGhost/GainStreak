@@ -35,10 +35,18 @@
                     <TextBlock Text="{Binding FormTitle}" FontSize="18" FontWeight="SemiBold"/>
 
                     <StackPanel Spacing="10" IsVisible="{Binding CanAdd}">
-                        <TextBox Watermark="Exercise name" MaxLength="{Binding MaxNameLength}"
-                                 Text="{Binding Name}"/>
-                        <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}"
-                                  PlaceholderText="Muscle group" HorizontalAlignment="Stretch"/>
+                        <StackPanel Spacing="4">
+                            <TextBox Watermark="Exercise name" MaxLength="{Binding MaxNameLength}"
+                                     Text="{Binding Name}"/>
+                            <TextBlock Classes="fieldError" Text="{Binding NameError}"
+                                       IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                        <StackPanel Spacing="4">
+                            <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}"
+                                      PlaceholderText="Muscle group" HorizontalAlignment="Stretch"/>
+                            <TextBlock Classes="fieldError" Text="{Binding GroupError}"
+                                       IsVisible="{Binding GroupError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsDefault="True"/>
                             <Button Content="Cancel" Command="{Binding CancelEditCommand}"

@@ -14,7 +14,7 @@ namespace GymApp.Services;
 /// <summary>One row on the exercise screen.</summary>
 public record SetInput(SetKind Kind, int Reps, double WeightKg);
 
-public record SetResult(bool Success, string? Error = null);
+public record SetResult(bool Success, string? Error = null, string? Field = null);
 
 /// <summary>Everything the PR logic needs for one exercise. Sets and Adjustments are the raw data, so the
 /// view model can also recompute a PR from a subset (for the prompt while typing).</summary>
@@ -27,6 +27,9 @@ public record ExerciseHistory(IReadOnlyList<SetEntry> Sets, IReadOnlyList<CorePr
     public PrHistory PrBefore(DateOnly day) =>
         PrCalculator.Compute(Sets.Where(s => s.Date < day), Adjustments.Where(a => a.Date < day));
 }
+
+/// <summary>A PR for the dashboard: the set that beat the previous best.</summary>
+public record RecentPr(int ExerciseId, string ExerciseName, DateOnly Date, double WeightKg, int Reps);
 
 public class SetService(IDbContextFactory<AppDbContext> dbFactory)
 {
@@ -60,7 +63,7 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
         if (sets.Count > MaxSetsPerExercisePerDay)
             return new(false, $"At most {MaxSetsPerExercisePerDay} sets per exercise per day.");
         foreach (var s in sets)
-            if (ValidateSet(s.Reps, s.WeightKg) is { } error) return new(false, error);
+            if (ValidateSet(s.Reps, s.WeightKg) is ({ } error, _)) return new(false, error);
 
         var date = today ?? Today();
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -114,6 +117,32 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
         return PrCalculator.LastSession(history.Sets, today ?? Today());
     }
 
+    /// <summary>
+    /// The user's most recent PRs across all exercises, newest first, for the dashboard. Only real PRs count (a set
+    /// that beat the best), not the first set of an exercise or a manual correction. Several PRs for one exercise on
+    /// one day show once, with the best of them. Ties on a date are ordered by exercise name.
+    /// </summary>
+    public async Task<IReadOnlyList<RecentPr>> GetRecentPrsAsync(int userId, int count = 3)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var sets = await db.SetLogs.AsNoTracking().Where(s => s.UserId == userId && s.Kind == SetKind.Working).ToListAsync();
+        var adjustments = await db.PrAdjustments.AsNoTracking().Where(a => a.UserId == userId).ToListAsync();
+        var ids = sets.Select(s => s.ExerciseId).Distinct().ToList();
+        var names = await db.Exercises.AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name);
+        var adjustmentsBy = adjustments.ToLookup(a => a.ExerciseId);
+
+        return sets.GroupBy(s => s.ExerciseId)
+            .SelectMany(g => PrCalculator.Compute(g.Select(ToEntry),
+                    adjustmentsBy[g.Key].Select(a => new CorePrAdjustment(a.Date, a.WeightKg, a.Reps, a.OneRepMaxKg)))
+                .Entries.Where(e => e.Kind == PrEntryKind.Pr)
+                .GroupBy(e => e.Date)
+                .Select(day => day.Last())
+                .Select(e => new RecentPr(g.Key, names.GetValueOrDefault(g.Key, "Exercise"), e.Date, e.WeightKg, e.Reps)))
+            .OrderByDescending(p => p.Date).ThenBy(p => p.ExerciseName)
+            .Take(count)
+            .ToList();
+    }
+
     /// <summary>For the Home hint: sets were logged today, whatever the exercise.</summary>
     public async Task<bool> HasSetsTodayAsync(int userId, DateOnly? today = null)
     {
@@ -130,9 +159,9 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<SetResult> SetPrAsync(
         int userId, int exerciseId, double weightKg, int reps, double? oneRepMaxKg = null, DateOnly? today = null)
     {
-        if (ValidateSet(reps, weightKg) is { } error) return new(false, error);
+        if (ValidateSet(reps, weightKg) is ({ } error, var field)) return new(false, error, field);
         if (oneRepMaxKg is { } rm && (!double.IsFinite(rm) || rm < weightKg || rm > MaxOneRepMaxKg))
-            return new(false, $"The 1RM must be at least the weight and at most {MaxOneRepMaxKg:0} kg.");
+            return new(false, $"The 1RM must be at least the weight and at most {MaxOneRepMaxKg:0} kg.", FormField.OneRepMax);
 
         var date = today ?? Today();
         weightKg = Math.Round(weightKg, 2);
@@ -176,11 +205,11 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
     private static Task<bool> ExerciseAvailableAsync(AppDbContext db, int userId, int exerciseId) =>
         db.Exercises.AnyAsync(e => e.Id == exerciseId && (e.OwnerUserId == null || e.OwnerUserId == userId));
 
-    private static string? ValidateSet(int reps, double weightKg)
+    private static (string? Error, string? Field) ValidateSet(int reps, double weightKg)
     {
-        if (reps < 1 || reps > MaxReps) return $"Reps must be 1 to {MaxReps}.";
+        if (reps < 1 || reps > MaxReps) return ($"Reps must be 1 to {MaxReps}.", FormField.Reps);
         if (!double.IsFinite(weightKg) || weightKg < 0 || weightKg > MaxWeightKg)
-            return $"Weight must be 0 to {MaxWeightKg:0} kg.";
-        return null;
+            return ($"Weight must be 0 to {MaxWeightKg:0} kg.", FormField.Weight);
+        return (null, null);
     }
 }

@@ -95,6 +95,8 @@
                         <TextBox Watermark="Your own goal (kcal)" Width="180" Text="{Binding CustomGoalInput}"/>
                         <Button Content="Set my own goal" Command="{Binding SetCustomGoalCommand}"/>
                     </StackPanel>
+                    <TextBlock Classes="fieldError" Text="{Binding GoalError}"
+                               IsVisible="{Binding GoalError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     <TextBlock Classes="small"
                                Text="Safe limits: at least 1,500 kcal for men and 1,200 kcal for women, and never more than 25% under your maintenance."/>
 
@@ -126,31 +128,48 @@
                     <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
                           RowSpacing="10" ColumnSpacing="12">
                         <TextBlock Grid.Row="0" Text="Units" Classes="label"/>
-                        <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding UnitSystems}"
-                                  SelectedItem="{Binding SelectedUnits}" HorizontalAlignment="Stretch"/>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                            <ComboBox ItemsSource="{Binding UnitSystems}"
+                                      SelectedItem="{Binding SelectedUnits}" HorizontalAlignment="Stretch"/>
+                            <TextBlock Classes="fieldError" Text="{Binding UnitsError}"
+                                       IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="1" Text="Sex" Classes="label"/>
-                        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Sexes}"
-                                  SelectedItem="{Binding SelectedSex}" PlaceholderText="Male or female"
-                                  HorizontalAlignment="Stretch"/>
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                            <ComboBox ItemsSource="{Binding Sexes}"
+                                      SelectedItem="{Binding SelectedSex}" PlaceholderText="Male or female"
+                                      HorizontalAlignment="Stretch"/>
+                            <TextBlock Classes="fieldError" Text="{Binding SexError}"
+                                       IsVisible="{Binding SexError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="2" Text="Birth date" Classes="label"/>
-                        <DatePicker Grid.Row="2" Grid.Column="1" SelectedDate="{Binding BirthDate}"
-                                    MinYear="{Binding MinBirthYear}" MaxYear="{Binding MaxBirthYear}"
-                                    HorizontalAlignment="Stretch"/>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
+                            <DatePicker SelectedDate="{Binding BirthDate}"
+                                        MinYear="{Binding MinBirthYear}" MaxYear="{Binding MaxBirthYear}"
+                                        HorizontalAlignment="Stretch"/>
+                            <TextBlock Classes="fieldError" Text="{Binding BirthDateError}"
+                                       IsVisible="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="3" Text="Height" Classes="label"/>
-                        <Panel Grid.Row="3" Grid.Column="1">
-                            <TextBox Watermark="Height (cm)" Text="{Binding HeightCmText}"
-                                     IsVisible="{Binding IsMetric}"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
-                                <TextBox Watermark="ft" Width="80" Text="{Binding HeightFtText}"/>
-                                <TextBox Watermark="in" Width="80" Text="{Binding HeightInText}"/>
-                            </StackPanel>
-                        </Panel>
+                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                            <Panel>
+                                <TextBox Watermark="Height (cm)" Text="{Binding HeightCmText}"
+                                         IsVisible="{Binding IsMetric}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
+                                    <TextBox Watermark="ft" Width="80" Text="{Binding HeightFtText}"/>
+                                    <TextBox Watermark="in" Width="80" Text="{Binding HeightInText}"/>
+                                </StackPanel>
+                            </Panel>
+                            <TextBlock Classes="fieldError" Text="{Binding HeightError}"
+                                       IsVisible="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="4" Text="Activity" Classes="label"/>
-                        <ComboBox Grid.Row="4" Grid.Column="1" ItemsSource="{Binding ActivityOptions}"
+                        <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
+                        <ComboBox ItemsSource="{Binding ActivityOptions}"
                                   SelectedItem="{Binding SelectedActivity}" PlaceholderText="How much do you walk?"
                                   HorizontalAlignment="Stretch">
                             <ComboBox.ItemTemplate>
@@ -162,6 +181,9 @@
                                 </DataTemplate>
                             </ComboBox.ItemTemplate>
                         </ComboBox>
+                            <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
+                                       IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
                     </Grid>
 
                     <TextBlock Classes="small"
@@ -194,6 +216,8 @@
                     </DockPanel>
                     <TextBlock Text="{Binding CitySearchMessage}" Classes="small"
                                IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Content="Retry" Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"
+                            HorizontalAlignment="Left"/>
 
                     <ItemsControl ItemsSource="{Binding CityCandidates}" IsVisible="{Binding HasCityCandidates}">
                         <ItemsControl.ItemTemplate>
@@ -233,6 +257,8 @@
                         <TextBox Watermark="{Binding WeightWatermark}" Width="160" Text="{Binding WeightInput}"/>
                         <Button Content="Log today's weight" Command="{Binding LogWeightCommand}"/>
                     </StackPanel>
+                    <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                               IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     <TextBlock Classes="small" Text="One weigh-in per day. Logging again today replaces today's entry."/>
 
                     <TextBlock Text="Recent weigh-ins" Opacity="0.7" Margin="0,6,0,0"
@@ -253,6 +279,8 @@
                     </ItemsControl>
                 </StackPanel>
             </Border>
+
+            <TextBlock Text="{Binding VersionText}" Classes="small" HorizontalAlignment="Center" Margin="0,8,0,0"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

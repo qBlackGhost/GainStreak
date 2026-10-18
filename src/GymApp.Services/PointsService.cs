@@ -95,7 +95,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
     {
         var userId = user.Id;
 
-        // All workout dates and schedule rows: the streak replay needs them from the first workout on to know
+        // All workout dates, schedule rows and missed-day choices: the streak replay needs them from the first workout on to know
         // each day's outcome (a debt can carry into the window). Calorie logs only matter inside the window.
         var workoutDates = await db.WorkoutLogs.Where(w => w.UserId == userId).Select(w => w.Date).ToListAsync();
         var schedule = await db.UserSchedules.Where(s => s.UserId == userId)
@@ -106,7 +106,8 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
             .Select(c => new CalorieRecord(c.Date, c.CaloriesConsumed, c.GoalAtTime))
             .ToListAsync();
 
-        var timeline = StreakCalculator.Timeline(workoutDates, schedule, today,
+        var choices = await StreakService.LoadChoicesAsync(db, userId);
+        var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, today,
             windowStart, PointsCalculator.MondayOf(today).AddDays(6));
         DateOnly? scheduleStart = schedule.Count == 0 ? null : schedule[0].EffectiveFrom;
         var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart)

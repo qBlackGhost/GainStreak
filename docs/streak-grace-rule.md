@@ -25,102 +25,86 @@ A missed training day is forgiven only if a workout is logged the next day. If t
 
 ## 3. Algorithm (forward walk)
 
-Walk **forward**, day by day, from the start of the user's schedule history up to and including today. Carry two values:
+> **Updated in Phase 12a.** The day after a missed training day the user chooses what to do about it, and the choice is stored (`MissedDayChoice`, one row per missed day). Section 2's "no new database fields" no longer holds for this. A miss with no stored choice behaves like **ShiftToRest**, so history from before 12a gives the same streaks and points.
 
-- `count`: the current streak length, measured in days.
-- `debt`: a yes/no flag meaning "a training day is still owed from yesterday". In the shift model the debt is never more than one day, so a boolean is enough.
+The choices (`MissChoice`, keyed by the **missed** date):
+
+- **ShiftWeek** ("Shift my whole schedule by a day"): the schedule moves one day later from the day after the miss (a new `UserSchedule` row). The workout that pays the miss is its new home, so nothing more is owed.
+- **ShiftToRest** ("Make it up before my next rest day"): the shift chain below, until a rest day absorbs the slip.
+- **Continue** ("Skip it and continue"): the streak resets before the next day, and that day counts normally.
+
+Walk **forward**, day by day, from the user's first logged workout up to and including today. Carry:
+
+- `count`: the current streak length, in days.
+- `debt`: whether a training day is still owed, and `owed`: which one.
+- whether the owed day is a **fresh miss** (missed while no debt was open), as opposed to a day owed inside a shift chain. Only a fresh miss takes a choice.
 
 For each day `d`, take its type (training or rest, from the schedule active on `d`) and whether a workout is logged on `d`. Then apply the first matching row:
 
-| # | Debt open? | Day type | Logged? | Result |
+| # | Debt open? | Day | Logged? | Result |
 |---|---|---|---|---|
-| 1 | yes | rest | yes | Debt paid; the rest day absorbed the slip. `debt = no`, `count += 1` |
-| 2 | yes | training | yes | Debt paid, but `d`'s own training is now owed (shift). `debt` stays yes, `count += 1` |
-| 3 | yes | any | no, and `d` is **today** | Not broken yet. Stop the walk with state **AtRisk** (count excludes today) |
-| 4 | yes | any | no, `d` in the past | **Break.** `count = 0`, `debt = no`. Day `d` is consumed by the break; counting resumes on `d + 1` |
+| 1 | yes, owed day is a fresh miss with choice **Continue** | any | any | **Break before the day:** `count = 0`, `debt = no`, owed day Missed. Then handle `d` with rows 5 to 8 (the day is not consumed) |
+| 2 | yes | any | yes | Paid: `count += 1`, owed day Graced. If the owed day is a fresh miss with choice **ShiftWeek**: `debt = no`. Otherwise `debt = d is training`, `owed = d` (the schedule shifts) |
+| 3 | yes | any | no, `d` is **today** | Stop. **NeedsChoice** if the owed day is a fresh miss with no choice, otherwise **AtRisk** (count excludes today) |
+| 4 | yes | any | no, `d` in the past | **Break.** `count = 0`, `debt = no`. Day `d` is consumed by the break |
 | 5 | no | training | yes | `count += 1` |
-| 6 | no | training | no, and `d` is **today** | Not missed yet. Stop the walk with state **TodayPending** (count excludes today) |
-| 7 | no | training | no, `d` in the past | Missed. `debt = yes`, `count += 1` (the day is counted provisionally; row 4 discards it if the debt is never paid) |
-| 8 | no | rest | any | `count += 1` (an extra workout on a rest day with no debt has no special effect) |
+| 6 | no | training | no, `d` is **today** | Stop with **PendingToday** (**Broken** if count is 0) |
+| 7 | no | training | no, `d` in the past | **If count is 0: nothing** (no streak, nothing to save). Otherwise `debt = yes`, `owed = d` (a fresh miss), `count += 1` provisionally |
+| 8 | no | rest | any | **If count is 0: nothing**, unless a workout is logged on it (that starts a new streak). Otherwise `count += 1` |
 
-If the walk finishes today without stopping:
+Rows 7 and 8 are the fix for the Phase 10 known issue: an inactive user's streak stays at 0 instead of flipping between 1 and 0, and rest days after a break don't count until the next logged workout.
 
-- If `debt` is no, the state is **Active**.
-- If `debt` is yes, today was logged but still owes a workout tomorrow, so the state is **Shifted**.
-
-If `count` is 0 at the end, the state is **None**.
+If the walk finishes today without stopping: **Active** if `debt` is no, **Shifted** if it is yes. If `count` is 0 at the end, the state is **Broken**.
 
 ### Days with no active schedule
 
-Treat them the same way the existing 4b calculator does. Do not change that behaviour as part of this work.
+Unchanged: the first schedule entry also covers earlier days, and with no schedule at all every day is a training day.
 
 ---
 
 ## 4. Result returned by the calculator
 
-The calculator returns:
+`StreakCalculator.Calculate(workoutDates, schedule, choices, today)` returns the current count, the longest settled count, the state, and **`OwedDay`**: the training day the open debt is for, or null. `Timeline` takes the same `choices`.
 
-- **Count:** the streak length in days.
-- **State:** one of the following.
-  - **None:** there is no streak.
-  - **Active:** everything is up to date, and today is kept.
-  - **TodayPending:** nothing is owed, but today's training hasn't been logged yet.
-  - **AtRisk:** a miss from yesterday is open, and today isn't logged yet. Home screen message: "Work out today to keep your streak".
-  - **Shifted:** a workout was logged today, but the schedule slipped by a day, so a workout must be logged tomorrow too. Home screen message: "You're one day behind, so train tomorrow (or on your next rest day)".
-
-If the existing result type has only a count, extend it with the state. Update the Home view model so it uses the state, and keep the UI change minimal: just a line of text under the streak.
+- **NotStarted:** no workout logged yet.
+- **Active:** everything is up to date, and today is kept.
+- **PendingToday:** nothing is owed, but today's training hasn't been logged yet.
+- **NeedsChoice:** yesterday's training day was missed, a streak is at stake, no choice is stored, and today isn't logged. Logging today is blocked until the user chooses.
+- **AtRisk:** a day is owed (a choice was made, or a shift chain is open) and today isn't logged yet.
+- **Shifted:** a workout was logged today, but the schedule slipped by a day, so a workout must be logged tomorrow too.
+- **Broken:** the count is 0 after a break.
 
 ---
 
 ## 5. Worked examples
 
-These examples use PPL: Mon Push, Tue Pull, Wed Legs, Thu Rest, Fri Push, Sat Pull, Sun Legs. In the tables, ✔ means logged and ✘ means not logged.
+PPL: Mon Push, Tue Pull, Wed Legs, Thu Rest, Fri Push, Sat Pull, Sun Legs. ✔ means logged and ✘ means not logged.
 
-**A. Miss absorbed by the rest day**
+**A. Shift whole schedule:** Mon ✔ (1), Tue ✘ (2, provisional), Wed: choose ShiftWeek, ✔ (3). State **Active**. From Wed the week is Wed Pull, Thu Legs, Fri Rest, Sat Push, Sun Pull, Mon Legs, Tue Push.
 
-| Mon T ✔ | Tue T ✘ | Wed T ✔ | Thu R ✔ |
-|---|---|---|---|
-| 1 | 2 (debt) | 3 (debt, shifted) | 4 (paid) |
+**B. Make it up before the rest day:** Mon ✔ (1), Tue ✘ (2), Wed: choose ShiftToRest, ✔ (3, **Shifted**), Thu (rest) ✔ (4, **Active**). Fri is Push as normal.
 
-The final streak is 4 and the state is Active.
+**C. Skip and continue:** Mon ✔ (1), Tue ✘, Wed: choose Continue. Count 0, **Broken**. Wed ✔ → 1, **Active**.
 
-**B. Rest day not used to make it up**
+**D. Not chosen yet** (today is Wed): Mon ✔, Tue ✘, Wed ✘. Count 2, **NeedsChoice**, `OwedDay` = Tue.
 
-| Mon T ✔ | Tue T ✘ | Wed T ✔ | Thu R ✘ | Fri T ✔ |
-|---|---|---|---|---|
-| 1 | 2 (debt) | 3 (debt) | break: 0 | 1 |
+**E. Chose but didn't train:** Mon ✔, Tue ✘, Wed: ShiftWeek, ✘. On Thu: Wed breaks (consumed), count 0.
 
-The final streak is 1.
+**F. Inactive user (no schedule):** last workout 1 Oct. 2 Oct ✘ (2, debt), 3 Oct ✘ → break, 0. From 4 Oct the count stays **0**, status **Broken**, never NeedsChoice.
 
-**C. Two misses in a row**
+**G. Inactive user with rest days:** Mon ✔, Tue ✘, Wed ✘ → break. Thu (rest) stays **0** (before 12a it was 1).
 
-| Mon T ✔ | Tue T ✘ | Wed T ✘ | Thu R |
-|---|---|---|---|
-| 1 | 2 (debt) | break: 0 | 1 |
+**H. Old miss with no choice row:** Mon ✔, Tue ✘, Wed ✔ with no choice stored. Same as B on Wed: 3, **Shifted**.
 
-**D. Missed yesterday, today not logged yet** (today is Wed)
+**Shift chain across several training days:** a miss with ShiftToRest (or no choice) followed by workouts on every following training day and a logged rest day keeps the streak, with each shifted day Graced.
 
-| Mon T ✔ | Tue T ✘ | Wed (today) ✘ |
-|---|---|---|
-| 1 | 2 (debt) | stop |
-
-The streak is 2 and the state is AtRisk.
-
-**E. Missed yesterday, logged today, and today is a training day** (today is Wed)
-
-The streak is 3 and the state is Shifted.
-
-**F. Training day today, nothing owed, not logged yet**
-
-The count runs through yesterday and the state is TodayPending.
-
-**G. Miss on the last day before a schedule change**
-
-Whether the next day is training or rest is decided by the **new** schedule.
+**Miss on the last day before a schedule change:** whether the next day is training or rest is decided by the **new** schedule.
 
 ---
 
 ## 6. Tests to add
+
+> The original list from the grace rule phase. Phase 12a changed test 4 (two misses in a row now leave **0** on the Thu rest day) and added tests for every example in section 5; see `StreakCalculatorTests` and `StreakServiceTests`.
 
 Add these tests to the existing streak calculator tests, alongside the current ones. All existing tests must still pass. Any existing test that relied on "a miss resets immediately" should be updated to the new rule; list each such test in your summary.
 
@@ -140,6 +124,6 @@ Add these tests to the existing streak calculator tests, alongside the current o
 
 ## 7. Out of scope
 
-- Grace limits, such as one grace per week. These may be added later.
+- Grace limits, such as one grace per week. (Phase 12b adds weekly limits on the missed-day choices.)
 - Points and levels, including whether a week with a forgiven miss earns the weekly bonus. Do not touch the points code.
 - Backdating workouts. Logging stays today-only.

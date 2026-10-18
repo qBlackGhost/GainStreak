@@ -607,6 +607,32 @@ namespace GymApp.Data.Migrations
                     b.ToTable("Gyms");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.MissedDayChoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Choice")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("MissedDayChoices");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.PointsEntry", b =>
                 {
                     b.Property<int>("Id")
@@ -1279,6 +1305,17 @@ namespace GymApp.Data.Migrations
                     b.Navigation("City");
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.MissedDayChoice", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.PointsEntry", b =>

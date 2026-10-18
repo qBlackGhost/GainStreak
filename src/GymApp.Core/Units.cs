@@ -42,12 +42,6 @@ public static class Units
     public static bool TryParseNumber(string? text, out double value) =>
         NumberParsing.TryParseKg(text, out value);
 
-    /// <summary>A whole number, e.g. kcal. Spaces and thousands separators are ignored ("2,200", "2 200").</summary>
-    public static bool TryParseWholeNumber(string? text, out int value)
-    {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        var digits = text.Trim().Replace(",", "").Replace(".", "").Replace(" ", "");
-        return int.TryParse(digits, NumberStyles.None, CultureInfo.InvariantCulture, out value);
-    }
+    /// <summary>A whole number, e.g. kcal. Same rules as <see cref="NumberParsing.TryParseWhole"/>.</summary>
+    public static bool TryParseWholeNumber(string? text, out int value) => NumberParsing.TryParseWhole(text, out value);
 }

@@ -257,4 +257,30 @@ public class SetServiceTests : IDisposable
         Assert.Equal(60, current.WeightKg);
         Assert.Equal(PrEntryKind.Pr, current.Kind);
     }
+
+    // ===== Recent PRs (dashboard) =====
+
+    [Fact] public async Task RecentPrs_NewestFirst_LimitedToThree_WithoutBaselines()
+    {
+        await Save(_alice, 1, 0, Work(60, 8));                  // baseline: not a PR
+        await Save(_alice, 1, 1, Work(70, 8), Work(75, 5));     // two PRs on one day: shown once, the best
+        await Save(_alice, 1, 4, Work(80, 5));
+        await Save(_alice, 2, 0, Warm(20, 10), Work(40, 10));   // baseline
+        await Save(_alice, 2, 2, Work(45, 10));
+        await Save(_alice, 2, 3, Work(45, 12));
+        await Save(_alice, 2, 5, Work(40, 12));                 // not a PR
+        await Save(_bob, 1, 6, Work(100, 1));                   // someone else's
+
+        var all = await _svc.GetRecentPrsAsync(_alice, count: 10);
+        Assert.Equal([(1, D(4), 80.0, 5), (2, D(3), 45.0, 12), (2, D(2), 45.0, 10), (1, D(1), 75.0, 5)],
+            all.Select(p => (p.ExerciseId, p.Date, p.WeightKg, p.Reps)));
+
+        var top = await _svc.GetRecentPrsAsync(_alice);
+        Assert.Equal(3, top.Count);
+        Assert.Equal([D(4), D(3), D(2)], top.Select(p => p.Date));
+        Assert.All(top, p => Assert.False(string.IsNullOrEmpty(p.ExerciseName)));
+    }
+
+    [Fact] public async Task RecentPrs_NoneWithoutSets() =>
+        Assert.Empty(await _svc.GetRecentPrsAsync(_alice));
 }

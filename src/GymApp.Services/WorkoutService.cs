@@ -30,21 +30,44 @@ public record CheckInExerciseInfo(int ExerciseId, string Name, int WarmupSets, i
 public record CheckInInfo(DateOnly Date, bool HasSplit, bool Logged, CheckInDay? PlannedDay,
     IReadOnlyList<CheckInDay> PickableDays, CheckInDay? Day, IReadOnlyList<CheckInExerciseInfo> Exercises, CheckInStatus Status);
 
+/// <summary>One exercise of the dashboard's "Today's workout" card. <see cref="LastTopSet"/> is the heaviest working
+/// set of the last session before today (most reps on a tie), or null with no earlier session.</summary>
+public record TodayExercise(string Name, int WarmupSets, int WorkingSets, SetEntry? LastTopSet);
+
+/// <summary>The dashboard's "Today's workout": the planned day (the same plan as the check-in, so it follows shifts
+/// and make-up chains) and its exercises in order. <see cref="DayName"/> is null on a rest day or with no split.</summary>
+public record TodayWorkoutInfo(DateOnly Date, bool HasSplit, string? DayName, IReadOnlyList<TodayExercise> Exercises);
+
 public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakService streaks, PointsService points)
 {
     private record Plan(int SplitId, TodayWorkout Workout, SplitDay? Day);
 
-    public async Task<TodayInfo> GetTodayAsync(int userId)
+    public const string NeedsChoiceError = "Choose what to do about yesterday's missed workout first.";
+
+    public async Task<TodayInfo> GetTodayAsync(int userId, DateOnly? date = null)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = date ?? Today();
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var logged = await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.Date == today);
-        var plan = await PlanAsync(db, userId, today);
+        var plan = await PlanTodayAsync(db, userId, today);
 
         return plan is null
             ? new TodayInfo(today, false, true, "", logged)
             : new TodayInfo(today, true, plan.Workout.IsTraining, plan.Workout.Title, logged);
+    }
+
+    public async Task<TodayWorkoutInfo> GetTodayWorkoutAsync(int userId, DateOnly? today = null)
+    {
+        var date = today ?? Today();
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var plan = await PlanTodayAsync(db, userId, date);
+        if (plan?.Day is not { } day) return new TodayWorkoutInfo(date, plan is not null, null, []);
+
+        var exercises = await ExercisesAsync(db, userId, day.Id, date);
+        return new TodayWorkoutInfo(date, true, day.Name, exercises.Select(e => new TodayExercise(e.Name, e.WarmupSets, e.WorkingSets,
+            e.LastSession.Where(s => s.Kind == SetKind.Working)
+                .OrderByDescending(s => s.WeightKg).ThenByDescending(s => s.Reps).FirstOrDefault())).ToList());
     }
 
     /// <summary>
@@ -59,7 +82,7 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var log = await db.WorkoutLogs.AsNoTracking().FirstOrDefaultAsync(w => w.UserId == userId && w.Date == date);
-        var plan = await PlanAsync(db, userId, date);
+        var plan = await PlanTodayAsync(db, userId, date);
         var planned = plan?.Day is { } p ? new CheckInDay(p.Id, p.Name) : null;
 
         IReadOnlyList<CheckInDay> pickable = [];
@@ -81,7 +104,8 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     /// the sets already saved today, so save them first (<see cref="SetService.SaveDayAsync"/>). On a training day
     /// the planned day is used; <paramref name="splitDayId"/> is only for rest days, where the user picks one of
     /// their split's days. Tapping twice is harmless: the unique (user, date) index keeps one log per day, and the
-    /// second call just returns the current streak.
+    /// second call just returns the current streak. Refused while yesterday's missed workout still needs a choice
+    /// (<see cref="StreakStatus.NeedsChoice"/>).
     /// </summary>
     public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null)
     {
@@ -90,7 +114,10 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         {
             if (!await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.Date == date))
             {
-                var plan = await PlanAsync(db, userId, date);
+                if ((await streaks.GetAsync(userId, date)).Status == StreakStatus.NeedsChoice)
+                    return new LogResult(false, NeedsChoiceError);
+
+                var plan = await PlanTodayAsync(db, userId, date);
                 if (plan is null) return new LogResult(false, "Pick a split and build a workout first.");
 
                 CheckInDay? day = plan.Day is { } p ? new CheckInDay(p.Id, p.Name) : null;
@@ -188,6 +215,11 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
             .Select(d => new CheckInDay(d.Id, d.Name))
             .ToListAsync();
     }
+
+    /// <summary>Today's plan. While a "make it up before my next rest day" chain is open, today's workout is
+    /// yesterday's scheduled one (see <see cref="StreakService.MakeUpDayAsync"/>), so that day is planned instead.</summary>
+    private async Task<Plan?> PlanTodayAsync(AppDbContext db, int userId, DateOnly today) =>
+        await PlanAsync(db, userId, await streaks.MakeUpDayAsync(userId, today) ?? today);
 
     private static async Task<Plan?> PlanAsync(AppDbContext db, int userId, DateOnly date)
     {

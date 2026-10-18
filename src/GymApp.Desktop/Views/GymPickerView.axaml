@@ -57,6 +57,8 @@
                     </DockPanel>
                     <TextBlock Text="{Binding CitySearchMessage}" Classes="small"
                                IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Content="Retry" Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"
+                            HorizontalAlignment="Left"/>
 
                     <ItemsControl ItemsSource="{Binding CityCandidates}" IsVisible="{Binding HasCityCandidates}">
                         <ItemsControl.ItemTemplate>
@@ -112,8 +114,12 @@
                         <ProgressBar IsIndeterminate="True" Width="80" Height="4" VerticalAlignment="Center"/>
                         <TextBlock Text="Loading gyms from OpenStreetMap…" Classes="small"/>
                     </StackPanel>
-                    <TextBlock Text="{Binding AddressLookupText}" Classes="small"
-                               IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="{Binding AddressLookupText}" Classes="small" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        <Button Content="Retry" Command="{Binding RetryAddressLookupCommand}"
+                                IsVisible="{Binding CanRetryAddressLookup}"/>
+                    </StackPanel>
                     <TextBlock Text="{Binding RefreshNote}" Classes="small" Foreground="DarkGoldenrod"
                                IsVisible="{Binding RefreshNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
@@ -135,6 +141,8 @@
                     <Border CornerRadius="12" ClipToBounds="True" BorderBrush="#40808080" BorderThickness="1">
                         <mapsui:MapControl x:Name="GymMap" Height="420"/>
                     </Border>
+                    <TextBlock Text="{Binding MapTilesNote}" Foreground="DarkGoldenrod" TextWrapping="Wrap"
+                               IsVisible="{Binding MapTilesNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     <TextBlock Classes="small"
                                Text="Click a marker to pick that gym. The map needs internet for its background; without it, use the list."/>
                     <TextBlock Text="{Binding NoPositionText}" Classes="small"
@@ -188,6 +196,8 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="{Binding GymFormTitle}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
                         <TextBox Watermark="Name" Text="{Binding GymFormName}" MaxLength="{Binding MaxNameLength}"/>
+                        <TextBlock Classes="fieldError" Text="{Binding GymFormNameError}"
+                                   IsVisible="{Binding GymFormNameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                         <!-- Address: picked from a search inside the city, never typed freely -->
                         <TextBlock Text="Address (optional)" Opacity="0.7" Margin="0,4,0,0"/>
@@ -221,6 +231,8 @@
                             </DockPanel>
                             <TextBlock Text="{Binding AddressSearchMessage}" Classes="small"
                                        IsVisible="{Binding AddressSearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <Button Content="Retry" Command="{Binding SearchAddressCommand}"
+                                    IsVisible="{Binding CanRetryAddressSearch}" HorizontalAlignment="Left"/>
                             <ItemsControl ItemsSource="{Binding AddressCandidates}" IsVisible="{Binding HasAddressCandidates}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:AddressCandidateViewModel">
@@ -239,6 +251,8 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
+                        <TextBlock Classes="fieldError" Text="{Binding GymFormAddressError}"
+                                   IsVisible="{Binding GymFormAddressError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         <TextBlock Text="{Binding GymFormError}" Foreground="IndianRed" TextWrapping="Wrap"
                                    IsVisible="{Binding GymFormError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         <StackPanel Orientation="Horizontal" Spacing="8">

@@ -6,25 +6,24 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Services;
 
-public record AuthResult(bool Success, string? Error = null, User? User = null);
+public record AuthResult(bool Success, string? Error = null, User? User = null, string? Field = null);
 
 public class AuthService(IDbContextFactory<AppDbContext> dbFactory)
 {
     public async Task<AuthResult> RegisterAsync(string username, string password)
     {
         username = username.Trim();
-        if (username.Length < 3) return new(false, "Username must be at least 3 characters.");
-        if (username.Length > 32) return new(false, "Username must be at most 32 characters.");
-        if (password.Length < 8) return new(false, "Password must be at least 8 characters.");
+        if (Credentials.CheckUsername(username) is { } nameError) return new(false, nameError, Field: FormField.Username);
+        if (Credentials.CheckPassword(password) is { } passwordError) return new(false, passwordError, Field: FormField.Password);
 
         await using var db = await dbFactory.CreateDbContextAsync();
         if (await db.Users.AnyAsync(u => u.Username == username))
-            return new(false, "That username is already taken.");
+            return new(false, "That username is already taken.", Field: FormField.Username);
 
         var user = new User { Username = username, PasswordHash = PasswordHasher.Hash(password) };
         db.Users.Add(user);
         try { await db.SaveChangesAsync(); }
-        catch (DbUpdateException) { return new(false, "That username is already taken."); }
+        catch (DbUpdateException) { return new(false, "That username is already taken.", Field: FormField.Username); }
 
         return new(true, User: user);
     }

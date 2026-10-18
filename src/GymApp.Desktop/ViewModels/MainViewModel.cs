@@ -1,5 +1,6 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using GymApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using GymApp.Data.Models;
@@ -13,6 +14,15 @@ public partial class MainViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial ViewModelBase Current { get; set; } = null!;
+
+    /// <summary>The "Something went wrong" banner from the global error handler, or null.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasGlobalError))]
+    public partial string? GlobalError { get; set; }
+
+    public bool HasGlobalError => GlobalError is not null;
+
+    [RelayCommand] private void DismissGlobalError() => GlobalError = null;
 
     public MainViewModel(SessionService session, IServiceProvider sp)
     {
@@ -57,7 +67,7 @@ public partial class MainViewModel : ViewModelBase
         vm.Load(day, splitName);
         Current = vm;
     }
-    
+
     public void ShowExercise(MenuDay day, string splitName, int exerciseId)
     {
         var vm = _sp.GetRequiredService<ExerciseViewModel>();
@@ -78,7 +88,7 @@ public partial class MainViewModel : ViewModelBase
         vm.Load(split);      // null = new split, otherwise pre-fills the form
         Current = vm;
     }
-    
+
     public void ShowSplitDetail(WorkoutSplit split)
     {
         var vm = _sp.GetRequiredService<SplitDetailViewModel>();

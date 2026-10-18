@@ -198,48 +198,80 @@ public partial class DayViewModel : ViewModelBase
 
     internal async Task AddAsync(PickerItemViewModel item)
     {
-        var r = await _days.AddAsync(UserId, _dayId, item.ExerciseId);
-        if (!r.Success) { Error = r.Error; Info = null; return; }
+        try
+        {
+            var r = await _days.AddAsync(UserId, _dayId, item.ExerciseId);
+            if (!r.Success) { Error = r.Error; Info = null; return; }
 
-        Error = null;
-        Info = $"Added {item.Name}.";
-        await ReloadAsync();
+            Error = null;
+            Info = $"Added {item.Name}.";
+            await ReloadAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not add that exercise.";
+        }
     }
 
     internal async Task RemoveAsync(DayExerciseItemViewModel item)
     {
-        if (!await _days.RemoveAsync(UserId, _dayId, item.ExerciseId))
+        try
+        {
+            if (!await _days.RemoveAsync(UserId, _dayId, item.ExerciseId))
+            {
+                Error = "Could not remove that exercise.";
+                return;
+            }
+
+            Error = null;
+            Info = $"Removed {item.Name}. Its logged sets and PR are kept.";
+            await ReloadAsync();
+
+        }
+        catch (Exception)
         {
             Error = "Could not remove that exercise.";
-            return;
         }
-
-        Error = null;
-        Info = $"Removed {item.Name}. Its logged sets and PR are kept.";
-        await ReloadAsync();
     }
 
     internal async Task MoveAsync(DayExerciseItemViewModel item, int direction)
     {
-        await _days.MoveAsync(UserId, _dayId, item.ExerciseId, direction);
-        Error = null; Info = null;
-        await ReloadAsync();
+        try
+        {
+            await _days.MoveAsync(UserId, _dayId, item.ExerciseId, direction);
+            Error = null; Info = null;
+            await ReloadAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not move that exercise.";
+        }
     }
-    
+
     internal void OpenExercise(DayExerciseItemViewModel item) =>
         _shell().ShowExercise(_menuDay!, _splitName, item.ExerciseId);
 
     [RelayCommand]
     private async Task ToggleCopyAsync()
     {
-        IsCopyOpen = !IsCopyOpen;
-        PendingCopy = null;
-        if (!IsCopyOpen) return;
+        try
+        {
+            IsCopyOpen = !IsCopyOpen;
+            PendingCopy = null;
+            if (!IsCopyOpen) return;
 
-        var sources = await _days.GetCopySourcesAsync(UserId, _dayId);
-        CopySources.Clear();
-        foreach (var s in sources) CopySources.Add(new CopySourceItemViewModel(s, this));
-        HasCopySources = sources.Count > 0;
+            var sources = await _days.GetCopySourcesAsync(UserId, _dayId);
+            CopySources.Clear();
+            foreach (var s in sources) CopySources.Add(new CopySourceItemViewModel(s, this));
+            HasCopySources = sources.Count > 0;
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load your other days.";
+        }
     }
 
     // An empty day just receives the copy; a day with exercises asks first (add to the end or replace)
@@ -260,16 +292,24 @@ public partial class DayViewModel : ViewModelBase
 
     private async Task CopyAsync(CopySourceItemViewModel item, CopyMode mode)
     {
-        var r = await _days.CopyAsync(UserId, item.Source.SplitDayId, _dayId, mode);
-        if (!r.Success) { Error = r.Error; Info = null; return; }
+        try
+        {
+            var r = await _days.CopyAsync(UserId, item.Source.SplitDayId, _dayId, mode);
+            if (!r.Success) { Error = r.Error; Info = null; return; }
 
-        Error = null;
-        Info = r.Skipped > 0
-            ? $"Copied {r.Added} exercise(s), skipped {r.Skipped} already in the list."
-            : $"Copied {r.Added} exercise(s).";
-        PendingCopy = null;
-        IsCopyOpen = false;
-        await ReloadAsync();
+            Error = null;
+            Info = r.Skipped > 0
+                ? $"Copied {r.Added} exercise(s), skipped {r.Skipped} already in the list."
+                : $"Copied {r.Added} exercise(s).";
+            PendingCopy = null;
+            IsCopyOpen = false;
+            await ReloadAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not copy the exercises.";
+        }
     }
 
     [RelayCommand] private void NewExercise() => _shell().ShowCustomExercises(_menuDay!, _splitName);

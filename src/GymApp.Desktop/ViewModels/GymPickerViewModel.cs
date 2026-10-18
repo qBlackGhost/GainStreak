@@ -114,12 +114,20 @@ public partial class GymPickerViewModel : ViewModelBase
     [ObservableProperty] public partial string? RefreshNote { get; set; }
     [ObservableProperty] public partial string? FetchError { get; set; }
     [ObservableProperty] public partial string? AddressLookupText { get; set; }
+    [ObservableProperty] public partial bool CanRetryAddressLookup { get; set; }
+    [ObservableProperty] public partial bool CanRetryCitySearch { get; set; }
+    [ObservableProperty] public partial bool CanRetryAddressSearch { get; set; }
+
+    /// <summary>Shown over the map when its tiles can't be downloaded (offline). The list still works.</summary>
+    [ObservableProperty] public partial string? MapTilesNote { get; set; }
 
     // ===== Custom gym form (add or edit) =====
     [ObservableProperty] public partial bool IsGymFormOpen { get; set; }
     [ObservableProperty] public partial string GymFormTitle { get; set; } = "";
     [ObservableProperty] public partial string GymFormName { get; set; } = "";
     [ObservableProperty] public partial string? GymFormError { get; set; }
+    [ObservableProperty] public partial string? GymFormNameError { get; set; }
+    [ObservableProperty] public partial string? GymFormAddressError { get; set; }
     private int? _editingGymId;   // null = adding a new one
 
     // The address can only come from a search result inside the city (plus an optional house number)
@@ -172,20 +180,28 @@ public partial class GymPickerViewModel : ViewModelBase
 
     private async Task OpenCityAsync(City city)
     {
-        _cityId = city.Id;
-        _city = city;
-        MapBox = new CityBox(city.South, city.West, city.North, city.East, city.CenterLatitude, city.CenterLongitude);
-        CityName = city.Name;
-        AddressLookupText = null;
-        HasCity = true;
-        IsChoosingCity = false;
-        FetchError = null;
-        RefreshNote = null;
-        ApplyFetchedAt(city.GymsFetchedAt);
+        try
+        {
+            _cityId = city.Id;
+            _city = city;
+            MapBox = new CityBox(city.South, city.West, city.North, city.East, city.CenterLatitude, city.CenterLongitude);
+            CityName = city.Name;
+            AddressLookupText = null;
+            HasCity = true;
+            IsChoosingCity = false;
+            FetchError = null;
+            RefreshNote = null;
+            ApplyFetchedAt(city.GymsFetchedAt);
 
-        await ReloadListAsync();
-        await RunFetchAsync(city.Id, force: false);
-        await RunAddressLookupAsync(city.Id);
+            await ReloadListAsync();
+            await RunFetchAsync(city.Id, force: false);
+            await RunAddressLookupAsync(city.Id);
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not open that city.";
+        }
     }
 
     /// <summary>Fills in approximate addresses for gyms OSM has none for, one per second, in the background.
@@ -194,6 +210,7 @@ public partial class GymPickerViewModel : ViewModelBase
     {
         try
         {
+            CanRetryAddressLookup = false;
             var missing = await _lookup.CountMissingAsync(cityId);
             if (missing == 0 || cityId != _cityId) return;
 
@@ -208,6 +225,7 @@ public partial class GymPickerViewModel : ViewModelBase
             var r = await _lookup.FillMissingAsync(cityId, progress);
             if (cityId != _cityId) return;
             AddressLookupText = r.Error is null ? null : "Couldn't look up every address. The rest will be tried next time.";
+            CanRetryAddressLookup = r.Error is not null;
             await ReloadListAsync();
         }
         catch (Exception)
@@ -218,21 +236,29 @@ public partial class GymPickerViewModel : ViewModelBase
 
     private async Task ReloadListAsync()
     {
-        if (_cityId is not { } cityId) return;
-        var sort = SortByDistance ? GymSort.Distance : GymSort.Name;
-        var r = await _gyms.GetGymsForCityAsync(UserId, cityId, SearchText, sort);
-        if (r is null || cityId != _cityId) return;   // the city changed while loading
+        try
+        {
+            if (_cityId is not { } cityId) return;
+            var sort = SortByDistance ? GymSort.Distance : GymSort.Name;
+            var r = await _gyms.GetGymsForCityAsync(UserId, cityId, SearchText, sort);
+            if (r is null || cityId != _cityId) return;   // the city changed while loading
 
-        Gyms.Clear();
-        foreach (var row in r.Rows) Gyms.Add(new GymRowViewModel(row, row.Gym.Id == _currentGymId, this));
-        HasGyms = Gyms.Count > 0;
-        var unplaced = Gyms.Count(g => !g.HasPosition);
-        NoPositionText = unplaced == 0 ? null
-            : unplaced == 1 ? "1 gym has no map position, so it's only in the list."
-            : $"{unplaced} gyms have no map position, so they're only in the list.";
-        EmptyText = !string.IsNullOrWhiteSpace(SearchText) ? $"No gyms match \"{SearchText.Trim()}\"."
-                  : r.City.GymsFetchedAt is null ? ""
-                  : "No gyms found in this city on OpenStreetMap.";
+            Gyms.Clear();
+            foreach (var row in r.Rows) Gyms.Add(new GymRowViewModel(row, row.Gym.Id == _currentGymId, this));
+            HasGyms = Gyms.Count > 0;
+            var unplaced = Gyms.Count(g => !g.HasPosition);
+            NoPositionText = unplaced == 0 ? null
+                : unplaced == 1 ? "1 gym has no map position, so it's only in the list."
+                : $"{unplaced} gyms have no map position, so they're only in the list.";
+            EmptyText = !string.IsNullOrWhiteSpace(SearchText) ? $"No gyms match \"{SearchText.Trim()}\"."
+                      : r.City.GymsFetchedAt is null ? ""
+                      : "No gyms found in this city on OpenStreetMap.";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load the gym list.";
+        }
     }
 
     /// <summary>Fetches in the background and reloads the list from the database when something changed.
@@ -298,27 +324,58 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        if (_cityId is not { } id) return;
-        await RunFetchAsync(id, force: true);
-        await RunAddressLookupAsync(id);   // new or moved gyms
+        try
+        {
+            if (_cityId is not { } id) return;
+            await RunFetchAsync(id, force: true);
+            await RunAddressLookupAsync(id);   // new or moved gyms
+
+        }
+        catch (Exception)
+        {
+            FetchError = "Couldn't load gyms.";
+        }
     }
 
     [RelayCommand]
     private Task RetryAsync() => RefreshAsync();
 
+    [RelayCommand]
+    private Task RetryAddressLookupAsync() => _cityId is { } id ? RunAddressLookupAsync(id) : Task.CompletedTask;
+
+    /// <summary>From the map view: whether the last tile download worked.</summary>
+    internal void MapTilesLoaded(bool ok) =>
+        MapTilesNote = ok ? null : "Map tiles need an internet connection. The gym list still works.";
+
     internal async Task PickAsync(GymRow row)
     {
-        var r = await _gyms.SetGymForTodayAsync(UserId, row.Gym.Id);
-        if (!r.Success) { Error = r.Error; return; }
-        _shell().ShowHome();
+        try
+        {
+            var r = await _gyms.SetGymForTodayAsync(UserId, row.Gym.Id);
+            if (!r.Success) { Error = r.Error; return; }
+            _shell().ShowHome();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save the gym.";
+        }
     }
 
     [RelayCommand]
     private async Task ClearGymAsync()
     {
-        var r = await _gyms.SetGymForTodayAsync(UserId, null);
-        if (!r.Success) { Error = r.Error; return; }
-        _shell().ShowHome();
+        try
+        {
+            var r = await _gyms.SetGymForTodayAsync(UserId, null);
+            if (!r.Success) { Error = r.Error; return; }
+            _shell().ShowHome();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not clear the gym.";
+        }
     }
 
     // ===== Custom gyms =====
@@ -331,7 +388,7 @@ public partial class GymPickerViewModel : ViewModelBase
         // Start from what was searched for, since that's usually the gym that wasn't found
         GymFormName = SearchText.Trim();
         ResetFormAddress(null);
-        GymFormError = null;
+        GymFormError = GymFormNameError = GymFormAddressError = null;
         Info = null;
         IsGymFormOpen = true;
     }
@@ -342,7 +399,7 @@ public partial class GymPickerViewModel : ViewModelBase
         GymFormTitle = $"Edit {row.Name}";
         GymFormName = row.Name;
         ResetFormAddress(row.Address);
-        GymFormError = null;
+        GymFormError = GymFormNameError = GymFormAddressError = null;
         Info = null;
         IsGymFormOpen = true;
     }
@@ -368,18 +425,27 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchAddressAsync()
     {
-        if (_city is not { } city) return;
-        AddressSearchMessage = null;
-        AddressCandidates.Clear();
-        HasAddressCandidates = false;
+        try
+        {
+            if (_city is not { } city) return;
+            AddressSearchMessage = null;
+            CanRetryAddressSearch = false;
+            AddressCandidates.Clear();
+            HasAddressCandidates = false;
 
-        var query = AddressQuery.Trim();
-        var r = await _geocoding.SearchAddressAsync(query, city);
-        if (!r.Success) { AddressSearchMessage = r.Error; return; }
-        if (r.Candidates.Count == 0) { AddressSearchMessage = $"No addresses found for \"{query}\" in {city.Name}."; return; }
+            var query = AddressQuery.Trim();
+            var r = await _geocoding.SearchAddressAsync(query, city);
+            if (!r.Success) { AddressSearchMessage = r.Error; CanRetryAddressSearch = r.CanRetry; return; }
+            if (r.Candidates.Count == 0) { AddressSearchMessage = $"No addresses found for \"{query}\" in {city.Name}."; return; }
 
-        foreach (var c in r.Candidates) AddressCandidates.Add(new AddressCandidateViewModel(c, PickAddress));
-        HasAddressCandidates = true;
+            foreach (var c in r.Candidates) AddressCandidates.Add(new AddressCandidateViewModel(c, PickAddress));
+            HasAddressCandidates = true;
+
+        }
+        catch (Exception)
+        {
+            AddressSearchMessage = "Could not search for addresses.";
+        }
     }
 
     private void PickAddress(AddressCandidate c)
@@ -420,35 +486,61 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveGymFormAsync()
     {
-        if (_cityId is not { } cityId) return;
-        var address = FormAddress(out var addressError);
-        if (addressError is not null) { GymFormError = addressError; return; }
+        try
+        {
+            if (_cityId is not { } cityId) return;
+            GymFormError = GymFormNameError = GymFormAddressError = null;
+            var address = FormAddress(out var addressError);
+            if (addressError is not null) { GymFormAddressError = addressError; return; }
 
-        var r = _editingGymId is { } id
-            ? await _gyms.UpdateCustomGymAsync(UserId, id, GymFormName, address, keepAddress: !_addressChanged)
-            : await _gyms.AddCustomGymAsync(UserId, cityId, GymFormName, address);
-        if (!r.Success) { GymFormError = r.Error; return; }
+            var r = _editingGymId is { } id
+                ? await _gyms.UpdateCustomGymAsync(UserId, id, GymFormName, address, keepAddress: !_addressChanged)
+                : await _gyms.AddCustomGymAsync(UserId, cityId, GymFormName, address);
+            if (!r.Success)
+            {
+                switch (r.Field)
+                {
+                    case FormField.Name: GymFormNameError = r.Error; break;
+                    case FormField.Address: GymFormAddressError = r.Error; break;
+                    default: GymFormError = r.Error; break;
+                }
+                return;
+            }
 
-        IsGymFormOpen = false;
-        Error = null;
-        Info = _editingGymId is not null ? "Gym updated."
-             : r.Reactivated ? "Added back. Its earlier visits are still linked to it."
-             : "Gym added. Pick it to log it for today.";
-        SearchText = "";   // also reloads, so the new gym shows up
-        await ReloadListAsync();
+            IsGymFormOpen = false;
+            Error = null;
+            Info = _editingGymId is not null ? "Gym updated."
+                 : r.Reactivated ? "Added back. Its earlier visits are still linked to it."
+                 : "Gym added. Pick it to log it for today.";
+            SearchText = "";   // also reloads, so the new gym shows up
+            await ReloadListAsync();
+
+        }
+        catch (Exception)
+        {
+            GymFormError = "Could not save the gym.";
+        }
     }
 
     internal async Task DeleteGymAsync(GymRowViewModel row)
     {
-        var r = await _gyms.DeleteCustomGymAsync(UserId, row.Gym.Id);
-        if (!r.Success) { row.IsConfirmingDelete = false; Error = r.Error; return; }
+        try
+        {
+            var r = await _gyms.DeleteCustomGymAsync(UserId, row.Gym.Id);
+            if (!r.Success) { row.IsConfirmingDelete = false; Error = r.Error; return; }
 
-        Error = null;
-        Info = r.Outcome == CustomGymDeleteOutcome.Deleted
-            ? $"Deleted {row.Name}."
-            : $"Removed {row.Name} from the list. It stays in your history because you logged workouts there.";
-        if (row.Gym.Id == _currentGymId) { _currentGymId = null; HasCurrentGym = false; }
-        await ReloadListAsync();
+            Error = null;
+            Info = r.Outcome == CustomGymDeleteOutcome.Deleted
+                ? $"Deleted {row.Name}."
+                : $"Removed {row.Name} from the list. It stays in your history because you logged workouts there.";
+            if (row.Gym.Id == _currentGymId) { _currentGymId = null; HasCurrentGym = false; }
+            await ReloadListAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not delete the gym.";
+        }
     }
 
     // ===== Choosing a city =====
@@ -473,17 +565,26 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchCityAsync()
     {
-        CitySearchMessage = null;
-        CityCandidates.Clear();
-        HasCityCandidates = false;
+        try
+        {
+            CitySearchMessage = null;
+            CanRetryCitySearch = false;
+            CityCandidates.Clear();
+            HasCityCandidates = false;
 
-        var query = CitySearchText.Trim();
-        var r = await _geocoding.SearchAsync(query);
-        if (!r.Success) { CitySearchMessage = r.Error; return; }
-        if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
+            var query = CitySearchText.Trim();
+            var r = await _geocoding.SearchAsync(query);
+            if (!r.Success) { CitySearchMessage = r.Error; CanRetryCitySearch = r.CanRetry; return; }
+            if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
 
-        foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, ChooseCityAsync));
-        HasCityCandidates = true;
+            foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, ChooseCityAsync));
+            HasCityCandidates = true;
+
+        }
+        catch (Exception)
+        {
+            CitySearchMessage = "Could not search for cities.";
+        }
     }
 
     private async Task ChooseCityAsync(CityCandidate candidate)

@@ -160,6 +160,14 @@ public class LeaderboardServiceTests : IDisposable
         Assert.Equal(0, db.Users.Single(u => u.Id == _bob).CurrentStreak);   // the cache was refreshed too
     }
 
+    [Fact] public async Task InactiveFriend_ShowsZero_OnADayThatUsedToGiveOne()
+    {
+        await MakeFriends(_alice, _bob);
+        Workouts(_bob, 4, 5, 6, 7);   // missed the 8th, broke on the 9th; before 12a the 10th's miss counted +1 again
+        var bob = (await Board(_alice)).Rows.Single(r => r.Username == "bob");
+        Assert.Equal(0, bob.CurrentStreak);
+    }
+
     [Fact] public async Task FriendsStalePoints_AreSynced()
     {
         await MakeFriends(_alice, _bob);

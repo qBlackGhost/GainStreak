@@ -131,10 +131,25 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial bool HasHomeCity { get; set; }
     [ObservableProperty] public partial string CitySearchText { get; set; } = "";
     [ObservableProperty] public partial string? CitySearchMessage { get; set; }
+    [ObservableProperty] public partial bool CanRetryCitySearch { get; set; }
     [ObservableProperty] public partial bool HasCityCandidates { get; set; }
     [ObservableProperty] public partial bool AskForGym { get; set; } = true;
 
+    /// <summary>"GymApp 1.0.0", from the assembly version (Directory.Build.props).</summary>
+    public string VersionText { get; } = $"GymApp {AppVersion.Current}";
+
     [ObservableProperty] public partial string? Error { get; set; }
+
+    // Messages shown under the field they're about
+    [ObservableProperty] public partial string? UnitsError { get; set; }
+    [ObservableProperty] public partial string? SexError { get; set; }
+    [ObservableProperty] public partial string? BirthDateError { get; set; }
+    [ObservableProperty] public partial string? HeightError { get; set; }
+    [ObservableProperty] public partial string? ActivityError { get; set; }
+    [ObservableProperty] public partial string? WeightError { get; set; }
+    [ObservableProperty] public partial string? GoalError { get; set; }
+
+    private void ClearBodyErrors() => UnitsError = SexError = BirthDateError = HeightError = ActivityError = null;
     [ObservableProperty] public partial string? Info { get; set; }
 
     private bool _loading;
@@ -242,7 +257,7 @@ public partial class ProfileViewModel : ViewModelBase
         }
 
         if (string.IsNullOrWhiteSpace(HeightFtText) && string.IsNullOrWhiteSpace(HeightInText)) return true;
-        if (!int.TryParse(HeightFtText.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var ft))
+        if (!NumberParsing.TryParseWhole(HeightFtText, out var ft))
         { error = "Enter your height in whole feet, e.g. 5."; return false; }
 
         double inches = 0;
@@ -256,49 +271,88 @@ public partial class ProfileViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveAsync()
     {
-        Info = null;
-        if (!TryReadHeight(SelectedUnits, out var cm, out var heightError)) { Error = heightError; return; }
+        try
+        {
+            Info = null;
+            Error = null;
+            ClearBodyErrors();
+            if (!TryReadHeight(SelectedUnits, out var cm, out var heightError)) { HeightError = heightError; return; }
 
-        DateOnly? birth = BirthDate is { } b ? DateOnly.FromDateTime(b.Date) : null;
+            DateOnly? birth = BirthDate is { } b ? DateOnly.FromDateTime(b.Date) : null;
 
-        var r = await _profiles.SaveAsync(UserId, new ProfileInput(SelectedSex, birth, cm, SelectedActivity?.Level, SelectedUnits));
-        if (!r.Success) { Error = r.Error; return; }
+            var r = await _profiles.SaveAsync(UserId, new ProfileInput(SelectedSex, birth, cm, SelectedActivity?.Level, SelectedUnits));
+            if (!r.Success)
+            {
+                switch (r.Field)
+                {
+                    case FormField.Units: UnitsError = r.Error; break;
+                    case FormField.Sex: SexError = r.Error; break;
+                    case FormField.BirthDate: BirthDateError = r.Error; break;
+                    case FormField.Height: HeightError = r.Error; break;
+                    case FormField.ActivityLevel: ActivityError = r.Error; break;
+                    default: Error = r.Error; break;
+                }
+                return;
+            }
 
-        Error = null;
-        Info = "Profile saved.";
-        await ReloadAsync();
+            Error = null;
+            Info = "Profile saved.";
+            await ReloadAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save your profile.";
+        }
     }
 
     [RelayCommand]
     private async Task LogWeightAsync()
     {
-        Info = null;
-        if (!Units.TryParseNumber(WeightInput, out var value))
+        try
         {
-            Error = IsMetric ? "Enter your weight in kg, e.g. 80.5." : "Enter your weight in lb, e.g. 177.";
-            return;
+            Info = null;
+            Error = null;
+            WeightError = null;
+            if (!Units.TryParseNumber(WeightInput, out var value))
+            {
+                WeightError = IsMetric ? "Enter your weight in kg, e.g. 80.5." : "Enter your weight in lb, e.g. 177.";
+                return;
+            }
+
+            var kg = IsMetric ? value : Units.LbToKg(value);
+            var r = await _profiles.LogWeightAsync(UserId, kg);
+            if (!r.Success) { WeightError = r.Error; return; }
+
+            WeightInput = "";
+            Info = "Weight saved for today.";
+            await ReloadAsync(refillForm: false);   // keep any unsaved edits in the form
+
         }
-
-        var kg = IsMetric ? value : Units.LbToKg(value);
-        var r = await _profiles.LogWeightAsync(UserId, kg);
-        if (!r.Success) { Error = r.Error; return; }
-
-        Error = null;
-        WeightInput = "";
-        Info = "Weight saved for today.";
-        await ReloadAsync(refillForm: false);   // keep any unsaved edits in the form
+        catch (Exception)
+        {
+            WeightError = "Could not save your weight.";
+        }
     }
 
     internal async Task DeleteWeightAsync(WeightEntryViewModel item)
     {
-        if (!await _profiles.DeleteWeightAsync(UserId, item.Entry.Id))
+        try
+        {
+            if (!await _profiles.DeleteWeightAsync(UserId, item.Entry.Id))
+            {
+                Error = "Could not delete that weigh-in.";
+                return;
+            }
+            Error = null;
+            Info = "Weigh-in deleted.";
+            await ReloadAsync(refillForm: false);
+
+        }
+        catch (Exception)
         {
             Error = "Could not delete that weigh-in.";
-            return;
         }
-        Error = null;
-        Info = "Weigh-in deleted.";
-        await ReloadAsync(refillForm: false);
     }
 
     // ===== Gym prompt =====
@@ -314,11 +368,19 @@ public partial class ProfileViewModel : ViewModelBase
 
     private async Task SaveAskForGymAsync(bool value)
     {
-        Info = null;
-        var r = await _profiles.SetAskForGymAfterCheckInAsync(UserId, value);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        Info = value ? "We'll ask which gym after you check in." : "We won't ask which gym after check-in.";
+        try
+        {
+            Info = null;
+            var r = await _profiles.SetAskForGymAfterCheckInAsync(UserId, value);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            Info = value ? "We'll ask which gym after you check in." : "We won't ask which gym after check-in.";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save that setting.";
+        }
     }
 
     // ===== Home city =====
@@ -333,18 +395,27 @@ public partial class ProfileViewModel : ViewModelBase
     [RelayCommand]
     private async Task SearchCityAsync()
     {
-        Info = null;
-        CitySearchMessage = null;
-        CityCandidates.Clear();
-        HasCityCandidates = false;
+        try
+        {
+            Info = null;
+            CitySearchMessage = null;
+            CanRetryCitySearch = false;
+            CityCandidates.Clear();
+            HasCityCandidates = false;
 
-        var query = CitySearchText.Trim();
-        var r = await _geocoding.SearchAsync(query);
-        if (!r.Success) { CitySearchMessage = r.Error; return; }
-        if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
+            var query = CitySearchText.Trim();
+            var r = await _geocoding.SearchAsync(query);
+            if (!r.Success) { CitySearchMessage = r.Error; CanRetryCitySearch = r.CanRetry; return; }
+            if (r.Candidates.Count == 0) { CitySearchMessage = $"No cities found for \"{query}\"."; return; }
 
-        foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, ChooseHomeCityAsync));
-        HasCityCandidates = true;
+            foreach (var c in r.Candidates) CityCandidates.Add(new CityCandidateViewModel(c, ChooseHomeCityAsync));
+            HasCityCandidates = true;
+
+        }
+        catch (Exception)
+        {
+            CitySearchMessage = "Could not search for cities.";
+        }
     }
 
     private async Task ChooseHomeCityAsync(CityCandidate candidate)
@@ -374,12 +445,20 @@ public partial class ProfileViewModel : ViewModelBase
     [RelayCommand]
     private async Task ClearHomeCityAsync()
     {
-        Info = null;
-        var r = await _profiles.SetHomeCityAsync(UserId, null);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        ApplyHomeCity(null);
-        Info = "Home city cleared.";
+        try
+        {
+            Info = null;
+            var r = await _profiles.SetHomeCityAsync(UserId, null);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            ApplyHomeCity(null);
+            Info = "Home city cleared.";
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not clear your home city.";
+        }
     }
 
     // ===== Calorie goal =====
@@ -388,50 +467,58 @@ public partial class ProfileViewModel : ViewModelBase
 
     private async Task ReloadGoalAsync()
     {
-        var o = await _calories.GetAsync(UserId);
-        if (o is null) return;
-        var g = o.Goal;
-
-        _applyingGoal = true;   // so setting the picker does not save it again
-        SelectedGoal = new GoalOption(g.GoalType);
-        _applyingGoal = false;
-
-        GoalText = g.Goal is { } goal ? $"{CalorieGoals.K(goal)} kcal / day" : "No goal set yet";
-        GoalRule = g.Goal is { } target ? $"A day counts as hit when you eat {CalorieGoals.TargetRule(target)}." : "";
-
-        if (g.Suggestion is { } s)
+        try
         {
-            SuggestionText = $"Suggested for {CalorieGoals.DisplayName(g.GoalType).ToLowerInvariant()}: {CalorieGoals.K(s.Kcal)} kcal / day";
-            SuggestionNote = s.Note ?? "An estimate from your maintenance calories.";
-            UseSuggestionLabel = $"Use {CalorieGoals.K(s.Kcal)} kcal";
-        }
-        else
-        {
-            SuggestionText = "";
-            SuggestionNote = g.SuggestionReason ?? "";
-        }
-        CanUseSuggestion = g.Suggestion is { } sug && sug.Kcal != g.Goal && !g.SuggestionChanged;
+            var o = await _calories.GetAsync(UserId);
+            if (o is null) return;
+            var g = o.Goal;
 
-        SuggestionChanged = g.SuggestionChanged;
-        if (g.SuggestionChanged && g.Goal is { } current && g.Suggestion is { } next)
-        {
-            SuggestionChangedText = $"Your suggested goal is now {CalorieGoals.K(next.Kcal)} kcal. " +
-                                    $"Your goal is still {CalorieGoals.K(current)} kcal. Update it?";
-            KeepGoalLabel = $"Keep {CalorieGoals.K(current)} kcal";
-        }
+            _applyingGoal = true;   // so setting the picker does not save it again
+            SelectedGoal = new GoalOption(g.GoalType);
+            _applyingGoal = false;
 
-        CalorieHistory.Clear();
-        foreach (var d in o.Recent)
-            CalorieHistory.Add(new CalorieDayRow(
-                d.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture),
-                $"{CalorieGoals.K(d.Consumed)} kcal",
-                d.Hit switch
-                {
-                    true => $"hit ✓ (goal {CalorieGoals.K(d.Goal!.Value)})",
-                    false => $"missed (goal {CalorieGoals.K(d.Goal!.Value)})",
-                    null => "no goal"
-                }));
-        HasCalorieHistory = CalorieHistory.Count > 0;
+            GoalText = g.Goal is { } goal ? $"{CalorieGoals.K(goal)} kcal / day" : "No goal set yet";
+            GoalRule = g.Goal is { } target ? $"A day counts as hit when you eat {CalorieGoals.TargetRule(target)}." : "";
+
+            if (g.Suggestion is { } s)
+            {
+                SuggestionText = $"Suggested for {CalorieGoals.DisplayName(g.GoalType).ToLowerInvariant()}: {CalorieGoals.K(s.Kcal)} kcal / day";
+                SuggestionNote = s.Note ?? "An estimate from your maintenance calories.";
+                UseSuggestionLabel = $"Use {CalorieGoals.K(s.Kcal)} kcal";
+            }
+            else
+            {
+                SuggestionText = "";
+                SuggestionNote = g.SuggestionReason ?? "";
+            }
+            CanUseSuggestion = g.Suggestion is { } sug && sug.Kcal != g.Goal && !g.SuggestionChanged;
+
+            SuggestionChanged = g.SuggestionChanged;
+            if (g.SuggestionChanged && g.Goal is { } current && g.Suggestion is { } next)
+            {
+                SuggestionChangedText = $"Your suggested goal is now {CalorieGoals.K(next.Kcal)} kcal. " +
+                                        $"Your goal is still {CalorieGoals.K(current)} kcal. Update it?";
+                KeepGoalLabel = $"Keep {CalorieGoals.K(current)} kcal";
+            }
+
+            CalorieHistory.Clear();
+            foreach (var d in o.Recent)
+                CalorieHistory.Add(new CalorieDayRow(
+                    d.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture),
+                    $"{CalorieGoals.K(d.Consumed)} kcal",
+                    d.Hit switch
+                    {
+                        true => $"hit ✓ (goal {CalorieGoals.K(d.Goal!.Value)})",
+                        false => $"missed (goal {CalorieGoals.K(d.Goal!.Value)})",
+                        null => "no goal"
+                    }));
+            HasCalorieHistory = CalorieHistory.Count > 0;
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not load your calorie goal.";
+        }
     }
 
     partial void OnSelectedGoalChanged(GoalOption? value)
@@ -442,50 +529,83 @@ public partial class ProfileViewModel : ViewModelBase
 
     private async Task ChangeGoalTypeAsync(GoalType type)
     {
-        Info = null;
-        var r = await _calories.SetGoalTypeAsync(UserId, type);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        await ReloadGoalAsync();
+        try
+        {
+            Info = null;
+            var r = await _calories.SetGoalTypeAsync(UserId, type);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            await ReloadGoalAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not change your goal type.";
+        }
     }
 
     [RelayCommand]
     private async Task UseSuggestionAsync()
     {
-        Info = null;
-        var r = await _calories.AcceptSuggestionAsync(UserId);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        Info = "Calorie goal updated.";
-        await ReloadGoalAsync();
+        try
+        {
+            Info = null;
+            var r = await _calories.AcceptSuggestionAsync(UserId);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            Info = "Calorie goal updated.";
+            await ReloadGoalAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save your calorie goal.";
+        }
     }
 
     [RelayCommand]
     private async Task KeepGoalAsync()
     {
-        Info = null;
-        var r = await _calories.KeepGoalAsync(UserId);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        await ReloadGoalAsync();
+        try
+        {
+            Info = null;
+            var r = await _calories.KeepGoalAsync(UserId);
+            if (!r.Success) { Error = r.Error; return; }
+            Error = null;
+            await ReloadGoalAsync();
+
+        }
+        catch (Exception)
+        {
+            Error = "Could not save your calorie goal.";
+        }
     }
 
     [RelayCommand]
     private async Task SetCustomGoalAsync()
     {
-        Info = null;
-        if (!Units.TryParseWholeNumber(CustomGoalInput, out var kcal))
+        try
         {
-            Error = "Enter your goal as a whole number of kcal, e.g. 2200.";
-            return;
-        }
+            Info = null;
+            Error = null;
+            GoalError = null;
+            if (!NumberParsing.TryParseWhole(CustomGoalInput, out var kcal))
+            {
+                GoalError = "Enter your goal as a whole number of kcal, e.g. 2200.";
+                return;
+            }
 
-        var r = await _calories.SetCustomGoalAsync(UserId, kcal);
-        if (!r.Success) { Error = r.Error; return; }
-        Error = null;
-        CustomGoalInput = "";
-        Info = "Calorie goal saved.";
-        await ReloadGoalAsync();
+            var r = await _calories.SetCustomGoalAsync(UserId, kcal);
+            if (!r.Success) { GoalError = r.Error; return; }
+            CustomGoalInput = "";
+            Info = "Calorie goal saved.";
+            await ReloadGoalAsync();
+
+        }
+        catch (Exception)
+        {
+            GoalError = "Could not save your calorie goal.";
+        }
     }
 
     [RelayCommand]

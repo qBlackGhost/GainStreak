@@ -11,8 +11,11 @@ public class StreakCalculatorTests
     // Upper/Lower: Mon W, Tue W, Wed R, Thu W, Fri W, Sat R, Sun R
     private static readonly ScheduleChange[] UpperLower = { new ScheduleChange(Mon, "WWRWWRR") };
 
-    private static StreakResult Run(int[] logged, int today, IReadOnlyList<ScheduleChange>? schedule = null) =>
-        StreakCalculator.Calculate(logged.Select(D), schedule ?? UpperLower, D(today));
+    private static StreakResult Run(int[] logged, int today, IReadOnlyList<ScheduleChange>? schedule = null,
+        IReadOnlyDictionary<DateOnly, MissChoice>? choices = null) =>
+        StreakCalculator.Calculate(logged.Select(D), schedule ?? UpperLower, choices ?? NoChoices, D(today));
+
+    private static readonly Dictionary<DateOnly, MissChoice> NoChoices = new();
 
     private static readonly ScheduleChange[] None = Array.Empty<ScheduleChange>();
 
@@ -41,9 +44,9 @@ public class StreakCalculatorTests
     [Fact] public void ExtraWorkoutOnRestDay_CountsOnce() =>
         Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), Run([0, 1, 2], 2));
 
-    [Fact] public void RestDaysAfterABreak_CountAgain() =>
-        // Mon, Tue, Wed(rest), Thu = 4, Fri missed (debt), Sat rest not logged -> break, Sun rest -> 1
-        Assert.Equal(new StreakResult(1, 4, StreakStatus.Active), Run([0, 1, 3], 6));
+    [Fact] public void RestDaysAfterABreak_DoNotCountUntilTheNextWorkout() =>
+        // Mon, Tue, Wed(rest), Thu = 4, Fri missed (debt), Sat rest not logged -> break, Sun rest stays 0
+        Assert.Equal(new StreakResult(0, 4, StreakStatus.Broken), Run([0, 1, 3], 6));
 
     [Fact] public void WorkoutAfterABreak_StartsAFreshStreak() =>
         // same as above, then an extra workout on Sunday
@@ -89,16 +92,17 @@ public class StreakCalculatorTests
         Assert.Equal(new StreakResult(1, 1, StreakStatus.Active), Run([0, 2, 4], 4, Ppl));
 
     [Fact] public void Grace_TwoConsecutiveMisses_Break() =>
-        // example C: Mon 1, Tue missed, Wed missed -> break, Thu rest 1
-        Assert.Equal(new StreakResult(1, 1, StreakStatus.Active), Run([0], 3, Ppl));
+        // example C: Mon 1, Tue missed, Wed missed -> break, Thu rest stays 0 (no streak, rest days don't count)
+        Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), Run([0], 3, Ppl));
 
     [Fact] public void Grace_MissYesterday_NothingToday_IsAtRisk() =>
-        // example D: Mon 1, Tue missed 2, today Wed not logged
-        Assert.Equal(new StreakResult(2, 2, StreakStatus.AtRisk), Run([0], 2, Ppl));
+        // example D: Mon 1, Tue missed 2 (made up before the rest day), today Wed not logged
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.AtRisk, D(1)),
+            Run([0], 2, Ppl, new Dictionary<DateOnly, MissChoice> { [D(1)] = MissChoice.ShiftToRest }));
 
     [Fact] public void Grace_MissYesterday_LoggedTodayOnTrainingDay_IsShifted() =>
         // example E: Mon 1, Tue missed 2, today Wed logged 3, but Wed's training is now owed
-        Assert.Equal(new StreakResult(3, 3, StreakStatus.Shifted), Run([0, 2], 2, Ppl));
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Shifted, D(2)), Run([0, 2], 2, Ppl));
 
     [Fact] public void Grace_TrainingDayToday_NoDebt_IsTodayPending() =>
         // example F: count runs through yesterday
@@ -109,7 +113,7 @@ public class StreakCalculatorTests
         Assert.Equal(Run([0, 1, 2], 3, Ppl), Run([0, 1, 2, 3], 3, Ppl));
         // it doesn't pre-pay a later miss either: Fri missed, today Sat not logged
         Assert.Equal(Run([0, 1, 2], 5, Ppl), Run([0, 1, 2, 3], 5, Ppl));
-        Assert.Equal(StreakStatus.AtRisk, Run([0, 1, 2, 3], 5, Ppl).Status);
+        Assert.Equal(StreakStatus.NeedsChoice, Run([0, 1, 2, 3], 5, Ppl).Status);
     }
 
     [Fact] public void Grace_MissBeforeScheduleChange_UsesNewScheduleForNextDay()
@@ -144,8 +148,9 @@ public class StreakCalculatorTests
 
     // Timeline (Done / Graced / Missed / Pending per training day)
 
-    private static string Timeline(int[] logged, int today, IReadOnlyList<ScheduleChange> schedule, int from = 0, int until = 6) =>
-        string.Join(" ", StreakCalculator.Timeline(logged.Select(D), schedule, D(today), D(from), D(until))
+    private static string Timeline(int[] logged, int today, IReadOnlyList<ScheduleChange> schedule, int from = 0, int until = 6,
+        IReadOnlyDictionary<DateOnly, MissChoice>? choices = null) =>
+        string.Join(" ", StreakCalculator.Timeline(logged.Select(D), schedule, choices ?? NoChoices, D(today), D(from), D(until))
             .Select(t => $"{t.Date.Day}:{t.Outcome}"));
 
     [Fact] public void Timeline_AllLogged_IsDone() =>
@@ -186,4 +191,117 @@ public class StreakCalculatorTests
         Assert.Contains("Missed", Timeline([0, 2], 4, Ppl));
         Assert.Equal(1, Run([0, 2, 4], 4, Ppl).Current);
     }
+
+    // Missed-day choices (Phase 12a). PPL from Mon; the examples are the ones in PHASE_12_POLISH.md
+
+    private static Dictionary<DateOnly, MissChoice> Chose(int missed, MissChoice choice) => new() { [D(missed)] = choice };
+
+    // What ShiftWeek stores: PPL moved one day later from Wed, so Fri is the rest day
+    private static readonly ScheduleChange[] PplShiftedFromWed =
+        { new ScheduleChange(Mon, "WWWRWWW"), new ScheduleChange(D(2), "WWWWRWW") };
+
+    [Fact] public void Choice_A_ShiftWeek_PaidToday_IsActive()
+    {
+        // Mon 1, Tue missed 2, Wed: ShiftWeek, logged 3. Nothing more is owed
+        var choices = Chose(1, MissChoice.ShiftWeek);
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), Run([0, 2], 2, PplShiftedFromWed, choices));
+        // Thu is now a training day (Legs), Fri the rest day
+        Assert.Equal(new StreakResult(5, 5, StreakStatus.Active), Run([0, 2, 3], 4, PplShiftedFromWed, choices));
+    }
+
+    [Fact] public void Choice_B_ShiftToRest_ChainEndsOnTheRestDay()
+    {
+        var choices = Chose(1, MissChoice.ShiftToRest);
+        // Wed: logged 3, Wed's own training is owed
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Shifted, D(2)), Run([0, 2], 2, Ppl, choices));
+        // Thu (rest) logged 4, paid
+        Assert.Equal(new StreakResult(4, 4, StreakStatus.Active), Run([0, 2, 3], 3, Ppl, choices));
+    }
+
+    [Fact] public void Choice_C_Continue_ResetsNow_AndTodayStartsANewStreak()
+    {
+        var choices = Chose(1, MissChoice.Continue);
+        Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), Run([0], 2, Ppl, choices));
+        Assert.Equal(new StreakResult(1, 1, StreakStatus.Active), Run([0, 2], 2, Ppl, choices));
+    }
+
+    [Fact] public void Choice_D_NotChosenYet_NeedsChoice() =>
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.NeedsChoice, D(1)), Run([0], 2, Ppl));
+
+    [Fact] public void Choice_D_ChosenButNotLoggedYet_IsAtRisk()
+    {
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.AtRisk, D(1)), Run([0], 2, Ppl, Chose(1, MissChoice.ShiftToRest)));
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.AtRisk, D(1)), Run([0], 2, PplShiftedFromWed, Chose(1, MissChoice.ShiftWeek)));
+    }
+
+    [Fact] public void Choice_E_ChoseButDidNotTrain_BreaksTheNextDay() =>
+        // Wed: ShiftWeek, not logged. On Thu Wed is consumed by the break; Thu (Legs after the shift) not logged yet
+        Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), Run([0], 3, PplShiftedFromWed, Chose(1, MissChoice.ShiftWeek)));
+
+    [Fact] public void Choice_F_InactiveUserWithoutSchedule_StaysAtZero()
+    {
+        // last workout 1 Oct: 2 Oct pending, 3 Oct NeedsChoice (a streak is still at stake), then 0 every day
+        Assert.Equal(StreakStatus.PendingToday, Run([-4], -3, None).Status);
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.NeedsChoice, D(-3)), Run([-4], -2, None));
+        for (var today = -1; today <= 20; today++)
+            Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), Run([-4], today, None));
+    }
+
+    [Fact] public void Choice_G_InactiveUser_RestDaysAfterABreakStayAtZero()
+    {
+        // Mon 1, Tue missed, Wed missed -> break; Thu (rest) and every later day stay 0
+        for (var today = 3; today <= 20; today++)
+            Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), Run([0], today, Ppl));
+    }
+
+    [Fact] public void Choice_G_AWorkoutAfterABreak_StartsCountingAgain() =>
+        // the break on Wed, then Fri logged 1, Sat 2, Sun (training) pending today
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.PendingToday), Run([0, 4, 5], 6, Ppl));
+
+    [Fact] public void Choice_H_OldMissWithoutAChoice_ActsLikeShiftToRest() =>
+        Assert.Equal(Run([0, 2], 2, Ppl, Chose(1, MissChoice.ShiftToRest)), Run([0, 2], 2, Ppl));
+
+    [Fact] public void Choice_OnlyTheFreshMissIsAsked_NotADayOwedInsideAChain() =>
+        // Tue missed, Wed paid it (Wed owed), today Thu (rest) not logged: owed inside the chain, so AtRisk
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.AtRisk, D(2)), Run([0, 2], 3, Ppl));
+
+    [Fact] public void Choice_ShiftToRestChain_AcrossSeveralTrainingDays_EndingInALoggedRestDay_KeepsTheStreak() =>
+        // Fri missed (ShiftToRest), Sat..next Wed each pay the day before, next Thu (rest) logged
+        Assert.Equal(new StreakResult(11, 11, StreakStatus.Active),
+            Run([0, 1, 2, 5, 6, 7, 8, 9, 10], 10, Ppl, Chose(4, MissChoice.ShiftToRest)));
+
+    [Fact] public void Choice_ContinueInsideAChain_IsIgnored() =>
+        // only a fresh miss takes a choice; a stray row for Wed (owed inside the chain) changes nothing
+        Assert.Equal(Run([0, 2, 3], 3, Ppl), Run([0, 2, 3], 3, Ppl, Chose(2, MissChoice.Continue)));
+
+    [Fact] public void Timeline_Continue_MakesTheOwedDayMissed() =>
+        Assert.Equal("5:Done 6:Missed 7:Done", Timeline([0, 2], 3, Ppl, until: 2, choices: Chose(1, MissChoice.Continue)));
+
+    [Fact] public void Timeline_ShiftWeek_GracesTheOwedDay_AndTheDayThatPaysIsDone() =>
+        Assert.Equal("5:Done 6:Graced 7:Done", Timeline([0, 2], 2, PplShiftedFromWed, until: 2, choices: Chose(1, MissChoice.ShiftWeek)));
+
+    [Fact] public void Timeline_ShiftToRest_GracesTheOwedDayOncePaid() =>
+        Assert.Equal("5:Done 6:Graced 7:Graced", Timeline([0, 2, 3], 3, Ppl, until: 2, choices: Chose(1, MissChoice.ShiftToRest)));
+
+    // Week row (dashboard)
+
+    [Fact] public void WeekRow_MidWeek_ShowsEveryKindOfChip()
+    {
+        // PPL, today Sat: Mon done, Tue missed and made up Wed, Wed made up on Thu (rest, logged),
+        // Fri missed and still owed, Sat (today) and Sun upcoming
+        var logged = new[] { 0, 2, 3 }.Select(D).ToList();
+        var timeline = StreakCalculator.Timeline(logged, Ppl, NoChoices, D(5), D(0), D(6));
+        var row = WeekRow.Build(timeline, D(5));
+
+        Assert.Equal(Enumerable.Range(0, 7).Select(D), row.Select(c => c.Date));
+        Assert.Equal([WeekChipKind.Done, WeekChipKind.MadeUp, WeekChipKind.MadeUp, WeekChipKind.Rest,
+                      WeekChipKind.Missed, WeekChipKind.Upcoming, WeekChipKind.Upcoming], row.Select(c => c.Kind));
+        Assert.Equal([D(5)], row.Where(c => c.IsToday).Select(c => c.Date));
+    }
+
+    [Fact] public void WeekRow_SettledMiss_IsMissed() =>
+        // Upper/Lower, today Sun: Mon done, Tue missed and the Wed rest day not logged -> broken
+        Assert.Equal([WeekChipKind.Done, WeekChipKind.Missed, WeekChipKind.Rest, WeekChipKind.Missed, WeekChipKind.Missed,
+                      WeekChipKind.Rest, WeekChipKind.Rest],
+            WeekRow.Build(StreakCalculator.Timeline([D(0)], UpperLower, NoChoices, D(6), D(0), D(6)), D(6)).Select(c => c.Kind));
 }

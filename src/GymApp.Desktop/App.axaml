@@ -11,5 +11,11 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- A validation message under the field it's about (12d) -->
+        <Style Selector="TextBlock.fieldError">
+            <Setter Property="Foreground" Value="IndianRed"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
     </Application.Styles>
 </Application>

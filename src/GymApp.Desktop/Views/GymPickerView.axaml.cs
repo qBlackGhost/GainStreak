@@ -41,7 +41,14 @@ public partial class GymPickerView : UserControl
         InitializeComponent();
 
         var map = new Map();
-        map.Layers.Add(OpenStreetMap.CreateTileLayer(OsmHttp.UserAgent));   // the OSM tile policy asks for a real User-Agent
+        var tiles = OpenStreetMap.CreateTileLayer(OsmHttp.UserAgent);   // the OSM tile policy asks for a real User-Agent
+        // Tiles are the one part of the picker that needs the internet: say so instead of leaving a blank map
+        tiles.DataChanged += (_, e) =>
+        {
+            var failed = e.Error is not null;
+            Dispatcher.UIThread.Post(() => _vm?.MapTilesLoaded(ok: !failed));
+        };
+        map.Layers.Add(tiles);
         map.Layers.Add(_gyms);
         GymMap.Map = map;
         GymMap.MapTapped += OnMapTapped;

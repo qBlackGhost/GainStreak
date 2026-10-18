@@ -3,140 +3,297 @@
              xmlns:vm="using:GymApp.Desktop.ViewModels"
              x:Class="GymApp.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+        </Style>
+        <Style Selector="TextBlock.cardTitle">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="Border.chip">
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="#10808080"/>
+        </Style>
+        <Style Selector="Border.chip.done"><Setter Property="Background" Value="#302E8B57"/></Style>
+        <Style Selector="Border.chip.madeUp"><Setter Property="Background" Value="#304682B4"/></Style>
+        <Style Selector="Border.chip.missed"><Setter Property="Background" Value="#30CD5C5C"/></Style>
+        <Style Selector="Border.chip.today"><Setter Property="BorderBrush" Value="SteelBlue"/></Style>
+    </UserControl.Styles>
+
     <Grid>
     <ScrollViewer IsEnabled="{Binding !IsCheckingIn}">
-    <StackPanel Spacing="14" Width="360" Margin="0,24"
-                HorizontalAlignment="Center" VerticalAlignment="Center">
+    <StackPanel Spacing="14" MaxWidth="900" Margin="16,24">
         <TextBlock Text="{Binding Welcome}" FontSize="24" HorizontalAlignment="Center"/>
 
-        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="6">
-                <TextBlock Text="Today" Opacity="0.7"/>
-                <TextBlock Text="{Binding TodayTitle}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding TodayHint}" Opacity="0.8" TextWrapping="Wrap"/>
-                <Button Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
-                        IsEnabled="{Binding CanLog}" Margin="0,8,0,0"
-                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        <!-- Dashboard: two columns of cards, one when the window is narrow (HomeView.axaml.cs sets ItemWidth) -->
+        <WrapPanel x:Name="Cards" ItemSpacing="14" LineSpacing="14">
+            <!-- Streak + check-in -->
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Streak" Classes="cardTitle"/>
+                    <TextBlock Text="{Binding StreakText}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding StreakNote}" Opacity="0.8" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding StreakEndedNotice}" Opacity="0.8" TextWrapping="Wrap"
+                               IsVisible="{Binding StreakEndedNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                <!-- Today only: undo the check-in (the sets stay) -->
-                <Button Classes="link" Content="Undo" Command="{Binding StartUndoCommand}"
-                        IsVisible="{Binding CanUndo}" HorizontalAlignment="Left" Padding="0"
-                        Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
-                <Border Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="1" CornerRadius="8"
-                        Padding="12" IsVisible="{Binding IsConfirmingUndo}">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{Binding UndoConfirmText}" TextWrapping="Wrap"/>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <Button Content="Keep it" Command="{Binding CancelUndoCommand}"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                            <Button Grid.Column="1" Content="Undo check-in" Command="{Binding ConfirmUndoCommand}"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                        </Grid>
+                <!-- Missed-day choice: the day after a missed training day, while a streak is at stake. Check-in waits for it. -->
+                <Border Background="#20DAA520" BorderBrush="#80DAA520" BorderThickness="1" CornerRadius="8" Padding="16"
+                        IsVisible="{Binding HasMissedDay}">
+                    <StackPanel Spacing="10" DataContext="{Binding MissedDay}" x:DataType="vm:MissedDayViewModel">
+                        <TextBlock Text="{Binding Heading}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Subheading}" TextWrapping="Wrap"/>
+
+                        <ItemsControl ItemsSource="{Binding Options}" IsVisible="{Binding !IsConfirming}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MissedDayOptionViewModel">
+                                    <Button Command="{Binding ChooseCommand}" HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Left" Padding="10">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Preview}" Opacity="0.8" FontSize="12" TextWrapping="Wrap"/>
+                                            <ItemsControl ItemsSource="{Binding NewWeek}" IsVisible="{Binding HasNewWeek}" Margin="0,4,0,0">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:String">
+                                                        <TextBlock Text="{Binding}" FontSize="10" TextAlignment="Center" Opacity="0.8"/>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ItemsControl ItemsSource="{Binding Notes}" IsVisible="{Binding HasNotes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock Text="{Binding}" Opacity="0.7" FontSize="12" TextWrapping="Wrap"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Spacing="8" IsVisible="{Binding IsConfirming}">
+                            <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap"/>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Content="Back" Command="{Binding CancelCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Confirm" Command="{Binding ConfirmCommand}"
+                                        IsEnabled="{Binding !IsBusy}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
-                <Border Background="#204682B4" BorderBrush="#804682B4" BorderThickness="1" CornerRadius="8"
-                        Padding="12" Margin="0,8,0,0" IsVisible="{Binding ShowGymPrompt}">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Want to log your gym?" FontWeight="SemiBold"/>
-                        <Button Command="{Binding UseLastGymCommand}" IsVisible="{Binding HasLastGym}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
-                            <TextBlock Text="{Binding LastGymLabel}" TextTrimming="CharacterEllipsis"/>
-                        </Button>
-                        <Button Content="Choose another…" Command="{Binding ChooseGymCommand}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                            <Button Content="Skip" Command="{Binding SkipGymPromptCommand}"
+                    <TextBlock Text="{Binding TodayTitle}" FontSize="18" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                    <TextBlock Text="{Binding TodayHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                    <Button Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
+                            IsEnabled="{Binding CanLog}" Margin="0,8,0,0"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+                    <!-- Today only: undo the check-in (the sets stay) -->
+                    <Button Classes="link" Content="Undo" Command="{Binding StartUndoCommand}"
+                            IsVisible="{Binding CanUndo}" HorizontalAlignment="Left" Padding="0"
+                            Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
+                    <Border Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="1" CornerRadius="8"
+                            Padding="12" IsVisible="{Binding IsConfirmingUndo}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{Binding UndoConfirmText}" TextWrapping="Wrap"/>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Content="Keep it" Command="{Binding CancelUndoCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Undo check-in" Command="{Binding ConfirmUndoCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
+                    <Border Background="#204682B4" BorderBrush="#804682B4" BorderThickness="1" CornerRadius="8"
+                            Padding="12" Margin="0,8,0,0" IsVisible="{Binding ShowGymPrompt}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Want to log your gym?" FontWeight="SemiBold"/>
+                            <Button Command="{Binding UseLastGymCommand}" IsVisible="{Binding HasLastGym}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+                                <TextBlock Text="{Binding LastGymLabel}" TextTrimming="CharacterEllipsis"/>
+                            </Button>
+                            <Button Content="Choose another…" Command="{Binding ChooseGymCommand}"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                            <Button Grid.Column="1" Content="Don't ask me again" Command="{Binding NeverAskForGymCommand}"
-                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                        </Grid>
-                    </StackPanel>
-                </Border>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Content="Skip" Command="{Binding SkipGymPromptCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                <Button Grid.Column="1" Content="Don't ask me again" Command="{Binding NeverAskForGymCommand}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
 
-                <!-- Today's log only: works until midnight, then the log is read-only -->
-                <Button Classes="link" Content="{Binding GymLinkText}" Command="{Binding ChooseGymCommand}"
-                        IsVisible="{Binding ShowGymLink}" HorizontalAlignment="Left" Padding="0"
-                        Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
-                <TextBlock Text="{Binding GymNotice}" Opacity="0.8" FontSize="12" TextWrapping="Wrap"
-                           IsVisible="{Binding GymNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            </StackPanel>
-        </Border>
+                    <!-- Today's log only: works until midnight, then the log is read-only -->
+                    <Button Classes="link" Content="{Binding GymLinkText}" Command="{Binding ChooseGymCommand}"
+                            IsVisible="{Binding ShowGymLink}" HorizontalAlignment="Left" Padding="0"
+                            Background="Transparent" BorderThickness="0" Foreground="SteelBlue" Cursor="Hand"/>
+                    <TextBlock Text="{Binding GymNotice}" Opacity="0.8" FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding GymNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+            </Border>
 
-        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="Level" Opacity="0.7" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Content="History" Command="{Binding ShowPointsHistoryCommand}"/>
-                </Grid>
-                <TextBlock Text="{Binding LevelTitle}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding PointsText}" Opacity="0.8"/>
-                <ProgressBar Minimum="0" Maximum="1" Value="{Binding LevelProgress}" Height="8"/>
-                <TextBlock Text="{Binding LevelHint}" Opacity="0.8" TextWrapping="Wrap"/>
-                <TextBlock Text="{Binding PointsNotice}" Foreground="SeaGreen" FontWeight="SemiBold" TextWrapping="Wrap"
-                           IsVisible="{Binding PointsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <TextBlock Text="{Binding PointsLostNotice}" Foreground="IndianRed" FontWeight="SemiBold" TextWrapping="Wrap"
-                           IsVisible="{Binding PointsLostNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            </StackPanel>
-        </Border>
+            <!-- Today's workout: the same plan as the check-in -->
+            <Border Classes="card">
+                <StackPanel Spacing="6" DataContext="{Binding TodayWorkout}" x:DataType="vm:TodayWorkoutCardViewModel">
+                    <TextBlock Text="Today's workout" Classes="cardTitle"/>
+                    <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/>
+                    <ItemsControl ItemsSource="{Binding Exercises}" IsVisible="{Binding HasExercises}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TodayExerciseViewModel">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding Plan}" Opacity="0.7" FontSize="12"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="{Binding LastTime}" Opacity="0.7" FontSize="12"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{Binding EmptyText}" Opacity="0.8" TextWrapping="Wrap"
+                               IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Content="Build a workout" Command="{Binding BuildWorkoutCommand}" IsVisible="{Binding ShowBuildLink}"/>
+                    <Button Content="Pick a split" Command="{Binding PickSplitCommand}" IsVisible="{Binding ShowPickSplit}"/>
+                </StackPanel>
+            </Border>
 
-        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="6">
-                <TextBlock Text="Streak" Opacity="0.7"/>
-                <TextBlock Text="{Binding StreakText}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding StreakNote}" Opacity="0.8" TextWrapping="Wrap"/>
-            </StackPanel>
-        </Border>
+            <!-- This week: Monday to Sunday -->
+            <Border Classes="card">
+                <StackPanel Spacing="8" DataContext="{Binding Week}" x:DataType="vm:WeekCardViewModel">
+                    <TextBlock Text="This week" Classes="cardTitle"/>
+                    <ItemsControl ItemsSource="{Binding Chips}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:WeekChipViewModel">
+                                <Border Classes="chip" Classes.today="{Binding IsToday}" Classes.done="{Binding IsDone}"
+                                        Classes.madeUp="{Binding IsMadeUp}" Classes.missed="{Binding IsMissed}"
+                                        ToolTip.Tip="{Binding Tip}">
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="{Binding Day}" FontSize="11" Opacity="0.7" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Symbol}" FontSize="16" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="✔ done · ↺ made up · ✘ missed · – rest" Opacity="0.6" FontSize="11" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
 
-        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="6">
-                <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="Friends" Opacity="0.7" VerticalAlignment="Center"/>
-                        <!-- Incoming requests -->
-                        <Border Background="IndianRed" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
-                                IsVisible="{Binding HasIncomingRequests}" ToolTip.Tip="Friend requests waiting">
-                            <TextBlock Text="{Binding IncomingRequests}" Foreground="White" FontSize="11" FontWeight="SemiBold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </StackPanel>
-                    <Button Grid.Column="1" Content="Leaderboard" Command="{Binding ShowLeaderboardCommand}"
-                            IsVisible="{Binding HasFriends}"/>
-                </Grid>
-                <Button Classes="link" Content="{Binding FriendsTitle}" Command="{Binding ShowFriendsCommand}"
-                        HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
-                        FontSize="22" FontWeight="SemiBold" Cursor="Hand"/>
-            </StackPanel>
-        </Border>
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Calories today" Classes="cardTitle"/>
+                    <TextBlock Text="{Binding CaloriesTitle}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding CaloriesHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding GoalReviewHint}" Foreground="DarkGoldenrod" TextWrapping="Wrap"
+                               IsVisible="{Binding GoalReviewHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
+                        <TextBox Watermark="Eaten today (kcal)" Text="{Binding CaloriesInput}"/>
+                        <Button Grid.Column="1" Content="{Binding LogCaloriesLabel}" Command="{Binding LogCaloriesCommand}"/>
+                    </Grid>
+                    <TextBlock Classes="fieldError" Text="{Binding CaloriesError}"
+                               IsVisible="{Binding CaloriesError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+            </Border>
 
-        <Border BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16">
-            <StackPanel Spacing="6">
-                <TextBlock Text="Calories today" Opacity="0.7"/>
-                <TextBlock Text="{Binding CaloriesTitle}" FontSize="22" FontWeight="SemiBold"/>
-                <TextBlock Text="{Binding CaloriesHint}" Opacity="0.8" TextWrapping="Wrap"/>
-                <TextBlock Text="{Binding GoalReviewHint}" Foreground="DarkGoldenrod" TextWrapping="Wrap"
-                           IsVisible="{Binding GoalReviewHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-                    <TextBox Watermark="Eaten today (kcal)" Text="{Binding CaloriesInput}"/>
-                    <Button Grid.Column="1" Content="{Binding LogCaloriesLabel}" Command="{Binding LogCaloriesCommand}"/>
-                </Grid>
-            </StackPanel>
-        </Border>
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Level" Classes="cardTitle" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Content="History" Command="{Binding ShowPointsHistoryCommand}"/>
+                    </Grid>
+                    <TextBlock Text="{Binding LevelTitle}" FontSize="22" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding PointsText}" Opacity="0.8"/>
+                    <ProgressBar Minimum="0" Maximum="1" Value="{Binding LevelProgress}" Height="8"/>
+                    <TextBlock Text="{Binding LevelHint}" Opacity="0.8" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding PointsNotice}" Foreground="SeaGreen" FontWeight="SemiBold" TextWrapping="Wrap"
+                               IsVisible="{Binding PointsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding PointsLostNotice}" Foreground="IndianRed" FontWeight="SemiBold" TextWrapping="Wrap"
+                               IsVisible="{Binding PointsLostNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Recent PRs (hidden when there are none) -->
+            <Border Classes="card" IsVisible="{Binding RecentPrs.HasAny}">
+                <StackPanel Spacing="6" DataContext="{Binding RecentPrs}" x:DataType="vm:RecentPrsCardViewModel">
+                    <TextBlock Text="Recent PRs" Classes="cardTitle"/>
+                    <ItemsControl ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RecentPrViewModel">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="{Binding Exercise}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Value}"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Date}" Opacity="0.7"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Friends: weekly rank -->
+            <Border Classes="card">
+                <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <TextBlock Text="Friends" Classes="cardTitle" VerticalAlignment="Center"/>
+                            <!-- Incoming requests -->
+                            <Border Background="IndianRed" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
+                                    IsVisible="{Binding HasIncomingRequests}" ToolTip.Tip="Friend requests waiting">
+                                <TextBlock Text="{Binding IncomingRequests}" Foreground="White" FontSize="11" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Leaderboard" Command="{Binding ShowLeaderboardCommand}"
+                                IsVisible="{Binding HasFriends}"/>
+                    </Grid>
+                    <Button Classes="link" Content="{Binding FriendsTitle}" Command="{Binding ShowFriendsCommand}"
+                            HorizontalAlignment="Left" Padding="0" Background="Transparent" BorderThickness="0"
+                            FontSize="22" FontWeight="SemiBold" Cursor="Hand"/>
+                </StackPanel>
+            </Border>
+        </WrapPanel>
 
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        
-        <Button Content="Workouts" Command="{Binding ShowWorkoutsCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        <Button Content="Splits" Command="{Binding ShowSplitsCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        <Button Content="Gyms visited" Command="{Binding ShowGymSummaryCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        <Button Content="Profile" Command="{Binding ShowProfileCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-        <Button Content="Log out" Command="{Binding LogoutCommand}"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+        <WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Center">
+            <Button Content="Workouts" Command="{Binding ShowWorkoutsCommand}"/>
+            <Button Content="Splits" Command="{Binding ShowSplitsCommand}"/>
+            <Button Content="Gyms visited" Command="{Binding ShowGymSummaryCommand}"/>
+            <Button Content="Profile" Command="{Binding ShowProfileCommand}"/>
+            <Button Content="Log out" Command="{Binding LogoutCommand}"/>
+        </WrapPanel>
     </StackPanel>
     </ScrollViewer>
 

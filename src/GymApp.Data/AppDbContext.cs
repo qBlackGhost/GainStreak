@@ -24,6 +24,7 @@ public class AppDbContext : DbContext
     public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
     public DbSet<City> Cities => Set<City>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -161,6 +162,11 @@ public class AppDbContext : DbContext
             .HasForeignKey(f => f.UserAId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<Friendship>().HasOne(f => f.UserB).WithMany()
             .HasForeignKey(f => f.UserBId).OnDelete(DeleteBehavior.Cascade);
+
+        // Missed-day choices: one per missed day, keyed by the missed date. Choice is stored as an int
+        b.Entity<MissedDayChoice>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
+        b.Entity<MissedDayChoice>().HasOne(c => c.User).WithMany()
+            .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
 
         SeedExercises(b);
         SeedSplits(b);

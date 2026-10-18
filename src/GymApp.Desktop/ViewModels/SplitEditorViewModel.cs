@@ -32,6 +32,8 @@ public partial class SplitEditorViewModel : ViewModelBase
 
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? NameError { get; set; }
+    [ObservableProperty] public partial string? DaysError { get; set; }
 
     public string Title => _splitId is null ? "New custom split" : "Edit split";
     public string DaysSummary => $"{Days.Count(d => d.IsSelected)} training day(s) per week";
@@ -68,12 +70,25 @@ public partial class SplitEditorViewModel : ViewModelBase
         var days = Days.Where(d => d.IsSelected).Select(d => new DayInput(d.Weekday, d.Name)).ToList();
         var userId = _session.CurrentUser!.Id;
 
-        var result = _splitId is null
-            ? await _splits.CreateAsync(userId, Name, days)
-            : await _splits.UpdateAsync(userId, _splitId.Value, Name, days);
+        Error = NameError = DaysError = null;
+        try
+        {
+            var result = _splitId is null
+                ? await _splits.CreateAsync(userId, Name, days)
+                : await _splits.UpdateAsync(userId, _splitId.Value, Name, days);
 
-        if (result.Success) _shell().ShowSplits();
-        else Error = result.Error;
+            if (result.Success) { _shell().ShowSplits(); return; }
+            switch (result.Field)
+            {
+                case FormField.Name: NameError = result.Error; break;
+                case FormField.Days: DaysError = result.Error; break;
+                default: Error = result.Error; break;
+            }
+        }
+        catch (Exception)
+        {
+            Error = "Could not save your split.";
+        }
     }
 
     [RelayCommand] private void Cancel() => _shell().ShowSplits();

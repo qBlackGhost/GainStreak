@@ -11,16 +11,17 @@ using GymApp.Data.Models;
 
 namespace GymApp.Services;
 
-/// <summary>Candidates is empty when nothing matched (Success true) or when the search failed (Error set).</summary>
-public record CitySearchResult(bool Success, IReadOnlyList<CityCandidate> Candidates, string? Error = null)
+/// <summary>Candidates is empty when nothing matched (Success true) or when the search failed (Error set).
+/// <see cref="CanRetry"/> is true when the search itself failed (offline, slow, busy), not the query.</summary>
+public record CitySearchResult(bool Success, IReadOnlyList<CityCandidate> Candidates, string? Error = null, bool CanRetry = false)
 {
-    public static CitySearchResult Fail(string error) => new(false, [], error);
+    public static CitySearchResult Fail(string error, bool canRetry = false) => new(false, [], error, canRetry);
 }
 
 /// <summary>Street addresses inside one city. Same shape as CitySearchResult.</summary>
-public record AddressSearchResult(bool Success, IReadOnlyList<AddressCandidate> Candidates, string? Error = null)
+public record AddressSearchResult(bool Success, IReadOnlyList<AddressCandidate> Candidates, string? Error = null, bool CanRetry = false)
 {
-    public static AddressSearchResult Fail(string error) => new(false, [], error);
+    public static AddressSearchResult Fail(string error, bool canRetry = false) => new(false, [], error, canRetry);
 }
 
 /// <summary>Success with a null Address means Nominatim had no street there; the lookup still counts as done.</summary>
@@ -55,7 +56,7 @@ public class GeocodingService
         // featureType=settlement narrows it down; the parser drops the counties that still come through
         var url = $"{BaseUrl}/search?q={Uri.EscapeDataString(query)}&format=jsonv2&limit={Nominatim.RequestLimit}&featureType=settlement";
         var (list, error) = await GetAsync(url, Nominatim.ParseSearch, "City search", ct);
-        return list is null ? CitySearchResult.Fail(error!) : new CitySearchResult(true, list);
+        return list is null ? CitySearchResult.Fail(error!, canRetry: true) : new CitySearchResult(true, list);
     }
 
     /// <summary>Street addresses inside the city's box only (viewbox + bounded), for custom gyms.</summary>
@@ -70,7 +71,7 @@ public class GeocodingService
         var url = $"{BaseUrl}/search?q={Uri.EscapeDataString(query)}&format=jsonv2&addressdetails=1" +
                   $"&limit={Addresses.RequestLimit}&viewbox={box}&bounded=1";
         var (list, error) = await GetAsync(url, Addresses.ParseSearch, "Address search", ct);
-        return list is null ? AddressSearchResult.Fail(error!) : new AddressSearchResult(true, list);
+        return list is null ? AddressSearchResult.Fail(error!, canRetry: true) : new AddressSearchResult(true, list);
     }
 
     /// <summary>The nearest street address to a point (zoom=18 = building level).</summary>

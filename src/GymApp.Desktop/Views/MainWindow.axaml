@@ -15,6 +15,16 @@
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <ContentControl Content="{Binding Current}" />
+    <DockPanel>
+        <!-- The global error handler's banner: never the exception text, the details are in errors.log -->
+        <Border DockPanel.Dock="Top" Background="#20CD5C5C" BorderBrush="#80CD5C5C" BorderThickness="0,0,0,1"
+                Padding="12,8" IsVisible="{Binding HasGlobalError}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding GlobalError}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Dismiss" Command="{Binding DismissGlobalErrorCommand}"/>
+            </Grid>
+        </Border>
+        <ContentControl Content="{Binding Current}" />
+    </DockPanel>
 
 </Window>
