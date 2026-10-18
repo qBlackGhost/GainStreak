@@ -176,7 +176,7 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         return new LogResult(true, Streak: streak, Points: await points.SyncAsync(userId, date));
     }
 
-    private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today() => AppClock.Today;
 
     private static CheckInStatus Status(IReadOnlyList<CheckInExerciseInfo> exercises) =>
         CheckInRule.Evaluate(exercises.Select(e => new CheckInExercise(e.ExerciseId, e.WorkingSets, e.TodaySets)));

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,12 +25,14 @@ public partial class HomeViewModel : ViewModelBase
     private readonly SetService _sets;
     private readonly WorkoutMenuService _menu;
     private readonly MissedDayService _missedDays;
+    private readonly GymSummaryService _gymSummary;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
                          PointsService points, GymService gyms, ProfileService profiles,
                          FriendService friends, LeaderboardService leaderboard,
-                         SetService sets, WorkoutMenuService menu, MissedDayService missedDays)
+                         SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
+                         GymSummaryService gymSummary)
     {
         _session = session;
         _shell = shell;
@@ -44,11 +47,59 @@ public partial class HomeViewModel : ViewModelBase
         _sets = sets;
         _menu = menu;
         _missedDays = missedDays;
+        _gymSummary = gymSummary;
         TodayWorkout = new TodayWorkoutCardViewModel(shell);
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
-    public string Welcome => $"Welcome, {_session.CurrentUser?.Username}!";
+    public string Username => _session.CurrentUser?.Username ?? "";
+    public string Initials => Username.Length == 0 ? "?" : Username[..Math.Min(2, Username.Length)].ToUpperInvariant();
+    public string DateText => AppClock.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
+    public string Greeting => AppClock.Now.Hour switch
+    {
+        < 12 => $"Good morning, {Username}",
+        < 18 => $"Good afternoon, {Username}",
+        _ => $"Good evening, {Username}"
+    };
+
+    // ===== Streak hero: the big number, and today's gauge (cold until checked in, then on fire) =====
+    [ObservableProperty] public partial int StreakCurrent { get; set; }
+    [ObservableProperty] public partial string BestStreakText { get; set; } = "";
+    [ObservableProperty] public partial string GymsThisMonth { get; set; } = "–";
+    [ObservableProperty] public partial bool IsDone { get; set; }
+    [ObservableProperty] public partial bool IsRestDay { get; set; }
+    [ObservableProperty] public partial bool IsTrainingOpen { get; set; }
+    [ObservableProperty] public partial bool IsRestOpen { get; set; }
+    [ObservableProperty] public partial string GaugeKicker { get; set; } = "TODAY";
+    [ObservableProperty] public partial bool IsMakeUpDay { get; set; }
+    [ObservableProperty] public partial string GaugeTitle { get; set; } = "";
+    [ObservableProperty] public partial string GaugeSub { get; set; } = "";
+    [ObservableProperty] public partial string StatusText { get; set; } = "";
+
+    /// <summary>Sets were logged today, but no check-in yet.</summary>
+    [ObservableProperty] public partial bool ShowSetsHint { get; set; }
+
+    // ===== Level pill =====
+    [ObservableProperty] public partial int LevelNumber { get; set; } = 1;
+
+    // ===== Calories card =====
+    [ObservableProperty] public partial string? CalorieGoalType { get; set; }
+    [ObservableProperty] public partial string CaloriesCenter { get; set; } = "—";
+    [ObservableProperty] public partial string CaloriesCenterSub { get; set; } = "not logged";
+    [ObservableProperty] public partial double CaloriesSweep { get; set; }
+    [ObservableProperty] public partial bool CaloriesHit { get; set; }
+    [ObservableProperty] public partial string? CaloriesTip { get; set; }
+    [ObservableProperty] public partial string CaloriesResult { get; set; } = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm))]
+    public partial bool IsCaloriesLogged { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm))]
+    public partial bool IsEditingCalories { get; set; }
+
+    public bool ShowCaloriesForm => !IsCaloriesLogged || IsEditingCalories;
 
     // ===== Dashboard cards =====
     public TodayWorkoutCardViewModel TodayWorkout { get; }
@@ -70,6 +121,9 @@ public partial class HomeViewModel : ViewModelBase
     public bool IsCheckingIn => CheckIn is not null;
 
     [ObservableProperty] public partial string UndoConfirmText { get; set; } = "";
+
+    /// <summary>What undoing takes away, e.g. "−5 Workout · −50 Week complete".</summary>
+    [ObservableProperty] public partial string UndoLossText { get; set; } = "";
 
     /// <summary>What the last undo took away, e.g. "−5 Workout · −50 Week complete".</summary>
     [ObservableProperty] public partial string? PointsLostNotice { get; set; }
@@ -106,14 +160,30 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial bool ShowGymLink { get; set; }
     [ObservableProperty] public partial string GymLinkText { get; set; } = "";
     [ObservableProperty] public partial string? GymNotice { get; set; }
+    [ObservableProperty] public partial string? TodayGymName { get; set; }
+    [ObservableProperty] public partial bool ShowAddGym { get; set; }
+    [ObservableProperty] public partial bool DontAskForGym { get; set; }
 
     // ===== Friends card =====
     [ObservableProperty] public partial string FriendsTitle { get; set; } = "Add friends";
     [ObservableProperty] public partial bool HasFriends { get; set; }
     [ObservableProperty] public partial int IncomingRequests { get; set; }
     [ObservableProperty] public partial bool HasIncomingRequests { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<BoardRowViewModel> Board { get; set; } = [];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsThisWeek))]
+    public partial bool IsAllTime { get; set; }
+
+    public bool IsThisWeek => !IsAllTime;
+
+    /// <summary>Rows shown on the dashboard; the full board is one click away.</summary>
+    private const int BoardRows = 5;
 
     private GymChoice? _lastGym;
+    private TodayInfo? _today;
+    private StreakResult? _streak;
+    private DateOnly? _makeUpFor;
 
     private async Task RefreshAsync()
     {
@@ -125,6 +195,7 @@ public partial class HomeViewModel : ViewModelBase
             var streak = await _streaks.RecalculateAsync(user.Id);
             var points = await _points.SyncAsync(user.Id);   // catches a week that ended while the app was closed
             await RefreshMissedDayAsync(user.Id);
+            _makeUpFor = await _streaks.MakeUpDayAsync(user.Id, today.Date);
             Apply(today, streak);
             await RefreshStreakEndedAsync(user.Id, cached, streak);
             await RefreshDashboardAsync(user.Id);
@@ -145,10 +216,24 @@ public partial class HomeViewModel : ViewModelBase
     {
         try
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
+            var today = AppClock.Today;
             TodayWorkout.Apply(await _workouts.GetTodayWorkoutAsync(userId, today));
-            Week.Apply(await _streaks.GetWeekAsync(userId, today));
+
+            var chips = await _streaks.GetWeekAsync(userId, today);
+            var names = new Dictionary<DateOnly, string>();
+            foreach (var c in chips)
+            {
+                if (c.Kind == WeekChipKind.Rest) { names[c.Date] = "Rest"; continue; }
+                var day = await _workouts.GetTodayAsync(userId, c.Date);
+                if (day.HasSplit) names[c.Date] = day.IsTraining ? day.Title : "Rest";
+            }
+            Week.Apply(chips, names);
+
             RecentPrs.Apply(await _sets.GetRecentPrsAsync(userId));
+            ShowSetsHint = _today is { Logged: false } && !HasMissedDay && await _sets.HasSetsTodayAsync(userId, today);
+            GymsThisMonth = (await _gymSummary.GetMonthAsync(userId, today.Year, today.Month)).DistinctGyms
+                .ToString(CultureInfo.InvariantCulture);
+            UpdateHero();
         }
         catch (Exception)
         {
@@ -166,7 +251,7 @@ public partial class HomeViewModel : ViewModelBase
     {
         StreakEndedNotice = null;
         if (cached == 0 || streak.Status != StreakStatus.Broken) return;
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = AppClock.Today;
         if (await _streaks.LastBreakAsync(userId, today) is { } missed)
             StreakEndedNotice = $"Your streak ended on {missed.ToString("dddd, d MMM", CultureInfo.InvariantCulture)}.";
     }
@@ -179,6 +264,7 @@ public partial class HomeViewModel : ViewModelBase
             if (_session.CurrentUser is not { } user) return;
             MissedDay = null;
             Error = null;
+            _makeUpFor = await _streaks.MakeUpDayAsync(user.Id, AppClock.Today);
             Apply(await _workouts.GetTodayAsync(user.Id), result.Streak!);
             ApplyPoints(result.Points);
             await RefreshDashboardAsync(user.Id);
@@ -200,17 +286,35 @@ public partial class HomeViewModel : ViewModelBase
             IncomingRequests = await _friends.IncomingCountAsync(userId);
             HasIncomingRequests = IncomingRequests > 0;
 
-            var board = await _leaderboard.GetAsync(userId, LeaderboardPeriod.ThisWeek);
+            var board = await _leaderboard.GetAsync(userId, IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek);
             HasFriends = board is { IsAlone: false };
             FriendsTitle = board is { IsAlone: false, You: { } you }
-                ? $"#{you.Rank} of {board.Rows.Count} this week"
-                : "Add friends";
+                ? $"#{you.Rank} of {board.Rows.Count} {(IsAllTime ? "all time" : "this week")}"
+                : "Add friends to compete.";
+            Board = board is { IsAlone: false }
+                ? board.Rows.Take(BoardRows).Select(r => new BoardRowViewModel(r)).ToList()
+                : [];
         }
         catch (Exception)
         {
             HasFriends = false;
-            FriendsTitle = "Friends";
+            FriendsTitle = "Could not load your friends.";
+            Board = [];
         }
+    }
+
+    [RelayCommand]
+    private async Task ShowBoardWeekAsync()
+    {
+        IsAllTime = false;
+        if (_session.CurrentUser is { } user) await RefreshFriendsAsync(user.Id);
+    }
+
+    [RelayCommand]
+    private async Task ShowBoardAllTimeAsync()
+    {
+        IsAllTime = true;
+        if (_session.CurrentUser is { } user) await RefreshFriendsAsync(user.Id);
     }
 
     private async Task RefreshCaloriesAsync(int userId)
@@ -219,16 +323,35 @@ public partial class HomeViewModel : ViewModelBase
         if (o is null) return;
         var g = o.Goal;
 
-        CaloriesTitle = o.Today is { } t ? $"{CalorieGoals.K(t.Consumed)} kcal" : "Not logged yet";
-        CaloriesHint = (o.Today, g.Goal) switch
+        var t = o.Today;
+        var goal = t?.Goal ?? g.Goal;   // a logged day keeps the goal it was logged against
+        CalorieGoalType = goal is null ? null : CalorieGoals.DisplayName(t?.GoalType ?? g.GoalType);
+
+        IsCaloriesLogged = t is not null;
+        CaloriesHit = t is { Hit: true };
+        CaloriesCenter = t is null ? "—" : CalorieGoals.K(t.Consumed);
+        CaloriesCenterSub = t is null ? "not logged" : "kcal eaten";
+        CaloriesSweep = t is not null && goal is > 0 ? 360 * Math.Min(1, (double)t.Consumed / goal.Value) : 0;
+        CaloriesTitle = t is null ? "Not logged yet" : CaloriesHit ? "On target" : "Logged";
+
+        if (goal is { } gk)
         {
-            ({ Hit: true }, _) => "Target hit ✓",
-            ({ Hit: false } t2, _) => $"Target missed: aim for {CalorieGoals.TargetRule(t2.Goal!.Value)}.",
-            (_, { } goal) => $"Goal: {CalorieGoals.TargetRule(goal)}. Log what you ate at the end of the day.",
-            _ => "No calorie goal yet. Set one on your profile."
-        };
+            var (lo, hi) = CalorieGoals.TargetRange(gk);
+            CaloriesHint = $"Goal {CalorieGoals.K(gk)} kcal · on target between {CalorieGoals.K(lo)}–{CalorieGoals.K(hi)}";
+            CaloriesTip = $"Log once, at the end of the day. Hitting the target gives +{PointsCalculator.CalorieTargetPoints} pts.";
+            CaloriesResult = t is null ? ""
+                : CaloriesHit ? $"On target · +{PointsCalculator.CalorieTargetPoints} pts"
+                : t.Consumed < lo ? "Under the target range"
+                : "Over the target range";
+        }
+        else
+        {
+            CaloriesHint = "No calorie goal yet. Set one on your profile.";
+            CaloriesTip = null;
+            CaloriesResult = t is null ? "" : $"{CalorieGoals.K(t.Consumed)} kcal logged";
+        }
         GoalReviewHint = g.SuggestionChanged ? "Your suggested goal changed. Review it on your profile." : null;
-        LogCaloriesLabel = o.Today is null ? "Log" : "Update";
+        LogCaloriesLabel = t is null ? "Log" : "Update";
     }
 
     [RelayCommand]
@@ -248,6 +371,7 @@ public partial class HomeViewModel : ViewModelBase
             if (!r.Success) { CaloriesError = r.Error; return; }
 
             CaloriesInput = "";
+            IsEditingCalories = false;
             ApplyPoints(r.Points);
             await RefreshCaloriesAsync(user.Id);
 
@@ -258,15 +382,33 @@ public partial class HomeViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand]
+    private void EditCalories()
+    {
+        CaloriesError = null;
+        CaloriesInput = CaloriesCenter.Replace(",", "");
+        IsEditingCalories = true;
+    }
+
+    [RelayCommand]
+    private void CancelEditCalories()
+    {
+        CaloriesError = null;
+        CaloriesInput = "";
+        IsEditingCalories = false;
+    }
+
     private void Apply(TodayInfo today, StreakResult streak)
     {
+        _today = today;
+        _streak = streak;
         TodayTitle = !today.HasSplit ? "No split selected" : today.Title;
         TodayHint = !today.HasSplit ? "Pick a split to get a weekly schedule."
                   : today.Logged ? "Workout logged ✓"
                   : HasMissedDay ? WorkoutService.NeedsChoiceError
                   : today.IsTraining ? "Workout still needed today."
                   : "Rest day. You can still log an extra workout.";
-        LogLabel = today.Logged ? "Logged ✓" : "I went today";
+        LogLabel = today.Logged ? "Logged ✓" : today is { HasSplit: true, IsTraining: false } ? "Log extra workout" : "I went today";
         CanLog = !today.Logged && !HasMissedDay;
         CanUndo = today.Logged;   // today only: after midnight yesterday's log is read-only
         if (!today.Logged) IsConfirmingUndo = false;
@@ -285,6 +427,11 @@ public partial class HomeViewModel : ViewModelBase
             _ => ""
         };
 
+        StreakCurrent = streak.Current;
+        BestStreakText = streak.Longest == 1 ? "1 day" : $"{streak.Longest} days";
+        if (today.Logged) ShowSetsHint = false;
+        UpdateHero();
+
         // keep the in-memory session user in sync
         if (_session.CurrentUser is { } u)
         {
@@ -292,6 +439,45 @@ public partial class HomeViewModel : ViewModelBase
             u.LongestStreak = Math.Max(u.LongestStreak, streak.Longest);
         }
     }
+
+    /// <summary>The gauge and the line under it, from today's plan, the streak and the make-up day.</summary>
+    private void UpdateHero()
+    {
+        if (_today is not { } today || _streak is not { } streak) return;
+        var rest = today is { HasSplit: true, IsTraining: false };
+        IsDone = today.Logged;
+        IsRestDay = rest;
+        IsTrainingOpen = !today.Logged && !rest;
+        IsRestOpen = !today.Logged && rest;
+
+        IsMakeUpDay = _makeUpFor is not null;
+        GaugeKicker = _makeUpFor is { } owed
+            ? $"MAKE-UP · FOR {owed.ToString("dddd", CultureInfo.InvariantCulture).ToUpperInvariant()}"
+            : "TODAY";
+        GaugeTitle = !today.HasSplit ? "WORKOUT"
+                   : rest && !today.Logged ? "REST"
+                   : rest ? "EXTRA"
+                   : today.Title.ToUpperInvariant();
+
+        var count = TodayWorkout.Exercises.Count;
+        GaugeSub = !today.HasSplit ? "No split selected"
+                 : rest ? (today.Logged ? "Extra workout logged" : "Enjoy the rest. It counts toward your streak.")
+                 : today.Logged ? "Done for today"
+                 : count > 0 ? $"{count} exercise{(count == 1 ? "" : "s")} planned"
+                 : "No exercises built yet";
+
+        StatusText = today.Logged
+            ? (rest ? "Extra workout logged. Nice." : $"{Capitalize(today.Title)} done. Streak is now {streak.Current} day{(streak.Current == 1 ? "" : "s")}.")
+            : !today.HasSplit ? "Pick a split to get a weekly schedule."
+            : rest ? "Rest day. Feel like training anyway?"
+            : _makeUpFor is { } d ? $"Train today to make up {d.ToString("dddd", CultureInfo.InvariantCulture)} and keep your streak."
+            : streak.Status is StreakStatus.Broken or StreakStatus.NotStarted || streak.Current == 0
+                ? "Today starts a new streak."
+                : $"Not done yet. Go to reach {streak.Current + 1} days.";
+    }
+
+    private static string Capitalize(string s) =>
+        s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     /// <summary>"I went today" opens the check-in popup; the popup saves the sets and logs the workout.</summary>
     [RelayCommand]
@@ -332,15 +518,25 @@ public partial class HomeViewModel : ViewModelBase
     private async Task StartUndoAsync()
     {
         var earned = "today's +5";
+        UndoLossText = $"−{PointsCalculator.WorkoutPoints} Workout";
         if (_session.CurrentUser is { } user)
         {
             try
             {
-                var today = DateOnly.FromDateTime(DateTime.Now);
+                var today = AppClock.Today;
                 var lines = (await _points.GetAsync(user.Id))?.History.Where(l => l.Date == today).ToList() ?? [];
                 if (lines.Count > 0)
-                    earned = "today's " + string.Join(" and ", lines.GroupBy(l => l.Reason)
-                        .Select(g => $"+{N(g.Sum(l => l.Amount))} {PointsCalculator.DisplayName(g.Key)}"));
+                {
+                    // Calories stay logged, so their points aren't lost with the check-in
+                    var groups = lines.Where(l => l.Reason != PointsReason.CalorieTarget).GroupBy(l => l.Reason).ToList();
+                    if (groups.Count > 0)
+                    {
+                        earned = "today's " + string.Join(" and ", groups
+                            .Select(g => $"+{N(g.Sum(l => l.Amount))} {PointsCalculator.DisplayName(g.Key)}"));
+                        UndoLossText = string.Join(" · ", groups
+                            .Select(g => $"−{N(g.Sum(l => l.Amount))} {PointsCalculator.DisplayName(g.Key)}"));
+                    }
+                }
             }
             catch (Exception)
             {
@@ -392,6 +588,8 @@ public partial class HomeViewModel : ViewModelBase
             var info = await _gyms.GetTodayAsync(userId);
             ShowGymLink = info.LoggedToday;
             GymLinkText = info.Gym is { } g ? $"Change gym: {g.Name}" : "Add gym";
+            TodayGymName = info.Gym?.Name;
+            ShowAddGym = info is { LoggedToday: true, Gym: null };
             _lastGym = info.LastUsed;
             HasLastGym = info.LastUsed is not null;
             LastGymLabel = info.LastUsed is { } last ? last.Name : "";
@@ -400,6 +598,8 @@ public partial class HomeViewModel : ViewModelBase
         catch (Exception)
         {
             ShowGymLink = false;
+            ShowAddGym = false;
+            TodayGymName = null;
             return null;
         }
     }
@@ -414,7 +614,9 @@ public partial class HomeViewModel : ViewModelBase
             if (!r.Success) { Error = r.Error; return; }
             Error = null;
             ShowGymPrompt = false;
+            if (DontAskForGym) await NeverAskForGymAsync();
             await RefreshGymAsync(user.Id);
+            await RefreshDashboardAsync(user.Id);   // gyms this month
 
         }
         catch (Exception)
@@ -428,7 +630,20 @@ public partial class HomeViewModel : ViewModelBase
 
     // Skip only hides it: the prompt appears right after "I went today", which can't happen twice in a day
     [RelayCommand]
-    private void SkipGymPrompt() => ShowGymPrompt = false;
+    private async Task SkipGymPromptAsync()
+    {
+        ShowGymPrompt = false;
+        if (DontAskForGym) await NeverAskForGymAsync();
+    }
+
+    /// <summary>"Log gym" in the prompt: the last gym when there is one, otherwise the picker.</summary>
+    [RelayCommand]
+    private async Task LogGymAsync()
+    {
+        if (HasLastGym) { await UseLastGymAsync(); return; }
+        if (DontAskForGym) await NeverAskForGymAsync();
+        ChooseGym();
+    }
 
     [RelayCommand]
     private async Task NeverAskForGymAsync()
@@ -455,8 +670,9 @@ public partial class HomeViewModel : ViewModelBase
         if (sync is null) return;
         var level = sync.NewLevel;
 
-        LevelTitle = $"Level {level.Number} · {level.Name}";
-        PointsText = $"{N(sync.NewTotal)} points";
+        LevelNumber = level.Number;
+        LevelTitle = level.Name;
+        PointsText = $"{N(sync.NewTotal)} pts";
         LevelProgress = level.Progress;
         LevelHint = level.PointsToNext(sync.NewTotal) is { } left ? $"{N(left)} points to {level.NextName}" : "Max level";
 

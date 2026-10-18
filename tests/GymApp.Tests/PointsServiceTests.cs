@@ -57,6 +57,23 @@ public class PointsServiceTests : IDisposable
     private void AssertCachedSum(int userId) =>
         Assert.Equal(Entries(userId).Sum(p => p.Amount), User(userId).Points);
 
+    [Fact] public async Task Sync_KeepsManualAdjustmentsAndCountsThem()
+    {
+        Workouts(_alice, 0);
+        await _svc.SyncAsync(_alice, D(1));
+        Seed(db => db.PointsEntries.Add(new PointsEntry
+            { UserId = _alice, Reason = PointsReason.Adjustment, Amount = -3, Date = D(1), DedupKey = "adjust:test" }));
+
+        var sync = await _svc.SyncAsync(_alice, D(1));
+        Assert.Empty(sync!.Removed);
+        Assert.Equal(5 - 3, sync.NewTotal);
+        Assert.Contains(Entries(_alice), p => p.Reason == PointsReason.Adjustment);
+
+        var rebuilt = await _svc.RebuildAsync(_alice, D(1));
+        Assert.Equal(5 - 3, rebuilt!.NewTotal);
+        AssertCachedSum(_alice);
+    }
+
     [Fact] public async Task SyncTwice_ChangesNothing()
     {
         Workouts(_alice, 0, 1, 3, 4);

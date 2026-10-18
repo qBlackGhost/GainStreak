@@ -21,7 +21,7 @@ public class LeaderboardService(ISocialStore store)
     /// <summary>The board, or null if the user doesn't exist.</summary>
     public async Task<LeaderboardView?> GetAsync(int userId, LeaderboardPeriod period, DateOnly? today = null)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         var (monday, sunday) = Leaderboard.WeekRange(day);
 
         List<int> ids;

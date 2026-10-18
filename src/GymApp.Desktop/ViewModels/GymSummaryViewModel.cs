@@ -31,7 +31,7 @@ public partial class GymSummaryViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today => AppClock.Today;
 
     public void OpenedFromProfile() => _backToProfile = true;
 

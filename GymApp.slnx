@@ -4,6 +4,7 @@
     <Project Path="src/GymApp.Data/GymApp.Data.csproj" />
     <Project Path="src/GymApp.Desktop/GymApp.Desktop.csproj" />
     <Project Path="src/GymApp.Services/GymApp.Services.csproj" />
+    <Project Path="src/GymApp.TestBench/GymApp.TestBench.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/GymApp.Tests/GymApp.Tests.csproj" />

@@ -35,7 +35,7 @@ public class MissedDayService(IDbContextFactory<AppDbContext> dbFactory, StreakS
     /// <summary>The card's contents, or null unless the streak status is <see cref="StreakStatus.NeedsChoice"/>.</summary>
     public async Task<MissedDayPrompt?> GetPromptAsync(int userId, DateOnly? today = null)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         var streak = await streaks.GetAsync(userId, day);
         if (streak is not { Status: StreakStatus.NeedsChoice, OwedDay: { } missed }) return null;
 
@@ -50,7 +50,7 @@ public class MissedDayService(IDbContextFactory<AppDbContext> dbFactory, StreakS
     /// </summary>
     public async Task<MissedDayResult> ChooseAsync(int userId, MissChoice choice, DateOnly? today = null)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         var streak = await streaks.GetAsync(userId, day);
         if (streak is not { Status: StreakStatus.NeedsChoice, OwedDay: { } missed } || missed != day.AddDays(-1))
             return new MissedDayResult(false, "There's no missed workout to choose for today.");

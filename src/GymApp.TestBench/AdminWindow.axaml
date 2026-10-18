@@ -1,0 +1,129 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="using:GymApp.TestBench"
+        x:Class="GymApp.TestBench.AdminWindow"
+        x:DataType="local:AdminViewModel"
+        Title="GymApp TestBench" Width="400" Height="760" MinWidth="360">
+    <Window.Styles>
+        <Style Selector="Border.section">
+            <Setter Property="BorderBrush" Value="#40808080"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+        <Style Selector="TextBlock.header">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="15"/>
+        </Style>
+        <Style Selector="TextBlock.note">
+            <Setter Property="Opacity" Value="0.65"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="WrapPanel > Button">
+            <Setter Property="Margin" Value="0,0,6,6"/>
+        </Style>
+    </Window.Styles>
+
+    <DockPanel>
+        <!-- Status: always visible -->
+        <Border DockPanel.Dock="Top" Background="#18FFA500" BorderBrush="#60FFA500" BorderThickness="0,0,0,1" Padding="14,10">
+            <StackPanel Spacing="2">
+                <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding ClockText}"/>
+                <TextBlock Classes="note" Text="{Binding OffsetText}"/>
+                <TextBlock Margin="0,6,0,0" FontWeight="SemiBold" Text="{Binding UserText}"/>
+                <TextBlock Text="{Binding PointsText}" IsVisible="{Binding IsSignedIn}"/>
+                <TextBlock Text="{Binding StreakText}" IsVisible="{Binding IsSignedIn}" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Result of the last action -->
+        <Border DockPanel.Dock="Bottom" BorderBrush="#40808080" BorderThickness="0,1,0,0" Padding="14,8"
+                IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding Message}" TextWrapping="Wrap"/>
+        </Border>
+
+        <ScrollViewer>
+            <StackPanel Spacing="10" Margin="12">
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Clock"/>
+                        <CalendarDatePicker SelectedDate="{Binding PickedDate}" HorizontalAlignment="Stretch"/>
+                        <WrapPanel>
+                            <Button Content="− 1 day" Command="{Binding PrevDayCommand}"/>
+                            <Button Content="+ 1 day" Command="{Binding NextDayCommand}"/>
+                            <Button Content="+ 1 week" Command="{Binding NextWeekCommand}"/>
+                            <Button Content="Real today" Command="{Binding RealTodayCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Kept across restarts. Moving back doesn't shrink the best streak, and points dated before last week's Monday stay frozen."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Account"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <ComboBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}"
+                                      HorizontalAlignment="Stretch" PlaceholderText="No users yet"/>
+                            <Button Grid.Column="1" Content="↻" Command="{Binding ReloadUsersCommand}"
+                                    ToolTip.Tip="Reload the user list (e.g. after registering one)"/>
+                        </Grid>
+                        <WrapPanel>
+                            <Button Content="Sign in as (no password)" Command="{Binding SignInAsCommand}"/>
+                            <Button Content="Sign out" Command="{Binding SignOutCommand}"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section" IsEnabled="{Binding IsSignedIn}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Workouts"/>
+                        <WrapPanel>
+                            <Button Content="Check in today" Command="{Binding QuickCheckInCommand}"/>
+                            <Button Content="Check in + next day" Command="{Binding CheckInAndNextDayCommand}"/>
+                            <Button Content="Undo today's check-in" Command="{Binding UndoCheckInCommand}"/>
+                            <Button Content="Forget missed-day choices" Command="{Binding ForgetMissedChoicesCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Check-in here skips the sets rule. To test a missed day, just move the clock past a training day without checking in. Forgetting choices brings the missed-day card back (a schedule shift stays)."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section" IsEnabled="{Binding IsSignedIn}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Points"/>
+                        <NumericUpDown Value="{Binding PointsAmount}" Increment="10" FormatString="0"
+                                       HorizontalAlignment="Stretch"/>
+                        <WrapPanel>
+                            <Button Content="Add amount" Command="{Binding AddPointsCommand}"/>
+                            <Button Content="Set total to amount" Command="{Binding SetPointsTotalCommand}"/>
+                        </WrapPanel>
+                        <WrapPanel>
+                            <Button Content="Remove manual adjustments" Command="{Binding ClearAdjustmentsCommand}"/>
+                            <Button Content="Rebuild ledger" Command="{Binding RebuildPointsCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Manual changes are ledger entries named &quot;Manual adjustment&quot;; the sync keeps them. Negative amounts take points away."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Test data"/>
+                        <SelectableTextBlock Classes="note" Text="{Binding DataDir}"/>
+                        <WrapPanel>
+                            <Button Content="Open folder" Command="{Binding OpenDataFolderCommand}"/>
+                            <Button Content="Reset to empty" Command="{Binding ResetEmptyCommand}"/>
+                            <Button Content="Copy real app's data" Command="{Binding CopyRealDataCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Resets restart the TestBench. The real app's data is only ever read, never changed."/>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

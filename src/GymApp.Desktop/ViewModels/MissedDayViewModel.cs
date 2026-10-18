@@ -10,11 +10,18 @@ using GymApp.Services;
 namespace GymApp.Desktop.ViewModels;
 
 /// <summary>One option on the missed-day card. Choosing it only asks for confirmation; the card stores it.</summary>
-public partial class MissedDayOptionViewModel(MissedDayViewModel owner, MissedDayOption option) : ObservableObject
+public partial class MissedDayOptionViewModel(MissedDayViewModel owner, MissedDayOption option, string tag) : ObservableObject
 {
     public MissedDayOption Option { get; } = option;
     public string Title => Option.Title;
     public string Preview => Option.Preview;
+
+    /// <summary>"1 left this week", or "Streak resets" for skipping.</summary>
+    public string Tag { get; } = tag;
+    public bool IsSkip => Option.Choice == MissChoice.Continue;
+
+    /// <summary>The option waiting for confirmation.</summary>
+    [ObservableProperty] public partial bool IsSelected { get; set; }
 
     /// <summary>The new week after a whole-schedule shift, e.g. "Wed Pull", "Fri Rest".</summary>
     public IReadOnlyList<string> NewWeek { get; } =
@@ -41,7 +48,12 @@ public partial class MissedDayViewModel : ObservableObject
         _chosen = chosen;
         Heading = $"You missed {prompt.MissedDayName} yesterday.";
         Subheading = $"Your {prompt.StreakAtStake}-day streak is at stake. What do you want to do?";
-        Options = prompt.Options.Select(o => new MissedDayOptionViewModel(this, o)).ToList();
+        Options = prompt.Options.Select(o => new MissedDayOptionViewModel(this, o, o.Choice switch
+        {
+            MissChoice.ShiftWeek => $"{prompt.ShiftWeeksLeft} left this week",
+            MissChoice.ShiftToRest => $"{prompt.MakeUpsLeft} left this week",
+            _ => "Streak resets"
+        })).ToList();
         Notes = prompt.Notes;
     }
 
@@ -57,6 +69,11 @@ public partial class MissedDayViewModel : ObservableObject
     public partial MissedDayOptionViewModel? Pending { get; set; }
 
     public bool IsConfirming => Pending is not null;
+
+    partial void OnPendingChanged(MissedDayOptionViewModel? value)
+    {
+        foreach (var o in Options) o.IsSelected = o == value;
+    }
     public string ConfirmText => Pending?.Option.ConfirmText ?? "";
 
     [ObservableProperty] public partial bool IsBusy { get; set; }

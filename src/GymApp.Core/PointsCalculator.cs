@@ -2,8 +2,9 @@ using System.Globalization;
 
 namespace GymApp.Core;
 
-/// <summary>Why points were given. Stored as its name in the database, so don't rename the members.</summary>
-public enum PointsReason { Workout, WeekComplete, WeekCompleteGrace, CalorieTarget }
+/// <summary>Why points were given. Stored as its name in the database, so don't rename the members.
+/// Adjustment is a manual entry from the TestBench; the sync never adds or removes those.</summary>
+public enum PointsReason { Workout, WeekComplete, WeekCompleteGrace, CalorieTarget, Adjustment }
 
 /// <summary>One ledger entry. <see cref="DedupKey"/> is unique per user, so a day or week can only earn once.</summary>
 public record PointsAward(PointsReason Reason, int Amount, DateOnly Date, string DedupKey);
@@ -27,6 +28,7 @@ public static class PointsCalculator
         PointsReason.WeekComplete => "Week complete",
         PointsReason.WeekCompleteGrace => "Week complete (grace)",
         PointsReason.CalorieTarget => "Calorie target",
+        PointsReason.Adjustment => "Manual adjustment",
         _ => reason.ToString()
     };
 

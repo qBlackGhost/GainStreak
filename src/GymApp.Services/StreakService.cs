@@ -20,7 +20,7 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
     /// </summary>
     public async Task<StreakResult> RecalculateAsync(int userId, DateOnly? today = null, bool undoneToday = false)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);

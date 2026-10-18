@@ -65,7 +65,7 @@ public partial class ProfileViewModel : ViewModelBase
     }
 
     private int UserId => _session.CurrentUser!.Id;
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today => AppClock.Today;
 
     public IReadOnlyList<Sex> Sexes { get; } = Enum.GetValues<Sex>();
     public IReadOnlyList<UnitSystem> UnitSystems { get; } = Enum.GetValues<UnitSystem>();
@@ -78,8 +78,8 @@ public partial class ProfileViewModel : ViewModelBase
     public ObservableCollection<CityCandidateViewModel> CityCandidates { get; } = new();
 
     // The birth date picker only offers years that pass validation
-    public DateTimeOffset MinBirthYear { get; } = new(DateTime.Today.Year - BodyLimits.MaxAge, 1, 1, 0, 0, 0, TimeSpan.Zero);
-    public DateTimeOffset MaxBirthYear { get; } = new(DateTime.Today.Year - BodyLimits.MinAge, 12, 31, 0, 0, 0, TimeSpan.Zero);
+    public DateTimeOffset MinBirthYear { get; } = new(AppClock.Today.Year - BodyLimits.MaxAge, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    public DateTimeOffset MaxBirthYear { get; } = new(AppClock.Today.Year - BodyLimits.MinAge, 12, 31, 0, 0, 0, TimeSpan.Zero);
 
     // ===== Header =====
     [ObservableProperty] public partial string Username { get; set; } = "";

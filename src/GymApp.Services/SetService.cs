@@ -38,7 +38,7 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
     public const double MaxWeightKg = 1000;
     public const double MaxOneRepMaxKg = 2000;
 
-    private static DateOnly Today() => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today() => AppClock.Today;
 
     /// <summary>The sets logged for this exercise on <paramref name="today"/> (default: the real today).</summary>
     public async Task<List<SetEntry>> GetDayAsync(int userId, int exerciseId, DateOnly? today = null)

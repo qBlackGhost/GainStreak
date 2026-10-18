@@ -33,7 +33,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
 {
     public const int RecentWeightCount = 10;
 
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today => AppClock.Today;
 
     /// <summary>Everything the profile screen shows. A user without a profile row gets an empty one
     /// (not saved until they press Save).</summary>

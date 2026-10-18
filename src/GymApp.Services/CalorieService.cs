@@ -31,7 +31,7 @@ public class CalorieService(IDbContextFactory<AppDbContext> dbFactory, PointsSer
 {
     public const int RecentDayCount = 7;
 
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today => AppClock.Today;
 
     public async Task<CalorieOverview?> GetAsync(int userId, DateOnly? today = null)
     {

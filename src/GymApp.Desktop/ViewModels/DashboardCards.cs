@@ -9,18 +9,11 @@ using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 
-/// <summary>One day of the "This week" row.</summary>
-public class WeekChipViewModel(WeekChip chip)
+/// <summary>One day of the "This week" row: the weekday, the planned day's name and how it went.</summary>
+public class WeekChipViewModel(WeekChip chip, string name)
 {
     public string Day { get; } = chip.Date.ToString("ddd", CultureInfo.InvariantCulture);
-    public string Symbol { get; } = chip.Kind switch
-    {
-        WeekChipKind.Done => "✔",
-        WeekChipKind.MadeUp => "↺",
-        WeekChipKind.Missed => "✘",
-        WeekChipKind.Rest => "–",
-        _ => "·"
-    };
+    public string Name { get; } = name;
     public string Tip { get; } = chip.Kind switch
     {
         WeekChipKind.Done => "Done",
@@ -29,10 +22,15 @@ public class WeekChipViewModel(WeekChip chip)
         WeekChipKind.Rest => "Rest day",
         _ => "Upcoming"
     };
-    public bool IsToday { get; } = chip.IsToday;
-    public bool IsDone { get; } = chip.Kind == WeekChipKind.Done;
-    public bool IsMadeUp { get; } = chip.Kind == WeekChipKind.MadeUp;
-    public bool IsMissed { get; } = chip.Kind == WeekChipKind.Missed;
+
+    // Today has its own look (open or done), so the other kinds only describe the other days
+    public bool IsTodayDone { get; } = chip.IsToday && chip.Kind == WeekChipKind.Done;
+    public bool IsTodayOpen { get; } = chip.IsToday && chip.Kind != WeekChipKind.Done;
+    public bool IsDone { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Done;
+    public bool IsMadeUp { get; } = !chip.IsToday && chip.Kind == WeekChipKind.MadeUp;
+    public bool IsMissed { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Missed;
+    public bool IsRest { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Rest;
+    public bool IsUpcoming { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Upcoming;
 }
 
 /// <summary>The "This week" card: Monday to Sunday, today highlighted.</summary>
@@ -40,7 +38,9 @@ public partial class WeekCardViewModel : ObservableObject
 {
     [ObservableProperty] public partial IReadOnlyList<WeekChipViewModel> Chips { get; set; } = [];
 
-    public void Apply(IReadOnlyList<WeekChip> chips) => Chips = chips.Select(c => new WeekChipViewModel(c)).ToList();
+    /// <summary><paramref name="names"/>: the planned day's name per date ("Push", "Rest"); a missing date shows no name.</summary>
+    public void Apply(IReadOnlyList<WeekChip> chips, IReadOnlyDictionary<DateOnly, string> names) =>
+        Chips = chips.Select(c => new WeekChipViewModel(c, names.GetValueOrDefault(c.Date, ""))).ToList();
 }
 
 /// <summary>One exercise on the "Today's workout" card.</summary>
@@ -50,8 +50,10 @@ public class TodayExerciseViewModel(TodayExercise e)
     public string Plan { get; } = e.WarmupSets > 0
         ? $"{e.WorkingSets} × working, {e.WarmupSets} warm-up"
         : $"{e.WorkingSets} × working";
+    /// <summary>"1 + 3": warm-up + working sets.</summary>
+    public string Sets { get; } = $"{e.WarmupSets} + {e.WorkingSets}";
     public string LastTime { get; } = e.LastTopSet is { } s
-        ? $"Last time: {NumberParsing.FormatKg(s.WeightKg)} kg × {s.Reps}"
+        ? $"{NumberParsing.FormatKg(s.WeightKg)} kg × {s.Reps}"
         : "First time";
 }
 
@@ -99,4 +101,15 @@ public partial class RecentPrsCardViewModel : ObservableObject
     partial void OnItemsChanged(IReadOnlyList<RecentPrViewModel> value) => OnPropertyChanged(nameof(HasAny));
 
     public void Apply(IReadOnlyList<RecentPr> prs) => Items = prs.Select(p => new RecentPrViewModel(p)).ToList();
+}
+
+/// <summary>One row of the dashboard's friends board.</summary>
+public class BoardRowViewModel(LeaderboardRow row)
+{
+    public string Rank { get; } = row.Rank.ToString(CultureInfo.InvariantCulture);
+    public string Name { get; } = row.IsYou ? "You" : row.Username;
+    public string Streak { get; } = row.CurrentStreak.ToString(CultureInfo.InvariantCulture);
+    public string Level { get; } = $"Level {row.Level.Number} · {row.Level.Name}";
+    public string Points { get; } = row.Points.ToString("N0", CultureInfo.InvariantCulture);
+    public bool IsYou { get; } = row.IsYou;
 }

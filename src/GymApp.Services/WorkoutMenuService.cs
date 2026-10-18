@@ -19,7 +19,7 @@ public class WorkoutMenuService(IDbContextFactory<AppDbContext> dbFactory)
     /// <summary>The days of the user's selected split, or null when no split is selected or it has no usable schedule.</summary>
     public async Task<WorkoutMenu?> GetAsync(int userId, DateOnly? today = null)
     {
-        var date = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var date = today ?? AppClock.Today;
         await using var db = await dbFactory.CreateDbContextAsync();
 
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);

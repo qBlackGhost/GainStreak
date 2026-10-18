@@ -49,7 +49,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
     /// </summary>
     public async Task<PointsSync?> SyncAsync(int userId, DateOnly? today = null)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return null;
@@ -63,7 +63,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
     /// workouts and calorie logs earn their points. Sets <see cref="User.PointsBackfilled"/>.</summary>
     public async Task<PointsSync?> RebuildAsync(int userId, DateOnly? today = null)
     {
-        var day = today ?? DateOnly.FromDateTime(DateTime.Now);
+        var day = today ?? AppClock.Today;
         await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return null;
@@ -122,7 +122,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
         var stored = await db.PointsEntries.Where(p => p.UserId == userId).ToListAsync();
         var storedKeys = stored.Select(p => p.DedupKey).ToHashSet();
 
-        foreach (var entry in stored.Where(p => p.Date >= windowStart))
+        foreach (var entry in stored.Where(p => p.Date >= windowStart && p.Reason != PointsReason.Adjustment))
         {
             if (!wanted.TryGetValue(entry.DedupKey, out var w))
             {

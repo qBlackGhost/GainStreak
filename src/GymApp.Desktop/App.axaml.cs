@@ -34,6 +34,9 @@ public partial class App : Application
 
     public static IServiceProvider Services { get; private set; } = null!;
 
+    /// <summary>Called with the main window once it exists. The TestBench uses it to open its admin window.</summary>
+    public static Action<Window>? MainWindowCreated { get; set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
@@ -111,7 +114,10 @@ public partial class App : Application
         var main = Services.GetRequiredService<MainViewModel>();
         ErrorHandling.Install(log, message => main.GlobalError = message);
         if (desktop is not null)
+        {
             desktop.MainWindow = new MainWindow { DataContext = main };
+            MainWindowCreated?.Invoke(desktop.MainWindow);
+        }
 
         base.OnFrameworkInitializationCompleted();
     }

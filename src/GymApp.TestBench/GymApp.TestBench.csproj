@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- GymApp with an admin window for testing: its own data folder, a movable clock, points and check-in shortcuts.
+       Never published; run it with "dotnet run" on src/GymApp.TestBench -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Same as the app: Network.framework on macOS, so the gym fetch gets TLS 1.3 -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Net.Security.UseNetworkFramework" Value="true" />
+  </ItemGroup>
+
+  <!-- Referenced directly (not only through the app) so the XAML compiler and MVVM generators run here too -->
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GymApp.Desktop\GymApp.Desktop.csproj" />
+  </ItemGroup>
+</Project>

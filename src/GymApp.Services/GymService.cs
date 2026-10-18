@@ -39,7 +39,7 @@ public record DeleteGymResult(bool Success, CustomGymDeleteOutcome? Outcome = nu
 /// and never change the streak: the workout is already logged before a gym is picked.</summary>
 public class GymService(IDbContextFactory<AppDbContext> dbFactory)
 {
-    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    private static DateOnly Today => AppClock.Today;
 
     /// <summary>Active OSM gyms in the city plus this user's own active custom gyms there. Null if the city doesn't exist.</summary>
     public async Task<GymListResult?> GetGymsForCityAsync(int userId, int cityId, string? search = null, GymSort sort = GymSort.Name)

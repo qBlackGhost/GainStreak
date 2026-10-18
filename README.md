@@ -43,6 +43,16 @@ The database is created and migrated on first start, in:
 
 The same folder holds `remember.json` (the "remember me" sign-in) and `errors.log` (unexpected errors). To run against a copy of your data, set `GYMAPP_DATA_DIR` to another folder.
 
+## TestBench (testing version)
+
+```bash
+dotnet run --project src/GymApp.TestBench
+```
+
+The same app plus an admin window: move the clock to any date, sign in as any user without a password, check in without logging sets, undo a check-in, bring back the missed-day card, add or set points (stored as "Manual adjustment" entries the sync keeps), rebuild the points ledger, and reset the test data.
+
+It has its own data folder (`GymApp-TestBench/data` next to the real one), so it can run next to the real app and never changes the real data. The first start copies the real data; "Reset to empty" and "Copy real app's data" restart it. The clock offset is kept in `GymApp-TestBench/bench.json` across restarts.
+
 ## Publish
 
 Self-contained builds, so the target machine doesn't need .NET installed.

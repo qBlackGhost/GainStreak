@@ -153,7 +153,7 @@ public partial class ExerciseViewModel : ViewModelBase
         _day = day;
         _splitName = splitName;
         _exerciseId = exerciseId;
-        _today = DateOnly.FromDateTime(DateTime.Now);
+        _today = AppClock.Today;
         _ = LoadAsync();
     }
 

@@ -152,7 +152,7 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
     /// <summary>One history row per user per day: changing the schedule twice in a day updates the same row.</summary>
     private static async Task UpsertScheduleAsync(AppDbContext db, int userId, int splitId, string weekPattern)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = AppClock.Today;
         var row = await db.UserSchedules.FirstOrDefaultAsync(s => s.UserId == userId && s.EffectiveFrom == today);
         if (row is null)
             db.UserSchedules.Add(new UserSchedule
