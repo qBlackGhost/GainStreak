@@ -7,6 +7,7 @@ namespace GymApp.Services;
 public static class FormField
 {
     public const string Username = nameof(Username);
+    public const string Email = nameof(Email);
     public const string Password = nameof(Password);
     public const string Name = nameof(Name);
     public const string Address = nameof(Address);

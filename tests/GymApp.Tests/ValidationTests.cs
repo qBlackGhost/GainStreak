@@ -34,18 +34,18 @@ public class ValidationTests : IDisposable
 
     [Fact] public async Task Register_RefusesASpaceInTheUsername_OnTheUsernameField()
     {
-        var r = await _auth.RegisterAsync("a b", "password1");
+        var r = await _auth.RegisterAsync("a b", "alice@example.com", "password1");
         Assert.False(r.Success);
         Assert.Equal(FormField.Username, r.Field);
     }
 
     [Fact] public async Task Register_TrimsBeforeChecking() =>
-        Assert.True((await _auth.RegisterAsync("  alice  ", "password1")).Success);
+        Assert.True((await _auth.RegisterAsync("  alice  ", "alice@example.com", "password1")).Success);
 
     [Fact] public async Task Register_TakenName_IsOnTheUsernameField()
     {
-        await _auth.RegisterAsync("alice", "password1");
-        var r = await _auth.RegisterAsync("ALICE", "password1");
+        await _auth.RegisterAsync("alice", "alice@example.com", "password1");
+        var r = await _auth.RegisterAsync("ALICE", "other@example.com", "password1");
         Assert.Equal(("That username is already taken.", FormField.Username), (r.Error, r.Field));
     }
 
@@ -53,9 +53,9 @@ public class ValidationTests : IDisposable
 
     [Fact] public async Task Register_PasswordOver128_IsRefused_OnThePasswordField()
     {
-        var r = await _auth.RegisterAsync("alice", new string('x', 129));
+        var r = await _auth.RegisterAsync("alice", "alice@example.com", new string('x', 129));
         Assert.Equal(("Password must be at most 128 characters.", FormField.Password), (r.Error, r.Field));
-        Assert.True((await _auth.RegisterAsync("alice", new string('x', 128))).Success);
+        Assert.True((await _auth.RegisterAsync("alice", "alice@example.com", new string('x', 128))).Success);
     }
 
     [Fact] public void Password_OnlySpaces_IsRefused() =>
@@ -72,6 +72,68 @@ public class ValidationTests : IDisposable
             db.SaveChanges();
         }
         Assert.True((await _auth.LoginAsync("old name", "password1")).Success);
+    }
+
+    // ===== Emails =====
+
+    [Theory]
+    [InlineData("alice@example.com")]
+    [InlineData("ana.maria+gym@mail.co.uk")]
+    public void Email_Allowed(string email) => Assert.Null(Credentials.CheckEmail(email));
+
+    [Theory]
+    [InlineData("alice")]
+    [InlineData("@example.com")]
+    [InlineData("alice@example")]
+    [InlineData("alice@@example.com")]
+    [InlineData("al ice@example.com")]
+    [InlineData("alice@example.")]
+    public void Email_Refused(string email) =>
+        Assert.Equal("Enter a valid email address, e.g. name@example.com.", Credentials.CheckEmail(email));
+
+    [Fact] public async Task Register_BadEmail_IsOnTheEmailField()
+    {
+        var r = await _auth.RegisterAsync("alice", "not-an-email", "password1");
+        Assert.Equal(FormField.Email, r.Field);
+    }
+
+    [Fact] public async Task Register_TakenEmail_IgnoresCase()
+    {
+        await _auth.RegisterAsync("alice", "alice@example.com", "password1");
+        var r = await _auth.RegisterAsync("bob", "  ALICE@Example.com ", "password1");
+        Assert.Equal(("An account with that email already exists.", FormField.Email), (r.Error, r.Field));
+    }
+
+    [Fact] public async Task Login_WorksWithUsernameOrEmail()
+    {
+        await _auth.RegisterAsync("alice", "Alice@Example.com", "password1");
+        Assert.True((await _auth.LoginAsync("alice", "password1")).Success);
+        Assert.True((await _auth.LoginAsync(" ALICE@example.com ", "password1")).Success);
+        Assert.False((await _auth.LoginAsync("alice@example.com", "wrong-password")).Success);
+    }
+
+    [Fact] public async Task ChangeEmail_NeedsThePassword_AndAFreeAddress()
+    {
+        var alice = (await _auth.RegisterAsync("alice", "alice@example.com", "password1")).User!;
+        await _auth.RegisterAsync("bob", "bob@example.com", "password1");
+
+        Assert.Equal(FormField.Password, (await _auth.ChangeEmailAsync(alice.Id, "new@example.com", "nope")).Field);
+        Assert.Equal(FormField.Email, (await _auth.ChangeEmailAsync(alice.Id, "BOB@example.com", "password1")).Field);
+        Assert.True((await _auth.ChangeEmailAsync(alice.Id, "New@Example.com", "password1")).Success);
+        Assert.True((await _auth.LoginAsync("new@example.com", "password1")).Success);
+    }
+
+    [Fact] public async Task ChangeEmail_AddsOneToAnOldAccountWithout()
+    {
+        int id;
+        using (var db = _db.CreateDbContext())
+        {
+            var u = new User { Username = "olduser", PasswordHash = PasswordHasher.Hash("password1") };
+            db.Users.Add(u);
+            db.SaveChanges();
+            id = u.Id;
+        }
+        Assert.True((await _auth.ChangeEmailAsync(id, "old@example.com", "password1")).Success);
     }
 
     // ===== G4 / G5: whole numbers =====

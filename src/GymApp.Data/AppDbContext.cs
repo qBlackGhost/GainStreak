@@ -47,6 +47,8 @@ public class AppDbContext : DbContext
     {
         b.Entity<User>().HasIndex(u => u.Username).IsUnique();
         b.Entity<User>().Property(u => u.Username).HasMaxLength(32).UseCollation("NOCASE");
+        b.Entity<User>().HasIndex(u => u.Email).IsUnique();   // SQLite allows any number of NULLs here
+        b.Entity<User>().Property(u => u.Email).HasMaxLength(254).UseCollation("NOCASE");
         b.Entity<User>().Property(u => u.GoalType).HasConversion<string>();
 
         // Two separate relationships between User and WorkoutSplit, so be explicit

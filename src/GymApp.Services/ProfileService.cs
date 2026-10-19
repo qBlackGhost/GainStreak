@@ -21,6 +21,7 @@ public record MaintenanceEstimate(int? Kcal, string? Reason = null, int? Bmr = n
 
 public record ProfileSummary(
     string Username,
+    string? Email,
     string? SplitName,
     int CurrentStreak,
     int LongestStreak,
@@ -63,7 +64,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
             : user.SelectedVariant is null ? user.SelectedSplit.Name
             : $"{user.SelectedSplit.Name} ({user.SelectedVariant.Name})";
 
-        return new ProfileSummary(user.Username, splitName, user.CurrentStreak, user.LongestStreak,
+        return new ProfileSummary(user.Username, user.Email, splitName, user.CurrentStreak, user.LongestStreak,
             profile, current, recent, Estimate(profile, current?.WeightKg, day));
     }
 

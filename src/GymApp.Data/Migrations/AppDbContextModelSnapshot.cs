@@ -973,6 +973,11 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("DailyCalorieGoal")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
                     b.Property<string>("GoalType")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1015,6 +1020,9 @@ namespace GymApp.Data.Migrations
                         .UseCollation("NOCASE");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.HasIndex("SelectedSplitId");
 

@@ -8,6 +8,7 @@ public class User
 {
     public int Id { get; set; }
     public string Username { get; set; } = "";
+    public string? Email { get; set; }               // stored lowercased; null for accounts made before emails existed
     public string PasswordHash { get; set; } = "";   // never the plain password
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? RememberTokenHash { get; set; }

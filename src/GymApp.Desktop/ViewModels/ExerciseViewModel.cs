@@ -159,8 +159,10 @@ public partial class ExerciseViewModel : ViewModelBase
     [ObservableProperty] public partial bool HasTopSets { get; set; }
 
     private IReadOnlyList<SetEntry> _last = [];
+    // The counters always show today's rows by kind; editing the rows (or the counters) also saves them as the plan
     [ObservableProperty] public partial int WarmupSets { get; set; }
     [ObservableProperty] public partial int WorkingSets { get; set; } = 3;
+    private int _planWarmup, _planWorking;   // what the day's plan holds in the database
 
     [ObservableProperty] public partial string BestText { get; set; } = "No PR yet";
     [ObservableProperty] public partial string OneRmText { get; set; } = "";
@@ -214,8 +216,8 @@ public partial class ExerciseViewModel : ViewModelBase
             DayText = _day.Weekdays.Length > 0 ? $"{_day.Name} · {_day.Weekdays}" : _day.Name;
             PositionText = $"Exercise {list.IndexOf(row) + 1} of {list.Count}";
             OnPropertyChanged(nameof(BackLabel));
-            WarmupSets = row.WarmupSets;
-            WorkingSets = row.WorkingSets;
+            WarmupSets = _planWarmup = row.WarmupSets;
+            WorkingSets = _planWorking = row.WorkingSets;
 
             _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
             await LoadLastAsync();
@@ -283,6 +285,7 @@ public partial class ExerciseViewModel : ViewModelBase
         var n = 0;
         foreach (var d in data) Rows.Add(new SetRowViewModel(this, ++n, d.Kind, d.Weight, d.Reps));
         _loading = false;
+        CountRows();
         RefreshPrompts();
     }
 
@@ -291,7 +294,40 @@ public partial class ExerciseViewModel : ViewModelBase
         if (_loading) return;
         Info = null;
         IsPrFresh = false;
+        RowsReshaped();
         RefreshPrompts();
+    }
+
+    private void CountRows()
+    {
+        WarmupSets = Rows.Count(r => r.IsWarmup);
+        WorkingSets = Rows.Count - WarmupSets;
+    }
+
+    /// <summary>After you add, remove or switch a row: update the counters and save them as the plan.</summary>
+    private void RowsReshaped()
+    {
+        CountRows();
+        _ = SavePlanAsync();
+    }
+
+    // The plan keeps the service's limits (at least one working set); the rows themselves can go beyond them
+    private async Task SavePlanAsync()
+    {
+        var warmup = Math.Clamp(WarmupSets, 0, DayExerciseService.MaxWarmupSets);
+        var working = Math.Clamp(WorkingSets, 1, DayExerciseService.MaxWorkingSets);
+        if (warmup == _planWarmup && working == _planWorking) return;
+        _planWarmup = warmup;
+        _planWorking = working;
+        try
+        {
+            var r = await _days.SetPlannedSetsAsync(UserId, _day.SplitDayId, _exerciseId, warmup, working);
+            if (!r.Success) Error = r.Error;
+        }
+        catch (Exception)
+        {
+            Error = "Could not save the planned sets.";
+        }
     }
 
     private void RefreshPrompts()
@@ -307,6 +343,7 @@ public partial class ExerciseViewModel : ViewModelBase
         Rows.Remove(row);
         for (var i = 0; i < Rows.Count; i++) Rows[i].Number = i + 1;
         Info = null;
+        RowsReshaped();
         RefreshPrompts();
     }
 
@@ -314,18 +351,27 @@ public partial class ExerciseViewModel : ViewModelBase
     [RelayCommand]
     private void AddRow()
     {
-        if (Rows.Count >= SetService.MaxSetsPerExercisePerDay)
-        {
-            Error = $"At most {SetService.MaxSetsPerExercisePerDay} sets per exercise per day.";
-            return;
-        }
-
+        if (!HasRoomForARow()) return;
         var last = Rows.LastOrDefault(r => !r.IsWarmup);
+        InsertRow(Rows.Count, SetKind.Working, last?.WeightText ?? "", last?.RepsText ?? "");
+    }
+
+    private bool HasRoomForARow()
+    {
+        if (Rows.Count < SetService.MaxSetsPerExercisePerDay) return true;
+        Error = $"At most {SetService.MaxSetsPerExercisePerDay} sets per exercise per day.";
+        return false;
+    }
+
+    private void InsertRow(int index, SetKind kind, string weight, string reps)
+    {
         _loading = true;
-        Rows.Add(new SetRowViewModel(this, Rows.Count + 1, SetKind.Working, last?.WeightText ?? "", last?.RepsText ?? ""));
+        Rows.Insert(index, new SetRowViewModel(this, index + 1, kind, weight, reps));
+        for (var i = 0; i < Rows.Count; i++) Rows[i].Number = i + 1;
         _loading = false;
         Error = null;
         Info = null;
+        RowsReshaped();
         RefreshPrompts();
     }
 
@@ -339,6 +385,7 @@ public partial class ExerciseViewModel : ViewModelBase
 
             RebuildRows(last.Select(s => new RowData(
                 s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
+            await SavePlanAsync();
             Error = null;
             Info = $"Filled from {FormatDate(last[0].Date)}. Change anything, then save.";
 
@@ -389,34 +436,53 @@ public partial class ExerciseViewModel : ViewModelBase
 
     // ---------- planned sets ----------
 
-    [RelayCommand] private Task MoreWarmupAsync() => ChangePlanAsync(+1, 0);
-    [RelayCommand] private Task FewerWarmupAsync() => ChangePlanAsync(-1, 0);
-    [RelayCommand] private Task MoreWorkingAsync() => ChangePlanAsync(0, +1);
-    [RelayCommand] private Task FewerWorkingAsync() => ChangePlanAsync(0, -1);
-
-    private async Task ChangePlanAsync(int deltaWarmup, int deltaWorking)
+    // + adds a row of that kind (warm-ups go after the last warm-up, working sets at the end);
+    // − removes the last row of that kind, an empty one first so nothing you typed is lost
+    [RelayCommand]
+    private void MoreWarmup()
     {
-        try
+        if (WarmupSets >= DayExerciseService.MaxWarmupSets)
         {
-            var warmup = WarmupSets + deltaWarmup;
-            var working = WorkingSets + deltaWorking;
-
-            var r = await _days.SetPlannedSetsAsync(UserId, _day.SplitDayId, _exerciseId, warmup, working);
-            if (!r.Success) { Error = r.Error; return; }
-
-            Error = null;
-            WarmupSets = warmup;
-            WorkingSets = working;
-
-            // An untouched draft follows the plan; anything you typed is left alone
-            if (Rows.All(x => string.IsNullOrWhiteSpace(x.WeightText) && string.IsNullOrWhiteSpace(x.RepsText)))
-                RebuildRows(PlanRows());
-
+            Error = $"Warmup sets must be 0 to {DayExerciseService.MaxWarmupSets}.";
+            return;
         }
-        catch (Exception)
+        if (!HasRoomForARow()) return;
+        var lastWarmup = Rows.LastOrDefault(r => r.IsWarmup);
+        InsertRow(lastWarmup is null ? 0 : Rows.IndexOf(lastWarmup) + 1, SetKind.Warmup, "", "");
+    }
+
+    [RelayCommand]
+    private void MoreWorking()
+    {
+        if (WorkingSets >= DayExerciseService.MaxWorkingSets)
         {
-            Error = "Could not change the planned sets.";
+            Error = $"Working sets must be 1 to {DayExerciseService.MaxWorkingSets}.";
+            return;
         }
+        AddRow();
+    }
+
+    [RelayCommand] private void FewerWarmup() => RemoveLastOfKind(warmup: true);
+
+    [RelayCommand]
+    private void FewerWorking()
+    {
+        if (WorkingSets <= 1)
+        {
+            Error = $"Working sets must be 1 to {DayExerciseService.MaxWorkingSets}.";
+            return;
+        }
+        RemoveLastOfKind(warmup: false);
+    }
+
+    private void RemoveLastOfKind(bool warmup)
+    {
+        var ofKind = Rows.Where(r => r.IsWarmup == warmup).ToList();
+        var row = ofKind.LastOrDefault(r => string.IsNullOrWhiteSpace(r.WeightText) && string.IsNullOrWhiteSpace(r.RepsText))
+                  ?? ofKind.LastOrDefault();
+        if (row is null) return;
+        Error = null;
+        RemoveRow(row);
     }
 
     // ---------- PR ----------

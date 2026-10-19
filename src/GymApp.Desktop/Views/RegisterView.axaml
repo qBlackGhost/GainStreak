@@ -12,6 +12,11 @@
                        IsVisible="{Binding UsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
         <StackPanel Spacing="4">
+            <TextBox PlaceholderText="Email" MaxLength="254" Text="{Binding Email}"/>
+            <TextBlock Classes="fieldError" Text="{Binding EmailError}"
+                       IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        </StackPanel>
+        <StackPanel Spacing="4">
             <TextBox PlaceholderText="Password (8 to 128 characters)" MaxLength="128" PasswordChar="●" Text="{Binding Password}"/>
             <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
                        IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

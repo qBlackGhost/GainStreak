@@ -359,6 +359,48 @@
                 </StackPanel>
 
                 <StackPanel x:Name="RightColumn" Spacing="24">
+                    <!-- ===== Account: the email you sign in with ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Account" Classes="h2"/>
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsEditingEmail}">
+                                <Border Width="40" Height="40" CornerRadius="10" Background="#1A1A1A">
+                                    <v:Icon Data="{StaticResource IcMail}" Stroke="White" StrokeThickness="2" Width="20" Height="20"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="Email" FontSize="12" Classes="muted"/>
+                                    <TextBlock Text="{Binding EmailText}" FontSize="15" FontWeight="SemiBold"
+                                               Classes.soft="{Binding !HasEmail}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="{Binding EditEmailLabel}"
+                                        Command="{Binding EditEmailCommand}" VerticalAlignment="Center"/>
+                            </Grid>
+                            <StackPanel Spacing="10" IsVisible="{Binding IsEditingEmail}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="New email" FontSize="12" Classes="muted"/>
+                                    <TextBox Classes="field" MaxLength="254" PlaceholderText="name@example.com"
+                                             Text="{Binding NewEmail}" AutomationProperties.Name="New email"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding EmailError}"
+                                               IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
+                                    <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                             Text="{Binding EmailPassword}" AutomationProperties.Name="Current password"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding EmailPasswordError}"
+                                               IsVisible="{Binding EmailPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                    <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelEmailCommand}"/>
+                                    <Button Classes="btn primary" MinHeight="40" Padding="18,0" Content="Save email"
+                                            Command="{Binding SaveEmailCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Text="You can sign in with your username or this email." FontSize="12" Classes="muted"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ===== Weight ===== -->
                     <Border Classes="card">
                         <StackPanel Spacing="18">

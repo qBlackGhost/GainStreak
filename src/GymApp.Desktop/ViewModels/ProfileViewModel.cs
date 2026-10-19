@@ -52,15 +52,16 @@ public partial class WeightEntryViewModel : ObservableObject
 public partial class ProfileViewModel : ViewModelBase
 {
     private readonly ProfileService _profiles;
+    private readonly AuthService _auth;
     private readonly GeocodingService _geocoding;
     private readonly CityService _cities;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public ProfileViewModel(ProfileService profiles, GeocodingService geocoding,
+    public ProfileViewModel(ProfileService profiles, AuthService auth, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell)
     {
-        _profiles = profiles; _geocoding = geocoding; _cities = cities;
+        _profiles = profiles; _auth = auth; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, this)).ToList();
         _ = ReloadAsync();
@@ -86,6 +87,17 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string CurrentStreak { get; set; } = "0";
     [ObservableProperty] public partial string BestStreak { get; set; } = "0";
     [ObservableProperty] public partial string LevelText { get; set; } = "";
+
+    // ===== Account =====
+    [ObservableProperty] public partial string EmailText { get; set; } = "";
+    [ObservableProperty] public partial bool HasEmail { get; set; }
+    [ObservableProperty] public partial bool IsEditingEmail { get; set; }
+    [ObservableProperty] public partial string NewEmail { get; set; } = "";
+    [ObservableProperty] public partial string EmailPassword { get; set; } = "";
+    [ObservableProperty] public partial string? EmailError { get; set; }
+    [ObservableProperty] public partial string? EmailPasswordError { get; set; }
+    public string EditEmailLabel => HasEmail ? "Change" : "Add email";
+    partial void OnHasEmailChanged(bool value) => OnPropertyChanged(nameof(EditEmailLabel));
 
     // ===== Body data form =====
     [ObservableProperty]
@@ -199,6 +211,7 @@ public partial class ProfileViewModel : ViewModelBase
             if (s is null) { Error = "Could not load your profile."; return; }
 
             Username = s.Username;
+            ApplyEmail(s.Email);
             Initials = s.Username.Length == 0 ? "?" : s.Username[..Math.Min(2, s.Username.Length)].ToUpperInvariant();
             HasSplit = s.SplitName is not null;
             SplitText = s.SplitName?.Replace(" (", " · ").TrimEnd(')') ?? "No split selected";
@@ -454,6 +467,61 @@ public partial class ProfileViewModel : ViewModelBase
         catch (Exception)
         {
             Error = "Could not delete that weigh-in.";
+        }
+    }
+
+    // ===== Account email =====
+
+    private void ApplyEmail(string? email)
+    {
+        HasEmail = email is not null;
+        EmailText = email ?? "No email yet. Add one so you can sign in with it.";
+    }
+
+    [RelayCommand]
+    private void EditEmail()
+    {
+        NewEmail = HasEmail ? EmailText : "";
+        EmailPassword = "";
+        EmailError = EmailPasswordError = null;
+        IsEditingEmail = true;
+    }
+
+    [RelayCommand]
+    private void CancelEmail()
+    {
+        IsEditingEmail = false;
+        NewEmail = EmailPassword = "";
+        EmailError = EmailPasswordError = null;
+    }
+
+    [RelayCommand]
+    private async Task SaveEmailAsync()
+    {
+        try
+        {
+            Info = null;
+            Error = null;
+            EmailError = EmailPasswordError = null;
+            var r = await _auth.ChangeEmailAsync(UserId, NewEmail, EmailPassword);
+            if (!r.Success)
+            {
+                switch (r.Field)
+                {
+                    case FormField.Password: EmailPasswordError = r.Error; break;
+                    default: EmailError = r.Error; break;
+                }
+                return;
+            }
+
+            _session.CurrentUser!.Email = r.User!.Email;
+            ApplyEmail(r.User.Email);
+            CancelEmail();
+            Info = $"Email saved. You can now sign in with {r.User.Email}.";
+        }
+        catch (Exception)
+        {
+            EmailError = "Could not save your email.";
         }
     }
 

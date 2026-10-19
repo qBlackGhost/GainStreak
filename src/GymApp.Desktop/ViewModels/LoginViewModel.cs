@@ -18,6 +18,7 @@ public partial class LoginViewModel : ViewModelBase
         _auth = auth; _session = session; _remember = remember; _shell = shell;
     }
 
+    /// <summary>The username or the account email.</summary>
     [ObservableProperty] public partial string Username { get; set; } = "";
     [ObservableProperty] public partial string Password { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
