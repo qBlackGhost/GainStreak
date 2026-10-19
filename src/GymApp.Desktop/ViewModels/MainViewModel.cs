@@ -45,16 +45,16 @@ public partial class MainViewModel : ViewModelBase
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
     public void ShowCalories() => Current = _sp.GetRequiredService<CaloriesViewModel>();
     public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
-    public void ShowGymPicker() => Current = _sp.GetRequiredService<GymPickerViewModel>();
-    /// <summary>Friends, with the leaderboard on the same screen.</summary>
-    public void ShowFriends() => Current = _sp.GetRequiredService<FriendsViewModel>();
-
-    public void ShowGymSummary(bool fromProfile = false)
+    /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
+    /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
+    public void ShowGyms(bool pickToday = false)
     {
-        var vm = _sp.GetRequiredService<GymSummaryViewModel>();
-        if (fromProfile) vm.OpenedFromProfile();
+        var vm = _sp.GetRequiredService<GymsViewModel>();
+        if (pickToday) vm.PickTodayWhenLoaded();
         Current = vm;
     }
+    /// <summary>Friends, with the leaderboard on the same screen.</summary>
+    public void ShowFriends() => Current = _sp.GetRequiredService<FriendsViewModel>();
 
     public void ShowDay(MenuDay day, string splitName)
     {

@@ -341,13 +341,16 @@
                             </Border>
                             <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="#6E6E6E"/>
 
-                            <!-- Until the Gyms screen takes these over (its design is still changing) -->
+                            <!-- Your gym and "Ask for gym" live on the Map; sharing can be changed here too -->
                             <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                    <TextBlock Text="Ask which gym after check-in" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AskForGym}" OnContent="" OffContent=""
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Visible to friends" FontSize="14" Classes="light"/>
+                                        <TextBlock Text="Friends see the gym and day of your check-ins, never the time." FontSize="12" Classes="muted"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShareGymCheckIns}" OnContent="" OffContent=""
                                                   VerticalAlignment="Center"/>
-                                    <Button Grid.Column="2" Classes="link" Content="Gyms visited per month"
+                                    <Button Grid.Column="2" Classes="link" Content="Your gym on the Map →"
                                             Command="{Binding ShowGymSummaryCommand}" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>

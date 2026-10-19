@@ -146,6 +146,53 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
         return new(true);
     }
 
+    /// <summary>Turns "Visible to friends" on or off: whether accepted friends see the gym and day of the user's check-ins
+    /// (last 30 days). Off hides the past ones at once too, since the map is a query, not a copy. Creates the profile
+    /// row if there is none yet.</summary>
+    public async Task<ProfileResult> SetShareGymCheckInsAsync(int userId, bool share)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var profile = await ProfileForWriteAsync(db, userId);
+        if (profile is null) return new(false, "User not found.");
+        profile.ShareGymCheckIns = share;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save that setting."); }
+        return new(true);
+    }
+
+    /// <summary>Sets (or with null, clears) the user's gym. It must be an active OSM gym or the user's own custom gym.
+    /// Only "your gym" changes; today's log keeps its gym.</summary>
+    public async Task<ProfileResult> SetHomeGymAsync(int userId, int? gymId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        if (gymId is { } id && !await GymService.Pickable(db, userId).AnyAsync(g => g.Id == id))
+            return new(false, "That gym can't be chosen. Pick another one.", FormField.Gym);
+
+        var profile = await ProfileForWriteAsync(db, userId);
+        if (profile is null) return new(false, "User not found.");
+        profile.HomeGymId = gymId;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save your gym."); }
+        return new(true);
+    }
+
+    /// <summary>The user's profile row, tracked, created (not yet saved) when there is none. Null if the user doesn't exist.</summary>
+    private static async Task<UserProfile?> ProfileForWriteAsync(AppDbContext db, int userId)
+    {
+        if (!await db.Users.AnyAsync(u => u.Id == userId)) return null;
+        var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId };
+            db.UserProfiles.Add(profile);
+        }
+        return profile;
+    }
+
     /// <summary>Logs today's weight. Today only, like workouts and sets; a second weigh-in today
     /// replaces the first one.</summary>
     public async Task<WeightResult> LogWeightAsync(int userId, double weightKg, DateOnly? today = null)

@@ -45,9 +45,12 @@ These are the places where the plan (dated 17 October 2026) no longer matches th
 
 - Add what was built beyond the plan: a home city on the profile, **custom gyms** (up to 10, with an address picked from a search inside the city), approximate addresses from reverse lookups, the optional "Want to log your gym?" prompt after check-in with "Don't ask me again", and the "Gyms visited per month" screen.
 - "Gym picker on both ways of logging a workout (the I went today button and the Workouts menu)" → the picker opens **after check-in** and from Home's "Add gym" / "Change gym" link, for today's log only.
+- **Update (friends gym map):** the picker after check-in now opens with **your gym preselected**, with "Make this my gym" to set it. With Ask for gym off, a check-in is logged at your gym automatically.
+- Gyms screen footnote "Only you see your gyms. They are never shared with friends." → replaced by the line under the map ("Friends only see the gym and the day of a check-in, never the time. Custom gyms show by name only.") and the Visible to friends chip. The screen is now called **Map**.
 
 ## Phase 10: Friends and leaderboard
 
+- **Privacy line** (decision 4) → "Only public stats are shared: username, level, points, and streak. Gym check-ins (gym and day, last 30 days) are shared only when the user turns on Visible to friends. Body data, calories, sets and PRs stay private."
 - **Known issue** paragraph → mark as **fixed in Phase 12a** (no streak, nothing to save). Test: `LeaderboardServiceTests.InactiveFriend_ShowsZero_OnADayThatUsedToGiveOne`.
 
 ## Phase 11: Undo check-in and sets on check-in
@@ -70,6 +73,7 @@ Replace the two bullets with the sub-phases (full spec: docs/PHASE_12_POLISH.md)
 
 - **Anti-cheat:** remove "and the PR bonus cap above" (there's no PR bonus).
 - **Optional extras:** these are for **1.1 and later**. Add the weekly rate selector and the body measurement log (moved from Phases 6 and 7).
+- Add the **friends gym map** as a **1.1.0 feature** next to the optional extras: friends' latest check-ins (last 30 days) as pins on your city's map, a Friends card grouped by Recent or By gym, your gym (home gym), and opt-in sharing. Spec: docs/FRIENDS_GYM_MAP.md.
 - Add a **Versioning** paragraph: 1.0.x is bug fixes only (no schema changes), 1.x.0 is new features (migrations allowed), 2.0.0 is breaking changes (a migration that can't carry data forward, or a change to seeded ids).
 - Add **Known limitations (1.0.0)**: friends only on the same database, points computed on the client, set values can be made up, and the missed-day choice needs the app opened the next day.
 
@@ -79,5 +83,6 @@ Replace the two bullets with the sub-phases (full spec: docs/PHASE_12_POLISH.md)
 - **Gym (change), 9:** "Add OsmId" → `OsmType`, `OsmId` (unique per city), `CityId`, `OwnerUserId` (custom gyms), `Address`, `LookedUpAddress`, `AddressLookedUpAt`, `Latitude`, `Longitude`, `IsActive`.
 - **Add City, 9:** `OsmType`, `OsmId`, `Name`, `DisplayName`, centre, bounding box, `GymsFetchedAt`.
 - **Add WorkoutLog (change), 9:** `GymId`.
+- **UserProfile (change), 1.1:** `ShareGymCheckIns` (bool?, null = not asked yet, shared only when true) and `HomeGymId` (FK to Gym, SetNull on delete). Migration `AddGymSharingAndHomeGym`.
 - **Add MissedDayChoice, 12:** `UserId`, `Date` (the missed day), `Choice` (ShiftWeek, ShiftToRest, Continue), `CreatedAt`; unique per user and date.
 - **Add User (change), 12 (after 12e):** `ThemePreference`.

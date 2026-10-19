@@ -152,6 +152,9 @@ public class AppDbContext : DbContext
         b.Entity<UserProfile>().HasOne(p => p.HomeCity).WithMany()
             .HasForeignKey(p => p.HomeCityId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<UserProfile>().Property(p => p.AskForGymAfterCheckIn).HasDefaultValue(true).HasSentinel(true);
+        // Deleting (not just deactivating) a custom gym only clears "your gym"
+        b.Entity<UserProfile>().HasOne(p => p.HomeGym).WithMany()
+            .HasForeignKey(p => p.HomeGymId).OnDelete(DeleteBehavior.SetNull);
 
         // Friends: one row per pair (UserAId < UserBId, kept by the service), so a pair can only exist once.
         // Two relationships to User, so be explicit; deleting either user removes the friendship

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
@@ -11,8 +12,10 @@ using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 
-/// <summary>One gym in the picker list. Custom gyms (always the user's own) can be edited and deleted.</summary>
-public partial class GymRowViewModel(GymRow row, bool isCurrent, GymPickerViewModel owner) : ObservableObject
+/// <summary>One gym in the picker list. Custom gyms (always the user's own) can be edited and deleted.
+/// <paramref name="isCurrent"/>: it's the gym the dialog is choosing (your gym, or today's).</summary>
+public partial class GymRowViewModel(GymRow row, bool isCurrent, bool isHome, int friendsHere, PickerMode mode,
+    GymPickerViewModel owner) : ObservableObject
 {
     public GymListItem Gym => row.Gym;
     public bool HasPosition => row.Gym is { Latitude: not null, Longitude: not null };
@@ -24,7 +27,13 @@ public partial class GymRowViewModel(GymRow row, bool isCurrent, GymPickerViewMo
     public string DistanceText => row.DistanceKm is { } km ? Geo.FormatDistance(km) : "";
     public bool IsCustom => row.Gym.IsCustom;
     public bool IsCurrent { get; } = isCurrent;
-    public string PickLabel => IsCurrent ? "Current" : "Pick";
+    public bool IsHome { get; } = isHome;
+    public bool HasFriends => friendsHere > 0;
+    public string FriendsLabel => friendsHere == 1 ? "1 friend" : $"{friendsHere} friends";
+    public string PickLabel => mode == PickerMode.HomeGym ? (IsCurrent ? "Current" : "Set") : (IsCurrent ? "Picked" : "Pick");
+
+    /// <summary>"1.2 km · Calea Aradului 1": the second line of the row.</summary>
+    public string DetailText => string.Join(" · ", new[] { DistanceText, AddressText }.Where(x => x.Length > 0));
 
     [ObservableProperty] public partial bool IsConfirmingDelete { get; set; }
 
@@ -37,8 +46,8 @@ public partial class GymRowViewModel(GymRow row, bool isCurrent, GymPickerViewMo
     [RelayCommand] private Task ConfirmDelete() => owner.DeleteGymAsync(this);
 }
 
-/// <summary>The city's box and centre, for the map view.</summary>
-public record CityBox(double South, double West, double North, double East, double CenterLatitude, double CenterLongitude);
+/// <summary>What the picker dialog is for: choosing your gym, today's gym, or (from the Map header) the home city.</summary>
+public enum PickerMode { HomeGym, Today, City }
 
 /// <summary>One result of the custom gym address search.</summary>
 public partial class AddressCandidateViewModel(AddressCandidate candidate, Action<AddressCandidate> pick) : ObservableObject
@@ -49,8 +58,11 @@ public partial class AddressCandidateViewModel(AddressCandidate candidate, Actio
     [RelayCommand] private void Pick() => pick(candidate);
 }
 
-/// <summary>Picks the gym for today's workout log. The list always comes from the database, so it works offline;
-/// gyms are fetched in the background on first use of a city, after 30 days, or on Refresh.</summary>
+/// <summary>
+/// The gym picker dialog on the Map screen. It chooses your gym, today's gym, or a home city (<see cref="PickerMode"/>)
+/// and hands the choice back to the screen, which saves it. The list always comes from the database, so it works
+/// offline; gyms are fetched in the background on first use of a city, after 30 days, or on Refresh.
+/// </summary>
 public partial class GymPickerViewModel : ViewModelBase
 {
     private readonly GymService _gyms;
@@ -66,14 +78,67 @@ public partial class GymPickerViewModel : ViewModelBase
     private City? _city;
     private int? _homeCityId;
     private int? _currentGymId;
+    private int? _homeGymId;
+    private IReadOnlyDictionary<int, int> _friendsAtGym = new Dictionary<int, int>();
+    private Func<GymListItem?, bool, Task> _chosen = (_, _) => Task.CompletedTask;
+    private Func<City, Task> _cityChosen = _ => Task.CompletedTask;
+    private Action _closed = () => { };
 
     public GymPickerViewModel(GymService gyms, GymFetchService fetch, GymAddressLookupService lookup, GeocodingService geocoding,
         CityService cities, ProfileService profiles, SessionService session, Func<MainViewModel> shell)
     {
         _gyms = gyms; _fetch = fetch; _lookup = lookup; _geocoding = geocoding; _cities = cities; _profiles = profiles;
         _session = session; _shell = shell;
-        _ = LoadAsync();
     }
+
+    [ObservableProperty] public partial PickerMode Mode { get; set; }
+    [ObservableProperty] public partial string Title { get; set; } = "";
+    [ObservableProperty] public partial string Subtitle { get; set; } = "";
+
+    /// <summary>Today's pick, while you have no gym yet: also make it your gym (checked the first time).</summary>
+    [ObservableProperty] public partial bool ShowMakeMyGym { get; set; }
+    [ObservableProperty] public partial bool MakeMyGym { get; set; } = true;
+
+    /// <summary>Opens the dialog. <paramref name="friendsAtGym"/>: friends whose latest check-in is at each gym, for
+    /// the "N friends" badges. <paramref name="chosen"/> gets the gym (null = today without a gym) and whether to also
+    /// make it your gym; <paramref name="cityChosen"/> a city in City mode.</summary>
+    public void Open(PickerMode mode, City? city, int? homeGymId, int? todayGymId, string? homeGymName,
+        IReadOnlyDictionary<int, int> friendsAtGym, Func<GymListItem?, bool, Task> chosen, Func<City, Task> cityChosen,
+        Action closed)
+    {
+        Mode = mode;
+        _homeGymId = homeGymId;
+        _currentGymId = mode == PickerMode.HomeGym ? homeGymId : todayGymId;
+        HasCurrentGym = mode == PickerMode.Today && todayGymId is not null;
+        _friendsAtGym = friendsAtGym;
+        _chosen = chosen;
+        _cityChosen = cityChosen;
+        _closed = closed;
+        _homeCityId = city?.Id;
+        Error = Info = null;
+        IsGymFormOpen = false;
+        SearchText = "";
+        ShowMakeMyGym = mode == PickerMode.Today && homeGymId is null;
+        MakeMyGym = true;
+
+        (Title, Subtitle) = mode switch
+        {
+            PickerMode.HomeGym => ("Choose your gym", "Your gym is preselected after every check-in. You only set it once."),
+            PickerMode.Today => ("Where did you train today?",
+                homeGymName is null ? "Only today's log changes." : $"Only today's log changes. Your gym stays {homeGymName}."),
+            _ => ("Change city", "The map and the gym list open on this city.")
+        };
+
+        if (mode == PickerMode.City || city is null)
+        {
+            HasCity = city is not null;
+            StartChoosingCity(mode == PickerMode.City ? "Search for your city." : "Which city is your gym in?", saveAsHomeDefault: true);
+            return;
+        }
+        _ = OpenCityAsync(city);
+    }
+
+    [RelayCommand] private void Close() => _closed();
 
     private int UserId => _session.CurrentUser!.Id;
 
@@ -101,12 +166,12 @@ public partial class GymPickerViewModel : ViewModelBase
     [ObservableProperty] public partial string EmptyText { get; set; } = "";
     [ObservableProperty] public partial bool HasCurrentGym { get; set; }
 
-    // ===== List or map =====
-    [ObservableProperty] public partial bool ShowAsList { get; set; } = true;
-    [ObservableProperty] public partial bool ShowAsMap { get; set; }
-    [ObservableProperty] public partial CityBox? MapBox { get; set; }
-    [ObservableProperty] public partial string? NoPositionText { get; set; }
-    [ObservableProperty] public partial string CurrentGymText { get; set; } = "";
+    [ObservableProperty] public partial string CountText { get; set; } = "";
+
+    /// <summary>For the A–Z / Nearest pill.</summary>
+    public int SortIndex => SortByDistance ? 1 : 0;
+    [RelayCommand] private void SortName() => SortByName = true;
+    [RelayCommand] private void SortNearest() => SortByDistance = true;
 
     // ===== Fetch status =====
     [ObservableProperty] public partial string LastUpdatedText { get; set; } = "";
@@ -118,8 +183,6 @@ public partial class GymPickerViewModel : ViewModelBase
     [ObservableProperty] public partial bool CanRetryCitySearch { get; set; }
     [ObservableProperty] public partial bool CanRetryAddressSearch { get; set; }
 
-    /// <summary>Shown over the map when its tiles can't be downloaded (offline). The list still works.</summary>
-    [ObservableProperty] public partial string? MapTilesNote { get; set; }
 
     // ===== Custom gym form (add or edit) =====
     [ObservableProperty] public partial bool IsGymFormOpen { get; set; }
@@ -148,43 +211,12 @@ public partial class GymPickerViewModel : ViewModelBase
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
 
-    private async Task LoadAsync()
-    {
-        try
-        {
-            var today = await _gyms.GetTodayAsync(UserId);
-            if (!today.LoggedToday)
-            {
-                Error = "Log today's workout on Home first, then pick the gym.";
-                return;
-            }
-            _currentGymId = today.Gym?.Id;
-            HasCurrentGym = today.Gym is not null;
-            CurrentGymText = today.Gym is { } g ? $"Today: {g.Name}" : "";
-
-            var home = await _profiles.GetHomeCityAsync(UserId);
-            _homeCityId = home?.Id;
-            if (home is null)
-            {
-                // No home city yet: ask for a city first and offer (not force) to save it as home
-                StartChoosingCity("Which city is your gym in?", saveAsHomeDefault: true);
-                return;
-            }
-            await OpenCityAsync(home);
-        }
-        catch (Exception)
-        {
-            Error = "Could not load the gym list.";
-        }
-    }
-
     private async Task OpenCityAsync(City city)
     {
         try
         {
             _cityId = city.Id;
             _city = city;
-            MapBox = new CityBox(city.South, city.West, city.North, city.East, city.CenterLatitude, city.CenterLongitude);
             CityName = city.Name;
             AddressLookupText = null;
             HasCity = true;
@@ -244,12 +276,11 @@ public partial class GymPickerViewModel : ViewModelBase
             if (r is null || cityId != _cityId) return;   // the city changed while loading
 
             Gyms.Clear();
-            foreach (var row in r.Rows) Gyms.Add(new GymRowViewModel(row, row.Gym.Id == _currentGymId, this));
+            foreach (var row in r.Rows)
+                Gyms.Add(new GymRowViewModel(row, row.Gym.Id == _currentGymId, row.Gym.Id == _homeGymId,
+                    _friendsAtGym.GetValueOrDefault(row.Gym.Id), Mode, this));
             HasGyms = Gyms.Count > 0;
-            var unplaced = Gyms.Count(g => !g.HasPosition);
-            NoPositionText = unplaced == 0 ? null
-                : unplaced == 1 ? "1 gym has no map position, so it's only in the list."
-                : $"{unplaced} gyms have no map position, so they're only in the list.";
+            CountText = Gyms.Count == 1 ? "1 gym" : $"{Gyms.Count} gyms";
             EmptyText = !string.IsNullOrWhiteSpace(SearchText) ? $"No gyms match \"{SearchText.Trim()}\"."
                       : r.City.GymsFetchedAt is null ? ""
                       : "No gyms found in this city on OpenStreetMap.";
@@ -307,19 +338,11 @@ public partial class GymPickerViewModel : ViewModelBase
     partial void OnSortByDistanceChanged(bool value)
     {
         SortByName = !value;
+        OnPropertyChanged(nameof(SortIndex));
         _ = ReloadListAsync();
     }
 
     partial void OnSortByNameChanged(bool value) => SortByDistance = !value;
-
-    partial void OnShowAsListChanged(bool value) => ShowAsMap = !value;
-    partial void OnShowAsMapChanged(bool value) => ShowAsList = !value;
-
-    /// <summary>A marker on the map was clicked: same as Pick in the list.</summary>
-    internal void PickFromMap(GymRowViewModel row)
-    {
-        if (row.PickCommand.CanExecute(null)) row.PickCommand.Execute(null);
-    }
 
     [RelayCommand]
     private async Task RefreshAsync()
@@ -343,18 +366,13 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private Task RetryAddressLookupAsync() => _cityId is { } id ? RunAddressLookupAsync(id) : Task.CompletedTask;
 
-    /// <summary>From the map view: whether the last tile download worked.</summary>
-    internal void MapTilesLoaded(bool ok) =>
-        MapTilesNote = ok ? null : "Map tiles need an internet connection. The gym list still works.";
-
+    /// <summary>The screen saves the choice; the dialog closes when it worked.</summary>
     internal async Task PickAsync(GymRow row)
     {
         try
         {
-            var r = await _gyms.SetGymForTodayAsync(UserId, row.Gym.Id);
-            if (!r.Success) { Error = r.Error; return; }
-            _shell().ShowHome();
-
+            Error = null;
+            await _chosen(row.Gym, ShowMakeMyGym && MakeMyGym);
         }
         catch (Exception)
         {
@@ -362,21 +380,23 @@ public partial class GymPickerViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Today only: log today's workout without a gym.</summary>
     [RelayCommand]
     private async Task ClearGymAsync()
     {
         try
         {
-            var r = await _gyms.SetGymForTodayAsync(UserId, null);
-            if (!r.Success) { Error = r.Error; return; }
-            _shell().ShowHome();
-
+            Error = null;
+            await _chosen(null, false);
         }
         catch (Exception)
         {
             Error = "Could not clear the gym.";
         }
     }
+
+    /// <summary>The screen shows an error the dialog can't (it already closed, or saving failed).</summary>
+    internal void ShowError(string message) => Error = message;
 
     // ===== Custom gyms =====
 
@@ -511,7 +531,7 @@ public partial class GymPickerViewModel : ViewModelBase
             Error = null;
             Info = _editingGymId is not null ? "Gym updated."
                  : r.Reactivated ? "Added back. Its earlier visits are still linked to it."
-                 : "Gym added. Pick it to log it for today.";
+                 : Mode == PickerMode.HomeGym ? "Gym added. Set it as your gym." : "Gym added. Pick it to log it for today.";
             SearchText = "";   // also reloads, so the new gym shows up
             await ReloadListAsync();
 
@@ -560,7 +580,11 @@ public partial class GymPickerViewModel : ViewModelBase
     private void ChangeCity() => StartChoosingCity("Search for another city.", saveAsHomeDefault: false);
 
     [RelayCommand]
-    private void CancelChangeCity() => IsChoosingCity = false;
+    private void CancelChangeCity()
+    {
+        if (Mode == PickerMode.City || !HasCity) _closed();   // nothing else to show
+        else IsChoosingCity = false;
+    }
 
     [RelayCommand]
     private async Task SearchCityAsync()
@@ -592,6 +616,7 @@ public partial class GymPickerViewModel : ViewModelBase
         try
         {
             var city = await _cities.UpsertAsync(candidate);
+            if (Mode == PickerMode.City) { await _cityChosen(city); return; }   // the screen saves it as home
             if (SaveAsHomeCity && city.Id != _homeCityId)
             {
                 var r = await _profiles.SetHomeCityAsync(UserId, city.Id);
@@ -607,6 +632,4 @@ public partial class GymPickerViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
-    private void Back() => _shell().ShowHome();
 }

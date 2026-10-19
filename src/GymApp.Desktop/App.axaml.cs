@@ -79,11 +79,12 @@ public partial class App : Application
             sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<GeocodingService>()));
         sc.AddTransient<GymPickerViewModel>();
         sc.AddTransient<GymSummaryService>();
-        sc.AddTransient<GymSummaryViewModel>();
+        sc.AddTransient<GymsViewModel>();
         sc.AddTransient<PointsHistoryViewModel>();
         sc.AddTransient<ISocialStore, LocalSocialStore>();   // 10f may swap in a server-backed store here
         sc.AddTransient<FriendService>();
         sc.AddTransient<LeaderboardService>();
+        sc.AddTransient<FriendMapService>();
         sc.AddTransient<FriendsViewModel>();
         Services = sc.BuildServiceProvider();
 

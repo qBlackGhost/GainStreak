@@ -136,7 +136,11 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                     return new LogResult(false,
                         $"Fill in at least {status.Required} of {status.Total} exercises to log this workout.");
 
-                db.WorkoutLogs.Add(new WorkoutLog { UserId = userId, Date = date, SplitDayId = day.SplitDayId });
+                db.WorkoutLogs.Add(new WorkoutLog
+                {
+                    UserId = userId, Date = date, SplitDayId = day.SplitDayId,
+                    GymId = await AutomaticGymAsync(db, userId)
+                });
                 try
                 {
                     await db.SaveChangesAsync();
@@ -152,6 +156,16 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         }
 
         return await RefreshAsync(userId, date);
+    }
+
+    /// <summary>The gym a new check-in gets by itself: the user's gym when "Ask for gym" is off, as long as it's still
+    /// pickable. Otherwise none; with "Ask for gym" on, Home asks with that gym preselected.</summary>
+    private static async Task<int?> AutomaticGymAsync(AppDbContext db, int userId)
+    {
+        var p = await db.UserProfiles.AsNoTracking().Where(x => x.UserId == userId)
+            .Select(x => new { x.AskForGymAfterCheckIn, x.HomeGymId }).FirstOrDefaultAsync();
+        if (p is not { AskForGymAfterCheckIn: false, HomeGymId: { } gymId }) return null;
+        return await GymService.Pickable(db, userId).AnyAsync(g => g.Id == gymId) ? gymId : null;
     }
 
     /// <summary>

@@ -20,4 +20,5 @@ public static class FormField
     public const string Weight = nameof(Weight);
     public const string Reps = nameof(Reps);
     public const string OneRepMax = nameof(OneRepMax);
+    public const string Gym = nameof(Gym);
 }

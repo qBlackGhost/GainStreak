@@ -24,7 +24,7 @@ This is the spec for GymApp Phase 10: a friends system (requests, accept, remove
 1. **The leaderboard is friends only.** It shows you and your accepted friends, never all users. There is no global leaderboard.
 2. **The streak is shown on each row, next to the user.** It isn't a separate tab and isn't used to rank.
 3. **Friendship is mutual.** A request has to be accepted before either user sees the other on a leaderboard. Either side can remove the friendship at any time.
-4. **Only public stats are shared:** username, level, points and current streak. Body data, weight, calories, sets, PRs, gyms and schedules are never shown to friends.
+4. **Only public stats are shared:** username, level, points and current streak. Gym check-ins (gym and day, last 30 days) are shared only when the user turns on Visible to friends (see docs/FRIENDS_GYM_MAP.md). Body data, weight, calories, sets, PRs and schedules are never shown to friends.
 5. **No points for social actions.** Adding friends or ranking high earns nothing.
 
 6. **Local first, maybe a server later.** 10a–10e build everything against the existing local SQLite database through an `ISocialStore` interface, so friends work between accounts on the same install (and in tests). Friends on different computers need the optional sync server in 10f. It may be added later and is out of scope for now. Keep `ISocialStore` free of EF types so a server-backed store can replace it without changes to the services or UI.

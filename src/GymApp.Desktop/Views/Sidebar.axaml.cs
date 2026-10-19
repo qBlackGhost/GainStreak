@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace GymApp.Desktop.Views;
 
 /// <summary>The dark screens' navigation. <see cref="Current"/> is the highlighted item ("Dashboard", "Workouts",
-/// "Splits", "Calories", "Friends"). On Home, Dashboard raises <see cref="ScrollTopRequested"/> instead of navigating.</summary>
+/// "Splits", "Calories", "Map", "Friends"). On Home, Dashboard raises <see cref="ScrollTopRequested"/> instead of navigating.</summary>
 public partial class Sidebar : UserControl
 {
     /// <summary>Below this window width the sidebar becomes a bar along the top.</summary>
@@ -47,6 +47,7 @@ public partial class Sidebar : UserControl
             NavWorkouts.Classes.Set("current", Current == "Workouts");
             NavSplits.Classes.Set("current", Current == "Splits");
             NavCalories.Classes.Set("current", Current == "Calories");
+            NavGyms.Classes.Set("current", Current == "Map");
             NavFriends.Classes.Set("current", Current == "Friends");
         }
         else if (change.Property == FriendRequestsProperty)
@@ -91,7 +92,7 @@ public partial class Sidebar : UserControl
 
     private void OnWorkouts(object? sender, RoutedEventArgs e) => Shell.ShowWorkouts();
     private void OnSplits(object? sender, RoutedEventArgs e) => Shell.ShowSplits();
-    private void OnGyms(object? sender, RoutedEventArgs e) => Shell.ShowGymSummary();
+    private void OnGyms(object? sender, RoutedEventArgs e) => Shell.ShowGyms();
     private void OnFriends(object? sender, RoutedEventArgs e) => Shell.ShowFriends();
     private void OnProfile(object? sender, RoutedEventArgs e) => Shell.ShowProfile();
     private void OnLogout(object? sender, RoutedEventArgs e) => App.Services.GetRequiredService<SessionService>().SignOut();

@@ -35,13 +35,13 @@
                     <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     <Button Grid.Column="1" Content="Log workout" Command="{Binding LogCommand}"
-                            IsEnabled="{Binding CanLog}" IsVisible="{Binding HasExercises}" Classes="accent"
+                            IsEnabled="{Binding CanLog}" IsVisible="{Binding HasExercises}" Classes="btn primary"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     <Button Grid.Column="1" Content="Go to Workouts" Command="{Binding OpenWorkoutsCommand}"
-                            IsVisible="{Binding CanOpenWorkouts}" Classes="accent"
+                            IsVisible="{Binding CanOpenWorkouts}" Classes="btn primary"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     <Button Grid.Column="1" Content="Go to Splits" Command="{Binding OpenSplitsCommand}"
-                            IsVisible="{Binding CanOpenSplits}" Classes="accent"
+                            IsVisible="{Binding CanOpenSplits}" Classes="btn primary"
                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                 </Grid>
             </StackPanel>

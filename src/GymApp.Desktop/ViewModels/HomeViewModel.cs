@@ -164,6 +164,14 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial bool ShowAddGym { get; set; }
     [ObservableProperty] public partial bool DontAskForGym { get; set; }
 
+    /// <summary>No gym of your own yet: the prompt offers to make today's gym yours (checked the first time).</summary>
+    [ObservableProperty] public partial bool ShowMakeMyGym { get; set; }
+    [ObservableProperty] public partial bool MakeMyGym { get; set; } = true;
+
+    /// <summary>Asked once, after the first check-in with a gym: share check-ins with friends?</summary>
+    [ObservableProperty] public partial bool ShowShareQuestion { get; set; }
+    private bool? _shareGymCheckIns;
+
     // ===== Friends card =====
     [ObservableProperty] public partial string FriendsTitle { get; set; } = "Add friends";
     [ObservableProperty] public partial bool HasFriends { get; set; }
@@ -503,6 +511,8 @@ public partial class HomeViewModel : ViewModelBase
             // The workout is saved; now (optionally) ask for the gym
             var gym = await RefreshGymAsync(user.Id);
             ShowGymPrompt = gym is { LoggedToday: true, Gym: null, AskAfterCheckIn: true };
+            // "Ask for gym" off: your gym was logged by itself, so the sharing question comes now
+            ShowShareQuestion = gym is { Gym: not null, ShareGymCheckIns: null };
             await RefreshDashboardAsync(user.Id);
             await RefreshFriendsAsync(user.Id);
 
@@ -589,10 +599,12 @@ public partial class HomeViewModel : ViewModelBase
             ShowGymLink = info.LoggedToday;
             GymLinkText = info.Gym is { } g ? $"Change gym: {g.Name}" : "Add gym";
             TodayGymName = info.Gym?.Name;
+            ShowMakeMyGym = info.HomeGym is null && info.Suggested is not null;
+            _shareGymCheckIns = info.ShareGymCheckIns;
             ShowAddGym = info is { LoggedToday: true, Gym: null };
-            _lastGym = info.LastUsed;
-            HasLastGym = info.LastUsed is not null;
-            LastGymLabel = info.LastUsed is { } last ? last.Name : "";
+            _lastGym = info.Suggested;   // your gym, else the last one used
+            HasLastGym = info.Suggested is not null;
+            LastGymLabel = info.Suggested is { } last ? last.Name : "";
             return info;
         }
         catch (Exception)
@@ -614,8 +626,10 @@ public partial class HomeViewModel : ViewModelBase
             if (!r.Success) { Error = r.Error; return; }
             Error = null;
             ShowGymPrompt = false;
+            if (ShowMakeMyGym && MakeMyGym) await _profiles.SetHomeGymAsync(user.Id, gym.Id);
             if (DontAskForGym) await NeverAskForGymAsync();
             await RefreshGymAsync(user.Id);
+            ShowShareQuestion = _shareGymCheckIns is null;
             await RefreshDashboardAsync(user.Id);   // gyms this month
 
         }
@@ -626,7 +640,29 @@ public partial class HomeViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ChooseGym() => _shell().ShowGymPicker();
+    private void ChooseGym() => _shell().ShowGyms(pickToday: true);
+
+    /// <summary>The one-time sharing question: Share or Not now. Either way it's never asked again.</summary>
+    [RelayCommand] private Task ShareCheckInsAsync() => AnswerShareAsync(true);
+    [RelayCommand] private Task DontShareCheckInsAsync() => AnswerShareAsync(false);
+
+    private async Task AnswerShareAsync(bool share)
+    {
+        try
+        {
+            if (_session.CurrentUser is not { } user) return;
+            ShowShareQuestion = false;
+            var r = await _profiles.SetShareGymCheckInsAsync(user.Id, share);
+            if (!r.Success) { Error = r.Error; return; }
+            _shareGymCheckIns = share;
+            GymNotice = share ? "Friends now see the gym and day of your check-ins. Change it on the Map."
+                              : "Okay, your check-ins stay private. You can change this on the Map.";
+        }
+        catch (Exception)
+        {
+            Error = "Could not save that setting.";
+        }
+    }
 
     // Skip only hides it: the prompt appears right after "I went today", which can't happen twice in a day
     [RelayCommand]
@@ -654,7 +690,7 @@ public partial class HomeViewModel : ViewModelBase
             ShowGymPrompt = false;
             var r = await _profiles.SetAskForGymAfterCheckInAsync(user.Id, false);
             if (!r.Success) { Error = r.Error; return; }
-            GymNotice = "Okay, no more gym questions. You can turn this back on in your profile.";
+            GymNotice = "Okay, no more gym questions. Your gym is logged by itself; change it on the Map.";
 
         }
         catch (Exception)
@@ -703,7 +739,7 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void ShowCalories() => _shell().ShowCalories();
     [RelayCommand]
-    private void ShowGymSummary() => _shell().ShowGymSummary();
+    private void ShowGymSummary() => _shell().ShowGyms();
     [RelayCommand]
     private void ShowFriends() => _shell().ShowFriends();
     [RelayCommand]

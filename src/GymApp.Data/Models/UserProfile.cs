@@ -20,5 +20,14 @@ public class UserProfile
     public City? HomeCity { get; set; }
     public bool AskForGymAfterCheckIn { get; set; } = true;   // "Don't ask me again" on the check-in prompt sets this to false
 
+    /// <summary>Share gym check-ins (gym and day, never the time) with accepted friends.
+    /// null = not asked yet, false = declined, true = shared. Only true shares anything.</summary>
+    public bool? ShareGymCheckIns { get; set; }
+
+    /// <summary>The user's usual gym, chosen once. Preselected at check-in, or used automatically when the
+    /// check-in doesn't ask for a gym.</summary>
+    public int? HomeGymId { get; set; }
+    public Gym? HomeGym { get; set; }
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

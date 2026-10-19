@@ -289,8 +289,9 @@
 
                     <Panel x:Name="HeroRight">
                         <!-- Missed-day choice: the day after a missed training day, while a streak is at stake. Check-in waits for it. -->
-                        <StackPanel Spacing="16" IsVisible="{Binding HasMissedDay}">
-                            <StackPanel Spacing="16" DataContext="{Binding MissedDay}" x:DataType="vm:MissedDayViewModel">
+                        <Panel IsVisible="{Binding HasMissedDay}">
+                        <Panel DataContext="{Binding MissedDay}">
+                            <StackPanel Spacing="16" x:DataType="vm:MissedDayViewModel">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="{Binding Heading}" FontSize="24" FontWeight="ExtraBold"/>
                                     <TextBlock Text="{Binding Subheading}" FontSize="14" Classes="soft"/>
@@ -353,7 +354,8 @@
                                 <TextBlock Text="{Binding Error}" Classes="error"
                                            IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
-                        </StackPanel>
+                        </Panel>
+                        </Panel>
 
                         <!-- Today's gauge and check-in -->
                         <StackPanel Spacing="14" IsVisible="{Binding !HasMissedDay}" HorizontalAlignment="Center"
@@ -432,8 +434,8 @@
             </Border>
 
             <!-- ===== This week ===== -->
-            <Border Classes="card" Padding="24,22">
-                <StackPanel Spacing="14" DataContext="{Binding Week}" x:DataType="vm:WeekCardViewModel">
+            <Border Classes="card" Padding="24,22" DataContext="{Binding Week}">
+                <StackPanel Spacing="14" x:DataType="vm:WeekCardViewModel">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <TextBlock Text="This week" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                         <WrapPanel Grid.Column="1" ItemSpacing="14" LineSpacing="4" VerticalAlignment="Center">
@@ -498,8 +500,8 @@
             <WrapPanel x:Name="Cards" ItemSpacing="24" LineSpacing="24">
 
                 <!-- Today's workout: the same plan as the check-in -->
-                <Border Classes="card">
-                    <StackPanel Spacing="16" DataContext="{Binding TodayWorkout}" x:DataType="vm:TodayWorkoutCardViewModel">
+                <Border Classes="card" DataContext="{Binding TodayWorkout}">
+                    <StackPanel Spacing="16" x:DataType="vm:TodayWorkoutCardViewModel">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="Today's workout" Classes="h2"/>
@@ -615,7 +617,8 @@
 
                 <!-- Recent PRs (hidden when there are none) -->
                 <Border Classes="card" IsVisible="{Binding RecentPrs.HasAny}">
-                    <StackPanel Spacing="12" DataContext="{Binding RecentPrs}" x:DataType="vm:RecentPrsCardViewModel">
+                    <Panel DataContext="{Binding RecentPrs}">
+                    <StackPanel Spacing="12" x:DataType="vm:RecentPrsCardViewModel">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="Recent PRs" Classes="h2"/>
                             <v:Icon Grid.Column="1" Data="{StaticResource IcTrophy}" Stroke="{StaticResource Accent}" Width="22" Height="22"
@@ -637,6 +640,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </StackPanel>
+                    </Panel>
                 </Border>
 
                 <!-- Friends: this week's (or all-time) board -->
@@ -761,6 +765,8 @@
                     <Button Grid.Column="1" Classes="link" Content="Change" Command="{Binding ChooseGymCommand}"
                             IsVisible="{Binding HasLastGym}"/>
                 </Grid>
+                <CheckBox IsChecked="{Binding MakeMyGym}" FontSize="13" Foreground="{StaticResource Muted}"
+                          IsVisible="{Binding ShowMakeMyGym}">Make this my gym</CheckBox>
                 <CheckBox IsChecked="{Binding DontAskForGym}" FontSize="13" Foreground="{StaticResource Muted}">Don't ask me again</CheckBox>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                     <Button Classes="btn outline small" HorizontalAlignment="Stretch" MinHeight="42" Content="Not now"
@@ -768,6 +774,29 @@
                     <Button Grid.Column="1" Classes="btn light small" HorizontalAlignment="Stretch" MinHeight="42"
                             Content="Log gym"
                             Command="{Binding LogGymCommand}"/>
+                </Grid>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+    <!-- Asked once, after the first check-in with a gym (FRIENDS_GYM_MAP.md 4f) -->
+    <Border Classes="toast" Classes.show="{Binding ShowShareQuestion}" IsVisible="{Binding ShowShareQuestion}"
+            VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,24,16,0" Width="420"
+            CornerRadius="16" Background="#161616" BorderBrush="#333333" BorderThickness="1" ClipToBounds="True"
+            BoxShadow="0 18 50 0 #B3000000">
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Height="3" Background="{StaticResource Accent}"/>
+            <StackPanel Spacing="12" Margin="18,15,18,18">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                    <v:Icon Data="{StaticResource IcFriends}" Stroke="White" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="Show this check-in to friends?" FontWeight="Bold" FontSize="15" VerticalAlignment="Center"/>
+                </Grid>
+                <TextBlock FontSize="13" Classes="soft" TextWrapping="Wrap" LineHeight="19"
+                           Text="Friends see the gym and the day, never the time. You can change this on the Map."/>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button Classes="btn outline small" HorizontalAlignment="Stretch" MinHeight="42" Content="Not now"
+                            Command="{Binding DontShareCheckInsCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary small" HorizontalAlignment="Stretch" MinHeight="42" Content="Share"
+                            Command="{Binding ShareCheckInsCommand}"/>
                 </Grid>
             </StackPanel>
         </DockPanel>

@@ -1085,8 +1085,14 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("HomeCityId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("HomeGymId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Sex")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool?>("ShareGymCheckIns")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Units")
                         .IsRequired()
@@ -1101,6 +1107,8 @@ namespace GymApp.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("HomeCityId");
+
+                    b.HasIndex("HomeGymId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1440,6 +1448,11 @@ namespace GymApp.Data.Migrations
                         .HasForeignKey("HomeCityId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("GymApp.Data.Models.Gym", "HomeGym")
+                        .WithMany()
+                        .HasForeignKey("HomeGymId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("GymApp.Data.Models.User", "User")
                         .WithOne()
                         .HasForeignKey("GymApp.Data.Models.UserProfile", "UserId")
@@ -1447,6 +1460,8 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("HomeCity");
+
+                    b.Navigation("HomeGym");
 
                     b.Navigation("User");
                 });

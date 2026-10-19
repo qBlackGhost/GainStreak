@@ -171,7 +171,7 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string? CitySearchMessage { get; set; }
     [ObservableProperty] public partial bool CanRetryCitySearch { get; set; }
     [ObservableProperty] public partial bool HasCityCandidates { get; set; }
-    [ObservableProperty] public partial bool AskForGym { get; set; } = true;
+    [ObservableProperty] public partial bool ShareGymCheckIns { get; set; }
 
     /// <summary>"GymApp 1.0.0", from the assembly version (Directory.Build.props).</summary>
     public string VersionText { get; } = $"GymApp {AppVersion.Current}";
@@ -211,9 +211,9 @@ public partial class ProfileViewModel : ViewModelBase
 
             if (refillForm) FillForm(s.Profile);
             ApplyHomeCity(s.Profile.HomeCity);
-            _applyingAskForGym = true;   // so filling the toggle does not save it again
-            AskForGym = s.Profile.AskForGymAfterCheckIn;
-            _applyingAskForGym = false;
+            _applyingShare = true;   // so filling the toggle does not save it again
+            ShareGymCheckIns = s.Profile.ShareGymCheckIns == true;
+            _applyingShare = false;
 
             // Weight and history are shown in the saved unit, so they match what the form says after a reload
             var units = s.Profile.Units;
@@ -457,26 +457,26 @@ public partial class ProfileViewModel : ViewModelBase
         }
     }
 
-    // ===== Gym prompt =====
+    // ===== Sharing check-ins with friends =====
 
-    private bool _applyingAskForGym;
+    private bool _applyingShare;
 
-    // Saved straight away, like the goal picker
-    partial void OnAskForGymChanged(bool value)
+    // Saved straight away, like on the Map
+    partial void OnShareGymCheckInsChanged(bool value)
     {
-        if (_applyingAskForGym) return;
-        _ = SaveAskForGymAsync(value);
+        if (_applyingShare) return;
+        _ = SaveShareAsync(value);
     }
 
-    private async Task SaveAskForGymAsync(bool value)
+    private async Task SaveShareAsync(bool value)
     {
         try
         {
             Info = null;
-            var r = await _profiles.SetAskForGymAfterCheckInAsync(UserId, value);
+            var r = await _profiles.SetShareGymCheckInsAsync(UserId, value);
             if (!r.Success) { Error = r.Error; return; }
             Error = null;
-            Info = value ? "We'll ask which gym after you check in." : "We won't ask which gym after check-in.";
+            Info = value ? "Friends now see the gym and day of your check-ins." : "Your check-ins are private now.";
 
         }
         catch (Exception)
@@ -577,7 +577,7 @@ public partial class ProfileViewModel : ViewModelBase
     private void ShowSplits() => _shell().ShowSplits();
 
     [RelayCommand]
-    private void ShowGymSummary() => _shell().ShowGymSummary(fromProfile: true);
+    private void ShowGymSummary() => _shell().ShowGyms();
 
     private static string DayLabel(DateOnly date)
     {

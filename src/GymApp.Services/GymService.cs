@@ -16,7 +16,12 @@ public record GymChoice(int Id, string Name);
 
 /// <summary>Everything Home needs about gyms for today. Gym is today's gym (null if none, or nothing logged);
 /// LastUsed is offered as the one-tap button in the check-in prompt.</summary>
-public record TodayGymInfo(bool LoggedToday, GymChoice? Gym, GymChoice? LastUsed, bool AskAfterCheckIn);
+public record TodayGymInfo(bool LoggedToday, GymChoice? Gym, GymChoice? LastUsed, bool AskAfterCheckIn,
+    GymChoice? HomeGym = null, bool? ShareGymCheckIns = null)
+{
+    /// <summary>The gym the check-in prompt offers first: your gym, else the last one you used.</summary>
+    public GymChoice? Suggested => HomeGym ?? LastUsed;
+}
 
 public record GymResult(bool Success, string? Error = null);
 
@@ -84,6 +89,28 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         return await LastUsedAsync(db, userId, before: null);
     }
 
+    /// <summary>One gym the user may pick, as the list shows it; null if it's closed, gone or someone else's.</summary>
+    public async Task<GymListItem?> GetPickableGymAsync(int userId, int gymId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await Pickable(db, userId).Where(g => g.Id == gymId)
+            .Select(g => new GymListItem(g.Id, g.Name, g.Address ?? g.LookedUpAddress, g.Latitude, g.Longitude,
+                g.OwnerUserId != null, g.Address == null && g.LookedUpAddress != null))
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>The user's visits per gym in a calendar month (gym id → workouts logged there), for the map's gym card.</summary>
+    public async Task<IReadOnlyDictionary<int, int>> GetMonthVisitsAsync(int userId, int year, int month)
+    {
+        var (first, last) = GymSummaries.MonthRange(year, month);
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.WorkoutLogs.AsNoTracking()
+            .Where(w => w.UserId == userId && w.GymId != null && w.Date >= first && w.Date <= last)
+            .GroupBy(w => w.GymId!.Value)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count);
+    }
+
     /// <summary>One call for Home: today's log and gym, the last-used gym before today, and the prompt setting.</summary>
     public async Task<TodayGymInfo> GetTodayAsync(int userId, DateOnly? today = null)
     {
@@ -94,10 +121,14 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
             .Where(w => w.UserId == userId && w.Date == day)
             .Select(w => new { Gym = w.Gym == null ? null : new GymChoice(w.Gym.Id, w.Gym.Name) })
             .FirstOrDefaultAsync();
-        var ask = await db.UserProfiles.Where(p => p.UserId == userId)
-            .Select(p => (bool?)p.AskForGymAfterCheckIn).FirstOrDefaultAsync() ?? true;
+        var profile = await db.UserProfiles.AsNoTracking().Where(p => p.UserId == userId)
+            .Select(p => new { p.AskForGymAfterCheckIn, p.ShareGymCheckIns, p.HomeGymId }).FirstOrDefaultAsync();
+        var home = profile?.HomeGymId is { } homeId
+            ? await Pickable(db, userId).Where(g => g.Id == homeId).Select(g => new GymChoice(g.Id, g.Name)).FirstOrDefaultAsync()
+            : null;
 
-        return new TodayGymInfo(log is not null, log?.Gym, await LastUsedAsync(db, userId, before: day), ask);
+        return new TodayGymInfo(log is not null, log?.Gym, await LastUsedAsync(db, userId, before: day),
+            profile?.AskForGymAfterCheckIn ?? true, home, profile?.ShareGymCheckIns);
     }
 
     private static async Task<GymChoice?> LastUsedAsync(AppDbContext db, int userId, DateOnly? before)
@@ -219,6 +250,7 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
     }
 
     /// <summary>Gyms this user may pick: active, and from OSM or their own.</summary>
-    private static IQueryable<Gym> Pickable(AppDbContext db, int userId) =>
+    /// <summary>Gyms a user may pick (for today or as their gym): active, and from OSM or their own.</summary>
+    internal static IQueryable<Gym> Pickable(AppDbContext db, int userId) =>
         db.Gyms.Where(g => g.IsActive && (g.OwnerUserId == null || g.OwnerUserId == userId));
 }

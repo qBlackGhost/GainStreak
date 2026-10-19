@@ -44,6 +44,13 @@ public interface ISocialStore
     /// midnight without anything being logged, so a friend who hasn't opened the app would otherwise show a stale one.
     /// Call it outside a session.</summary>
     Task RefreshStatsAsync(IReadOnlyCollection<int> userIds, DateOnly today);
+
+    /// <summary>
+    /// Gym check-ins of the user's accepted friends from <paramref name="since"/> on (inclusive): only friends who share
+    /// them (<c>ShareGymCheckIns == true</c>; not asked yet means no) and only logs with a gym. Gym and day only, never
+    /// a time; a custom gym never comes with coordinates. A read, so it needs no session.
+    /// </summary>
+    Task<IReadOnlyList<FriendCheckIn>> GetFriendGymCheckInsAsync(int userId, DateOnly since);
 }
 
 public interface ISocialSession : IAsyncDisposable
@@ -93,6 +100,33 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
             await streaks.RecalculateAsync(id, today);
             await points.SyncAsync(id, today);
         }
+    }
+
+    public async Task<IReadOnlyList<FriendCheckIn>> GetFriendGymCheckInsAsync(int userId, DateOnly since)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var friendIds = db.Friendships
+            .Where(f => f.Status == FriendshipStatus.Accepted && (f.UserAId == userId || f.UserBId == userId))
+            .Select(f => f.UserAId == userId ? f.UserBId : f.UserAId);
+
+        // The custom-gym rule is enforced here too: a custom gym's position (maybe someone's home) never leaves the store
+        return await (
+            from log in db.WorkoutLogs.AsNoTracking()
+            where log.GymId != null && log.Date >= since && friendIds.Contains(log.UserId)
+            join profile in db.UserProfiles on log.UserId equals profile.UserId
+            where profile.ShareGymCheckIns == true
+            select new FriendCheckIn(
+                log.UserId,
+                log.User.Username,
+                log.Gym!.Id,
+                log.Gym.Name,
+                log.Gym.CityId,
+                log.Gym.City.Name,
+                log.Gym.OwnerUserId == null ? log.Gym.Latitude : null,
+                log.Gym.OwnerUserId == null ? log.Gym.Longitude : null,
+                null,                                   // distance: FriendMapService fills it in
+                log.Gym.OwnerUserId != null,
+                log.Date)).ToListAsync();
     }
 
     private sealed class Session(AppDbContext db, IDbContextTransaction tx) : ISocialSession
