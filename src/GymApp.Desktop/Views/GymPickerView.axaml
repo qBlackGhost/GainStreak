@@ -49,7 +49,7 @@
                     <DockPanel>
                         <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0"
                                 Command="{Binding SearchCityCommand}"/>
-                        <TextBox Watermark="City name, e.g. Timișoara" Text="{Binding CitySearchText}" MaxLength="100">
+                        <TextBox PlaceholderText="City name, e.g. Timișoara" Text="{Binding CitySearchText}" MaxLength="100">
                             <TextBox.KeyBindings>
                                 <KeyBinding Gesture="Enter" Command="{Binding SearchCityCommand}"/>
                             </TextBox.KeyBindings>
@@ -91,7 +91,7 @@
                     <TextBlock Text="{Binding CityName}" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </DockPanel>
 
-                <TextBox Watermark="Search gyms by name" Text="{Binding SearchText}"/>
+                <TextBox PlaceholderText="Search gyms by name" Text="{Binding SearchText}"/>
 
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshCommand}"
@@ -195,7 +195,7 @@
                 <Border Classes="card" IsVisible="{Binding IsGymFormOpen}">
                     <StackPanel Spacing="8">
                         <TextBlock Text="{Binding GymFormTitle}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"/>
-                        <TextBox Watermark="Name" Text="{Binding GymFormName}" MaxLength="{Binding MaxNameLength}"/>
+                        <TextBox PlaceholderText="Name" Text="{Binding GymFormName}" MaxLength="{Binding MaxNameLength}"/>
                         <TextBlock Classes="fieldError" Text="{Binding GymFormNameError}"
                                    IsVisible="{Binding GymFormNameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
@@ -212,7 +212,7 @@
                             </DockPanel>
                             <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowHouseNumber}">
                                 <TextBlock Text="No." VerticalAlignment="Center"/>
-                                <TextBox Watermark="optional" Width="100" Text="{Binding FormHouseNumber}"
+                                <TextBox PlaceholderText="optional" Width="100" Text="{Binding FormHouseNumber}"
                                          MaxLength="{Binding MaxHouseNumberLength}"/>
                                 <TextBlock Classes="small" VerticalAlignment="Center"
                                            Text="OpenStreetMap only knows the street here."/>
@@ -222,7 +222,7 @@
                             <DockPanel>
                                 <Button DockPanel.Dock="Right" Content="Find" Margin="8,0,0,0"
                                         Command="{Binding SearchAddressCommand}"/>
-                                <TextBox Watermark="Street and number, e.g. Calea Aradului 1" Text="{Binding AddressQuery}"
+                                <TextBox PlaceholderText="Street and number, e.g. Calea Aradului 1" Text="{Binding AddressQuery}"
                                          MaxLength="100">
                                     <TextBox.KeyBindings>
                                         <KeyBinding Gesture="Enter" Command="{Binding SearchAddressCommand}"/>

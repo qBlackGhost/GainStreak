@@ -70,6 +70,7 @@ public partial class App : Application
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
+        sc.AddTransient<CaloriesViewModel>();
         sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
         sc.AddTransient<CityService>();
         sc.AddSingleton(sp => new GymFetchService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
@@ -84,7 +85,6 @@ public partial class App : Application
         sc.AddTransient<FriendService>();
         sc.AddTransient<LeaderboardService>();
         sc.AddTransient<FriendsViewModel>();
-        sc.AddTransient<LeaderboardViewModel>();
         Services = sc.BuildServiceProvider();
 
         var log = new ErrorLog(AppDbContext.DataDirectory);

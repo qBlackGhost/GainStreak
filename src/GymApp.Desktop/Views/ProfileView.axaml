@@ -1,286 +1,460 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
+             xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.ProfileView"
              x:DataType="vm:ProfileViewModel">
+    <!-- After the "Gym App" design canvas (Profile artboard): body data and home city on the left, weight and
+         appearance on the right. Below 880 px of content the right column goes under the left (ProfileView.axaml.cs). -->
     <UserControl.Styles>
-        <Style Selector="Border.card">
-            <Setter Property="BorderBrush" Value="#40808080"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
+        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
-        <Style Selector="TextBlock.label">
-            <Setter Property="Opacity" Value="0.7"/>
+        <Style Selector="TextBlock.formLabel">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
-        <Style Selector="TextBlock.small">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Opacity" Value="0.7"/>
-            <Setter Property="TextWrapping" Value="Wrap"/>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="#161616"/>
+        </Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox.mono">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+        </Style>
+        <Style Selector="ComboBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.unitTag">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+
+        <!-- The calories link sits right of the name, or under it when narrow -->
+        <Style Selector="Button#CaloriesLink">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack Button#CaloriesLink">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+
+        <!-- Two columns by default; stacked when narrow -->
+        <Style Selector="StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#LeftColumn">
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer>
-        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Stretch">
-            <DockPanel>
-                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding Username}" FontSize="24" FontWeight="SemiBold"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding SplitText}" Opacity="0.7" HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding StreakText}" Opacity="0.7" HorizontalAlignment="Center"/>
+    <ThemeVariantScope RequestedThemeVariant="Dark">
+    <DockPanel Background="Black" TextElement.Foreground="White">
+        <v:Sidebar Current="Profile"/>
+
+        <ScrollViewer>
+        <StackPanel Classes="page" Spacing="24">
+            <!-- Header: who you are, your split, streak and level -->
+            <Grid x:Name="Header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="20">
+                    <Border Width="72" Height="72" CornerRadius="36" Background="White" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Initials}" Foreground="Black" FontSize="26" FontWeight="ExtraBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Username}" FontSize="34" FontWeight="ExtraBold"/>
+                        <WrapPanel ItemSpacing="8" LineSpacing="8">
+                            <Button Classes="link" Foreground="White" FontSize="13" Command="{Binding ShowSplitsCommand}">
+                                <Border Background="#1A1A1A" CornerRadius="999" Padding="12,5">
+                                    <TextBlock Text="{Binding SplitText}" FontSize="13" FontWeight="SemiBold"/>
+                                </Border>
+                            </Button>
+                            <Border Classes="pill" BorderBrush="#5A2A10" Padding="12,5" TextElement.Foreground="#FFB066">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Path Data="{StaticResource IcFlame}" Fill="#FFB066" Width="13" Height="13" Stretch="Uniform"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                        <Run Text="{Binding CurrentStreak}" FontFamily="{StaticResource Mono}"/><Run Text=" day streak · best "/><Run
+                                             Text="{Binding BestStreak}" FontFamily="{StaticResource Mono}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="pill" Padding="12,5">
+                                <TextBlock Text="{Binding LevelText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
                 </StackPanel>
-            </DockPanel>
+                <Button x:Name="CaloriesLink" Classes="btn outline" Padding="16,0" VerticalAlignment="Center"
+                        Command="{Binding ShowCaloriesCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Calorie goal and maintenance" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcArrowRight}" StrokeThickness="2.2" Width="16" Height="16"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
 
-            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="{Binding Info}" Foreground="SeaGreen" TextWrapping="Wrap"
-                       IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-            <!-- ===== Maintenance calories ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="6">
-                    <TextBlock Text="Maintenance calories" Opacity="0.7"/>
-                    <TextBlock Text="{Binding MaintenanceText}" FontSize="26" FontWeight="SemiBold"
-                               IsVisible="{Binding HasMaintenance}"/>
-                    <TextBlock Text="{Binding MaintenanceNote}" Classes="small"/>
+            <!-- Saved / done -->
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="#2E3A12" BorderThickness="1" Background="#0F1208"
+                    IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
+            <TextBlock Text="{Binding Error}" Classes="error"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-            <!-- ===== Calorie goal ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Calorie goal" FontSize="18" FontWeight="SemiBold"/>
+            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
+                <StackPanel x:Name="LeftColumn" Spacing="24">
 
-                    <Grid ColumnDefinitions="120,*" ColumnSpacing="12">
-                        <TextBlock Text="Goal" Classes="label"/>
-                        <ComboBox Grid.Column="1" ItemsSource="{Binding GoalOptions}"
-                                  SelectedItem="{Binding SelectedGoal}" HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:GoalOption">
-                                    <TextBlock Text="{Binding Name}"/>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </Grid>
+                    <!-- ===== Body data ===== -->
+                    <Border Classes="card" Padding="28">
+                        <StackPanel Spacing="22">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="Body data" Classes="h2"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="14" Height="14"/>
+                                    <TextBlock Text="Stored only on this computer" FontSize="12" Classes="muted"/>
+                                </StackPanel>
+                            </Grid>
 
-                    <StackPanel Spacing="2">
-                        <TextBlock Text="{Binding GoalText}" FontSize="22" FontWeight="SemiBold"/>
-                        <TextBlock Text="{Binding GoalRule}" Classes="small"
-                                   IsVisible="{Binding GoalRule, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                    </StackPanel>
+                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18">
+                                <!-- Units -->
+                                <TextBlock Text="Units" Classes="formLabel"/>
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                        <v:SegmentedPill SelectedIndex="{Binding UnitsIndex}" PillInset="0">
+                                            <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="40" FontSize="14"
+                                                    Content="Metric · kg, cm" Command="{Binding SelectMetricCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding IsImperial}" MinHeight="40" FontSize="14"
+                                                    Content="Imperial · lb, ft" Command="{Binding SelectImperialCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <TextBlock Classes="fieldError" Text="{Binding UnitsError}"
+                                               IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
 
-                    <!-- The suggestion moved since the user last answered it: ask before overwriting -->
-                    <Border Background="#20DAA520" BorderBrush="#80DAA520" BorderThickness="1"
-                            CornerRadius="8" Padding="12" IsVisible="{Binding SuggestionChanged}">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="{Binding SuggestionChangedText}" TextWrapping="Wrap"/>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="{Binding UseSuggestionLabel}" Command="{Binding UseSuggestionCommand}"/>
-                                <Button Content="{Binding KeepGoalLabel}" Command="{Binding KeepGoalCommand}"/>
+                                <!-- Sex -->
+                                <TextBlock Grid.Row="1" Text="Sex" Classes="formLabel"/>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                        <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
+                                            <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
+                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Male" Command="{Binding SelectMaleCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
+                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Female" Command="{Binding SelectFemaleCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <TextBlock Classes="fieldError" Text="{Binding SexError}"
+                                               IsVisible="{Binding SexError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Birth date: day, month, year -->
+                                <TextBlock Grid.Row="2" Text="Birth date" Classes="formLabel"/>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
+                                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                        <TextBox Classes="field mono" Width="72" TextAlignment="Center" PlaceholderText="Day"
+                                                 Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
+                                        <ComboBox Classes="field" MinWidth="150" ItemsSource="{Binding Months}"
+                                                  SelectedItem="{Binding BirthMonth}" PlaceholderText="Month"
+                                                  AutomationProperties.Name="Month">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:MonthOption">
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Classes="field mono" Width="96" TextAlignment="Center" PlaceholderText="Year"
+                                                 Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
+                                        <Border Background="#1A1A1A" CornerRadius="999" Padding="11,5" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding AgeText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
+                                        </Border>
+                                    </WrapPanel>
+                                    <TextBlock Classes="fieldError" Text="{Binding BirthDateError}"
+                                               IsVisible="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Height -->
+                                <TextBlock Grid.Row="3" Text="Height" Classes="formLabel"/>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6">
+                                    <Panel MaxWidth="200" HorizontalAlignment="Left" IsVisible="{Binding IsMetric}">
+                                        <TextBox Classes="field mono" Width="200" Padding="14,0,48,0" Text="{Binding HeightCmText}"
+                                                 AutomationProperties.Name="Height in centimetres"/>
+                                        <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
+                                    </Panel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
+                                        <Panel>
+                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightFtText}"
+                                                     AutomationProperties.Name="Feet"/>
+                                            <Border Classes="unitTag"><TextBlock Text="ft" FontSize="13" Classes="muted"/></Border>
+                                        </Panel>
+                                        <Panel>
+                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightInText}"
+                                                     AutomationProperties.Name="Inches"/>
+                                            <Border Classes="unitTag"><TextBlock Text="in" FontSize="13" Classes="muted"/></Border>
+                                        </Panel>
+                                    </StackPanel>
+                                    <TextBlock Classes="fieldError" Text="{Binding HeightError}"
+                                               IsVisible="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Activity -->
+                                <TextBlock Grid.Row="4" Text="Activity" Classes="formLabel" VerticalAlignment="Top" Margin="0,18,0,0"/>
+                                <StackPanel Grid.Row="4" Grid.Column="1" Spacing="8">
+                                    <Border Classes="track">
+                                        <ItemsControl ItemsSource="{Binding ActivityOptions}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <v:SegmentedPill SelectedIndex="{Binding ActivityIndex}" PillInset="0"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ActivityOption">
+                                                    <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="58" Padding="6,0"
+                                                            Command="{Binding PickCommand}">
+                                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                            <TextBlock Text="{Binding Steps}" FontSize="12" Opacity="0.75"
+                                                                       HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                    <TextBlock Text="Pick the one that matches your usual daily steps outside the gym." FontSize="12"
+                                               Classes="muted"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
+                                               IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Maintenance and save -->
+                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Maintenance (estimate)" FontSize="12" Classes="muted"/>
+                                        <TextBlock>
+                                            <Run Text="{Binding MaintenanceText}" FontFamily="{StaticResource Mono}" FontSize="20"
+                                                 FontWeight="Bold"/><Run Text=" kcal / day" FontSize="15" Foreground="{StaticResource Soft}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Foreground="#FFB066"
+                                                   IsVisible="{Binding MaintenanceNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="Unsaved changes" FontSize="13" Classes="soft" VerticalAlignment="Center"
+                                               IsVisible="{Binding IsDirty}"/>
+                                    <Button Grid.Column="2" Classes="btn primary" Padding="22,0" Content="Save profile"
+                                            Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Home city ===== -->
+                    <Border Classes="card" Padding="28">
+                        <StackPanel Spacing="16">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Home city" Classes="h2"/>
+                                <TextBlock Text="The gym map opens on this city. You can still pick gyms anywhere." FontSize="13" Classes="soft"/>
+                            </StackPanel>
+                            <Border Padding="16,14" CornerRadius="14" BorderBrush="#333333" BorderThickness="1"
+                                    IsVisible="{Binding HasHomeCity}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                    <Border Width="40" Height="40" CornerRadius="10" Background="{StaticResource Accent}">
+                                        <v:Icon Data="{StaticResource IcPin}" Stroke="Black" StrokeThickness="2.2" Width="20" Height="20"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding HomeCityName}" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding HomeCityRegion}" FontSize="13" Classes="muted"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="Clear"
+                                            Command="{Binding ClearHomeCityCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Panel IsVisible="{Binding !HasHomeCity}">
+                                <Rectangle Stroke="#444444" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
+                                <TextBlock Text="No home city yet. Search for one below." FontSize="14" Classes="soft" Margin="16,14"/>
+                            </Panel>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Panel>
+                                    <TextBox x:Name="CityBox" Classes="field" MinHeight="48" Padding="42,0,14,0"
+                                             PlaceholderText="Search for a city, e.g. Cluj-Napoca" Text="{Binding CitySearchText}"
+                                             AutomationProperties.Name="Search for a city"/>
+                                    <v:Icon Data="{StaticResource IcSearch}" Stroke="{StaticResource Muted}" StrokeThickness="2.2"
+                                            HorizontalAlignment="Left" Margin="14,0,0,0" IsHitTestVisible="False"/>
+                                </Panel>
+                                <Button Grid.Column="1" Classes="btn light" MinHeight="48" Padding="20,0" Content="Search"
+                                        Command="{Binding SearchCityCommand}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding CitySearchMessage}" FontSize="13" Classes="soft"
+                                       IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <Button Classes="btn outline small" Content="Retry" HorizontalAlignment="Left"
+                                    Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"/>
+                            <Border CornerRadius="14" BorderBrush="{StaticResource Line}" BorderThickness="1" ClipToBounds="True"
+                                    IsVisible="{Binding HasCityCandidates}">
+                                <ItemsControl ItemsSource="{Binding CityCandidates}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CityCandidateViewModel">
+                                            <Button Classes="btn" MinHeight="52" Padding="16,8" CornerRadius="0" Background="#0F0F0F"
+                                                    BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" FontWeight="Normal"
+                                                    Foreground="White" Command="{Binding ChooseCommand}">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="12" Classes="muted"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="Set as home" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{StaticResource Accent}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                            <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="#6E6E6E"/>
+
+                            <!-- Until the Gyms screen takes these over (its design is still changing) -->
+                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="Ask which gym after check-in" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding AskForGym}" OnContent="" OffContent=""
+                                                  VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Classes="link" Content="Gyms visited per month"
+                                            Command="{Binding ShowGymSummaryCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="RightColumn" Spacing="24">
+                    <!-- ===== Weight ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="18">
+                            <TextBlock Text="Weight" Classes="h2"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock>
+                                        <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
+                                             Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
+                                             Foreground="{StaticResource Soft}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="pill" Padding="12,5" VerticalAlignment="Bottom" IsVisible="{Binding HasHistory}">
+                                    <TextBlock Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
+                                </Border>
+                            </Grid>
+                            <!-- Trend: the last weigh-ins, oldest to newest -->
+                            <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
+                                <Viewbox Stretch="Fill" Height="96">
+                                    <Canvas Width="320" Height="96">
+                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{StaticResource Line}" StrokeThickness="1"/>
+                                        <Polyline Points="{Binding TrendPoints}" Stroke="{StaticResource Accent}" StrokeThickness="2.5"
+                                                  StrokeLineCap="Round" StrokeJoin="Round"/>
+                                        <Ellipse Width="10" Height="10" Fill="{StaticResource Accent}" Stroke="{StaticResource Surface}"
+                                                 StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
+                                                 Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
+                                    </Canvas>
+                                </Viewbox>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="#6E6E6E"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="#6E6E6E"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock FontSize="12" Classes="muted">
+                                    <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
+                                </TextBlock>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                             PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
+                                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
+                                            Command="{Binding LogWeightCommand}"/>
+                                </Grid>
+                                <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                                           IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="One weigh-in per day. Logging again today replaces today's entry." FontSize="12"
+                                           Classes="muted"/>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding HasHistory}">
+                                <TextBlock Text="RECENT WEIGH-INS" Classes="caps" FontWeight="Bold" LetterSpacing="1.4" Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding History}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WeightEntryViewModel">
+                                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
+                                                               FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
+                                                            Padding="0" BorderBrush="#2A2A2A" Foreground="{StaticResource Muted}"
+                                                            Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
+                                                            AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
+                                                        <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </StackPanel>
                     </Border>
 
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="{Binding SuggestionText}"
-                                   IsVisible="{Binding SuggestionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        <TextBlock Text="{Binding SuggestionNote}" Classes="small"/>
-                        <Button Content="{Binding UseSuggestionLabel}" Command="{Binding UseSuggestionCommand}"
-                                IsVisible="{Binding CanUseSuggestion}" HorizontalAlignment="Left"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBox Watermark="Your own goal (kcal)" Width="180" Text="{Binding CustomGoalInput}"/>
-                        <Button Content="Set my own goal" Command="{Binding SetCustomGoalCommand}"/>
-                    </StackPanel>
-                    <TextBlock Classes="fieldError" Text="{Binding GoalError}"
-                               IsVisible="{Binding GoalError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                    <TextBlock Classes="small"
-                               Text="Safe limits: at least 1,500 kcal for men and 1,200 kcal for women, and never more than 25% under your maintenance."/>
-
-                    <TextBlock Text="Recent days" Opacity="0.7" Margin="0,6,0,0"
-                               IsVisible="{Binding HasCalorieHistory}"/>
-                    <ItemsControl ItemsSource="{Binding CalorieHistory}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CalorieDayRow">
-                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
-                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                        <TextBlock Text="{Binding DateText}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding ConsumedText}" FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="2" Text="{Binding ResultText}" Opacity="0.7"
-                                                   VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <!-- ===== Appearance (not wired up yet: the app stays dark) ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Appearance" FontSize="20" FontWeight="Bold"/>
+                            <Border Classes="track">
+                                <v:SegmentedPill SelectedIndex="{Binding ThemeIndex}" PillInset="0">
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
+                                            MinHeight="40" FontSize="14" Content="System" Command="{Binding SelectThemeCommand}" CommandParameter="0"/>
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
+                                            MinHeight="40" FontSize="14" Content="Light" Command="{Binding SelectThemeCommand}" CommandParameter="1"/>
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=2}"
+                                            MinHeight="40" FontSize="14" Content="Dark" Command="{Binding SelectThemeCommand}" CommandParameter="2"/>
+                                </v:SegmentedPill>
+                            </Border>
+                            <TextBlock Text="System follows your Windows or macOS setting." FontSize="12" Classes="muted"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
-            </Border>
+            </Grid>
 
-            <!-- ===== Body data ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Body data" FontSize="18" FontWeight="SemiBold"/>
-
-                    <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-                          RowSpacing="10" ColumnSpacing="12">
-                        <TextBlock Grid.Row="0" Text="Units" Classes="label"/>
-                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
-                            <ComboBox ItemsSource="{Binding UnitSystems}"
-                                      SelectedItem="{Binding SelectedUnits}" HorizontalAlignment="Stretch"/>
-                            <TextBlock Classes="fieldError" Text="{Binding UnitsError}"
-                                       IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="1" Text="Sex" Classes="label"/>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-                            <ComboBox ItemsSource="{Binding Sexes}"
-                                      SelectedItem="{Binding SelectedSex}" PlaceholderText="Male or female"
-                                      HorizontalAlignment="Stretch"/>
-                            <TextBlock Classes="fieldError" Text="{Binding SexError}"
-                                       IsVisible="{Binding SexError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="2" Text="Birth date" Classes="label"/>
-                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
-                            <DatePicker SelectedDate="{Binding BirthDate}"
-                                        MinYear="{Binding MinBirthYear}" MaxYear="{Binding MaxBirthYear}"
-                                        HorizontalAlignment="Stretch"/>
-                            <TextBlock Classes="fieldError" Text="{Binding BirthDateError}"
-                                       IsVisible="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="3" Text="Height" Classes="label"/>
-                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
-                            <Panel>
-                                <TextBox Watermark="Height (cm)" Text="{Binding HeightCmText}"
-                                         IsVisible="{Binding IsMetric}"/>
-                                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
-                                    <TextBox Watermark="ft" Width="80" Text="{Binding HeightFtText}"/>
-                                    <TextBox Watermark="in" Width="80" Text="{Binding HeightInText}"/>
-                                </StackPanel>
-                            </Panel>
-                            <TextBlock Classes="fieldError" Text="{Binding HeightError}"
-                                       IsVisible="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-
-                        <TextBlock Grid.Row="4" Text="Activity" Classes="label"/>
-                        <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
-                        <ComboBox ItemsSource="{Binding ActivityOptions}"
-                                  SelectedItem="{Binding SelectedActivity}" PlaceholderText="How much do you walk?"
-                                  HorizontalAlignment="Stretch">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ActivityOption">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Name}"/>
-                                        <TextBlock Text="{Binding Range}" FontSize="12" Opacity="0.7"/>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                            <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
-                                       IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Classes="small"
-                               Text="Your body data stays in the app's local database on this computer. Pick the activity level that matches your typical daily steps outside the gym."/>
-                    <Button Content="Save profile" Command="{Binding SaveCommand}" HorizontalAlignment="Left"/>
-                </StackPanel>
-            </Border>
-
-            <!-- ===== Gym: home city and check-in prompt ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Gym" FontSize="18" FontWeight="SemiBold"/>
-                    <TextBlock Text="Home city" Opacity="0.7"/>
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Clear" Command="{Binding ClearHomeCityCommand}"
-                                IsVisible="{Binding HasHomeCity}" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding HomeCityText}" TextWrapping="Wrap" VerticalAlignment="Center"
-                                   FontWeight="SemiBold"/>
-                    </DockPanel>
-
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="Search" Margin="8,0,0,0"
-                                Command="{Binding SearchCityCommand}"/>
-                        <TextBox Watermark="Search for a city, e.g. Timișoara" Text="{Binding CitySearchText}"
-                                 MaxLength="100">
-                            <TextBox.KeyBindings>
-                                <KeyBinding Gesture="Enter" Command="{Binding SearchCityCommand}"/>
-                            </TextBox.KeyBindings>
-                        </TextBox>
-                    </DockPanel>
-                    <TextBlock Text="{Binding CitySearchMessage}" Classes="small"
-                               IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                    <Button Content="Retry" Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"
-                            HorizontalAlignment="Left"/>
-
-                    <ItemsControl ItemsSource="{Binding CityCandidates}" IsVisible="{Binding HasCityCandidates}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CityCandidateViewModel">
-                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                        <StackPanel VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                                            <TextBlock Text="{Binding DisplayName}" FontSize="12" Opacity="0.7"
-                                                       TextWrapping="Wrap"/>
-                                        </StackPanel>
-                                        <Button Grid.Column="1" Content="Choose" Command="{Binding ChooseCommand}"
-                                                VerticalAlignment="Center"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <ToggleSwitch IsChecked="{Binding AskForGym}" OnContent="" OffContent=""
-                                  Content="Ask which gym after check-in"/>
-                    <Button Content="Gyms visited per month" Command="{Binding ShowGymSummaryCommand}"
-                            HorizontalAlignment="Left"/>
-
-                    <TextBlock Classes="small"
-                               Text="The gym picker opens on this city. You can still pick gyms in other cities. City search uses OpenStreetMap (Nominatim)."/>
-                </StackPanel>
-            </Border>
-
-            <!-- ===== Weight ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="Weight" FontSize="18" FontWeight="SemiBold"/>
-                    <TextBlock Text="{Binding CurrentWeightText}" FontSize="22" FontWeight="SemiBold"/>
-
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBox Watermark="{Binding WeightWatermark}" Width="160" Text="{Binding WeightInput}"/>
-                        <Button Content="Log today's weight" Command="{Binding LogWeightCommand}"/>
-                    </StackPanel>
-                    <TextBlock Classes="fieldError" Text="{Binding WeightError}"
-                               IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                    <TextBlock Classes="small" Text="One weigh-in per day. Logging again today replaces today's entry."/>
-
-                    <TextBlock Text="Recent weigh-ins" Opacity="0.7" Margin="0,6,0,0"
-                               IsVisible="{Binding HasHistory}"/>
-                    <ItemsControl ItemsSource="{Binding History}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:WeightEntryViewModel">
-                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,6">
-                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                        <TextBlock Text="{Binding DateText}" VerticalAlignment="Center"/>
-                                        <TextBlock Grid.Column="1" Text="{Binding WeightText}" FontWeight="SemiBold"
-                                                   VerticalAlignment="Center"/>
-                                        <Button Grid.Column="2" Content="Delete" Command="{Binding DeleteCommand}"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </Border>
-
-            <TextBlock Text="{Binding VersionText}" Classes="small" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+            <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="#6E6E6E" HorizontalAlignment="Center"/>
         </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </DockPanel>
+    </ThemeVariantScope>
 </UserControl>

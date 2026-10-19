@@ -93,6 +93,23 @@ public class DayExerciseService(IDbContextFactory<AppDbContext> dbFactory)
         return true;
     }
 
+    /// <summary>Moves an exercise to <paramref name="index"/> (0-based, clamped to the list), shifting the others,
+    /// as dragging it there does. Returns false if the exercise is not in the list.</summary>
+    public async Task<bool> MoveToAsync(int userId, int splitDayId, int exerciseId, int index)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var rows = await LoadOrderedAsync(db, userId, splitDayId);
+        var i = rows.FindIndex(x => x.ExerciseId == exerciseId);
+        if (i < 0) return false;
+
+        var row = rows[i];
+        rows.RemoveAt(i);
+        rows.Insert(Math.Clamp(index, 0, rows.Count), row);
+        Renumber(rows);
+        await db.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<DayListResult> SetPlannedSetsAsync(
         int userId, int splitDayId, int exerciseId, int warmupSets, int workingSets)
     {

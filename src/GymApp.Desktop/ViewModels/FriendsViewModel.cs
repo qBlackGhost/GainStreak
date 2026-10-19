@@ -1,26 +1,64 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GymApp.Core;
 using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 
-/// <summary>One accepted friend. Remove asks for confirmation first.</summary>
-public partial class FriendRowViewModel(Friend friend, FriendsViewModel owner) : ObservableObject
+/// <summary>"CR" for an avatar: the first two letters of a username.</summary>
+internal static class Initials
+{
+    public static string Of(string username)
+    {
+        var letters = new string(username.Where(char.IsLetter).Take(2).ToArray());
+        return letters.Length > 0 ? letters.ToUpperInvariant() : username[..Math.Min(2, username.Length)].ToUpperInvariant();
+    }
+}
+
+/// <summary>One row of the leaderboard. Ranking comes from <see cref="Leaderboard"/>; nothing is computed here.</summary>
+public record FriendsBoardRowViewModel(LeaderboardRow Row)
+{
+    public string RankText => $"#{Row.Rank}";
+    public bool IsFirst => Row.Rank == 1;
+    public string Username => Row.IsYou ? $"{Row.Username} (you)" : Row.Username;
+    public string Initials => ViewModels.Initials.Of(Row.Username);
+    public string LevelText => $"Level {Row.Level.Number} · {Row.Level.Name}";
+    public string PointsText => $"{Row.Points.ToString("N0", CultureInfo.InvariantCulture)} pts";
+    public string StreakText => Row.CurrentStreak.ToString(CultureInfo.InvariantCulture);
+    public bool HasStreak => Row.CurrentStreak > 0;
+    public bool IsYou => Row.IsYou;
+}
+
+/// <summary>One accepted friend. Remove asks for confirmation first: the button turns into "Confirm remove".</summary>
+public partial class FriendRowViewModel(Friend friend, string? level, FriendsViewModel owner) : ObservableObject
 {
     public int UserId => friend.UserId;
     public string Username => friend.Username;
-    public string SinceText => $"Friends since {friend.Since.ToLocalTime().ToString("d MMM yyyy", CultureInfo.InvariantCulture)}";
-    public string ConfirmText => $"Remove {friend.Username} from your friends? You'll leave each other's leaderboard.";
+    public string Initials => ViewModels.Initials.Of(friend.Username);
+    public string SinceText => (level is null ? "" : level + " · ")
+                               + $"since {friend.Since.ToLocalTime().ToString("MMM yyyy", CultureInfo.InvariantCulture)}";
 
-    [ObservableProperty] public partial bool IsConfirmingRemove { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RemoveLabel))]
+    public partial bool IsConfirmingRemove { get; set; }
 
-    [RelayCommand] private void Remove() => IsConfirmingRemove = true;
+    public string RemoveLabel => IsConfirmingRemove ? "Confirm remove" : "Remove";
+
+    [RelayCommand]
+    private Task Remove()
+    {
+        if (IsConfirmingRemove) return owner.RemoveAsync(this);
+        IsConfirmingRemove = true;
+        return Task.CompletedTask;
+    }
+
     [RelayCommand] private void CancelRemove() => IsConfirmingRemove = false;
-    [RelayCommand] private Task ConfirmRemove() => owner.RemoveAsync(this);
 }
 
 /// <summary>A pending request: incoming ones can be accepted or declined, outgoing ones cancelled.</summary>
@@ -28,8 +66,10 @@ public partial class RequestRowViewModel(FriendRequest request, bool incoming, F
 {
     public int UserId => request.UserId;
     public string Username => request.Username;
+    public string Initials => ViewModels.Initials.Of(request.Username);
     public bool IsIncoming => incoming;
     public bool IsOutgoing => !incoming;
+    public string StatusText => incoming ? "Wants to be friends" : "Request sent · waiting";
     public string SentText => (incoming ? "Sent you a request " : "Requested ")
                               + request.SentAt.ToLocalTime().ToString("d MMM", CultureInfo.InvariantCulture);
 
@@ -42,6 +82,8 @@ public partial class RequestRowViewModel(FriendRequest request, bool incoming, F
 public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) : ObservableObject
 {
     public string Username => user.Username;
+    public string Initials => ViewModels.Initials.Of(user.Username);
+    public bool IsAccept => user.Relation == FriendRelation.RequestReceived;
 
     public string ActionLabel => user.Relation switch
     {
@@ -56,19 +98,72 @@ public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) 
     private bool CanAct() => user.Relation is FriendRelation.None or FriendRelation.RequestReceived;
 }
 
-/// <summary>Friends, pending requests and the username search. Only reads results from FriendService.</summary>
+/// <summary>The friends screen: the leaderboard (this week or all time), your friends, the username search and
+/// pending requests. Only reads results from FriendService and LeaderboardService.</summary>
 public partial class FriendsViewModel : ViewModelBase
 {
     private readonly FriendService _friends;
+    private readonly LeaderboardService _board;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public FriendsViewModel(FriendService friends, SessionService session, Func<MainViewModel> shell)
+    public FriendsViewModel(FriendService friends, LeaderboardService board, SessionService session, Func<MainViewModel> shell)
     {
         _friends = friends;
+        _board = board;
         _session = session;
         _shell = shell;
         _ = LoadAsync();
+    }
+
+    public ObservableCollection<FriendsBoardRowViewModel> Board { get; } = new();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsThisWeek))]
+    public partial bool IsAllTime { get; set; }
+
+    public bool IsThisWeek => !IsAllTime;
+
+    [ObservableProperty] public partial string PeriodText { get; set; } = "";
+    [ObservableProperty] public partial string FriendCountText { get; set; } = "";
+    [ObservableProperty] public partial string SentCountText { get; set; } = "";
+    [ObservableProperty] public partial int IncomingCount { get; set; }
+
+    [RelayCommand]
+    private async Task ShowThisWeekAsync()
+    {
+        IsAllTime = false;
+        await LoadBoardAsync();
+    }
+
+    [RelayCommand]
+    private async Task ShowAllTimeAsync()
+    {
+        IsAllTime = true;
+        await LoadBoardAsync();
+    }
+
+    /// <summary>The board, and each friend's level for their row. A failure only empties the board.</summary>
+    private async Task<IReadOnlyDictionary<int, LevelInfo>> LoadBoardAsync()
+    {
+        var levels = new Dictionary<int, LevelInfo>();
+        if (UserId is not { } me) return levels;
+        try
+        {
+            var period = IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek;
+            var view = await _board.GetAsync(me, period);
+            if (view is null || IsAllTime != (view.Period == LeaderboardPeriod.AllTime)) return levels;   // toggled meanwhile
+            Board.Clear();
+            foreach (var r in view.Rows) Board.Add(new FriendsBoardRowViewModel(r));
+            foreach (var r in view.Rows) levels[r.UserId] = r.Level;
+            PeriodText = IsAllTime ? "All time" : Leaderboard.WeekTitle(view.WeekStart);
+        }
+        catch (Exception)
+        {
+            Board.Clear();
+            Error = "Could not load the leaderboard.";
+        }
+        return levels;
     }
 
     public ObservableCollection<FriendRowViewModel> Friends { get; } = new();
@@ -93,10 +188,14 @@ public partial class FriendsViewModel : ViewModelBase
         if (UserId is not { } me) return;
         try
         {
+            var levels = await LoadBoardAsync();
             var friends = await _friends.GetFriendsAsync(me);
             Friends.Clear();
-            foreach (var f in friends) Friends.Add(new FriendRowViewModel(f, this));
+            foreach (var f in friends)
+                Friends.Add(new FriendRowViewModel(f,
+                    levels.TryGetValue(f.UserId, out var l) ? $"Level {l.Number} · {l.Name}" : null, this));
             FriendsTitle = friends.Count == 0 ? "Friends" : $"Friends ({friends.Count}/{FriendService.MaxFriends})";
+            FriendCountText = $"{friends.Count} / {FriendService.MaxFriends} friends";
             HasNoFriends = friends.Count == 0;
 
             var requests = await _friends.GetRequestsAsync(me);
@@ -107,6 +206,8 @@ public partial class FriendsViewModel : ViewModelBase
             HasIncoming = Incoming.Count > 0;
             HasOutgoing = Outgoing.Count > 0;
             HasNoRequests = !HasIncoming && !HasOutgoing;
+            IncomingCount = Incoming.Count;
+            SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
         }
         catch (Exception)
         {
@@ -184,9 +285,6 @@ public partial class FriendsViewModel : ViewModelBase
             Error = "Could not refresh the search results.";
         }
     }
-
-    [RelayCommand]
-    private void ShowLeaderboard() => _shell().ShowLeaderboard(fromFriends: true);
 
     [RelayCommand]
     private void Back() => _shell().ShowHome();

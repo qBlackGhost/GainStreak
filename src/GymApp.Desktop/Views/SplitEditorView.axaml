@@ -7,7 +7,7 @@
         <StackPanel Spacing="16" Margin="24" MaxWidth="900" HorizontalAlignment="Center">
             <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
             <StackPanel Spacing="4">
-                <TextBox Watermark="Split name" MaxLength="40" Text="{Binding Name}"/>
+                <TextBox PlaceholderText="Split name" MaxLength="40" Text="{Binding Name}"/>
                 <TextBlock Classes="fieldError" Text="{Binding NameError}"
                            IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             </StackPanel>
@@ -23,7 +23,7 @@
                             <ToggleButton Content="{Binding Label}" IsChecked="{Binding IsSelected}"
                                           Height="56" HorizontalAlignment="Stretch"
                                           HorizontalContentAlignment="Center"/>
-                            <TextBox Watermark="e.g. Push" MaxLength="20"
+                            <TextBox PlaceholderText="e.g. Push" MaxLength="20"
                                      Text="{Binding Name}" IsEnabled="{Binding IsSelected}"/>
                         </StackPanel>
                     </DataTemplate>

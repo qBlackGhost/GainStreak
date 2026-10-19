@@ -1,90 +1,315 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
-             xmlns:m="using:GymApp.Data.Models"
+             xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.SplitDetailView"
              x:DataType="vm:SplitDetailViewModel">
+    <!-- After the "Gym App" design canvas (SplitDetail artboard): set up the split (days per week, first workout day)
+         with a live preview of the week on the left, what the split is about on the right. Below 880 px the right
+         column goes under the left (SplitDetailView.axaml.cs). -->
     <UserControl.Styles>
-        <Style Selector="Border.cell">
-            <Setter Property="BorderBrush" Value="#40808080"/>
+        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.step">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="1.4"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+        </Style>
+
+        <!-- Days per week cards -->
+        <Style Selector="Button.variant">
+            <Setter Property="MinWidth" Value="130"/>
+            <Setter Property="MinHeight" Value="64"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Margin" Value="3"/>
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="MinHeight" Value="84"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector="Border.cell.training">
-            <Setter Property="Background" Value="#334A90D9"/>
-            <Setter Property="BorderBrush" Value="#804A90D9"/>
+        <Style Selector="Button.variant:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#121212"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Foreground" Value="White"/>
         </Style>
-        <Style Selector="Border.cell.rest">
-            <Setter Property="Opacity" Value="0.55"/>
+        <Style Selector="Button.variant.on">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Button.variant.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        </Style>
+
+        <!-- Week preview tiles -->
+        <Style Selector="Panel.wk">
+            <Setter Property="MinHeight" Value="92"/>
+            <Setter Property="Margin" Value="4"/>
+        </Style>
+        <Style Selector="Border.wkTile">
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="4,10"/>
+            <Setter Property="Background" Value="#141414"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="TextElement.Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Border.wkTile.start">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
+        <Style Selector="Border.wkTile.rest">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextElement.Foreground" Value="#6E6E6E"/>
+        </Style>
+
+        <!-- Two columns by default; stacked when narrow -->
+        <Style Selector="StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack Border#SetupCard">
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
     </UserControl.Styles>
 
-    <ScrollViewer>
-        <StackPanel Spacing="16" Margin="24" MaxWidth="900" HorizontalAlignment="Center">
-            <DockPanel>
-                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
-                <TextBlock Text="{Binding Name}" FontSize="24" FontWeight="SemiBold"
-                           HorizontalAlignment="Center"/>
-            </DockPanel>
+    <ThemeVariantScope RequestedThemeVariant="Dark">
+    <DockPanel Background="Black" TextElement.Foreground="White">
+        <v:Sidebar Current="Splits"/>
 
-            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                <TextBlock Text="★ Recommended" Foreground="Goldenrod" IsVisible="{Binding IsRecommended}"/>
-                <TextBlock Text="✓ Active split" Foreground="SeaGreen" IsVisible="{Binding IsActive}"/>
-            </StackPanel>
-
-            <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Opacity="0.8"
-                       IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="{Binding Rotation, StringFormat='Rotation: {0}'}" Opacity="0.8"/>
-
-            <!-- Presets only: custom splits already define their own weekdays -->
-            <StackPanel Spacing="12" IsVisible="{Binding IsPreset}">
-                <StackPanel Spacing="4" IsVisible="{Binding HasVariants}">
-                    <TextBlock Text="Training days per week" FontWeight="SemiBold"/>
-                    <ComboBox ItemsSource="{Binding Variants}" SelectedItem="{Binding SelectedVariant}" MinWidth="220">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="m:SplitVariant">
-                                <TextBlock Text="{Binding Name}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-                <StackPanel Spacing="4">
-                    <TextBlock Text="First workout day" FontWeight="SemiBold"/>
-                    <ComboBox ItemsSource="{Binding StartDays}" SelectedItem="{Binding StartDay}" MinWidth="220"/>
-                </StackPanel>
-            </StackPanel>
-
-            <TextBlock Text="Your week" FontWeight="SemiBold"/>
-            <ItemsControl ItemsSource="{Binding Cells}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ScheduleCell">
-                        <Border Classes="cell"
-                                Classes.training="{Binding IsTraining}"
-                                Classes.rest="{Binding !IsTraining}">
-                            <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding Label}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" TextAlignment="Center"/>
-                                <TextBlock Text="▶ Start" FontSize="11" Opacity="0.7"
-                                           HorizontalAlignment="Center" IsVisible="{Binding IsStart}"/>
+        <ScrollViewer>
+        <StackPanel Classes="page" Spacing="24">
+            <!-- Header -->
+            <StackPanel Spacing="14">
+                <Button Classes="btn outline" MinHeight="40" Padding="10,0,14,0" FontSize="14" HorizontalAlignment="Left"
+                        Command="{Binding BackCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <v:Icon Data="{StaticResource IcBack}" StrokeThickness="2.2" Width="16" Height="16"/>
+                        <TextBlock Text="All splits" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding Name}" FontSize="40" FontWeight="ExtraBold"/>
+                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                        <Border Classes="pill" BorderBrush="#444444" Padding="11,4" IsVisible="{Binding IsRecommended}">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <Path Data="{StaticResource IcStar}" Fill="White" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"/>
+                                <TextBlock Text="Recommended" FontSize="12" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <TextBlock Text="{Binding WeekSummary}" Opacity="0.7"/>
-
-            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="{Binding UseLabel}" Command="{Binding UseCommand}" IsDefault="True"/>
-                <Button Content="Edit split" Command="{Binding EditCommand}" IsVisible="{Binding !IsPreset}"/>
+                        <Border Classes="pill" BorderThickness="0" Background="{StaticResource Accent}" Padding="11,4" IsVisible="{Binding IsActive}">
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="3" Width="12" Height="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Your active split" FontSize="12" FontWeight="Bold" Foreground="Black"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Classes="pill" BorderThickness="0" Background="#1A1A1A" Padding="11,4"
+                                IsVisible="{Binding DaysTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding DaysTag}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                        </Border>
+                        <Border Classes="pill" BorderThickness="0" Background="#1A1A1A" Padding="11,4" IsVisible="{Binding !IsPreset}">
+                            <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                        </Border>
+                    </WrapPanel>
+                </StackPanel>
             </StackPanel>
+
+            <!-- Saved -->
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="#2E3A12" BorderThickness="1" Background="#0F1208"
+                    IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Toast}" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding Error}" Classes="error"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
+
+                <!-- ===== Set up this split ===== -->
+                <Border x:Name="SetupCard" Classes="card" Padding="28" VerticalAlignment="Top">
+                    <StackPanel Spacing="26">
+                        <!-- 1 · Days per week (presets with more than one layout) -->
+                        <StackPanel Spacing="10" IsVisible="{Binding HasVariants}">
+                            <TextBlock Text="1 · DAYS PER WEEK" Classes="step"/>
+                            <ItemsControl ItemsSource="{Binding VariantOptions}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel ItemSpacing="8" LineSpacing="8"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:VariantOptionViewModel">
+                                        <Button Classes="variant" Classes.on="{Binding IsSelected}" Command="{Binding PickCommand}">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding Days}" FontSize="20" FontWeight="ExtraBold"/>
+                                                <TextBlock Text="days / week" FontSize="12" Opacity="0.8"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <!-- Rotation -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding RotationStepLabel}" Classes="step"/>
+                            <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                <ItemsControl ItemsSource="{Binding RotationSteps}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><WrapPanel ItemSpacing="8" LineSpacing="8"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:RotationStep">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <Border Classes="pill" Padding="14,8">
+                                                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"/>
+                                                </Border>
+                                                <v:Icon Data="{StaticResource IcArrowRight}" Stroke="#6E6E6E" StrokeThickness="2.4"
+                                                        Width="14" Height="14" VerticalAlignment="Center" IsVisible="{Binding HasArrow}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="#6E6E6E" StrokeThickness="2.4" Width="16" Height="16"
+                                        VerticalAlignment="Center" ToolTip.Tip="Repeats"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <!-- First workout day (presets; custom splits fix their weekdays) -->
+                        <StackPanel Spacing="10" IsVisible="{Binding IsPreset}">
+                            <TextBlock Text="{Binding StartStepLabel}" Classes="step"/>
+                            <Border Padding="4" CornerRadius="12" Background="#161616">
+                                <ItemsControl ItemsSource="{Binding StartDayOptions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <v:SegmentedPill SelectedIndex="{Binding StartDayIndex}" PillInset="0"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:StartDayOptionViewModel">
+                                            <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="40" Padding="0"
+                                                    FontWeight="Bold" Content="{Binding Label}" Command="{Binding PickCommand}"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Your week -->
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="YOUR WEEK" Classes="step" VerticalAlignment="Bottom"/>
+                                <TextBlock Grid.Column="1" FontSize="13" Classes="soft">
+                                    <Run Text="{Binding TrainCount}" FontFamily="{StaticResource Mono}" Foreground="White"/><Run
+                                         Text=" training · "/><Run Text="{Binding RestCount}" FontFamily="{StaticResource Mono}"
+                                         Foreground="White"/><Run Text=" rest"/>
+                                </TextBlock>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Cells}" Margin="-4">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScheduleCell">
+                                        <Panel Classes="wk">
+                                            <!-- Rest days: a dashed outline (Border can't dash) -->
+                                            <Rectangle Stroke="#2A2A2A" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"
+                                                       IsVisible="{Binding !IsTraining}"/>
+                                            <Border Classes="wkTile" Classes.rest="{Binding !IsTraining}"
+                                                    Classes.start="{Binding IsTrainingStart}">
+                                                <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="Bold" Opacity="0.8"
+                                                               HorizontalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="ExtraBold" TextAlignment="Center"
+                                                               HorizontalAlignment="Center"/>
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center"
+                                                                IsVisible="{Binding IsStart}">
+                                                        <Path Data="{StaticResource IcPlay}" Fill="{StaticResource Accent}" Width="9" Height="9"
+                                                              Stretch="Uniform" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="Start" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </Panel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Rest days count toward your streak." FontSize="12" Classes="muted"/>
+                        </StackPanel>
+
+                        <!-- Use -->
+                        <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <TextBlock Text="{Binding FootNote}" FontSize="13" Classes="muted" LineHeight="20" MaxWidth="380"
+                                           HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Classes="btn outline" MinHeight="48" Content="Edit split"
+                                        Command="{Binding EditCommand}" IsVisible="{Binding !IsPreset}"/>
+                                <Button Grid.Column="2" Classes="btn primary" MinHeight="48" Padding="24,0" FontSize="15"
+                                        Content="{Binding UseLabel}" Command="{Binding UseCommand}"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- ===== About ===== -->
+                <StackPanel x:Name="RightColumn" Spacing="24">
+                    <Border Classes="card">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="About this split" FontSize="20" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding About}" FontSize="14" Classes="light" LineHeight="22"
+                                       IsVisible="{Binding About, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <ItemsControl ItemsSource="{Binding DayInfo}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SplitDayInfo">
+                                        <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" MinHeight="44" Padding="0,8">
+                                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" TextWrapping="NoWrap"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Muscles}" FontSize="14" Classes="muted" TextAlignment="Right"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Muscles come from the exercises you've added to each day." FontSize="12" Foreground="#6E6E6E"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="card" IsVisible="{Binding HasGoodFor}">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="Good for" FontSize="20" FontWeight="Bold"/>
+                            <ItemsControl ItemsSource="{Binding GoodFor}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><StackPanel Spacing="10"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                                                    Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding}" FontSize="14" Classes="light" LineHeight="20"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
         </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </DockPanel>
+    </ThemeVariantScope>
 </UserControl>

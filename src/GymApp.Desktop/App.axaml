@@ -9,6 +9,14 @@
         <local:ViewLocator />
     </Application.DataTemplates>
 
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Views/IronlogResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <!-- A validation message under the field it's about (12d) -->

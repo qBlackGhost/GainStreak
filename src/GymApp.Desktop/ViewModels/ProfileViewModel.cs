@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Linq;
+using Avalonia;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,21 +13,21 @@ using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 
-/// <summary>One row in the activity level picker.</summary>
-public record ActivityOption(ActivityLevel Level)
+/// <summary>One option of the activity selector: "Less active", "under 7,500 steps".</summary>
+public partial class ActivityOption(ActivityLevel level, ProfileViewModel? owner = null) : ObservableObject
 {
+    public ActivityLevel Level { get; } = level;
     public string Name => ActivityLevels.DisplayName(Level);
     public string Range => ActivityLevels.StepRange(Level);
+    public string Steps => Range.Replace(" / day", "");
+
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+
+    [RelayCommand] private void Pick() { if (owner is not null) owner.SelectedActivity = this; }
 }
 
-/// <summary>One row in the goal picker.</summary>
-public record GoalOption(GoalType Type)
-{
-    public string Name => CalorieGoals.DisplayName(Type);
-}
-
-/// <summary>One logged day in the calorie history.</summary>
-public record CalorieDayRow(string DateText, string ConsumedText, string ResultText);
+/// <summary>A month in the birth date picker.</summary>
+public record MonthOption(int Number, string Name);
 
 /// <summary>One weigh-in in the history list.</summary>
 public partial class WeightEntryViewModel : ObservableObject
@@ -50,17 +52,17 @@ public partial class WeightEntryViewModel : ObservableObject
 public partial class ProfileViewModel : ViewModelBase
 {
     private readonly ProfileService _profiles;
-    private readonly CalorieService _calories;
     private readonly GeocodingService _geocoding;
     private readonly CityService _cities;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public ProfileViewModel(ProfileService profiles, CalorieService calories, GeocodingService geocoding,
+    public ProfileViewModel(ProfileService profiles, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell)
     {
-        _profiles = profiles; _calories = calories; _geocoding = geocoding; _cities = cities;
+        _profiles = profiles; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
+        ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, this)).ToList();
         _ = ReloadAsync();
     }
 
@@ -69,65 +71,101 @@ public partial class ProfileViewModel : ViewModelBase
 
     public IReadOnlyList<Sex> Sexes { get; } = Enum.GetValues<Sex>();
     public IReadOnlyList<UnitSystem> UnitSystems { get; } = Enum.GetValues<UnitSystem>();
-    public IReadOnlyList<ActivityOption> ActivityOptions { get; } =
-        Array.ConvertAll(Enum.GetValues<ActivityLevel>(), l => new ActivityOption(l));
+    public IReadOnlyList<ActivityOption> ActivityOptions { get; }
+    public IReadOnlyList<MonthOption> Months { get; } = Enumerable.Range(1, 12)
+        .Select(m => new MonthOption(m, CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(m))).ToList();
     public ObservableCollection<WeightEntryViewModel> History { get; } = new();
-    public IReadOnlyList<GoalOption> GoalOptions { get; } =
-        Array.ConvertAll(Enum.GetValues<GoalType>(), g => new GoalOption(g));
-    public ObservableCollection<CalorieDayRow> CalorieHistory { get; } = new();
     public ObservableCollection<CityCandidateViewModel> CityCandidates { get; } = new();
-
-    // The birth date picker only offers years that pass validation
-    public DateTimeOffset MinBirthYear { get; } = new(AppClock.Today.Year - BodyLimits.MaxAge, 1, 1, 0, 0, 0, TimeSpan.Zero);
-    public DateTimeOffset MaxBirthYear { get; } = new(AppClock.Today.Year - BodyLimits.MinAge, 12, 31, 0, 0, 0, TimeSpan.Zero);
 
     // ===== Header =====
     [ObservableProperty] public partial string Username { get; set; } = "";
+    [ObservableProperty] public partial string Initials { get; set; } = "";
     [ObservableProperty] public partial string SplitText { get; set; } = "";
+    [ObservableProperty] public partial bool HasSplit { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
+    [ObservableProperty] public partial string CurrentStreak { get; set; } = "0";
+    [ObservableProperty] public partial string BestStreak { get; set; } = "0";
+    [ObservableProperty] public partial string LevelText { get; set; } = "";
 
     // ===== Body data form =====
-    [ObservableProperty] public partial Sex? SelectedSex { get; set; }
-    [ObservableProperty] public partial DateTimeOffset? BirthDate { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SexIndex))]
+    public partial Sex? SelectedSex { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AgeText))]
+    public partial string BirthDayText { get; set; } = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AgeText))]
+    public partial MonthOption? BirthMonth { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AgeText))]
+    public partial string BirthYearText { get; set; } = "";
+
     [ObservableProperty] public partial string HeightCmText { get; set; } = "";
     [ObservableProperty] public partial string HeightFtText { get; set; } = "";
     [ObservableProperty] public partial string HeightInText { get; set; } = "";
-    [ObservableProperty] public partial ActivityOption? SelectedActivity { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsMetric), nameof(IsImperial), nameof(WeightWatermark))]
+    [NotifyPropertyChangedFor(nameof(ActivityIndex))]
+    public partial ActivityOption? SelectedActivity { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsMetric), nameof(IsImperial), nameof(WeightWatermark), nameof(UnitsIndex))]
     public partial UnitSystem SelectedUnits { get; set; } = UnitSystem.Metric;
 
     public bool IsMetric => SelectedUnits == UnitSystem.Metric;
     public bool IsImperial => SelectedUnits == UnitSystem.Imperial;
-    public string WeightWatermark => IsMetric ? "Weight (kg)" : "Weight (lb)";
+    public string WeightWatermark => IsMetric ? "e.g. 66.2" : "e.g. 146";
+
+    // The segmented choices (sliding pills); -1 = nothing chosen yet
+    public int UnitsIndex => IsMetric ? 0 : 1;
+    public int SexIndex => SelectedSex switch { Sex.Male => 0, Sex.Female => 1, _ => -1 };
+    public int ActivityIndex => SelectedActivity is { } a ? ActivityOptions.ToList().FindIndex(o => o.Level == a.Level) : -1;
+
+    [RelayCommand] private void SelectMetric() => SelectedUnits = UnitSystem.Metric;
+    [RelayCommand] private void SelectImperial() => SelectedUnits = UnitSystem.Imperial;
+    [RelayCommand] private void SelectMale() => SelectedSex = Sex.Male;
+    [RelayCommand] private void SelectFemale() => SelectedSex = Sex.Female;
+
+    /// <summary>"Age 21" from the three birth date boxes, or "Age —" until they make a real date.</summary>
+    public string AgeText => TryReadBirthDate(out var b) && b is { } d ? $"Age {BodyMetrics.AgeOn(d, Today)}" : "Age —";
+
+    /// <summary>Something in the body data form changed since it was filled or saved.</summary>
+    [ObservableProperty] public partial bool IsDirty { get; set; }
+
+    [ObservableProperty] public partial string MaintenanceText { get; set; } = "";
+    [ObservableProperty] public partial string? MaintenanceNote { get; set; }
 
     // ===== Weight =====
     [ObservableProperty] public partial string WeightInput { get; set; } = "";
     [ObservableProperty] public partial string CurrentWeightText { get; set; } = "";
+    [ObservableProperty] public partial string CurrentWeightNumber { get; set; } = "—";
+    [ObservableProperty] public partial string WeightUnit { get; set; } = "kg";
+    [ObservableProperty] public partial string CurrentWeightDate { get; set; } = "No weigh-ins yet";
+    [ObservableProperty] public partial string DeltaText { get; set; } = "First weigh-in";
+    [ObservableProperty] public partial string LogWeightLabel { get; set; } = "Log today's weight";
     [ObservableProperty] public partial bool HasHistory { get; set; }
+    [ObservableProperty] public partial bool HasTrend { get; set; }
+    [ObservableProperty] public partial IList<Point> TrendPoints { get; set; } = [];
+    [ObservableProperty] public partial Point TrendLast { get; set; }
+    [ObservableProperty] public partial string TrendFirstLabel { get; set; } = "";
+    [ObservableProperty] public partial string TrendLastLabel { get; set; } = "";
 
-    // ===== Maintenance =====
-    [ObservableProperty] public partial string MaintenanceText { get; set; } = "";
-    [ObservableProperty] public partial string MaintenanceNote { get; set; } = "";
-    [ObservableProperty] public partial bool HasMaintenance { get; set; }
+    /// <summary>The trend chart's drawing area (the view scales it to the card's width).</summary>
+    public const double TrendWidth = 320, TrendHeight = 96;
+    private const int TrendCount = 8, RecentShown = 5;
 
-    // ===== Calorie goal =====
-    [ObservableProperty] public partial GoalOption? SelectedGoal { get; set; }
-    [ObservableProperty] public partial string GoalText { get; set; } = "";
-    [ObservableProperty] public partial string GoalRule { get; set; } = "";
-    [ObservableProperty] public partial string SuggestionText { get; set; } = "";
-    [ObservableProperty] public partial string SuggestionNote { get; set; } = "";
-    [ObservableProperty] public partial bool CanUseSuggestion { get; set; }
-    [ObservableProperty] public partial bool SuggestionChanged { get; set; }
-    [ObservableProperty] public partial string SuggestionChangedText { get; set; } = "";
-    [ObservableProperty] public partial string UseSuggestionLabel { get; set; } = "Use suggestion";
-    [ObservableProperty] public partial string KeepGoalLabel { get; set; } = "Keep my goal";
-    [ObservableProperty] public partial string CustomGoalInput { get; set; } = "";
-    [ObservableProperty] public partial bool HasCalorieHistory { get; set; }
+    // ===== Appearance (not wired up yet: the app stays dark) =====
+    [ObservableProperty] public partial int ThemeIndex { get; set; } = 2;
+    [RelayCommand] private void SelectTheme(string index) => ThemeIndex = int.Parse(index, CultureInfo.InvariantCulture);
 
     // ===== Home city =====
     [ObservableProperty] public partial string HomeCityText { get; set; } = "";
+    [ObservableProperty] public partial string HomeCityName { get; set; } = "";
+    [ObservableProperty] public partial string HomeCityRegion { get; set; } = "";
     [ObservableProperty] public partial bool HasHomeCity { get; set; }
     [ObservableProperty] public partial string CitySearchText { get; set; } = "";
     [ObservableProperty] public partial string? CitySearchMessage { get; set; }
@@ -147,7 +185,6 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string? HeightError { get; set; }
     [ObservableProperty] public partial string? ActivityError { get; set; }
     [ObservableProperty] public partial string? WeightError { get; set; }
-    [ObservableProperty] public partial string? GoalError { get; set; }
 
     private void ClearBodyErrors() => UnitsError = SexError = BirthDateError = HeightError = ActivityError = null;
     [ObservableProperty] public partial string? Info { get; set; }
@@ -162,8 +199,15 @@ public partial class ProfileViewModel : ViewModelBase
             if (s is null) { Error = "Could not load your profile."; return; }
 
             Username = s.Username;
-            SplitText = s.SplitName ?? "No split selected";
+            Initials = s.Username.Length == 0 ? "?" : s.Username[..Math.Min(2, s.Username.Length)].ToUpperInvariant();
+            HasSplit = s.SplitName is not null;
+            SplitText = s.SplitName?.Replace(" (", " · ").TrimEnd(')') ?? "No split selected";
             StreakText = $"{s.CurrentStreak} day streak · best {s.LongestStreak}";
+            CurrentStreak = s.CurrentStreak.ToString(CultureInfo.InvariantCulture);
+            BestStreak = s.LongestStreak.ToString(CultureInfo.InvariantCulture);
+            var level = LevelCalculator.For(_session.CurrentUser?.Points ?? 0);
+            LevelText = $"Level {level.Number} · {level.Name}";
+            ApplyMaintenance(s.Maintenance);
 
             if (refillForm) FillForm(s.Profile);
             ApplyHomeCity(s.Profile.HomeCity);
@@ -177,11 +221,10 @@ public partial class ProfileViewModel : ViewModelBase
                 ? $"{Units.FormatWeight(w.WeightKg, units)} ({DayLabel(w.Date)})"
                 : "No weight logged yet";
             History.Clear();
-            foreach (var entry in s.RecentWeights) History.Add(new WeightEntryViewModel(entry, units, this));
+            foreach (var entry in s.RecentWeights.Take(RecentShown)) History.Add(new WeightEntryViewModel(entry, units, this));
             HasHistory = History.Count > 0;
+            ApplyWeight(s.RecentWeights, units);
 
-            ApplyMaintenance(s.Maintenance);
-            await ReloadGoalAsync();
         }
         catch (Exception)
         {
@@ -191,30 +234,89 @@ public partial class ProfileViewModel : ViewModelBase
 
     private void FillForm(UserProfile p)
     {
-        _loading = true;   // so switching units while filling does not convert the boxes
+        _loading = true;   // so switching units while filling does not convert the boxes or mark the form dirty
         SelectedUnits = p.Units;
         SelectedSex = p.Sex;
-        BirthDate = p.BirthDate is { } b ? new DateTimeOffset(b.ToDateTime(TimeOnly.MinValue)) : null;
+        BirthDayText = p.BirthDate?.Day.ToString(CultureInfo.InvariantCulture) ?? "";
+        BirthMonth = p.BirthDate is { } b ? Months[b.Month - 1] : null;
+        BirthYearText = p.BirthDate?.Year.ToString(CultureInfo.InvariantCulture) ?? "";
         SetHeightFields(p.HeightCm, p.Units);
-        SelectedActivity = p.ActivityLevel is { } a ? new ActivityOption(a) : null;
+        SelectedActivity = p.ActivityLevel is { } a ? ActivityOptions.First(o => o.Level == a) : null;
         _loading = false;
+        IsDirty = false;
+    }
+
+    // Any edit to the body data form enables Save
+    protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (_loading) return;
+        if (e.PropertyName is nameof(SelectedUnits) or nameof(SelectedSex) or nameof(BirthDayText) or nameof(BirthMonth)
+            or nameof(BirthYearText) or nameof(HeightCmText) or nameof(HeightFtText) or nameof(HeightInText)
+            or nameof(SelectedActivity))
+            IsDirty = true;
+    }
+
+    partial void OnSelectedActivityChanged(ActivityOption? value)
+    {
+        foreach (var o in ActivityOptions) o.IsSelected = o == value;
+    }
+
+    /// <summary>Empty boxes are fine (no birth date); otherwise day, month and year must make a real date.</summary>
+    private bool TryReadBirthDate(out DateOnly? date)
+    {
+        date = null;
+        if (string.IsNullOrWhiteSpace(BirthDayText) && BirthMonth is null && string.IsNullOrWhiteSpace(BirthYearText)) return true;
+        if (!NumberParsing.TryParseWhole(BirthDayText, out var d) || BirthMonth is not { } m
+            || !NumberParsing.TryParseWhole(BirthYearText, out var y)
+            || y < 1 || y > 9999 || d < 1 || d > DateTime.DaysInMonth(y, m.Number))
+            return false;
+        date = new DateOnly(y, m.Number, d);
+        return true;
     }
 
     private void ApplyMaintenance(MaintenanceEstimate m)
     {
-        HasMaintenance = m.Kcal is not null;
-        if (m.Kcal is { } kcal)
+        MaintenanceText = m.Kcal is { } kcal ? $"≈ {kcal.ToString("N0", CultureInfo.InvariantCulture)}" : "—";
+        MaintenanceNote = m.Kcal is null ? m.Reason : null;
+    }
+
+    /// <summary>The weight card: the latest weigh-in, the change since the one before, and the trend line.</summary>
+    private void ApplyWeight(IReadOnlyList<WeightLog> recent, UnitSystem units)
+    {
+        WeightUnit = units == UnitSystem.Metric ? "kg" : "lb";
+        double Shown(double kg) => units == UnitSystem.Metric ? kg : Units.KgToLb(kg);
+        var cur = recent.FirstOrDefault();
+        CurrentWeightNumber = cur is null ? "—" : Shown(cur.WeightKg).ToString("0.#", CultureInfo.InvariantCulture);
+        CurrentWeightDate = cur is null ? "No weigh-ins yet"
+            : $"Last weigh-in · {cur.Date.ToString("ddd d MMM yyyy", CultureInfo.InvariantCulture)}";
+        LogWeightLabel = cur?.Date == Today ? "Replace today's" : "Log today's weight";
+
+        if (recent.Count > 1)
         {
-            MaintenanceText = $"≈ {kcal.ToString("N0", CultureInfo.InvariantCulture)} kcal / day";
-            MaintenanceNote = $"Estimate: BMR {m.Bmr?.ToString("N0", CultureInfo.InvariantCulture)} kcal " +
-                              $"x activity {m.ActivityFactor?.ToString("0.###", CultureInfo.InvariantCulture)} " +
-                              "(Mifflin-St Jeor, from your activity level).";
+            var prev = recent[1];
+            var delta = Math.Round(Shown(cur!.WeightKg) - Shown(prev.WeightKg), 1);
+            var sign = delta > 0 ? "+" : delta < 0 ? "−" : "±";
+            DeltaText = $"{sign}{Math.Abs(delta).ToString("0.#", CultureInfo.InvariantCulture)} {WeightUnit} since " +
+                        prev.Date.ToString("d MMM", CultureInfo.InvariantCulture);
         }
         else
         {
-            MaintenanceText = "";
-            MaintenanceNote = m.Reason ?? "";
+            DeltaText = "First weigh-in";
         }
+
+        // Oldest to newest, scaled into the chart box with half a kilo (or pound) of headroom
+        var pts = recent.Take(TrendCount).Reverse().ToList();
+        HasTrend = pts.Count > 1;
+        if (!HasTrend) { TrendPoints = []; return; }
+        var values = pts.Select(p => Shown(p.WeightKg)).ToList();
+        double lo = values.Min() - 0.5, hi = values.Max() + 0.5;
+        TrendPoints = values.Select((v, i) => new Point(
+            8 + i * ((TrendWidth - 16) / (values.Count - 1)),
+            TrendHeight - 16 - (v - lo) / (hi - lo) * (TrendHeight - 26))).ToList();
+        TrendLast = TrendPoints[^1];
+        TrendFirstLabel = pts[0].Date.ToString("d MMM", CultureInfo.InvariantCulture);
+        TrendLastLabel = pts[^1].Date.ToString("d MMM", CultureInfo.InvariantCulture);
     }
 
     // Switching units converts what is already typed, so nothing is lost
@@ -278,7 +380,7 @@ public partial class ProfileViewModel : ViewModelBase
             ClearBodyErrors();
             if (!TryReadHeight(SelectedUnits, out var cm, out var heightError)) { HeightError = heightError; return; }
 
-            DateOnly? birth = BirthDate is { } b ? DateOnly.FromDateTime(b.Date) : null;
+            if (!TryReadBirthDate(out var birth)) { BirthDateError = "Enter a real date: day, month and year."; return; }
 
             var r = await _profiles.SaveAsync(UserId, new ProfileInput(SelectedSex, birth, cm, SelectedActivity?.Level, SelectedUnits));
             if (!r.Success)
@@ -296,8 +398,8 @@ public partial class ProfileViewModel : ViewModelBase
             }
 
             Error = null;
-            Info = "Profile saved.";
             await ReloadAsync();
+            Info = MaintenanceText == "—" ? "Profile saved." : $"Profile saved. Maintenance is now about {MaintenanceText.TrimStart('≈', ' ')} kcal a day.";
 
         }
         catch (Exception)
@@ -389,6 +491,10 @@ public partial class ProfileViewModel : ViewModelBase
     {
         HasHomeCity = city is not null;
         HomeCityText = city?.DisplayName ?? "Not set. The gym picker will ask for a city.";
+        // "Timișoara, Timiș, România" → "Timișoara" over "Timiș, România"
+        var parts = (city?.DisplayName ?? "").Split(", ", 2);
+        HomeCityName = parts[0];
+        HomeCityRegion = parts.Length > 1 ? parts[1] : "";
     }
 
     // Runs on the Search button or Enter, never per keystroke: Nominatim allows one request per second
@@ -461,155 +567,14 @@ public partial class ProfileViewModel : ViewModelBase
         }
     }
 
-    // ===== Calorie goal =====
-
-    private bool _applyingGoal;
-
-    private async Task ReloadGoalAsync()
-    {
-        try
-        {
-            var o = await _calories.GetAsync(UserId);
-            if (o is null) return;
-            var g = o.Goal;
-
-            _applyingGoal = true;   // so setting the picker does not save it again
-            SelectedGoal = new GoalOption(g.GoalType);
-            _applyingGoal = false;
-
-            GoalText = g.Goal is { } goal ? $"{CalorieGoals.K(goal)} kcal / day" : "No goal set yet";
-            GoalRule = g.Goal is { } target ? $"A day counts as hit when you eat {CalorieGoals.TargetRule(target)}." : "";
-
-            if (g.Suggestion is { } s)
-            {
-                SuggestionText = $"Suggested for {CalorieGoals.DisplayName(g.GoalType).ToLowerInvariant()}: {CalorieGoals.K(s.Kcal)} kcal / day";
-                SuggestionNote = s.Note ?? "An estimate from your maintenance calories.";
-                UseSuggestionLabel = $"Use {CalorieGoals.K(s.Kcal)} kcal";
-            }
-            else
-            {
-                SuggestionText = "";
-                SuggestionNote = g.SuggestionReason ?? "";
-            }
-            CanUseSuggestion = g.Suggestion is { } sug && sug.Kcal != g.Goal && !g.SuggestionChanged;
-
-            SuggestionChanged = g.SuggestionChanged;
-            if (g.SuggestionChanged && g.Goal is { } current && g.Suggestion is { } next)
-            {
-                SuggestionChangedText = $"Your suggested goal is now {CalorieGoals.K(next.Kcal)} kcal. " +
-                                        $"Your goal is still {CalorieGoals.K(current)} kcal. Update it?";
-                KeepGoalLabel = $"Keep {CalorieGoals.K(current)} kcal";
-            }
-
-            CalorieHistory.Clear();
-            foreach (var d in o.Recent)
-                CalorieHistory.Add(new CalorieDayRow(
-                    d.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture),
-                    $"{CalorieGoals.K(d.Consumed)} kcal",
-                    d.Hit switch
-                    {
-                        true => $"hit ✓ (goal {CalorieGoals.K(d.Goal!.Value)})",
-                        false => $"missed (goal {CalorieGoals.K(d.Goal!.Value)})",
-                        null => "no goal"
-                    }));
-            HasCalorieHistory = CalorieHistory.Count > 0;
-
-        }
-        catch (Exception)
-        {
-            Error = "Could not load your calorie goal.";
-        }
-    }
-
-    partial void OnSelectedGoalChanged(GoalOption? value)
-    {
-        if (_applyingGoal || value is null) return;
-        _ = ChangeGoalTypeAsync(value.Type);
-    }
-
-    private async Task ChangeGoalTypeAsync(GoalType type)
-    {
-        try
-        {
-            Info = null;
-            var r = await _calories.SetGoalTypeAsync(UserId, type);
-            if (!r.Success) { Error = r.Error; return; }
-            Error = null;
-            await ReloadGoalAsync();
-
-        }
-        catch (Exception)
-        {
-            Error = "Could not change your goal type.";
-        }
-    }
-
-    [RelayCommand]
-    private async Task UseSuggestionAsync()
-    {
-        try
-        {
-            Info = null;
-            var r = await _calories.AcceptSuggestionAsync(UserId);
-            if (!r.Success) { Error = r.Error; return; }
-            Error = null;
-            Info = "Calorie goal updated.";
-            await ReloadGoalAsync();
-
-        }
-        catch (Exception)
-        {
-            Error = "Could not save your calorie goal.";
-        }
-    }
-
-    [RelayCommand]
-    private async Task KeepGoalAsync()
-    {
-        try
-        {
-            Info = null;
-            var r = await _calories.KeepGoalAsync(UserId);
-            if (!r.Success) { Error = r.Error; return; }
-            Error = null;
-            await ReloadGoalAsync();
-
-        }
-        catch (Exception)
-        {
-            Error = "Could not save your calorie goal.";
-        }
-    }
-
-    [RelayCommand]
-    private async Task SetCustomGoalAsync()
-    {
-        try
-        {
-            Info = null;
-            Error = null;
-            GoalError = null;
-            if (!NumberParsing.TryParseWhole(CustomGoalInput, out var kcal))
-            {
-                GoalError = "Enter your goal as a whole number of kcal, e.g. 2200.";
-                return;
-            }
-
-            var r = await _calories.SetCustomGoalAsync(UserId, kcal);
-            if (!r.Success) { GoalError = r.Error; return; }
-            CustomGoalInput = "";
-            Info = "Calorie goal saved.";
-            await ReloadGoalAsync();
-
-        }
-        catch (Exception)
-        {
-            GoalError = "Could not save your calorie goal.";
-        }
-    }
-
     [RelayCommand]
     private void Back() => _shell().ShowHome();
+
+    [RelayCommand]
+    private void ShowCalories() => _shell().ShowCalories();
+
+    [RelayCommand]
+    private void ShowSplits() => _shell().ShowSplits();
 
     [RelayCommand]
     private void ShowGymSummary() => _shell().ShowGymSummary(fromProfile: true);

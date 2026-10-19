@@ -124,6 +124,22 @@ public class DayExerciseServiceTests : IDisposable
         Assert.False(await _svc.MoveAsync(_alice, PplPush, 2, +1));   // already last
     }
 
+    [Fact] public async Task MoveTo_InsertsAtTheIndex_AndClampsIt()
+    {
+        await Fill(_alice, PplPush, 1, 2, 3, 4);
+
+        Assert.True(await _svc.MoveToAsync(_alice, PplPush, 4, 1));
+        Assert.Equal(new[] { 1, 4, 2, 3 }, await Ids(_alice, PplPush));
+
+        Assert.True(await _svc.MoveToAsync(_alice, PplPush, 1, 99));   // past the end: last
+        Assert.Equal(new[] { 4, 2, 3, 1 }, await Ids(_alice, PplPush));
+
+        Assert.True(await _svc.MoveToAsync(_alice, PplPush, 3, -5));   // before the start: first
+        Assert.Equal(new[] { 3, 4, 2, 1 }, await Ids(_alice, PplPush));
+
+        Assert.False(await _svc.MoveToAsync(_alice, PplPush, 9, 0));   // not in the list
+    }
+
     [Fact] public async Task SetPlannedSets_UpdatesTheCounts()
     {
         await Fill(_alice, PplPush, 1);

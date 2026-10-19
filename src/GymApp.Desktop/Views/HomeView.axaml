@@ -6,288 +6,21 @@
              x:DataType="vm:HomeViewModel">
     <!-- The dashboard, after the "Gym App" design canvas (Dashboard artboard): black, one lime accent, the streak
          gauge turns from cold to fire once today is checked in. Always dark, whatever the system theme. -->
-    <UserControl.Resources>
-        <SolidColorBrush x:Key="Accent" Color="#C6F432"/>
-        <SolidColorBrush x:Key="Surface" Color="#0B0B0B"/>
-        <SolidColorBrush x:Key="Line" Color="#222222"/>
-        <SolidColorBrush x:Key="Divider" Color="#1C1C1C"/>
-        <SolidColorBrush x:Key="Muted" Color="#9A9A9A"/>
-        <SolidColorBrush x:Key="Soft" Color="#B5B5B5"/>
-        <SolidColorBrush x:Key="Light" Color="#D6D6D6"/>
-        <SolidColorBrush x:Key="MissRed" Color="#FF6B5B"/>
-        <SolidColorBrush x:Key="Flame" Color="#FF8A2A"/>
-        <FontFamily x:Key="Mono">Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace</FontFamily>
-
-        <LinearGradientBrush x:Key="ColdBrush" StartPoint="0%,0%" EndPoint="100%,0%">
-            <GradientStop Offset="0" Color="#3E4C59"/>
-            <GradientStop Offset="0.5" Color="#7D93A8"/>
-            <GradientStop Offset="1" Color="#B9C8D6"/>
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="FireBrush" StartPoint="0%,0%" EndPoint="100%,0%">
-            <GradientStop Offset="0" Color="#C81D00"/>
-            <GradientStop Offset="0.35" Color="#FF4A00"/>
-            <GradientStop Offset="0.7" Color="#FF9A00"/>
-            <GradientStop Offset="1" Color="#FFD400"/>
-        </LinearGradientBrush>
-        <LinearGradientBrush x:Key="TodayDoneBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-            <GradientStop Offset="0" Color="#FF4A00"/>
-            <GradientStop Offset="1" Color="#FFB000"/>
-        </LinearGradientBrush>
-
-        <!-- Icons, on a 24×24 grid (see Icon.cs) -->
-        <StreamGeometry x:Key="IcDumbbell">M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12</StreamGeometry>
-        <StreamGeometry x:Key="IcGrid">M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z</StreamGeometry>
-        <StreamGeometry x:Key="IcCalendar">M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4</StreamGeometry>
-        <StreamGeometry x:Key="IcFlame">M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z</StreamGeometry>
-        <StreamGeometry x:Key="IcMap">M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14</StreamGeometry>
-        <StreamGeometry x:Key="IcFriends">M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M14.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16.5 14.2c2.9 0.3 5 2.4 5 5.8</StreamGeometry>
-        <StreamGeometry x:Key="IcLogout">M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3</StreamGeometry>
-        <StreamGeometry x:Key="IcCheck">M5 12l5 5 9-10</StreamGeometry>
-        <StreamGeometry x:Key="IcMadeUp">M4 12a8 8 0 1 0 3-6.2M4 4v4h4</StreamGeometry>
-        <StreamGeometry x:Key="IcX">M6 6l12 12M18 6L6 18</StreamGeometry>
-        <StreamGeometry x:Key="IcClock">M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2</StreamGeometry>
-        <StreamGeometry x:Key="IcTrophy">M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4</StreamGeometry>
-        <StreamGeometry x:Key="IcPin">M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12zM9.5 10a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0</StreamGeometry>
-        <StreamGeometry x:Key="IcPlus">M12 5v14M5 12h14</StreamGeometry>
-        <StreamGeometry x:Key="IcArc">M 40 240 A 200 200 0 0 1 440 240</StreamGeometry>
-    </UserControl.Resources>
 
     <UserControl.Styles>
+        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <!-- Text -->
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
-        <Style Selector="TextBlock.display">
-            <Setter Property="FontWeight" Value="Black"/>
-        </Style>
-        <Style Selector="TextBlock.h2">
-            <Setter Property="FontSize" Value="22"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
-        <Style Selector="TextBlock.label">
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="LetterSpacing" Value="1.6"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
-        </Style>
-        <Style Selector="TextBlock.caps">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="LetterSpacing" Value="1"/>
-            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-        </Style>
-        <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{StaticResource Muted}"/></Style>
-        <Style Selector="TextBlock.soft"><Setter Property="Foreground" Value="{StaticResource Soft}"/></Style>
-        <Style Selector="TextBlock.light"><Setter Property="Foreground" Value="{StaticResource Light}"/></Style>
-        <Style Selector="TextBlock.mono">
-            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
-            <Setter Property="TextWrapping" Value="NoWrap"/>
-        </Style>
-        <Style Selector="TextBlock.error">
-            <Setter Property="Foreground" Value="#FF8A7A"/>
-        </Style>
-
-        <!-- Cards -->
-        <Style Selector="Border.card">
-            <Setter Property="Background" Value="{StaticResource Surface}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="20"/>
-            <Setter Property="Padding" Value="24"/>
-        </Style>
-        <Style Selector="Border.pill">
-            <Setter Property="BorderBrush" Value="#333333"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="999"/>
-            <Setter Property="Padding" Value="10,3"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- Buttons -->
-        <Style Selector="Button.btn">
-            <Setter Property="MinHeight" Value="44"/>
-            <Setter Property="Padding" Value="18,0"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.small">
-            <Setter Property="MinHeight" Value="36"/>
-            <Setter Property="Padding" Value="14,0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="CornerRadius" Value="8"/>
-        </Style>
-        <Style Selector="Button.primary">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#D8FF5E"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#AEDB1F"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.light">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.light:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#E6E6E6"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.light:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#CCCCCC"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.outline">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.outline.strong">
-            <Setter Property="BorderBrush" Value="White"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-        </Style>
-        <Style Selector="Button.outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#555555"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.btn:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
-            <Setter Property="Foreground" Value="#6E6E6E"/>
-        </Style>
-        <!-- "Logged ✓": done, so not clickable, but it shouldn't look broken -->
-        <Style Selector="Button.btn.logged:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.link">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="MinHeight" Value="0"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#E2FF8A"/>
-        </Style>
-        <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
-        <Style Selector="Button.icon">
-            <Setter Property="Width" Value="36"/>
-            <Setter Property="Height" Value="36"/>
-            <Setter Property="Padding" Value="0"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-
-        <!-- Sidebar -->
-        <Style Selector="Button.nav">
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="MinHeight" Value="44"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#141414"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.nav.current">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-        <Style Selector="Button.nav.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-
-        <!-- Wide window: the sidebar on the left. Set here, not on the elements, so the narrow styles can override them -->
-        <Style Selector="Border#Side">
-            <Setter Property="DockPanel.Dock" Value="Left"/>
-            <Setter Property="Width" Value="232"/>
-            <Setter Property="BorderThickness" Value="0,0,1,0"/>
-            <Setter Property="Padding" Value="20,28"/>
-        </Style>
-        <Style Selector="Border#Brand">
-            <Setter Property="DockPanel.Dock" Value="Top"/>
-            <Setter Property="Margin" Value="0,0,0,28"/>
-        </Style>
-        <Style Selector="Border#ProfileBox">
-            <Setter Property="DockPanel.Dock" Value="Bottom"/>
-            <Setter Property="Margin" Value="0,28,0,0"/>
-        </Style>
-        <Style Selector="ScrollViewer#NavScroll">
-            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
-            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
-        </Style>
-        <Style Selector="StackPanel#Main">
-            <Setter Property="Margin" Value="40,32,40,48"/>
-        </Style>
+        <!-- Wide by default; the narrow and compact styles below override these -->
         <Style Selector="Border#LevelPill">
             <Setter Property="Grid.Column" Value="1"/>
             <Setter Property="MinWidth" Value="320"/>
         </Style>
         <Style Selector="Panel#HeroRight">
             <Setter Property="Grid.Column" Value="1"/>
-        </Style>
-
-        <!-- Narrow window: the sidebar becomes a bar along the top -->
-        <Style Selector="Grid.narrow Border#Side">
-            <Setter Property="DockPanel.Dock" Value="Top"/>
-            <Setter Property="Width" Value="NaN"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="Padding" Value="16,12"/>
-        </Style>
-        <Style Selector="Grid.narrow Border#Brand">
-            <Setter Property="DockPanel.Dock" Value="Left"/>
-            <Setter Property="Margin" Value="0,0,16,0"/>
-        </Style>
-        <Style Selector="Grid.narrow Border#ProfileBox">
-            <Setter Property="DockPanel.Dock" Value="Right"/>
-            <Setter Property="Margin" Value="16,0,0,0"/>
-        </Style>
-        <Style Selector="Grid.narrow StackPanel#NavItems">
-            <Setter Property="Orientation" Value="Horizontal"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style Selector="Grid.narrow ScrollViewer#NavScroll">
-            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
-            <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
-        </Style>
-        <Style Selector="Grid.narrow StackPanel#ProfileText">
-            <Setter Property="IsVisible" Value="False"/>
-        </Style>
-        <Style Selector="Grid.narrow StackPanel#Main">
-            <Setter Property="Margin" Value="16,24,16,32"/>
         </Style>
 
         <!-- Compact content: header and streak hero stack -->
@@ -424,31 +157,6 @@
             <Setter Property="TextElement.Foreground" Value="#FF8A7A"/>
         </Style>
 
-        <!-- Friends tabs -->
-        <Style Selector="Button.tab">
-            <Setter Property="MinHeight" Value="32"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#222222"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-        <Style Selector="Button.tab.on">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
-        <Style Selector="Button.tab.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
-        </Style>
         <Style Selector="Border.boardRow.you">
             <Setter Property="Background" Value="#161616"/>
         </Style>
@@ -479,91 +187,12 @@
     <Grid x:Name="Root" Background="Black" TextElement.Foreground="White">
     <DockPanel IsEnabled="{Binding !IsCheckingIn}">
 
-        <!-- ===== Sidebar ===== -->
-        <Border x:Name="Side" Background="Black" BorderBrush="{StaticResource Line}">
-            <DockPanel>
-                <Border x:Name="Brand" Padding="8,0">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource Accent}">
-                            <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="20" Height="20"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <TextBlock Text="IRONLOG" FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Border>
-
-                <!-- Profile and log out -->
-                <Border x:Name="ProfileBox" Padding="10" CornerRadius="12"
-                        BorderBrush="{StaticResource Line}" BorderThickness="1">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <Button Classes="nav" Padding="0" Command="{Binding ShowProfileCommand}" ToolTip.Tip="Profile">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <Border Width="36" Height="36" CornerRadius="18" Background="White">
-                                    <TextBlock Text="{Binding Initials}" Foreground="Black" FontWeight="Bold" FontSize="14"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                                <StackPanel x:Name="ProfileText" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Username}" FontWeight="SemiBold" FontSize="14" Foreground="White"
-                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100"/>
-                                    <TextBlock Text="Profile" FontSize="12" Classes="muted"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Button>
-                        <Button Grid.Column="1" Classes="btn outline" Width="40" Height="40" MinHeight="40" Padding="0"
-                                Foreground="{StaticResource Soft}" Command="{Binding LogoutCommand}"
-                                ToolTip.Tip="Log out" AutomationProperties.Name="Log out">
-                            <v:Icon Data="{StaticResource IcLogout}"/>
-                        </Button>
-                    </Grid>
-                </Border>
-
-                <ScrollViewer x:Name="NavScroll">
-                    <StackPanel x:Name="NavItems" Spacing="4">
-                        <Button Classes="nav current" Click="OnDashboardClick">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcGrid}"/><TextBlock Text="Dashboard" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Classes="nav" Command="{Binding ShowWorkoutsCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcDumbbell}"/><TextBlock Text="Workouts" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Classes="nav" Command="{Binding ShowSplitsCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcCalendar}"/><TextBlock Text="Splits" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Classes="nav" Click="OnCaloriesClick">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcFlame}"/><TextBlock Text="Calories" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Classes="nav" Command="{Binding ShowGymSummaryCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcMap}"/><TextBlock Text="Gyms" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Classes="nav" Command="{Binding ShowFriendsCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <v:Icon Data="{StaticResource IcFriends}"/><TextBlock Text="Friends" VerticalAlignment="Center"/>
-                                <!-- Incoming requests -->
-                                <Border Background="#FF6B5B" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
-                                        VerticalAlignment="Center" IsVisible="{Binding HasIncomingRequests}"
-                                        ToolTip.Tip="Friend requests waiting">
-                                    <TextBlock Text="{Binding IncomingRequests}" Foreground="Black" FontSize="11" FontWeight="Bold"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </ScrollViewer>
-            </DockPanel>
-        </Border>
+        <v:Sidebar Current="Dashboard" FriendRequests="{Binding IncomingRequests}"
+                   ScrollTopRequested="OnScrollTop"/>
 
         <!-- ===== Main ===== -->
         <ScrollViewer x:Name="MainScroll">
-        <StackPanel x:Name="Main" Spacing="24" MaxWidth="1200">
+        <StackPanel x:Name="Main" Classes="page" Spacing="24">
 
             <!-- Header: date, greeting, headline, and the level pill -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
@@ -928,12 +557,16 @@
                 <!-- Calories today -->
                 <Border x:Name="CaloriesCard" Classes="card">
                     <StackPanel Spacing="16">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                            <TextBlock Text="Calories today" Classes="h2" VerticalAlignment="Center"/>
-                            <Border Classes="pill" IsVisible="{Binding CalorieGoalType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                <TextBlock Text="{Binding CalorieGoalType}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
-                            </Border>
-                        </StackPanel>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="Calories today" Classes="h2" VerticalAlignment="Center"/>
+                                <Border Classes="pill" IsVisible="{Binding CalorieGoalType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding CalorieGoalType}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                                </Border>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="link" FontSize="14" Content="Goal &amp; history" VerticalAlignment="Center"
+                                    Command="{Binding ShowCaloriesCommand}"/>
+                        </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="22">
                             <Grid Width="126" Height="126" ToolTip.Tip="{Binding CaloriesTitle}">
                                 <Ellipse Stroke="#222222" StrokeThickness="12"/>
@@ -1021,12 +654,13 @@
                                 </Border>
                             </StackPanel>
                             <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616" IsVisible="{Binding HasFriends}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Button Classes="tab" Classes.on="{Binding IsThisWeek}" Content="This week"
-                                            Command="{Binding ShowBoardWeekCommand}"/>
-                                    <Button Classes="tab" Classes.on="{Binding IsAllTime}" Content="All time"
-                                            Command="{Binding ShowBoardAllTimeCommand}"/>
-                                </StackPanel>
+                                <v:SegmentedPill SelectedIndex="{Binding IsAllTime, Converter={x:Static v:SegmentedPill.BoolToIndex}}"
+                                                 PillCornerRadius="8" PillInset="0">
+                                    <Button Classes="seg" Classes.on="{Binding IsThisWeek}" MinHeight="32" Padding="12,0" FontSize="12"
+                                            CornerRadius="8" Content="This week" Command="{Binding ShowBoardWeekCommand}"/>
+                                    <Button Classes="seg" Classes.on="{Binding IsAllTime}" MinHeight="32" Padding="12,0" FontSize="12"
+                                            CornerRadius="8" Content="All time" Command="{Binding ShowBoardAllTimeCommand}"/>
+                                </v:SegmentedPill>
                             </Border>
                         </Grid>
                         <ItemsControl ItemsSource="{Binding Board}" IsVisible="{Binding HasFriends}">
@@ -1059,14 +693,18 @@
                         <TextBlock Text="{Binding FriendsTitle}" FontSize="13" Classes="muted"/>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <Button Grid.ColumnSpan="2" Classes="btn outline small" HorizontalAlignment="Stretch"
-                                    Command="{Binding ShowFriendsCommand}" Classes.half="{Binding HasFriends}">
+                                    Command="{Binding ShowFriendsCommand}" IsVisible="{Binding !HasFriends}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.4" Width="14" Height="14"/>
                                     <TextBlock Text="Add friends" VerticalAlignment="Center"/>
                                 </StackPanel>
-                                <Button.Styles>
-                                    <Style Selector="Button.half"><Setter Property="Grid.ColumnSpan" Value="1"/></Style>
-                                </Button.Styles>
+                            </Button>
+                            <Button Classes="btn outline small" HorizontalAlignment="Stretch"
+                                    Command="{Binding ShowFriendsCommand}" IsVisible="{Binding HasFriends}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.4" Width="14" Height="14"/>
+                                    <TextBlock Text="Add friends" VerticalAlignment="Center"/>
+                                </StackPanel>
                             </Button>
                             <Button Grid.Column="1" Classes="btn outline small" HorizontalAlignment="Stretch" Content="Full leaderboard"
                                     Command="{Binding ShowLeaderboardCommand}" IsVisible="{Binding HasFriends}"/>

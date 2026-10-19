@@ -701,9 +701,11 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void ShowProfile() => _shell().ShowProfile();
     [RelayCommand]
+    private void ShowCalories() => _shell().ShowCalories();
+    [RelayCommand]
     private void ShowGymSummary() => _shell().ShowGymSummary();
     [RelayCommand]
     private void ShowFriends() => _shell().ShowFriends();
     [RelayCommand]
-    private void ShowLeaderboard() => _shell().ShowLeaderboard();
+    private void ShowLeaderboard() => _shell().ShowFriends();   // the leaderboard is on the friends screen
 }

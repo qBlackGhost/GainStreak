@@ -6,9 +6,6 @@ namespace GymApp.Desktop.Views;
 
 public partial class HomeView : UserControl
 {
-    /// <summary>Below this window width the sidebar becomes a bar along the top.</summary>
-    private const double SidebarMinWidth = 900;
-
     /// <summary>Below this content width the header and the streak hero stack.</summary>
     private const double CompactMaxWidth = 760;
 
@@ -18,7 +15,6 @@ public partial class HomeView : UserControl
     public HomeView()
     {
         InitializeComponent();
-        Root.SizeChanged += (_, e) => Root.Classes.Set("narrow", e.NewSize.Width < SidebarMinWidth);
         Main.SizeChanged += (_, e) => Main.Classes.Set("compact", e.NewSize.Width < CompactMaxWidth);
         Cards.SizeChanged += (_, e) => LayOutCards(e.NewSize.Width);
     }
@@ -32,7 +28,6 @@ public partial class HomeView : UserControl
             Cards.ItemWidth = System.Math.Floor(itemWidth);
     }
 
-    // Dashboard and Calories are on this screen, so their nav items scroll instead of navigating
-    private void OnDashboardClick(object? sender, RoutedEventArgs e) => MainScroll.Offset = new Vector(0, 0);
-    private void OnCaloriesClick(object? sender, RoutedEventArgs e) => CaloriesCard.BringIntoView();
+    // Dashboard is this screen, so its nav item scrolls to the top instead of navigating
+    private void OnScrollTop(object? sender, System.EventArgs e) => MainScroll.Offset = new Vector(0, 0);
 }

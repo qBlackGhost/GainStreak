@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:v="using:GymApp.Desktop.Views"
+             x:Class="GymApp.Desktop.Views.Sidebar">
+    <!-- The left navigation shared by the dark screens. Below 900 px of window it becomes a bar along the top
+         (Sidebar.axaml.cs sets "narrow" on it and on the DockPanel it sits in). -->
+    <UserControl.Styles>
+        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="v|Sidebar">
+            <Setter Property="DockPanel.Dock" Value="Left"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow">
+            <Setter Property="DockPanel.Dock" Value="Top"/>
+        </Style>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+
+        <!-- Wide by default; set here, not on the elements, so the narrow styles can override them -->
+        <Style Selector="Border#Side">
+            <Setter Property="Width" Value="232"/>
+            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+            <Setter Property="Padding" Value="20,28"/>
+        </Style>
+        <Style Selector="Border#Brand">
+            <Setter Property="DockPanel.Dock" Value="Top"/>
+            <Setter Property="Margin" Value="0,0,0,28"/>
+        </Style>
+        <Style Selector="Border#ProfileBox">
+            <Setter Property="DockPanel.Dock" Value="Bottom"/>
+            <Setter Property="Margin" Value="0,28,0,0"/>
+        </Style>
+        <Style Selector="ScrollViewer#NavScroll">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style Selector="v|Sidebar.narrow Border#Side">
+            <Setter Property="Width" Value="NaN"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding" Value="16,12"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow Border#Brand">
+            <Setter Property="DockPanel.Dock" Value="Left"/>
+            <Setter Property="Margin" Value="0,0,16,0"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow Border#ProfileBox">
+            <Setter Property="DockPanel.Dock" Value="Right"/>
+            <Setter Property="Margin" Value="16,0,0,0"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow StackPanel#NavItems">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow ScrollViewer#NavScroll">
+            <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow StackPanel#ProfileText">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border x:Name="Side" Background="Black" BorderBrush="{StaticResource Line}">
+        <DockPanel>
+            <Border x:Name="Brand" Padding="8,0">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource Accent}">
+                        <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="20" Height="20"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="IRONLOG" FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Profile and log out -->
+            <Border x:Name="ProfileBox" Padding="10" CornerRadius="12"
+                    BorderBrush="{StaticResource Line}" BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Button Classes="nav" Padding="0" Click="OnProfile" ToolTip.Tip="Profile">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Border Width="36" Height="36" CornerRadius="18" Background="White">
+                                <TextBlock x:Name="InitialsText" Foreground="Black" FontWeight="Bold" FontSize="14"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel x:Name="ProfileText" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock x:Name="NameText" FontWeight="SemiBold" FontSize="14" Foreground="White"
+                                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100"/>
+                                <TextBlock Text="Profile" FontSize="12" Classes="muted"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="btn outline" Width="40" Height="40" MinHeight="40" Padding="0"
+                            Foreground="{StaticResource Soft}" Click="OnLogout"
+                            ToolTip.Tip="Log out" AutomationProperties.Name="Log out">
+                        <v:Icon Data="{StaticResource IcLogout}"/>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <ScrollViewer x:Name="NavScroll">
+                <StackPanel x:Name="NavItems" Spacing="4">
+                    <Button x:Name="NavDashboard" Classes="nav" Click="OnDashboard">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcGrid}"/><TextBlock Text="Dashboard" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavWorkouts" Classes="nav" Click="OnWorkouts">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcDumbbell}"/><TextBlock Text="Workouts" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavSplits" Classes="nav" Click="OnSplits">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcCalendar}"/><TextBlock Text="Splits" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavCalories" Classes="nav" Click="OnCalories">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcFlame}"/><TextBlock Text="Calories" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavGyms" Classes="nav" Click="OnGyms">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcMap}"/><TextBlock Text="Gyms" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="NavFriends" Classes="nav" Click="OnFriends">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcFriends}"/><TextBlock Text="Friends" VerticalAlignment="Center"/>
+                            <!-- Incoming requests -->
+                            <Border Background="#FF6B5B" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
+                                    VerticalAlignment="Center" x:Name="RequestsBadge" IsVisible="False"
+                                    ToolTip.Tip="Friend requests waiting">
+                                <TextBlock x:Name="RequestsText" Foreground="Black" FontSize="11" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</UserControl>

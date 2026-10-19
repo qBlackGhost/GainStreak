@@ -7,17 +7,17 @@
                 HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="Create account" FontSize="24" FontWeight="SemiBold"/>
         <StackPanel Spacing="4">
-            <TextBox Watermark="Username (letters, digits, _ . -)" MaxLength="32" Text="{Binding Username}"/>
+            <TextBox PlaceholderText="Username (letters, digits, _ . -)" MaxLength="32" Text="{Binding Username}"/>
             <TextBlock Classes="fieldError" Text="{Binding UsernameError}"
                        IsVisible="{Binding UsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
         <StackPanel Spacing="4">
-            <TextBox Watermark="Password (8 to 128 characters)" MaxLength="128" PasswordChar="●" Text="{Binding Password}"/>
+            <TextBox PlaceholderText="Password (8 to 128 characters)" MaxLength="128" PasswordChar="●" Text="{Binding Password}"/>
             <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
                        IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>
         <StackPanel Spacing="4">
-            <TextBox Watermark="Confirm password" MaxLength="128" PasswordChar="●" Text="{Binding ConfirmPassword}"/>
+            <TextBox PlaceholderText="Confirm password" MaxLength="128" PasswordChar="●" Text="{Binding ConfirmPassword}"/>
             <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
                        IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
         </StackPanel>

@@ -36,7 +36,7 @@
 
                     <StackPanel Spacing="10" IsVisible="{Binding CanAdd}">
                         <StackPanel Spacing="4">
-                            <TextBox Watermark="Exercise name" MaxLength="{Binding MaxNameLength}"
+                            <TextBox PlaceholderText="Exercise name" MaxLength="{Binding MaxNameLength}"
                                      Text="{Binding Name}"/>
                             <TextBlock Classes="fieldError" Text="{Binding NameError}"
                                        IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

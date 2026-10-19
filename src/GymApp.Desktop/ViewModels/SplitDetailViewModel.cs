@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -10,11 +11,48 @@ using GymApp.Services;
 
 namespace GymApp.Desktop.ViewModels;
 
-public record ScheduleCell(string Label, string Title, bool IsTraining, bool IsStart);
+/// <summary>One day of the "Your week" preview.</summary>
+public record ScheduleCell(string Label, string Title, bool IsTraining, bool IsStart)
+{
+    public bool IsTrainingStart => IsTraining && IsStart;
+}
 
+/// <summary>One step of the rotation: "Push →".</summary>
+public record RotationStep(string Name, bool HasArrow);
+
+/// <summary>One row of "About this split": the day and the muscle groups of the user's exercises on it.</summary>
+public record SplitDayInfo(string Name, string Muscles);
+
+/// <summary>A "days per week" card for a preset's variant.</summary>
+public partial class VariantOptionViewModel(SplitVariant variant, SplitDetailViewModel owner) : ObservableObject
+{
+    public SplitVariant Variant { get; } = variant;
+    public string Days { get; } = variant.Pattern.Count(c => c == 'W').ToString(CultureInfo.InvariantCulture);
+
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+
+    [RelayCommand] private void Pick() => owner.SelectedVariant = Variant;
+}
+
+/// <summary>One button of the "first workout day" selector.</summary>
+public partial class StartDayOptionViewModel(DayOfWeek day, SplitDetailViewModel owner) : ObservableObject
+{
+    public DayOfWeek Day { get; } = day;
+    public string Label { get; } = day.ToString()[..3];
+
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+
+    [RelayCommand] private void Pick() => owner.StartDay = Day;
+}
+
+/// <summary>
+/// A split's detail page, where it is chosen: for presets the days per week (variant) and the first workout day,
+/// then a preview of the week. Custom splits already define their weekdays, so they only show the preview.
+/// </summary>
 public partial class SplitDetailViewModel : ViewModelBase
 {
     private readonly SplitService _splits;
+    private readonly DayExerciseService _dayExercises;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
     private WorkoutSplit _split = null!;
@@ -25,32 +63,64 @@ public partial class SplitDetailViewModel : ViewModelBase
         DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday
     };
 
+    public IReadOnlyList<StartDayOptionViewModel> StartDayOptions { get; }
+
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string? Description { get; set; }
     [ObservableProperty] public partial bool IsRecommended { get; set; }
     [ObservableProperty] public partial bool IsPreset { get; set; }
     [ObservableProperty] public partial string Rotation { get; set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<RotationStep> RotationSteps { get; set; } = [];
     [ObservableProperty] public partial string WeekSummary { get; set; } = "";
+    [ObservableProperty] public partial string TrainCount { get; set; } = "0";
+    [ObservableProperty] public partial string RestCount { get; set; } = "7";
+    [ObservableProperty] public partial string DaysTag { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? Toast { get; set; }
+
+    // Numbered steps: "1 · Days per week" only for presets with more than one variant
+    [ObservableProperty] public partial string RotationStepLabel { get; set; } = "1 · ROTATION";
+    [ObservableProperty] public partial string StartStepLabel { get; set; } = "2 · FIRST WORKOUT DAY";
+
+    // About this split
+    [ObservableProperty] public partial string? About { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<string> GoodFor { get; set; } = [];
+    [ObservableProperty] public partial IReadOnlyList<SplitDayInfo> DayInfo { get; set; } = [];
+    public bool HasGoodFor => GoodFor.Count > 0;
+    partial void OnGoodForChanged(IReadOnlyList<string> value) => OnPropertyChanged(nameof(HasGoodFor));
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UseLabel))]
+    [NotifyPropertyChangedFor(nameof(UseLabel), nameof(FootNote))]
     public partial bool IsActive { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasVariants))]
-    public partial IReadOnlyList<SplitVariant> Variants { get; set; } = [];
+    public partial IReadOnlyList<VariantOptionViewModel> VariantOptions { get; set; } = [];
 
+    [ObservableProperty] public partial IReadOnlyList<SplitVariant> Variants { get; set; } = [];
     [ObservableProperty] public partial SplitVariant? SelectedVariant { get; set; }
-    [ObservableProperty] public partial DayOfWeek StartDay { get; set; } = DayOfWeek.Monday;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FootNote), nameof(StartDayIndex))]
+    public partial DayOfWeek StartDay { get; set; } = DayOfWeek.Monday;
+
     [ObservableProperty] public partial IReadOnlyList<ScheduleCell> Cells { get; set; } = [];
 
-    public bool HasVariants => Variants.Count > 1;
-    public string UseLabel => IsActive ? "Save changes" : "Use this split";
+    public bool HasVariants => VariantOptions.Count > 1;
 
-    public SplitDetailViewModel(SplitService splits, SessionService session, Func<MainViewModel> shell)
+    /// <summary>The selected start day's position in <see cref="StartDays"/>, for the sliding pill.</summary>
+    public int StartDayIndex => StartDays.ToList().IndexOf(StartDay);
+    public string UseLabel => IsActive ? "Save changes" : "Use this split";
+    public string FootNote => IsActive
+        ? IsPreset ? "This is your current split. Changing the start day updates your schedule from today on."
+                   : "This is your current split. Edit it to change its days."
+        : IsPreset ? $"Switching split keeps your past streak days. Your new week starts on {StartDay}."
+                   : "Switching split keeps your past streak days.";
+
+    public SplitDetailViewModel(SplitService splits, DayExerciseService dayExercises, SessionService session, Func<MainViewModel> shell)
     {
-        _splits = splits; _session = session; _shell = shell;
+        _splits = splits; _dayExercises = dayExercises; _session = session; _shell = shell;
+        StartDayOptions = StartDays.Select(d => new StartDayOptionViewModel(d, this)).ToList();
     }
 
     /// <summary>Call right after resolving from DI.</summary>
@@ -66,36 +136,79 @@ public partial class SplitDetailViewModel : ViewModelBase
         IsPreset = split.OwnerUserId is null;
         IsActive = user.SelectedSplitId == split.Id;
         Rotation = string.Join(" → ", days.Select(d => d.Name));
+        RotationSteps = days.Select((d, i) => new RotationStep(d.Name, i < days.Count - 1)).ToList();
         Variants = split.Variants.OrderBy(v => v.Id).ToList();
+        VariantOptions = Variants.Select(v => new VariantOptionViewModel(v, this)).ToList();
+        RotationStepLabel = HasVariants ? "2 · ROTATION" : "1 · ROTATION";
+        StartStepLabel = HasVariants ? "3 · FIRST WORKOUT DAY" : "2 · FIRST WORKOUT DAY";
+
+        var guide = SplitGuides.For(split.Id, IsPreset);
+        About = Description ?? guide?.About;
+        GoodFor = guide?.GoodFor ?? [];
 
         // Pre-fill with the user's saved choice if this is their active split, otherwise the defaults
         StartDay = IsPreset && IsActive ? user.SplitStartDay ?? DayOfWeek.Monday : DayOfWeek.Monday;
         SelectedVariant = Variants.FirstOrDefault(v => IsActive && v.Id == user.SelectedVariantId)
                           ?? Variants.FirstOrDefault(v => v.IsDefault)
                           ?? Variants.FirstOrDefault();
+        foreach (var d in StartDayOptions) d.IsSelected = d.Day == StartDay;   // the change hooks skip an unchanged value
+        foreach (var v in VariantOptions) v.IsSelected = v.Variant == SelectedVariant;
+        Rebuild();
+        _ = LoadDayInfoAsync(days);
+    }
+
+    /// <summary>Each day's muscle groups, from the exercises the user put on it.</summary>
+    private async Task LoadDayInfoAsync(IReadOnlyList<SplitDay> days)
+    {
+        try
+        {
+            var userId = _session.CurrentUser!.Id;
+            var info = new List<SplitDayInfo>();
+            foreach (var d in days)
+            {
+                var groups = (await _dayExercises.GetListAsync(userId, d.Id))
+                    .Select(x => x.Exercise.MuscleGroup).Distinct().Select(g => g.ToString()).ToList();
+                info.Add(new SplitDayInfo(d.Name, groups.Count > 0 ? string.Join(" · ", groups) : "No exercises yet"));
+            }
+            DayInfo = info;
+        }
+        catch (Exception)
+        {
+            DayInfo = days.Select(d => new SplitDayInfo(d.Name, "")).ToList();
+        }
+    }
+
+    partial void OnSelectedVariantChanged(SplitVariant? value)
+    {
+        foreach (var v in VariantOptions) v.IsSelected = v.Variant == value;
+        Toast = null;
         Rebuild();
     }
 
-    partial void OnSelectedVariantChanged(SplitVariant? value) => Rebuild();
-    partial void OnStartDayChanged(DayOfWeek value) => Rebuild();
+    partial void OnStartDayChanged(DayOfWeek value)
+    {
+        foreach (var d in StartDayOptions) d.IsSelected = d.Day == value;
+        Toast = null;
+        Rebuild();
+    }
 
     private void Rebuild()
     {
         if (_split is null) return;
 
         var names = _split.Days.OrderBy(d => d.Order).Select(d => d.Name).ToList();
-        if (names.Count == 0) { Cells = []; WeekSummary = ""; return; }
+        if (names.Count == 0) { Clear(); return; }
 
         IReadOnlyList<ScheduleSlot> slots;
         if (IsPreset)
         {
-            if (SelectedVariant is null) { Cells = []; WeekSummary = ""; return; }
+            if (SelectedVariant is null) { Clear(); return; }
             slots = WeekSchedule.Build(SelectedVariant.Pattern, StartDay, names.Count);
         }
         else
         {
             var weekdays = _split.Days.Where(d => d.Weekday is not null).Select(d => d.Weekday!.Value).ToList();
-            if (weekdays.Count == 0) { Cells = []; WeekSummary = ""; return; }
+            if (weekdays.Count == 0) { Clear(); return; }
             slots = WeekSchedule.FromWeekdays(weekdays);
         }
 
@@ -107,7 +220,18 @@ public partial class SplitDetailViewModel : ViewModelBase
             s.Weekday == start)).ToList();
 
         var training = slots.Count(s => s.IsTraining);
+        TrainCount = training.ToString(CultureInfo.InvariantCulture);
+        RestCount = (7 - training).ToString(CultureInfo.InvariantCulture);
+        DaysTag = training == 1 ? "1 day a week" : $"{training} days a week";
         WeekSummary = $"{training} training day(s) · {7 - training} rest day(s) per week";
+    }
+
+    private void Clear()
+    {
+        Cells = [];
+        WeekSummary = DaysTag = "";
+        TrainCount = "0";
+        RestCount = "7";
     }
 
     [RelayCommand]
@@ -130,8 +254,11 @@ public partial class SplitDetailViewModel : ViewModelBase
             user.SelectedVariantId = variantId;
             user.SplitStartDay = startDay;
             Error = null;
+            var wasActive = IsActive;
             IsActive = true;
-
+            Toast = wasActive
+                ? "Saved. Your schedule changes from today on."
+                : $"{Name} is now your split." + (IsPreset ? $" Your week starts on {StartDay}." : "") + " Past streak days are kept.";
         }
         catch (Exception)
         {

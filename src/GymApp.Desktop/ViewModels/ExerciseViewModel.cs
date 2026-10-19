@@ -28,8 +28,16 @@ public partial class SetRowViewModel : ObservableObject
     [ObservableProperty] public partial int Number { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(KindLabel))]
+    [NotifyPropertyChangedFor(nameof(KindLabel), nameof(KindIndex), nameof(IsWorking))]
     public partial bool IsWarmup { get; set; }
+
+    /// <summary>For the Warm-up / Working pill: 0 = warm-up, 1 = working.</summary>
+    public int KindIndex => IsWarmup ? 0 : 1;
+    public bool IsWorking => !IsWarmup;
+
+    // Last session's matching set (same kind, same order), shown as placeholders
+    [ObservableProperty] public partial string WeightPlaceholder { get; set; } = "kg";
+    [ObservableProperty] public partial string RepsPlaceholder { get; set; } = "reps";
 
     [ObservableProperty] public partial string WeightText { get; set; } = "";
     [ObservableProperty] public partial string RepsText { get; set; } = "";
@@ -61,6 +69,8 @@ public partial class SetRowViewModel : ObservableObject
     }
 
     [RelayCommand] private void ToggleKind() => IsWarmup = !IsWarmup;
+    [RelayCommand] private void SetWarmup() => IsWarmup = true;
+    [RelayCommand] private void SetWorking() => IsWarmup = false;
     [RelayCommand] private void Remove() => _owner.RemoveRow(this);
 }
 
@@ -95,8 +105,17 @@ public partial class PrRowViewModel : ObservableObject
     [RelayCommand] private Task Undo() => _owner.RemoveAdjustmentAsync(Date);
 }
 
+/// <summary>One set of the "Last time" card.</summary>
+public record LastSetRow(string Number, string Kind, string Set, bool IsWarmup);
+
+/// <summary>One bar of "Top set per session": the heaviest working set that day. Height is in chart pixels.</summary>
+public record TopSetBar(string Date, string Weight, double Height, bool IsPr);
+
 public partial class ExerciseViewModel : ViewModelBase
 {
+    /// <summary>The "Top set per session" chart's bar area, in pixels, and how many sessions it shows.</summary>
+    public const double ChartHeight = 100;
+    private const int ChartSessions = 6;
     private record RowData(SetKind Kind, string Weight, string Reps);
 
     private readonly SetService _sets;
@@ -116,6 +135,30 @@ public partial class ExerciseViewModel : ViewModelBase
 
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
+    [ObservableProperty] public partial string MuscleText { get; set; } = "";
+    [ObservableProperty] public partial string DayText { get; set; } = "";
+    [ObservableProperty] public partial string PositionText { get; set; } = "";
+    public string DateText => DateTime.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
+    public string BackLabel => _day?.Name ?? "Back";
+
+    // PR card
+    [ObservableProperty] public partial bool HasPr { get; set; }
+    [ObservableProperty] public partial string PrWeight { get; set; } = "";
+    [ObservableProperty] public partial string PrReps { get; set; } = "";
+    [ObservableProperty] public partial string PrOneRm { get; set; } = "";
+    [ObservableProperty] public partial string PrDateText { get; set; } = "";
+
+    /// <summary>A save just set a new PR: the card glows until the next change.</summary>
+    [ObservableProperty] public partial bool IsPrFresh { get; set; }
+
+    // Last time and the top-set chart
+    [ObservableProperty] public partial bool HasLast { get; set; }
+    [ObservableProperty] public partial string LastDateText { get; set; } = "";
+    [ObservableProperty] public partial IReadOnlyList<LastSetRow> LastSets { get; set; } = [];
+    [ObservableProperty] public partial IReadOnlyList<TopSetBar> TopSets { get; set; } = [];
+    [ObservableProperty] public partial bool HasTopSets { get; set; }
+
+    private IReadOnlyList<SetEntry> _last = [];
     [ObservableProperty] public partial int WarmupSets { get; set; }
     [ObservableProperty] public partial int WorkingSets { get; set; } = 3;
 
@@ -167,16 +210,46 @@ public partial class ExerciseViewModel : ViewModelBase
 
             Title = row.Exercise.Name;
             Subtitle = $"{row.Exercise.MuscleGroup} · {_day.Name}";
+            MuscleText = row.Exercise.OwnerUserId is null ? row.Exercise.MuscleGroup.ToString() : "Custom";
+            DayText = _day.Weekdays.Length > 0 ? $"{_day.Name} · {_day.Weekdays}" : _day.Name;
+            PositionText = $"Exercise {list.IndexOf(row) + 1} of {list.Count}";
+            OnPropertyChanged(nameof(BackLabel));
             WarmupSets = row.WarmupSets;
             WorkingSets = row.WorkingSets;
 
             _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
+            await LoadLastAsync();
             await RebuildFromSavedAsync();
             ShowPr();
         }
         catch (Exception)
         {
             Error = "Could not load this exercise.";
+        }
+    }
+
+    /// <summary>The last session before today: the "Last time" card and the rows' placeholders.</summary>
+    private async Task LoadLastAsync()
+    {
+        _last = await _sets.GetLastSessionAsync(UserId, _exerciseId, _today);
+        HasLast = _last.Count > 0;
+        LastDateText = HasLast ? _last[0].Date.ToString("ddd d MMM", CultureInfo.InvariantCulture) : "";
+        LastSets = _last.Select((x, i) => new LastSetRow((i + 1).ToString(CultureInfo.InvariantCulture),
+            x.Kind == SetKind.Warmup ? "Warm-up" : "Working",
+            $"{NumberParsing.FormatKg(x.WeightKg)} kg × {x.Reps}", x.Kind == SetKind.Warmup)).ToList();
+    }
+
+    /// <summary>Each row's placeholders are the last session's set of the same kind and position.</summary>
+    private void ApplyPlaceholders()
+    {
+        int warm = 0, work = 0;
+        var lastWarm = _last.Where(x => x.Kind == SetKind.Warmup).ToList();
+        var lastWork = _last.Where(x => x.Kind == SetKind.Working).ToList();
+        foreach (var r in Rows)
+        {
+            var match = r.IsWarmup ? lastWarm.ElementAtOrDefault(warm++) : lastWork.ElementAtOrDefault(work++);
+            r.WeightPlaceholder = match is null ? "kg" : NumberParsing.FormatKg(match.WeightKg);
+            r.RepsPlaceholder = match is null ? "reps" : match.Reps.ToString(CultureInfo.InvariantCulture);
         }
     }
 
@@ -217,11 +290,13 @@ public partial class ExerciseViewModel : ViewModelBase
     {
         if (_loading) return;
         Info = null;
+        IsPrFresh = false;
         RefreshPrompts();
     }
 
     private void RefreshPrompts()
     {
+        ApplyPlaceholders();
         var draft = Rows.Select(r => r.ToDraft()).ToList();
         for (var i = 0; i < Rows.Count; i++)
             Rows[i].ApplyPrompt(PrPrompts.ForRow(draft, i, _history.Sets, _history.Adjustments, _today));
@@ -306,6 +381,7 @@ public partial class ExerciseViewModel : ViewModelBase
         var improved = after is not null && after.Kind != PrEntryKind.Manual
                        && PrCalculator.Beats(after.WeightKg, after.Reps, before);
         Error = null;
+        IsPrFresh = improved;
         Info = inputs.Count == 0 ? "Cleared today's sets."
              : improved ? (before is null ? $"Saved. First PR: {BestText}." : $"Saved. New PR: {BestText}!")
              : "Saved.";
@@ -364,6 +440,41 @@ public partial class ExerciseViewModel : ViewModelBase
         PrEntries.Clear();
         foreach (var e in pr.Entries.Reverse()) PrEntries.Add(new PrRowViewModel(e, this));
         HasPrEntries = PrEntries.Count > 0;
+
+        HasPr = pr.Current is not null;
+        if (pr.Current is { } c)
+        {
+            PrWeight = NumberParsing.FormatKg(c.WeightKg);
+            PrReps = c.Reps.ToString(CultureInfo.InvariantCulture);
+            PrOneRm = $"{NumberParsing.FormatKg(Math.Round(c.OneRepMaxKg, 1))} kg";
+            PrDateText = c.Kind == PrEntryKind.Manual ? $"Edited {FormatShort(c.Date)}"
+                       : c.Date == _today ? "Today" : c.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture);
+        }
+        ShowTopSets();
+    }
+
+    private string FormatShort(DateOnly d) => d == _today ? "today" : d.ToString("d MMM", CultureInfo.InvariantCulture);
+
+    /// <summary>The heaviest working set of each of the last sessions (today included), oldest first.</summary>
+    private void ShowTopSets()
+    {
+        var tops = _history.Sets
+            .Where(x => x.Kind == SetKind.Working)
+            .GroupBy(x => x.Date)
+            .Select(g => g.OrderByDescending(x => x.WeightKg).ThenByDescending(x => x.Reps).First())
+            .OrderByDescending(x => x.Date).Take(ChartSessions).Reverse().ToList();
+        HasTopSets = tops.Count > 1;
+        if (!HasTopSets) { TopSets = []; return; }
+
+        // Bars start a little under the lightest so the differences show; the PR day is highlighted
+        var lo = tops.Min(x => x.WeightKg) * 0.8;
+        var hi = Math.Max(tops.Max(x => x.WeightKg), lo + 1);
+        var prDate = _history.Pr.Current is { Kind: not PrEntryKind.Manual } p ? p.Date : (DateOnly?)null;
+        TopSets = tops.Select(x => new TopSetBar(
+            x.Date.ToString("d MMM", CultureInfo.InvariantCulture),
+            NumberParsing.FormatKg(x.WeightKg),
+            Math.Max(6, Math.Round((x.WeightKg - lo) / (hi - lo) * ChartHeight)),
+            x.Date == prDate)).ToList();
     }
 
     [RelayCommand]
@@ -465,4 +576,5 @@ public partial class ExerciseViewModel : ViewModelBase
     }
 
     [RelayCommand] private void Back() => _shell().ShowDay(_day, _splitName);
+    [RelayCommand] private void ShowDashboard() => _shell().ShowHome();
 }

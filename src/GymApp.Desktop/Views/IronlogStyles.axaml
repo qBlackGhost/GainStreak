@@ -1,0 +1,221 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Class-based styles for the dark screens; each of them includes this file (the light screens use some of the same class names) -->
+    <!-- Text -->
+        <Style Selector="TextBlock.display">
+            <Setter Property="FontWeight" Value="Black"/>
+        </Style>
+        <Style Selector="TextBlock.h2">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="TextBlock.label">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="1.6"/>
+            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+        </Style>
+        <Style Selector="TextBlock.caps">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="LetterSpacing" Value="1"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+        </Style>
+        <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{StaticResource Muted}"/></Style>
+        <Style Selector="TextBlock.soft"><Setter Property="Foreground" Value="{StaticResource Soft}"/></Style>
+        <Style Selector="TextBlock.light"><Setter Property="Foreground" Value="{StaticResource Light}"/></Style>
+        <Style Selector="TextBlock.mono">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+        <Style Selector="TextBlock.error">
+            <Setter Property="Foreground" Value="#FF8A7A"/>
+        </Style>
+
+        <!-- Cards -->
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="{StaticResource Surface}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="20"/>
+            <Setter Property="Padding" Value="24"/>
+        </Style>
+        <Style Selector="Border.pill">
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Buttons -->
+        <Style Selector="Button.btn">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.small">
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+        <Style Selector="Button.primary">
+            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#D8FF5E"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#AEDB1F"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.light">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.light:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#E6E6E6"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.light:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#CCCCCC"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.outline">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.outline.strong">
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+        <Style Selector="Button.outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="#555555"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.btn:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Foreground" Value="#6E6E6E"/>
+        </Style>
+        <!-- "Logged ✓": done, so not clickable, but it shouldn't look broken -->
+        <Style Selector="Button.btn.logged:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#444444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.link">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#E2FF8A"/>
+        </Style>
+        <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.icon">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <!-- Sidebar -->
+        <Style Selector="Button.nav">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#141414"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.nav.current">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style Selector="Button.nav.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+
+        <!-- Options inside a SegmentedPill (SegmentedPill.cs): transparent, the pill under them is the selection.
+             The text fades between grey and black as the pill slides. -->
+        <Style Selector="Button.seg">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Foreground" Duration="0:0:0.32"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.seg:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style Selector="Button.seg:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.seg.on">
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.seg.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+
+        <!-- Page content next to the sidebar; Sidebar.axaml.cs marks its DockPanel narrow when the window is -->
+        <Style Selector="StackPanel.page">
+            <Setter Property="Margin" Value="40,32,40,48"/>
+            <Setter Property="MaxWidth" Value="1200"/>
+        </Style>
+        <Style Selector="DockPanel.narrow StackPanel.page">
+            <Setter Property="Margin" Value="16,24,16,32"/>
+        </Style>
+</Styles>

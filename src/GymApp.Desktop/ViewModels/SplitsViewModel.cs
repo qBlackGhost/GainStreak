@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -17,6 +18,9 @@ public partial class SplitsViewModel : ViewModelBase
     public ObservableCollection<SplitItemViewModel> Custom { get; } = new();
 
     [ObservableProperty] public partial string CustomCounter { get; set; } = "";
+    [ObservableProperty] public partial string CustomCount { get; set; } = "";
+    [ObservableProperty] public partial string SlotsLeftText { get; set; } = "";
+    [ObservableProperty] public partial string ActiveName { get; set; } = "None";
     [ObservableProperty] public partial bool CanAddCustom { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
@@ -40,6 +44,10 @@ public partial class SplitsViewModel : ViewModelBase
 
             CanAddCustom = custom.Count < SplitService.MaxCustomSplits;
             CustomCounter = $"{custom.Count} / {SplitService.MaxCustomSplits} custom splits";
+            CustomCount = $"{custom.Count} / {SplitService.MaxCustomSplits}";
+            var left = SplitService.MaxCustomSplits - custom.Count;
+            SlotsLeftText = $"Create a split · {left} slot{(left == 1 ? "" : "s")} left";
+            ActiveName = Presets.Concat(Custom).FirstOrDefault(i => i.IsSelected)?.Name ?? "None";
 
         }
         catch (Exception)

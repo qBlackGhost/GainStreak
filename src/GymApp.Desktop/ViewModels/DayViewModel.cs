@@ -20,21 +20,30 @@ public partial class DayExerciseItemViewModel : ObservableObject
         ExerciseId = row.ExerciseId;
         Number = index + 1;
         Name = row.Exercise.Name;
-        Group = row.Exercise.MuscleGroup.ToString();
+        Group = row.Exercise.OwnerUserId is null ? row.Exercise.MuscleGroup.ToString() : "Custom";
         Planned = row.WarmupSets > 0
-            ? $"{row.WarmupSets} warm-up · {row.WorkingSets} working set(s)"
-            : $"{row.WorkingSets} working set(s)";
+            ? $"{row.WarmupSets} warm-up · {row.WorkingSets} working"
+            : $"{row.WorkingSets} working";
+        Sets = row.WarmupSets + row.WorkingSets;
+        Index = index;
         CanMoveUp = index > 0;
         CanMoveDown = index < count - 1;
     }
 
     public int ExerciseId { get; }
+    public int Index { get; }
     public int Number { get; }
+    public int Sets { get; }
     public string Name { get; }
     public string Group { get; }
     public string Planned { get; }
     public bool CanMoveUp { get; }
     public bool CanMoveDown { get; }
+
+    // While dragging (DayView.axaml.cs): the dragged row fades, the drop target shows a line above or below
+    [ObservableProperty] public partial bool IsDragging { get; set; }
+    [ObservableProperty] public partial bool IsDropAbove { get; set; }
+    [ObservableProperty] public partial bool IsDropBelow { get; set; }
 
     [RelayCommand] private Task MoveUp() => _owner.MoveAsync(this, -1);
     [RelayCommand] private Task MoveDown() => _owner.MoveAsync(this, +1);
@@ -67,10 +76,19 @@ public partial class PickerItemViewModel : ObservableObject
     private Task Add() => _owner.AddAsync(this);
 }
 
-public record PickerGroup(string Name, IReadOnlyList<PickerItemViewModel> Items);
+public record PickerGroup(string Name, IReadOnlyList<PickerItemViewModel> Items)
+{
+    public string Title => Name.ToUpperInvariant();
+}
 
-/// <summary>A muscle group button above the picker. Group null = "All".</summary>
-public record GroupFilter(string Label, MuscleGroup? Group);
+/// <summary>A muscle group chip above the picker. Group null = "All".</summary>
+public partial class GroupFilter(string label, MuscleGroup? group) : ObservableObject
+{
+    public string Label { get; } = label;
+    public MuscleGroup? Group { get; } = group;
+
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+}
 
 public partial class CopySourceItemViewModel : ObservableObject
 {
@@ -81,7 +99,10 @@ public partial class CopySourceItemViewModel : ObservableObject
     public string Label => $"{Source.DayName} · {Source.SplitName}";
     public string CountText => Source.ExerciseCount == 1 ? "1 exercise" : $"{Source.ExerciseCount} exercises";
 
-    [RelayCommand] private Task Choose() => _owner.ChooseCopyAsync(this);
+    /// <summary>The source picked in the copy dialog.</summary>
+    [ObservableProperty] public partial bool IsSelected { get; set; }
+
+    [RelayCommand] private void Choose() => _owner.ChooseCopy(this);
 }
 
 public partial class DayViewModel : ViewModelBase
@@ -107,6 +128,9 @@ public partial class DayViewModel : ViewModelBase
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
     [ObservableProperty] public partial string CountText { get; set; } = "";
+    [ObservableProperty] public partial string CountLabel { get; set; } = "";
+    [ObservableProperty] public partial string SetsLabel { get; set; } = "";
+    [ObservableProperty] public partial string WeekdaysText { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
     [ObservableProperty] public partial bool IsEmpty { get; set; }
@@ -118,15 +142,21 @@ public partial class DayViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsCopyOpen { get; set; }
     [ObservableProperty] public partial bool HasCopySources { get; set; }
 
+    /// <summary>The source picked in the copy dialog; "Copy exercises" waits for one.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasPendingCopy))]
-    [NotifyPropertyChangedFor(nameof(PendingCopyText))]
     public partial CopySourceItemViewModel? PendingCopy { get; set; }
 
     public bool HasPendingCopy => PendingCopy is not null;
-    public string PendingCopyText => PendingCopy is null ? "" :
-        $"Copy {PendingCopy.CountText} from {PendingCopy.Label} into {Title}? " +
-        "Planned sets come along; logged sets and PRs never do.";
+
+    /// <summary>A day that already has exercises asks whether to add to the end or replace the list.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAppendMode))]
+    public partial bool IsReplaceMode { get; set; }
+
+    public bool IsAppendMode => !IsReplaceMode;
+    public string CopyModeQuestion => $"{Title} already has exercises. What should happen?";
+    public string CopySkipNote => $"Exercises already in {Title} are skipped, so nothing is duplicated.";
 
     private int UserId => _session.CurrentUser!.Id;
 
@@ -134,6 +164,7 @@ public partial class DayViewModel : ViewModelBase
     {
         _days = days; _exercises = exercises; _session = session; _shell = shell;
         SelectedFilter = Filters[0];
+        Filters[0].IsSelected = true;
     }
 
     /// <summary>Call right after resolving from DI.</summary>
@@ -143,7 +174,8 @@ public partial class DayViewModel : ViewModelBase
         _splitName = splitName;
         _dayId = day.SplitDayId;
         Title = day.Name;
-        Subtitle = day.Weekdays.Length > 0 ? $"{splitName} · {day.Weekdays}" : splitName;
+        Subtitle = splitName;
+        WeekdaysText = day.Weekdays;
         _ = ReloadAsync(reloadCatalog: true);
     }
 
@@ -157,6 +189,9 @@ public partial class DayViewModel : ViewModelBase
                 Items.Add(new DayExerciseItemViewModel(rows[i], i, rows.Count, this));
             IsEmpty = rows.Count == 0;
             CountText = rows.Count == 1 ? "1 exercise" : $"{rows.Count} exercises";
+            CountLabel = $"{rows.Count} / {DayExerciseService.MaxExercisesPerDay} exercises";
+            var sets = Items.Sum(i => i.Sets);
+            SetsLabel = rows.Count == 0 ? "Nothing planned yet" : $"{CountText} · {sets} planned sets";
 
             if (reloadCatalog) _catalog = await _exercises.GetAvailableAsync(UserId);
             RebuildPicker();
@@ -193,8 +228,11 @@ public partial class DayViewModel : ViewModelBase
     partial void OnSelectedFilterChanged(GroupFilter? value)
     {
         if (value is null) { SelectedFilter = Filters[0]; return; }   // never leave the filter empty
+        foreach (var f in Filters) f.IsSelected = f == value;
         RebuildPicker();
     }
+
+    [RelayCommand] private void SelectFilter(GroupFilter filter) => SelectedFilter = filter;
 
     internal async Task AddAsync(PickerItemViewModel item)
     {
@@ -250,6 +288,22 @@ public partial class DayViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Drag and drop: moves the exercise to <paramref name="index"/> in one step.</summary>
+    internal async Task MoveToAsync(DayExerciseItemViewModel item, int index)
+    {
+        if (index == item.Index) return;
+        try
+        {
+            await _days.MoveToAsync(UserId, _dayId, item.ExerciseId, index);
+            Error = null; Info = null;
+            await ReloadAsync();
+        }
+        catch (Exception)
+        {
+            Error = "Could not move that exercise.";
+        }
+    }
+
     internal void OpenExercise(DayExerciseItemViewModel item) =>
         _shell().ShowExercise(_menuDay!, _splitName, item.ExerciseId);
 
@@ -274,21 +328,27 @@ public partial class DayViewModel : ViewModelBase
         }
     }
 
-    // An empty day just receives the copy; a day with exercises asks first (add to the end or replace)
-    internal Task ChooseCopyAsync(CopySourceItemViewModel item)
+    internal void ChooseCopy(CopySourceItemViewModel item)
     {
-        if (Items.Count == 0) return CopyAsync(item, CopyMode.Append);
         PendingCopy = item;
-        return Task.CompletedTask;
+        foreach (var s in CopySources) s.IsSelected = s == item;
     }
 
-    [RelayCommand] private Task ConfirmAppendAsync() =>
-        PendingCopy is { } p ? CopyAsync(p, CopyMode.Append) : Task.CompletedTask;
+    [RelayCommand] private void SetAppendMode() => IsReplaceMode = false;
+    [RelayCommand] private void SetReplaceMode() => IsReplaceMode = true;
 
-    [RelayCommand] private Task ConfirmReplaceAsync() =>
-        PendingCopy is { } p ? CopyAsync(p, CopyMode.Replace) : Task.CompletedTask;
+    // An empty day just receives the copy; a day with exercises uses the chosen mode
+    [RelayCommand]
+    private Task ConfirmCopyAsync() =>
+        PendingCopy is { } p ? CopyAsync(p, Items.Count > 0 && IsReplaceMode ? CopyMode.Replace : CopyMode.Append) : Task.CompletedTask;
 
-    [RelayCommand] private void CancelCopy() => PendingCopy = null;
+    [RelayCommand]
+    private void CancelCopy()
+    {
+        PendingCopy = null;
+        IsReplaceMode = false;
+        IsCopyOpen = false;
+    }
 
     private async Task CopyAsync(CopySourceItemViewModel item, CopyMode mode)
     {
@@ -302,6 +362,7 @@ public partial class DayViewModel : ViewModelBase
                 ? $"Copied {r.Added} exercise(s), skipped {r.Skipped} already in the list."
                 : $"Copied {r.Added} exercise(s).";
             PendingCopy = null;
+            IsReplaceMode = false;
             IsCopyOpen = false;
             await ReloadAsync();
 

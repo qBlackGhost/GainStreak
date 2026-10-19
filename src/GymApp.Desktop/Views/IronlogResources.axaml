@@ -1,0 +1,63 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- The dark "IRONLOG" look from the Gym App design canvas: colors, fonts and icons shared by its screens -->
+        <SolidColorBrush x:Key="Accent" Color="#C6F432"/>
+        <SolidColorBrush x:Key="Surface" Color="#0B0B0B"/>
+        <SolidColorBrush x:Key="Line" Color="#222222"/>
+        <SolidColorBrush x:Key="Divider" Color="#1C1C1C"/>
+        <SolidColorBrush x:Key="Muted" Color="#9A9A9A"/>
+        <SolidColorBrush x:Key="Soft" Color="#B5B5B5"/>
+        <SolidColorBrush x:Key="Light" Color="#D6D6D6"/>
+        <SolidColorBrush x:Key="MissRed" Color="#FF6B5B"/>
+        <SolidColorBrush x:Key="Flame" Color="#FF8A2A"/>
+        <FontFamily x:Key="Mono">Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace</FontFamily>
+
+        <LinearGradientBrush x:Key="ColdBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Offset="0" Color="#3E4C59"/>
+            <GradientStop Offset="0.5" Color="#7D93A8"/>
+            <GradientStop Offset="1" Color="#B9C8D6"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="FireBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Offset="0" Color="#C81D00"/>
+            <GradientStop Offset="0.35" Color="#FF4A00"/>
+            <GradientStop Offset="0.7" Color="#FF9A00"/>
+            <GradientStop Offset="1" Color="#FFD400"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="TodayDoneBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Offset="0" Color="#FF4A00"/>
+            <GradientStop Offset="1" Color="#FFB000"/>
+        </LinearGradientBrush>
+
+        <!-- Icons, on a 24×24 grid (see Icon.cs) -->
+        <StreamGeometry x:Key="IcDumbbell">M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12</StreamGeometry>
+        <StreamGeometry x:Key="IcGrid">M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z</StreamGeometry>
+        <StreamGeometry x:Key="IcCalendar">M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4</StreamGeometry>
+        <StreamGeometry x:Key="IcFlame">M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z</StreamGeometry>
+        <StreamGeometry x:Key="IcMap">M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14</StreamGeometry>
+        <StreamGeometry x:Key="IcFriends">M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M14.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16.5 14.2c2.9 0.3 5 2.4 5 5.8</StreamGeometry>
+        <StreamGeometry x:Key="IcLogout">M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3</StreamGeometry>
+        <StreamGeometry x:Key="IcCheck">M5 12l5 5 9-10</StreamGeometry>
+        <StreamGeometry x:Key="IcMadeUp">M4 12a8 8 0 1 0 3-6.2M4 4v4h4</StreamGeometry>
+        <StreamGeometry x:Key="IcX">M6 6l12 12M18 6L6 18</StreamGeometry>
+        <StreamGeometry x:Key="IcClock">M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2</StreamGeometry>
+        <StreamGeometry x:Key="IcTrophy">M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4</StreamGeometry>
+        <StreamGeometry x:Key="IcPin">M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12zM9.5 10a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0</StreamGeometry>
+        <StreamGeometry x:Key="IcPlus">M12 5v14M5 12h14</StreamGeometry>
+        <StreamGeometry x:Key="IcBack">M19 12H5M11 6l-6 6 6 6</StreamGeometry>
+        <StreamGeometry x:Key="IcLock">M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM8 10V7a4 4 0 0 1 8 0v3</StreamGeometry>
+        <StreamGeometry x:Key="IcShield">M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z</StreamGeometry>
+        <StreamGeometry x:Key="IcCopy">M10 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zM16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2</StreamGeometry>
+        <StreamGeometry x:Key="IcSearch">M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5</StreamGeometry>
+        <!-- Filled six dots, for a Path: the drag handle -->
+        <StreamGeometry x:Key="IcGrip">M3.4 4a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0M9.4 4a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0M3.4 10a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0M9.4 10a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0M3.4 16a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0M9.4 16a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0</StreamGeometry>
+        <StreamGeometry x:Key="IcArrowRight">M5 12h14M13 6l6 6-6 6</StreamGeometry>
+        <!-- Filled, for a Path: the "Start" marker -->
+        <StreamGeometry x:Key="IcPlay">M7 4l13 8-13 8z</StreamGeometry>
+        <StreamGeometry x:Key="IcTrash">M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3</StreamGeometry>
+        <StreamGeometry x:Key="IcInfo">M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 8v5M12 16h0.01</StreamGeometry>
+        <StreamGeometry x:Key="IcPencil">M4 20h4L19 9l-4-4L4 16z</StreamGeometry>
+        <StreamGeometry x:Key="IcMoon">M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z</StreamGeometry>
+        <!-- Filled, for a Path rather than an Icon -->
+        <StreamGeometry x:Key="IcStar">M12 2l3 7 7 0.6-5.3 4.7L18.3 22 12 18l-6.3 4 1.6-7.7L2 9.6 9 9z</StreamGeometry>
+        <StreamGeometry x:Key="IcArc">M 40 240 A 200 200 0 0 1 440 240</StreamGeometry>
+</ResourceDictionary>

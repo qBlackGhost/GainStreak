@@ -43,16 +43,11 @@ public partial class MainViewModel : ViewModelBase
     public void ShowSplits() => Current = _sp.GetRequiredService<SplitsViewModel>();
     public void ShowWorkouts() => Current = _sp.GetRequiredService<WorkoutsViewModel>();
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
+    public void ShowCalories() => Current = _sp.GetRequiredService<CaloriesViewModel>();
     public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
     public void ShowGymPicker() => Current = _sp.GetRequiredService<GymPickerViewModel>();
+    /// <summary>Friends, with the leaderboard on the same screen.</summary>
     public void ShowFriends() => Current = _sp.GetRequiredService<FriendsViewModel>();
-
-    public void ShowLeaderboard(bool fromFriends = false)
-    {
-        var vm = _sp.GetRequiredService<LeaderboardViewModel>();
-        if (fromFriends) vm.OpenedFromFriends();
-        Current = vm;
-    }
 
     public void ShowGymSummary(bool fromProfile = false)
     {

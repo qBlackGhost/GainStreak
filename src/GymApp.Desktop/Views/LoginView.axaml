@@ -6,8 +6,8 @@
     <StackPanel Spacing="12" Width="320"
                 HorizontalAlignment="Center" VerticalAlignment="Center">
         <TextBlock Text="Sign in" FontSize="24" FontWeight="SemiBold"/>
-        <TextBox Watermark="Username" Text="{Binding Username}"/>
-        <TextBox Watermark="Password" PasswordChar="●" Text="{Binding Password}"/>
+        <TextBox PlaceholderText="Username" Text="{Binding Username}"/>
+        <TextBox PlaceholderText="Password" PasswordChar="●" Text="{Binding Password}"/>
         <CheckBox Content="Remember me" IsChecked="{Binding RememberMe}"/>
         <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
