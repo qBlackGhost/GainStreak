@@ -7,27 +7,27 @@
     <!-- After the "Gym App" design canvas (Profile artboard): body data and home city on the left, weight and
          appearance on the right. Below 880 px of content the right column goes under the left (ProfileView.axaml.cs). -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <Style Selector="TextBlock.formLabel">
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.track">
             <Setter Property="Padding" Value="4"/>
             <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
         </Style>
         <Style Selector="TextBox.field">
             <Setter Property="MinHeight" Value="44"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="TextBox.mono">
@@ -37,8 +37,8 @@
             <Setter Property="MinHeight" Value="44"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.unitTag">
@@ -71,9 +71,7 @@
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <DockPanel Background="Black" TextElement.Foreground="White">
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Profile"/>
 
         <ScrollViewer>
@@ -81,21 +79,21 @@
             <!-- Header: who you are, your split, streak and level -->
             <Grid x:Name="Header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
                 <StackPanel Orientation="Horizontal" Spacing="20">
-                    <Border Width="72" Height="72" CornerRadius="36" Background="White" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Initials}" Foreground="Black" FontSize="26" FontWeight="ExtraBold"
+                    <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="26" FontWeight="ExtraBold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel Spacing="8" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Username}" FontSize="34" FontWeight="ExtraBold"/>
                         <WrapPanel ItemSpacing="8" LineSpacing="8">
-                            <Button Classes="link" Foreground="White" FontSize="13" Command="{Binding ShowSplitsCommand}">
-                                <Border Background="#1A1A1A" CornerRadius="999" Padding="12,5">
+                            <Button Classes="link" Foreground="{DynamicResource Ink}" FontSize="13" Command="{Binding ShowSplitsCommand}">
+                                <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="12,5">
                                     <TextBlock Text="{Binding SplitText}" FontSize="13" FontWeight="SemiBold"/>
                                 </Border>
                             </Button>
-                            <Border Classes="pill" BorderBrush="#5A2A10" Padding="12,5" TextElement.Foreground="#FFB066">
+                            <Border Classes="pill" BorderBrush="{DynamicResource OrangeTintLine}" Padding="12,5" TextElement.Foreground="{DynamicResource FlameText}">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <Path Data="{StaticResource IcFlame}" Fill="#FFB066" Width="13" Height="13" Stretch="Uniform"
+                                    <Path Data="{StaticResource IcFlame}" Fill="{DynamicResource FlameText}" Width="13" Height="13" Stretch="Uniform"
                                           VerticalAlignment="Center"/>
                                     <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
                                         <Run Text="{Binding CurrentStreak}" FontFamily="{StaticResource Mono}"/><Run Text=" day streak · best "/><Run
@@ -119,10 +117,10 @@
             </Grid>
 
             <!-- Saved / done -->
-            <Border Padding="18,14" CornerRadius="14" BorderBrush="#2E3A12" BorderThickness="1" Background="#0F1208"
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
                     IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
@@ -138,7 +136,7 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="Body data" Classes="h2"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                    <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="14" Height="14"/>
+                                    <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="14" Height="14"/>
                                     <TextBlock Text="Stored only on this computer" FontSize="12" Classes="muted"/>
                                 </StackPanel>
                             </Grid>
@@ -191,7 +189,7 @@
                                         </ComboBox>
                                         <TextBox Classes="field mono" Width="96" TextAlignment="Center" PlaceholderText="Year"
                                                  Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
-                                        <Border Background="#1A1A1A" CornerRadius="999" Padding="11,5" VerticalAlignment="Center">
+                                        <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="11,5" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding AgeText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
                                         </Border>
                                     </WrapPanel>
@@ -256,15 +254,15 @@
                             </Grid>
 
                             <!-- Maintenance and save -->
-                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="Maintenance (estimate)" FontSize="12" Classes="muted"/>
                                         <TextBlock>
                                             <Run Text="{Binding MaintenanceText}" FontFamily="{StaticResource Mono}" FontSize="20"
-                                                 FontWeight="Bold"/><Run Text=" kcal / day" FontSize="15" Foreground="{StaticResource Soft}"/>
+                                                 FontWeight="Bold"/><Run Text=" kcal / day" FontSize="15" Foreground="{DynamicResource Soft}"/>
                                         </TextBlock>
-                                        <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Foreground="#FFB066"
+                                        <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Foreground="{DynamicResource FlameText}"
                                                    IsVisible="{Binding MaintenanceNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="Unsaved changes" FontSize="13" Classes="soft" VerticalAlignment="Center"
@@ -283,10 +281,10 @@
                                 <TextBlock Text="Home city" Classes="h2"/>
                                 <TextBlock Text="The gym map opens on this city. You can still pick gyms anywhere." FontSize="13" Classes="soft"/>
                             </StackPanel>
-                            <Border Padding="16,14" CornerRadius="14" BorderBrush="#333333" BorderThickness="1"
+                            <Border Padding="16,14" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                                     IsVisible="{Binding HasHomeCity}">
                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                    <Border Width="40" Height="40" CornerRadius="10" Background="{StaticResource Accent}">
+                                    <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Accent}">
                                         <v:Icon Data="{StaticResource IcPin}" Stroke="Black" StrokeThickness="2.2" Width="20" Height="20"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
@@ -299,7 +297,7 @@
                                 </Grid>
                             </Border>
                             <Panel IsVisible="{Binding !HasHomeCity}">
-                                <Rectangle Stroke="#444444" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
+                                <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
                                 <TextBlock Text="No home city yet. Search for one below." FontSize="14" Classes="soft" Margin="16,14"/>
                             </Panel>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -307,7 +305,7 @@
                                     <TextBox x:Name="CityBox" Classes="field" MinHeight="48" Padding="42,0,14,0"
                                              PlaceholderText="Search for a city, e.g. Cluj-Napoca" Text="{Binding CitySearchText}"
                                              AutomationProperties.Name="Search for a city"/>
-                                    <v:Icon Data="{StaticResource IcSearch}" Stroke="{StaticResource Muted}" StrokeThickness="2.2"
+                                    <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2"
                                             HorizontalAlignment="Left" Margin="14,0,0,0" IsHitTestVisible="False"/>
                                 </Panel>
                                 <Button Grid.Column="1" Classes="btn light" MinHeight="48" Padding="20,0" Content="Search"
@@ -317,32 +315,32 @@
                                        IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             <Button Classes="btn outline small" Content="Retry" HorizontalAlignment="Left"
                                     Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"/>
-                            <Border CornerRadius="14" BorderBrush="{StaticResource Line}" BorderThickness="1" ClipToBounds="True"
+                            <Border CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" ClipToBounds="True"
                                     IsVisible="{Binding HasCityCandidates}">
                                 <ItemsControl ItemsSource="{Binding CityCandidates}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:CityCandidateViewModel">
-                                            <Button Classes="btn" MinHeight="52" Padding="16,8" CornerRadius="0" Background="#0F0F0F"
-                                                    BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1"
+                                            <Button Classes="btn" MinHeight="52" Padding="16,8" CornerRadius="0" Background="{DynamicResource Surface2}"
+                                                    BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1"
                                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" FontWeight="Normal"
-                                                    Foreground="White" Command="{Binding ChooseCommand}">
+                                                    Foreground="{DynamicResource Ink}" Command="{Binding ChooseCommand}">
                                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                     <StackPanel Spacing="2">
                                                         <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"/>
                                                         <TextBlock Text="{Binding DisplayName}" FontSize="12" Classes="muted"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="1" Text="Set as home" FontSize="13" FontWeight="SemiBold"
-                                                               Foreground="{StaticResource Accent}" VerticalAlignment="Center"/>
+                                                               Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Button>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </Border>
-                            <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="#6E6E6E"/>
+                            <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="{DynamicResource Faint}"/>
 
                             <!-- Your gym and "Ask for gym" live on the Map; sharing can be changed here too -->
-                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="Visible to friends" FontSize="14" Classes="light"/>
@@ -364,8 +362,8 @@
                         <StackPanel Spacing="14">
                             <TextBlock Text="Account" Classes="h2"/>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsEditingEmail}">
-                                <Border Width="40" Height="40" CornerRadius="10" Background="#1A1A1A">
-                                    <v:Icon Data="{StaticResource IcMail}" Stroke="White" StrokeThickness="2" Width="20" Height="20"
+                                <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill2}">
+                                    <v:Icon Data="{StaticResource IcMail}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="20" Height="20"
                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
@@ -400,11 +398,11 @@
                             <TextBlock Text="You can sign in with your username or this email." FontSize="12" Classes="muted"/>
 
                             <!-- Password -->
-                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                                 <StackPanel Spacing="10">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsChangingPassword}">
-                                        <Border Width="40" Height="40" CornerRadius="10" Background="#1A1A1A">
-                                            <v:Icon Data="{StaticResource IcLock}" Stroke="White" StrokeThickness="2" Width="20" Height="20"
+                                        <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill2}">
+                                            <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="20" Height="20"
                                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
                                         <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
@@ -446,12 +444,12 @@
                             </Border>
 
                             <!-- Delete account, behind a confirmation that asks for the password -->
-                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                                 <StackPanel Spacing="10">
-                                    <Button Classes="btn outline small" MinHeight="40" Foreground="#FF8A7A" HorizontalAlignment="Left"
+                                    <Button Classes="btn outline small" MinHeight="40" Foreground="{DynamicResource ErrorText}" HorizontalAlignment="Left"
                                             IsVisible="{Binding !IsConfirmingDelete}" Command="{Binding AskDeleteCommand}">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <v:Icon Data="{StaticResource IcTrash}" Stroke="#FF8A7A" Width="16" Height="16"/>
+                                            <v:Icon Data="{StaticResource IcTrash}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16"/>
                                             <TextBlock Text="Delete account" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
@@ -467,7 +465,7 @@
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
                                             <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelDeleteCommand}"/>
-                                            <Button Classes="btn outline small" MinHeight="40" Padding="18,0" Foreground="#FF8A7A"
+                                            <Button Classes="btn outline small" MinHeight="40" Padding="18,0" Foreground="{DynamicResource ErrorText}"
                                                     Content="Delete everything" Command="{Binding DeleteAccountCommand}"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -485,7 +483,7 @@
                                     <TextBlock>
                                         <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
                                              Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
-                                             Foreground="{StaticResource Soft}"/>
+                                             Foreground="{DynamicResource Soft}"/>
                                     </TextBlock>
                                     <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
                                 </StackPanel>
@@ -497,17 +495,17 @@
                             <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
                                 <Viewbox Stretch="Fill" Height="96">
                                     <Canvas Width="320" Height="96">
-                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{StaticResource Line}" StrokeThickness="1"/>
-                                        <Polyline Points="{Binding TrendPoints}" Stroke="{StaticResource Accent}" StrokeThickness="2.5"
+                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{DynamicResource Line}" StrokeThickness="1"/>
+                                        <Polyline Points="{Binding TrendPoints}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.5"
                                                   StrokeLineCap="Round" StrokeJoin="Round"/>
-                                        <Ellipse Width="10" Height="10" Fill="{StaticResource Accent}" Stroke="{StaticResource Surface}"
+                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent}" Stroke="{DynamicResource Surface}"
                                                  StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
                                                  Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
                                     </Canvas>
                                 </Viewbox>
                                 <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="#6E6E6E"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="#6E6E6E"/>
+                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
                                 </Grid>
                             </StackPanel>
 
@@ -532,13 +530,13 @@
                                 <ItemsControl ItemsSource="{Binding History}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:WeightEntryViewModel">
-                                            <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
+                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
                                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
                                                     <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
                                                                FontWeight="Bold" VerticalAlignment="Center"/>
                                                     <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
-                                                            Padding="0" BorderBrush="#2A2A2A" Foreground="{StaticResource Muted}"
+                                                            Padding="0" BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}"
                                                             Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
                                                             AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
                                                         <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
@@ -552,7 +550,7 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ===== Appearance (not wired up yet: the app stays dark) ===== -->
+                    <!-- ===== Appearance: the Theme setting, applied at once ===== -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">
                             <TextBlock Text="Appearance" FontSize="20" FontWeight="Bold"/>
@@ -567,14 +565,15 @@
                                 </v:SegmentedPill>
                             </Border>
                             <TextBlock Text="System follows your Windows or macOS setting." FontSize="12" Classes="muted"/>
+                            <TextBlock Text="{Binding ThemeError}" Classes="error" FontSize="12"
+                                       IsVisible="{Binding ThemeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </Grid>
 
-            <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="#6E6E6E" HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center"/>
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
-    </ThemeVariantScope>
 </UserControl>

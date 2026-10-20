@@ -8,14 +8,12 @@
     <UserControl.Styles>
         <StyleInclude Source="/Views/AuthStyles.axaml"/>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <ScrollViewer Background="Black" TextElement.Foreground="White">
+    <ScrollViewer Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
             <!-- Brand -->
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                 <Image Source="{StaticResource GainStreakLogo}" Width="40" Height="40"/>
-                <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{StaticResource Accent}"/></TextBlock>
+                <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
             </StackPanel>
 
             <Border Classes="card" Padding="32">
@@ -31,14 +29,14 @@
 
                     <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <v:Icon Data="{StaticResource IcInfo}" Stroke="#FF8A7A" Width="16" Height="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="#FF8A7A" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
                     <StackPanel Orientation="Horizontal" Spacing="10"
                                 IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <v:Icon Data="{StaticResource IcInfo}" Stroke="{StaticResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding Notice}" FontSize="13" Classes="soft" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </StackPanel>
 
@@ -95,7 +93,7 @@
                                 Command="{Binding CancelMoveOnlineCommand}"/>
                     </StackPanel>
 
-                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0" IsVisible="{Binding IsSigningIn}">
+                    <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0" IsVisible="{Binding IsSigningIn}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="New to GainStreak?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
                             <Button Classes="link" Content="Create an account" FontSize="14" Command="{Binding GoToRegisterCommand}"
@@ -106,10 +104,9 @@
             </Border>
 
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
+                <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
                 <TextBlock Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" Classes="muted" TextWrapping="Wrap" MaxWidth="380"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>
-    </ThemeVariantScope>
 </UserControl>

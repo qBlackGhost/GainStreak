@@ -1059,6 +1059,10 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("SplitStartDay")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ThemePreference")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(32)

@@ -8,12 +8,12 @@
          card like the points history, over a dimmed page. Send goes to the server, which forwards it to the developer's
          Discord. Escape, the close button or a click outside closes it. -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="Border.track">
             <Setter Property="Padding" Value="4"/>
             <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
         </Style>
         <Style Selector="TextBox.note">
             <Setter Property="MinHeight" Value="148"/>
@@ -21,8 +21,8 @@
             <Setter Property="Padding" Value="14,12"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="AcceptsReturn" Value="True"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="VerticalContentAlignment" Value="Top"/>
@@ -30,27 +30,25 @@
         <Style Selector="Border.attach">
             <Setter Property="Padding" Value="14,12"/>
             <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Background" Value="#111111"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <Panel TextElement.Foreground="White">
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
         <!-- The dimmed page; a click on it closes the popup -->
-        <Border x:Name="Scrim" Background="#B8000000"/>
+        <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
 
         <Border Width="560" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
-                CornerRadius="24" Background="{StaticResource Surface}" BorderBrush="#2A2A2A" BorderThickness="1"
+                CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
             <DockPanel>
                 <!-- Header: title, close, the two kinds -->
-                <Border DockPanel.Dock="Top" Padding="24,24,24,20" BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1">
+                <Border DockPanel.Dock="Top" Padding="24,24,24,20" BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1">
                     <StackPanel Spacing="20">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                            <Border Width="48" Height="48" CornerRadius="12" Background="#141A08">
-                                <v:Icon Data="{StaticResource IcChat}" Stroke="{StaticResource Accent}" StrokeThickness="2.2"
+                            <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource LimeTint}">
+                                <v:Icon Data="{StaticResource IcChat}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2"
                                         Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
@@ -58,7 +56,7 @@
                                 <TextBlock Text="{Binding SubtitleText}" FontSize="13" Classes="muted"/>
                             </StackPanel>
                             <Button x:Name="CloseButton" Grid.Column="2" Classes="btn outline" Width="44" Height="44" MinHeight="44"
-                                    Padding="0" Foreground="{StaticResource Light}" VerticalAlignment="Center"
+                                    Padding="0" Foreground="{DynamicResource Light}" VerticalAlignment="Center"
                                     Command="{Binding CloseCommand}" ToolTip.Tip="Close"
                                     AutomationProperties.Name="Close feedback">
                                 <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="16" Height="16"/>
@@ -77,10 +75,10 @@
                 </Border>
 
                 <!-- Footer: send, and where it goes -->
-                <Border DockPanel.Dock="Bottom" Padding="24,16" Background="#080808"
-                        BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0">
+                <Border DockPanel.Dock="Bottom" Padding="24,16" Background="{DynamicResource SurfaceSunken}"
+                        BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                        <TextBlock FontSize="12" Foreground="{StaticResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}" TextWrapping="Wrap" VerticalAlignment="Center"
                                    Text="Sent to the developer with your username."/>
                         <Button Grid.Column="1" Classes="btn primary" Command="{Binding SendCommand}">
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -124,7 +122,7 @@
                         <Border Classes="attach" Padding="0" IsVisible="{Binding IsReportPreviewOpen}">
                             <ScrollViewer MaxHeight="180" HorizontalScrollBarVisibility="Disabled">
                                 <SelectableTextBlock Text="{Binding ReportPreview}" Margin="14,12" FontSize="11"
-                                                     FontFamily="{StaticResource Mono}" Foreground="{StaticResource Light}"
+                                                     FontFamily="{StaticResource Mono}" Foreground="{DynamicResource Light}"
                                                      TextWrapping="Wrap"/>
                             </ScrollViewer>
                         </Border>
@@ -138,14 +136,13 @@
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8"
                                     IsVisible="{Binding Message, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.6"
                                     Width="14" Height="14" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Message}" FontSize="13" Foreground="{StaticResource Accent}" TextWrapping="Wrap"/>
+                            <TextBlock Text="{Binding Message}" FontSize="13" Foreground="{DynamicResource AccentInk}" TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>
         </Border>
     </Panel>
-    </ThemeVariantScope>
 </UserControl>

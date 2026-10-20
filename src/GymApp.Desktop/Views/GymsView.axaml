@@ -9,21 +9,21 @@
          the screen: the map fills the left, the Friends card takes the leftover height on the right and scrolls inside.
          Below 1100 × 700 the page scrolls and the columns stack (GymsView.axaml.cs). -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <Style Selector="Border.mapCard">
-            <Setter Property="Background" Value="{StaticResource Surface}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Background" Value="{DynamicResource Surface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="18"/>
             <Setter Property="Padding" Value="18,16"/>
         </Style>
         <Style Selector="Border.overlay">
-            <Setter Property="Background" Value="#C7000000"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Background" Value="{DynamicResource Glass}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="10"/>
         </Style>
@@ -34,46 +34,46 @@
             <Setter Property="Padding" Value="12,6"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#121212"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.chip.on">
-            <Setter Property="Background" Value="#10140A"/>
-            <Setter Property="BorderBrush" Value="#3E4E14"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLineStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.chip.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#141A0B"/>
-            <Setter Property="BorderBrush" Value="#56701A"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLineStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Border.track">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="20"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource Control}"/>
             <Setter Property="Padding" Value="2"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.chip.on Border.track">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
         </Style>
         <Style Selector="Border.knob">
             <Setter Property="Width" Value="16"/>
             <Setter Property="Height" Value="16"/>
             <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
         </Style>
         <Style Selector="Button.chip.on Border.knob">
-            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
 
@@ -87,60 +87,60 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.frow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#141414"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.frow:disabled /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.frow.selected">
-            <Setter Property="BorderBrush" Value="White"/>
-            <Setter Property="Background" Value="#141414"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Ink}"/>
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
         </Style>
         <Style Selector="Border.avatar">
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="34"/>
             <Setter Property="CornerRadius" Value="17"/>
-            <Setter Property="Background" Value="#1E1E1E"/>
-            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Ink}"/>
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.day">
             <Setter Property="CornerRadius" Value="999"/>
             <Setter Property="Padding" Value="8,2"/>
-            <Setter Property="Background" Value="#1A1A1A"/>
+            <Setter Property="Background" Value="{DynamicResource Fill2}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-            <Setter Property="TextElement.Foreground" Value="{StaticResource Light}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Light}"/>
         </Style>
         <Style Selector="Border.day.today">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="TextElement.Foreground" Value="Black"/>
         </Style>
         <Style Selector="Border.groupDot">
             <Setter Property="Width" Value="8"/>
             <Setter Property="Height" Value="8"/>
             <Setter Property="CornerRadius" Value="4"/>
-            <Setter Property="Background" Value="#6E6E6E"/>
+            <Setter Property="Background" Value="{DynamicResource Faint}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.groupDot.today">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
         </Style>
         <Style Selector="Border.groupDot.away">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#6E6E6E"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Faint}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
         <Style Selector="Border.tile">
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="#111111"/>
+            <Setter Property="Background" Value="{DynamicResource Surface2}"/>
         </Style>
         <Style Selector="Button.square">
             <Setter Property="Width" Value="32"/>
@@ -160,10 +160,10 @@
             <Setter Property="Margin" Value="0,12,0,0"/>
         </Style>
         <Style Selector="Border#HomeIcon">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
         </Style>
         <Style Selector="Border#HomeIcon.none">
-            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
         </Style>
         <Style Selector="Grid#RightColumn">
             <Setter Property="Grid.Column" Value="2"/>
@@ -186,9 +186,7 @@
             <Setter Property="Margin" Value="16,20"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <Grid Background="Black" TextElement.Foreground="White">
+    <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
         <v:Sidebar Current="Map"/>
 
@@ -200,7 +198,7 @@
                 <WrapPanel ItemSpacing="16" LineSpacing="6" VerticalAlignment="Center">
                     <TextBlock Text="Map" FontSize="28" FontWeight="ExtraBold" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                        <v:Icon Data="{StaticResource IcPin}" Stroke="{StaticResource Soft}" Width="15" Height="15" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource Soft}" Width="15" Height="15" VerticalAlignment="Center"/>
                         <TextBlock Text="{Binding CityName}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                         <TextBlock Text="·" FontSize="14" Classes="soft" VerticalAlignment="Center"/>
                         <Button Classes="link" FontSize="14" Content="Change city" Command="{Binding ChangeCityCommand}"/>
@@ -249,7 +247,7 @@
                                 <TextBlock Text="{Binding RangeTitle}" FontSize="13" Classes="muted" VerticalAlignment="Center" TextWrapping="NoWrap"/>
                             </WrapPanel>
                             <WrapPanel x:Name="MapPills" Grid.Column="1" ItemSpacing="8" LineSpacing="8">
-                                <Border Padding="3" CornerRadius="10" Background="#161616" Width="234">
+                                <Border Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" Width="234">
                                     <v:SegmentedPill SelectedIndex="{Binding RangeIndex}" PillInset="0" PillCornerRadius="8">
                                         <Button Classes="seg" Classes.on="{Binding RangeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
                                                 MinHeight="32" Padding="0" CornerRadius="8" Content="Today" Command="{Binding SetRangeCommand}" CommandParameter="0"/>
@@ -259,7 +257,7 @@
                                                 MinHeight="32" Padding="0" CornerRadius="8" Content="30 days" Command="{Binding SetRangeCommand}" CommandParameter="2"/>
                                     </v:SegmentedPill>
                                 </Border>
-                                <Border Padding="3" CornerRadius="10" Background="#161616" Width="184">
+                                <Border Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" Width="184">
                                     <v:SegmentedPill SelectedIndex="{Binding ModeIndex}" PillInset="0" PillCornerRadius="8">
                                         <Button Classes="seg" Classes.on="{Binding ModeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
                                                 MinHeight="32" Padding="0" CornerRadius="8" Content="Latest" Command="{Binding SetModeCommand}" CommandParameter="0"/>
@@ -270,8 +268,8 @@
                             </WrapPanel>
                         </Grid>
 
-                        <Border Grid.Row="1" CornerRadius="14" ClipToBounds="True" Background="#0E1113"
-                                BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        <Border Grid.Row="1" CornerRadius="14" ClipToBounds="True" Background="{DynamicResource ColdTint}"
+                                BorderBrush="{DynamicResource Line}" BorderThickness="1">
                             <Grid>
                                 <mapsui:MapControl x:Name="FriendMap"/>
 
@@ -293,12 +291,12 @@
                                             <TextBlock Text="Up to 30 days" FontSize="12" Classes="light"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Border Width="14" Height="14" CornerRadius="7" Background="{StaticResource Accent}" BorderBrush="Black"
+                                            <Border Width="14" Height="14" CornerRadius="7" Background="{DynamicResource Accent}" BorderBrush="Black"
                                                     BorderThickness="2"/>
                                             <TextBlock Text="You" FontSize="12" Classes="light"/>
                                         </StackPanel>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <Border Width="10" Height="10" Margin="2,0" CornerRadius="5" Background="#6B7278" BorderBrush="#0E1113"
+                                            <Border Width="10" Height="10" Margin="2,0" CornerRadius="5" Background="#6B7278" BorderBrush="{DynamicResource Surface}"
                                                     BorderThickness="2"/>
                                             <TextBlock Text="Gym" FontSize="12" Classes="light"/>
                                         </StackPanel>
@@ -307,15 +305,15 @@
 
                                 <!-- Today's gym changed -->
                                 <Border Padding="14,8,8,8" CornerRadius="12" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Top"
-                                        Background="#0F1208" BorderBrush="#2E3A12" BorderThickness="1" BoxShadow="0 8 24 0 #80000000"
+                                        Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" BoxShadow="0 8 24 0 #80000000"
                                         IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8"
+                                        <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
                                                 Width="16" Height="16" VerticalAlignment="Center"/>
                                         <TextBlock Text="{Binding Toast}" FontSize="13" VerticalAlignment="Center" MaxWidth="420"/>
                                         <Button Classes="btn outline small" MinHeight="32" Content="Undo" Command="{Binding UndoToastCommand}"
                                                 IsVisible="{Binding CanUndoToast}"/>
-                                        <Button Classes="btn outline square" Foreground="{StaticResource Soft}" Command="{Binding DismissToastCommand}"
+                                        <Button Classes="btn outline square" Foreground="{DynamicResource Soft}" Command="{Binding DismissToastCommand}"
                                                 ToolTip.Tip="Close" AutomationProperties.Name="Close">
                                             <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="12" Height="12"/>
                                         </Button>
@@ -331,7 +329,7 @@
 
                                 <!-- Gym card -->
                                 <Border Padding="14" CornerRadius="14" Width="420" Margin="16,0,16,32" HorizontalAlignment="Center"
-                                        VerticalAlignment="Bottom" Background="#111111" BorderBrush="#333333" BorderThickness="1"
+                                        VerticalAlignment="Bottom" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                                         BoxShadow="0 12 40 0 #99000000" IsVisible="{Binding HasSelection}">
                                     <StackPanel Spacing="10">
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -339,7 +337,7 @@
                                                 <TextBlock Text="{Binding SelectedName}" FontSize="15" FontWeight="Bold"/>
                                                 <TextBlock Text="{Binding SelectedDetail}" FontSize="12" Classes="muted"/>
                                             </StackPanel>
-                                            <Button Grid.Column="1" Classes="btn outline square" Foreground="{StaticResource Soft}"
+                                            <Button Grid.Column="1" Classes="btn outline square" Foreground="{DynamicResource Soft}"
                                                     Command="{Binding CloseGymCardCommand}" ToolTip.Tip="Close" AutomationProperties.Name="Close">
                                                 <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="14" Height="14"/>
                                             </Button>
@@ -364,10 +362,10 @@
                                         <TextBlock FontSize="13" Classes="muted" IsVisible="{Binding !HasSelectedVisitors}">
                                             <Run Text="No friends checked in here "/><Run Text="{Binding RangeWords}"/><Run Text="."/>
                                         </TextBlock>
-                                        <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+                                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,10,0,0">
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                 <TextBlock FontSize="13" Classes="soft" VerticalAlignment="Center">
-                                                    <Run Text="You: "/><Run Text="{Binding SelectedMine}" FontWeight="Bold" Foreground="White"/><Run Text=" this month"/>
+                                                    <Run Text="You: "/><Run Text="{Binding SelectedMine}" FontWeight="Bold" Foreground="{DynamicResource Ink}"/><Run Text=" this month"/>
                                                 </TextBlock>
                                                 <Button Grid.Column="1" Classes="btn small" Classes.primary="{Binding CanPickSelected}"
                                                         Classes.outline="{Binding !CanPickSelected}" MinHeight="36" Content="{Binding SelectedPickLabel}"
@@ -400,7 +398,7 @@
                                     <Panel>
                                         <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="20" Height="20"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasHomeGym}"/>
-                                        <v:Icon Data="{StaticResource IcDumbbell}" Stroke="#6E6E6E" StrokeThickness="2.4" Width="20" Height="20"
+                                        <v:Icon Data="{StaticResource IcDumbbell}" Stroke="{DynamicResource Faint}" StrokeThickness="2.4" Width="20" Height="20"
                                                 HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasHomeGym}"/>
                                     </Panel>
                                 </Border>
@@ -409,7 +407,7 @@
                                     <TextBlock Text="{Binding HomeGymDetail}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                 </StackPanel>
                             </Grid>
-                            <Border Padding="12,10" CornerRadius="12" Background="#111111">
+                            <Border Padding="12,10" CornerRadius="12" Background="{DynamicResource Surface2}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
                                         <TextBlock Text="Today" FontSize="12" Classes="muted"/>
@@ -432,7 +430,7 @@
                                     <TextBlock Text="{Binding FriendsStale}" FontSize="12" Classes="muted" TextWrapping="Wrap"
                                                IsVisible="{Binding FriendsStale, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616" Width="196" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" Width="196" VerticalAlignment="Center">
                                     <v:SegmentedPill SelectedIndex="{Binding SortIndex}" PillInset="0" PillCornerRadius="8">
                                         <Button Classes="seg" Classes.on="{Binding SortIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
                                                 MinHeight="32" Padding="0" CornerRadius="8" Command="{Binding SetSortCommand}" CommandParameter="0">
@@ -544,8 +542,8 @@
                                             <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                                                        TextWrapping="NoWrap" VerticalAlignment="Center"/>
                                             <ProgressBar Grid.Column="1" Height="6" MinHeight="6" CornerRadius="999" Minimum="0" Maximum="1"
-                                                         Value="{Binding Share}" VerticalAlignment="Center" Background="#222222"
-                                                         Foreground="White"/>
+                                                         Value="{Binding Share}" VerticalAlignment="Center" Background="{DynamicResource Track}"
+                                                         Foreground="{DynamicResource Ink}"/>
                                             <TextBlock Grid.Column="2" Text="{Binding VisitsText}" Classes="mono" FontSize="12" FontWeight="Bold"
                                                        MinWidth="18" TextAlignment="Right" VerticalAlignment="Center"/>
                                         </Grid>
@@ -563,5 +561,4 @@
     <!-- Gym picker dialog, over the whole page -->
     <ContentControl Content="{Binding Picker}" IsVisible="{Binding IsPickerOpen}"/>
     </Grid>
-    </ThemeVariantScope>
 </UserControl>

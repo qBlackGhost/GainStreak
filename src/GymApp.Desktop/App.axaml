@@ -3,8 +3,9 @@
              x:Class="GymApp.Desktop.App"
              Name="GainStreak"
              xmlns:local="using:GymApp.Desktop"
+             xmlns:v="using:GymApp.Desktop.Views"
              RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             <!-- Default follows the system until someone signs in; then their Theme setting decides (ThemeService) -->
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -20,6 +21,10 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- The sliding pill is the selected surface: white on dark, ink on light (12e) -->
+        <Style Selector="v|SegmentedPill">
+            <Setter Property="PillBrush" Value="{DynamicResource Inverse}"/>
+        </Style>
         <!-- A validation message under the field it's about (12d) -->
         <Style Selector="TextBlock.fieldError">
             <Setter Property="Foreground" Value="IndianRed"/>

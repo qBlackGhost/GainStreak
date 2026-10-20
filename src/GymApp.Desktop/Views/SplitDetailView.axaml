@@ -8,7 +8,7 @@
          with a live preview of the week on the left, what the split is about on the right. Below 880 px the right
          column goes under the left (SplitDetailView.axaml.cs). -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
@@ -17,7 +17,7 @@
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="LetterSpacing" Value="1.4"/>
-            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
         </Style>
 
         <!-- Days per week cards -->
@@ -29,24 +29,24 @@
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.variant:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#121212"/>
-            <Setter Property="BorderBrush" Value="#555555"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.variant.on">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
         <Style Selector="Button.variant.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
         </Style>
 
         <!-- Week preview tiles -->
@@ -57,20 +57,20 @@
         <Style Selector="Border.wkTile">
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="4,10"/>
-            <Setter Property="Background" Value="#141414"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="TextElement.Foreground" Value="White"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Border.wkTile.start">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
         <Style Selector="Border.wkTile.rest">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="TextElement.Foreground" Value="#6E6E6E"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/>
         </Style>
 
         <!-- Two columns by default; stacked when narrow -->
@@ -86,9 +86,7 @@
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <DockPanel Background="Black" TextElement.Foreground="White">
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Splits"/>
 
         <ScrollViewer>
@@ -105,23 +103,23 @@
                 <StackPanel Spacing="10">
                     <TextBlock Text="{Binding Name}" FontSize="40" FontWeight="ExtraBold"/>
                     <WrapPanel ItemSpacing="8" LineSpacing="8">
-                        <Border Classes="pill" BorderBrush="#444444" Padding="11,4" IsVisible="{Binding IsRecommended}">
+                        <Border Classes="pill" BorderBrush="{DynamicResource ControlHover}" Padding="11,4" IsVisible="{Binding IsRecommended}">
                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                <Path Data="{StaticResource IcStar}" Fill="White" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"/>
+                                <Path Data="{StaticResource IcStar}" Fill="{DynamicResource Ink}" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"/>
                                 <TextBlock Text="Recommended" FontSize="12" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Border>
-                        <Border Classes="pill" BorderThickness="0" Background="{StaticResource Accent}" Padding="11,4" IsVisible="{Binding IsActive}">
+                        <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Accent}" Padding="11,4" IsVisible="{Binding IsActive}">
                             <StackPanel Orientation="Horizontal" Spacing="5">
                                 <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="3" Width="12" Height="12" VerticalAlignment="Center"/>
                                 <TextBlock Text="Your active split" FontSize="12" FontWeight="Bold" Foreground="Black"/>
                             </StackPanel>
                         </Border>
-                        <Border Classes="pill" BorderThickness="0" Background="#1A1A1A" Padding="11,4"
+                        <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}" Padding="11,4"
                                 IsVisible="{Binding DaysTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <TextBlock Text="{Binding DaysTag}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
                         </Border>
-                        <Border Classes="pill" BorderThickness="0" Background="#1A1A1A" Padding="11,4" IsVisible="{Binding !IsPreset}">
+                        <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}" Padding="11,4" IsVisible="{Binding !IsPreset}">
                             <TextBlock Text="Custom" FontSize="12" FontWeight="SemiBold" Classes="light"/>
                         </Border>
                     </WrapPanel>
@@ -129,10 +127,10 @@
             </StackPanel>
 
             <!-- Saved -->
-            <Border Padding="18,14" CornerRadius="14" BorderBrush="#2E3A12" BorderThickness="1" Background="#0F1208"
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
                     IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
                     <TextBlock Text="{Binding Toast}" FontSize="14" VerticalAlignment="Center"/>
                 </StackPanel>
             </Border>
@@ -178,13 +176,13 @@
                                                 <Border Classes="pill" Padding="14,8">
                                                     <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"/>
                                                 </Border>
-                                                <v:Icon Data="{StaticResource IcArrowRight}" Stroke="#6E6E6E" StrokeThickness="2.4"
+                                                <v:Icon Data="{StaticResource IcArrowRight}" Stroke="{DynamicResource Faint}" StrokeThickness="2.4"
                                                         Width="14" Height="14" VerticalAlignment="Center" IsVisible="{Binding HasArrow}"/>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="#6E6E6E" StrokeThickness="2.4" Width="16" Height="16"
+                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="{DynamicResource Faint}" StrokeThickness="2.4" Width="16" Height="16"
                                         VerticalAlignment="Center" ToolTip.Tip="Repeats"/>
                             </WrapPanel>
                         </StackPanel>
@@ -192,7 +190,7 @@
                         <!-- First workout day (presets; custom splits fix their weekdays) -->
                         <StackPanel Spacing="10" IsVisible="{Binding IsPreset}">
                             <TextBlock Text="{Binding StartStepLabel}" Classes="step"/>
-                            <Border Padding="4" CornerRadius="12" Background="#161616">
+                            <Border Padding="4" CornerRadius="12" Background="{DynamicResource Fill}">
                                 <ItemsControl ItemsSource="{Binding StartDayOptions}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate>
@@ -214,9 +212,9 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="YOUR WEEK" Classes="step" VerticalAlignment="Bottom"/>
                                 <TextBlock Grid.Column="1" FontSize="13" Classes="soft">
-                                    <Run Text="{Binding TrainCount}" FontFamily="{StaticResource Mono}" Foreground="White"/><Run
+                                    <Run Text="{Binding TrainCount}" FontFamily="{StaticResource Mono}" Foreground="{DynamicResource Ink}"/><Run
                                          Text=" training · "/><Run Text="{Binding RestCount}" FontFamily="{StaticResource Mono}"
-                                         Foreground="White"/><Run Text=" rest"/>
+                                         Foreground="{DynamicResource Ink}"/><Run Text=" rest"/>
                                 </TextBlock>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding Cells}" Margin="-4">
@@ -227,7 +225,7 @@
                                     <DataTemplate x:DataType="vm:ScheduleCell">
                                         <Panel Classes="wk">
                                             <!-- Rest days: a dashed outline (Border can't dash) -->
-                                            <Rectangle Stroke="#2A2A2A" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"
+                                            <Rectangle Stroke="{DynamicResource Line2}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"
                                                        IsVisible="{Binding !IsTraining}"/>
                                             <Border Classes="wkTile" Classes.rest="{Binding !IsTraining}"
                                                     Classes.start="{Binding IsTrainingStart}">
@@ -238,9 +236,9 @@
                                                                HorizontalAlignment="Center"/>
                                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center"
                                                                 IsVisible="{Binding IsStart}">
-                                                        <Path Data="{StaticResource IcPlay}" Fill="{StaticResource Accent}" Width="9" Height="9"
+                                                        <Path Data="{StaticResource IcPlay}" Fill="{DynamicResource AccentInk}" Width="9" Height="9"
                                                               Stretch="Uniform" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="Start" FontSize="11" FontWeight="Bold" Foreground="{StaticResource Accent}"/>
+                                                        <TextBlock Text="Start" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource AccentInk}"/>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>
@@ -252,7 +250,7 @@
                         </StackPanel>
 
                         <!-- Use -->
-                        <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                                 <TextBlock Text="{Binding FootNote}" FontSize="13" Classes="muted" LineHeight="20" MaxWidth="380"
                                            HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -275,7 +273,7 @@
                             <ItemsControl ItemsSource="{Binding DayInfo}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SplitDayInfo">
-                                        <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" MinHeight="44" Padding="0,8">
+                                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="44" Padding="0,8">
                                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" TextWrapping="NoWrap"/>
                                                 <TextBlock Grid.Column="1" Text="{Binding Muscles}" FontSize="14" Classes="muted" TextAlignment="Right"/>
@@ -284,7 +282,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="Muscles come from the exercises you've added to each day." FontSize="12" Foreground="#6E6E6E"/>
+                            <TextBlock Text="Muscles come from the exercises you've added to each day." FontSize="12" Foreground="{DynamicResource Faint}"/>
                         </StackPanel>
                     </Border>
                     <Border Classes="card" IsVisible="{Binding HasGoodFor}">
@@ -297,7 +295,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
                                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.6"
+                                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.6"
                                                     Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0"/>
                                             <TextBlock Grid.Column="1" Text="{Binding}" FontSize="14" Classes="light" LineHeight="20"/>
                                         </Grid>
@@ -311,5 +309,4 @@
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
-    </ThemeVariantScope>
 </UserControl>

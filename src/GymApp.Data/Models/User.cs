@@ -32,6 +32,8 @@ public class User
     public GoalType GoalType { get; set; } = GoalType.Maintain;
     public int? LastSuggestedGoal { get; set; }       // the suggestion the user last accepted or declined, so we only ask again when it changes
 
+    public ThemePreference ThemePreference { get; set; } = ThemePreference.System;   // applied at sign-in (12e)
+
     public List<WorkoutLog> WorkoutLogs { get; set; } = new();
     public List<CalorieLog> CalorieLogs { get; set; } = new();
 }

@@ -15,12 +15,12 @@
             <Setter Property="Padding" Value="14"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Border.exercise.filled">
-            <Setter Property="BorderBrush" Value="#2E3A12"/>
-            <Setter Property="Background" Value="#0F1208"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLine}"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
         </Style>
 
         <!-- Set chip: "1  60 kg × 8" -->
@@ -29,7 +29,7 @@
             <Setter Property="Padding" Value="10,0,8,0"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Border.chip.warm">
@@ -37,22 +37,22 @@
         </Style>
         <Style Selector="Border.chip.done">
             <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
         </Style>
         <Style Selector="Border.chip.warm.done">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Border.chip:focus-within">
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
         </Style>
         <Style Selector="TextBlock.chipText">
             <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
             <Setter Property="FontSize" Value="12"/>
-            <Setter Property="Foreground" Value="#6E6E6E"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.chip.done TextBlock.chipText">
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
         </Style>
         <Style Selector="TextBlock.chipTag">
             <Setter Property="FontWeight" Value="Bold"/>
@@ -69,8 +69,8 @@
             <Setter Property="Padding" Value="2,0"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="PlaceholderForeground" Value="#6E6E6E"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="PlaceholderForeground" Value="{DynamicResource Faint}"/>
             <Setter Property="HorizontalContentAlignment" Value="Right"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="MaxLength" Value="6"/>
@@ -99,25 +99,23 @@
             <Setter Property="Padding" Value="22,0"/>
         </Style>
         <Style Selector="Button.log:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#6E6E6E"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
         </Style>
 
         <Style Selector="ComboBox.day">
             <Setter Property="MinHeight" Value="42"/>
             <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
     <Border MaxWidth="560" MaxHeight="760" HorizontalAlignment="Stretch" VerticalAlignment="Center"
-            Padding="24" CornerRadius="18" Background="#111111" BorderBrush="#333333" BorderThickness="1"
-            BoxShadow="0 24 80 0 #B3000000" TextElement.Foreground="White">
+            Padding="24" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
+            BoxShadow="0 24 80 0 #B3000000" TextElement.Foreground="{DynamicResource Ink}">
         <DockPanel>
             <!-- Title -->
             <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,0,0,16">
@@ -126,7 +124,7 @@
                     <TextBlock Text="{Binding Subtitle}" FontSize="13" Classes="muted" TextWrapping="Wrap"/>
                 </StackPanel>
                 <Button Grid.Column="1" Classes="icon" Width="36" Height="36" Padding="0" VerticalAlignment="Top"
-                        Foreground="{StaticResource Muted}" Command="{Binding CancelCommand}" IsCancel="True"
+                        Foreground="{DynamicResource Muted}" Command="{Binding CancelCommand}" IsCancel="True"
                         ToolTip.Tip="Close" AutomationProperties.Name="Close">
                     <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="18" Height="18"/>
                 </Button>
@@ -185,7 +183,7 @@
                                                 VerticalAlignment="Center" Command="{Binding FillFromPreviousCommand}"
                                                 IsVisible="{Binding ShowUseLast}"/>
                                         <Border Grid.Column="1" CornerRadius="8" Padding="12,0" MinHeight="36" VerticalAlignment="Center"
-                                                Background="{StaticResource Accent}" IsVisible="{Binding IsFilled}">
+                                                Background="{DynamicResource Accent}" IsVisible="{Binding IsFilled}">
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="2.8" Width="12" Height="12"/>
                                                 <TextBlock Text="Filled" FontSize="12" FontWeight="SemiBold" Foreground="Black"/>
@@ -200,7 +198,7 @@
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:CheckInSetRowViewModel">
                                                 <Panel ToolTip.Tip="{Binding Label}">
-                                                    <Rectangle Stroke="#333333" StrokeThickness="1" StrokeDashArray="3,3" RadiusX="8" RadiusY="8"
+                                                    <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="3,3" RadiusX="8" RadiusY="8"
                                                                IsVisible="{Binding IsWarmup}"/>
                                                     <Border Classes="chip" Classes.warm="{Binding IsWarmup}" Classes.done="{Binding IsComplete}">
                                                         <StackPanel Orientation="Horizontal">
@@ -229,5 +227,4 @@
             </ScrollViewer>
         </DockPanel>
     </Border>
-    </ThemeVariantScope>
 </UserControl>

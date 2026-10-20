@@ -52,6 +52,7 @@ public class AppDbContext : DbContext
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();   // SQLite allows any number of NULLs here
         b.Entity<User>().Property(u => u.Email).HasMaxLength(254).UseCollation("NOCASE");
         b.Entity<User>().Property(u => u.GoalType).HasConversion<string>();
+        b.Entity<User>().Property(u => u.ThemePreference).HasConversion<string>();
         b.Entity<User>().HasIndex(u => u.ServerUserId).IsUnique();   // NULLs (unlinked accounts) don't clash
 
         // Social server: cached reads and pending uploads, both gone with the user

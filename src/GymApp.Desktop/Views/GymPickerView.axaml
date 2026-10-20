@@ -7,7 +7,7 @@
     <!-- The gym picker dialog on the Map screen (FRIENDS_GYM_MAP.md 4e): your gym, today's gym, or the home city.
          An overlay over the page with a centred card, max 520 × 680; the list scrolls inside it. -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
@@ -16,18 +16,18 @@
             <Setter Property="MinHeight" Value="42"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.gymRow">
             <Setter Property="MinHeight" Value="60"/>
             <Setter Property="Padding" Value="6,8"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Divider}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
         </Style>
         <Style Selector="Border.gymRow.current">
-            <Setter Property="Background" Value="#10140A"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
         </Style>
         <Style Selector="Border.badge">
             <Setter Property="CornerRadius" Value="999"/>
@@ -35,11 +35,9 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <Border Background="#B8000000" Padding="24" TextElement.Foreground="White">
+    <Border Background="{DynamicResource Scrim}" Padding="24" TextElement.Foreground="{DynamicResource Ink}">
         <Border Width="520" MaxHeight="680" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20"
-                CornerRadius="18" Background="{StaticResource Surface}" BorderBrush="#333333" BorderThickness="1"
+                CornerRadius="18" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                 BoxShadow="0 24 80 0 #B3000000">
             <DockPanel>
                 <!-- Title -->
@@ -49,7 +47,7 @@
                         <TextBlock Text="{Binding Subtitle}" FontSize="13" Classes="muted"/>
                     </StackPanel>
                     <Button Grid.Column="1" Classes="btn outline" Width="36" Height="36" MinHeight="36" Padding="0"
-                            Foreground="{StaticResource Soft}" VerticalAlignment="Top" Command="{Binding CloseCommand}"
+                            Foreground="{DynamicResource Soft}" VerticalAlignment="Top" Command="{Binding CloseCommand}"
                             ToolTip.Tip="Close" AutomationProperties.Name="Close">
                         <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="14" Height="14"/>
                     </Button>
@@ -57,7 +55,7 @@
 
                 <TextBlock DockPanel.Dock="Top" Text="{Binding Error}" Classes="error" FontSize="13" Margin="0,0,0,8"
                            IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <TextBlock DockPanel.Dock="Top" Text="{Binding Info}" Foreground="{StaticResource Accent}" FontSize="13" Margin="0,0,0,8"
+                <TextBlock DockPanel.Dock="Top" Text="{Binding Info}" Foreground="{DynamicResource AccentInk}" FontSize="13" Margin="0,0,0,8"
                            IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                 <!-- ===== Choosing a city ===== -->
@@ -67,7 +65,7 @@
                         <Panel>
                             <TextBox x:Name="CityBox" Classes="field" Padding="36,0,12,0" PlaceholderText="City name, e.g. Timișoara"
                                      Text="{Binding CitySearchText}" MaxLength="100"/>
-                            <v:Icon Data="{StaticResource IcSearch}" Stroke="{StaticResource Muted}" StrokeThickness="2.2" Width="15" Height="15"
+                            <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2" Width="15" Height="15"
                                     HorizontalAlignment="Left" Margin="12,0,0,0" IsHitTestVisible="False"/>
                         </Panel>
                         <Button Grid.Column="1" Classes="btn light" MinHeight="42" Content="Search" Command="{Binding SearchCityCommand}"/>
@@ -104,8 +102,8 @@
                               Content="Make this my gym (preselected at every check-in)"/>
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
                         <Panel IsVisible="{Binding !IsGymFormOpen}">
-                            <Rectangle Stroke="#444444" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="10" RadiusY="10"/>
-                            <Button Classes="btn small" MinHeight="40" Background="Transparent" Foreground="White" FontWeight="SemiBold"
+                            <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="10" RadiusY="10"/>
+                            <Button Classes="btn small" MinHeight="40" Background="Transparent" Foreground="{DynamicResource Ink}" FontWeight="SemiBold"
                                     Command="{Binding StartAddGymCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.4" Width="16" Height="16"/>
@@ -127,10 +125,10 @@
                                 <TextBox Classes="field" Padding="36,0,12,0" Text="{Binding SearchText}"
                                          PlaceholderText="{Binding CityName, StringFormat='Search gyms in {0}'}"
                                          AutomationProperties.Name="Search gyms by name"/>
-                                <v:Icon Data="{StaticResource IcSearch}" Stroke="{StaticResource Muted}" StrokeThickness="2.2" Width="15" Height="15"
+                                <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2" Width="15" Height="15"
                                         HorizontalAlignment="Left" Margin="12,0,0,0" IsHitTestVisible="False"/>
                             </Panel>
-                            <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616">
+                            <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
                                 <v:SegmentedPill SelectedIndex="{Binding SortIndex}" PillInset="0" PillCornerRadius="8">
                                     <Button Classes="seg" Classes.on="{Binding SortByName}" MinHeight="34" Padding="12,0"
                                             CornerRadius="8" Content="A–Z" Command="{Binding SortNameCommand}"/>
@@ -152,7 +150,7 @@
                             <Button Grid.Column="1" Classes="link" FontSize="12" Content="Change city" Command="{Binding ChangeCityCommand}"/>
                         </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsFetching}">
-                            <ProgressBar IsIndeterminate="True" Width="80" Height="4" Foreground="{StaticResource Accent}" VerticalAlignment="Center"/>
+                            <ProgressBar IsIndeterminate="True" Width="80" Height="4" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
                             <TextBlock Text="Loading gyms from OpenStreetMap…" FontSize="12" Classes="muted"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8"
@@ -161,9 +159,9 @@
                             <Button Classes="link" FontSize="12" Content="Retry" Command="{Binding RetryAddressLookupCommand}"
                                     IsVisible="{Binding CanRetryAddressLookup}"/>
                         </StackPanel>
-                        <TextBlock Text="{Binding RefreshNote}" FontSize="12" Foreground="#FFB066"
+                        <TextBlock Text="{Binding RefreshNote}" FontSize="12" Foreground="{DynamicResource FlameText}"
                                    IsVisible="{Binding RefreshNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        <Border Padding="12" CornerRadius="10" Background="#1A0F0D" BorderBrush="#5A2A24" BorderThickness="1"
+                        <Border Padding="12" CornerRadius="10" Background="{DynamicResource RedTint}" BorderBrush="{DynamicResource RedTintLine}" BorderThickness="1"
                                 IsVisible="{Binding FetchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <TextBlock Text="{Binding FetchError}" FontSize="13" VerticalAlignment="Center"/>
@@ -174,7 +172,7 @@
                     </StackPanel>
 
                     <!-- Add / edit a custom gym -->
-                    <Border DockPanel.Dock="Bottom" Padding="14" CornerRadius="12" Background="#111111" Margin="0,8,0,0"
+                    <Border DockPanel.Dock="Bottom" Padding="14" CornerRadius="12" Background="{DynamicResource Surface2}" Margin="0,8,0,0"
                             IsVisible="{Binding IsGymFormOpen}">
                         <StackPanel Spacing="8">
                             <TextBlock Text="{Binding GymFormTitle}" FontSize="15" FontWeight="Bold"/>
@@ -234,7 +232,7 @@
                     </Border>
 
                     <!-- The list: scrolls inside the card -->
-                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1">
+                    <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" MinHeight="160" Padding="0,0,10,0">
                             <StackPanel>
                                 <TextBlock Text="{Binding EmptyText}" FontSize="14" Classes="muted" Margin="2,16" IsVisible="{Binding !HasGyms}"/>
@@ -247,13 +245,13 @@
                                                         <StackPanel Spacing="2" VerticalAlignment="Center">
                                                             <WrapPanel ItemSpacing="6" LineSpacing="4">
                                                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
-                                                                <Border Classes="badge" Background="{StaticResource Accent}" IsVisible="{Binding IsHome}">
+                                                                <Border Classes="badge" Background="{DynamicResource Accent}" IsVisible="{Binding IsHome}">
                                                                     <TextBlock Text="Your gym" FontSize="11" FontWeight="Bold" Foreground="Black"/>
                                                                 </Border>
-                                                                <Border Classes="badge" BorderBrush="#444444" BorderThickness="1" IsVisible="{Binding IsCustom}">
+                                                                <Border Classes="badge" BorderBrush="{DynamicResource ControlHover}" BorderThickness="1" IsVisible="{Binding IsCustom}">
                                                                     <TextBlock Text="Custom" FontSize="11" FontWeight="SemiBold" Classes="light"/>
                                                                 </Border>
-                                                                <Border Classes="badge" Background="#1E1E1E" BorderBrush="#333333" BorderThickness="1"
+                                                                <Border Classes="badge" Background="{DynamicResource Fill3}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                                                                         IsVisible="{Binding HasFriends}">
                                                                     <TextBlock Text="{Binding FriendsLabel}" FontSize="11" FontWeight="SemiBold"/>
                                                                 </Border>
@@ -263,15 +261,15 @@
                                                         </StackPanel>
                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                             <!-- Custom gyms are always the user's own -->
-                                                            <Button Classes="link" FontSize="12" Foreground="{StaticResource Muted}" Content="Edit"
+                                                            <Button Classes="link" FontSize="12" Foreground="{DynamicResource Muted}" Content="Edit"
                                                                     Command="{Binding EditCommand}" IsVisible="{Binding IsCustom}"/>
-                                                            <Button Classes="link" FontSize="12" Foreground="{StaticResource Muted}" Content="Delete"
+                                                            <Button Classes="link" FontSize="12" Foreground="{DynamicResource Muted}" Content="Delete"
                                                                     Command="{Binding DeleteCommand}" IsVisible="{Binding IsCustom}"/>
                                                             <Button Classes="btn small" Classes.light="{Binding !IsCurrent}" Classes.outline="{Binding IsCurrent}"
                                                                     MinWidth="76" Content="{Binding PickLabel}" Command="{Binding PickCommand}"/>
                                                         </StackPanel>
                                                     </Grid>
-                                                    <Border Padding="10" CornerRadius="8" Background="#1A0F0D" IsVisible="{Binding IsConfirmingDelete}">
+                                                    <Border Padding="10" CornerRadius="8" Background="{DynamicResource RedTint}" IsVisible="{Binding IsConfirmingDelete}">
                                                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                                             <TextBlock Text="Delete this gym? If you logged workouts there, it stays in your history."
                                                                        FontSize="12" VerticalAlignment="Center"/>
@@ -291,5 +289,4 @@
             </DockPanel>
         </Border>
     </Border>
-    </ThemeVariantScope>
 </UserControl>

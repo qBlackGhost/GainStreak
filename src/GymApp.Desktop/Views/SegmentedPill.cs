@@ -22,7 +22,7 @@ public class SegmentedPill : Panel
         AvaloniaProperty.Register<SegmentedPill, int>(nameof(SelectedIndex));
 
     public static readonly StyledProperty<IBrush?> PillBrushProperty =
-        AvaloniaProperty.Register<SegmentedPill, IBrush?>(nameof(PillBrush), Brushes.White);
+        AvaloniaProperty.Register<SegmentedPill, IBrush?>(nameof(PillBrush));
 
     public static readonly StyledProperty<double> PillCornerRadiusProperty =
         AvaloniaProperty.Register<SegmentedPill, double>(nameof(PillCornerRadius), 9);

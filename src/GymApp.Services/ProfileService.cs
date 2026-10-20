@@ -126,6 +126,19 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
             .Select(p => p.HomeCity).FirstOrDefaultAsync();
     }
 
+    /// <summary>Saves the Theme setting (Profile → Appearance).</summary>
+    public async Task<ProfileResult> SetThemeAsync(int userId, ThemePreference theme)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return new(false, "User not found.");
+        user.ThemePreference = theme;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save that setting."); }
+        return new(true);
+    }
+
     /// <summary>Turns the "Want to log your gym?" prompt after check-in on or off ("Don't ask me again" turns it off).
     /// Creates the profile row if there is none yet.</summary>
     public async Task<ProfileResult> SetAskForGymAfterCheckInAsync(int userId, bool ask)

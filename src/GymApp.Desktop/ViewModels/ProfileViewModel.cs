@@ -64,6 +64,7 @@ public partial class ProfileViewModel : ViewModelBase
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, this)).ToList();
+        ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
         _ = ReloadAsync();
     }
 
@@ -187,9 +188,21 @@ public partial class ProfileViewModel : ViewModelBase
     public const double TrendWidth = 320, TrendHeight = 96;
     private const int TrendCount = 8, RecentShown = 5;
 
-    // ===== Appearance (not wired up yet: the app stays dark) =====
-    [ObservableProperty] public partial int ThemeIndex { get; set; } = 2;
-    [RelayCommand] private void SelectTheme(string index) => ThemeIndex = int.Parse(index, CultureInfo.InvariantCulture);
+    // ===== Appearance: System, Light, Dark (12e); applies at once and is saved on the user =====
+    [ObservableProperty] public partial int ThemeIndex { get; set; }
+    [ObservableProperty] public partial string? ThemeError { get; set; }
+
+    [RelayCommand]
+    private async Task SelectTheme(string index)
+    {
+        var theme = (ThemePreference)int.Parse(index, CultureInfo.InvariantCulture);
+        if (_session.CurrentUser is not { } user || user.ThemePreference == theme) return;
+        ThemeIndex = (int)theme;
+        user.ThemePreference = theme;
+        AppTheme.Apply(theme);
+        var saved = await _profiles.SetThemeAsync(user.Id, theme);
+        ThemeError = saved.Success ? null : saved.Error;
+    }
 
     // ===== Home city =====
     [ObservableProperty] public partial string HomeCityText { get; set; } = "";

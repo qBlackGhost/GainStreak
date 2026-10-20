@@ -1,6 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Class-based styles for the dark screens; each of them includes this file (the light screens use some of the same class names) -->
+    <!-- Class-based styles shared by the screens, in both themes; each screen includes this file -->
     <!-- Text -->
         <Style Selector="TextBlock.display">
             <Setter Property="FontWeight" Value="Black"/>
@@ -13,34 +13,34 @@
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="LetterSpacing" Value="1.6"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
         </Style>
         <Style Selector="TextBlock.caps">
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="LetterSpacing" Value="1"/>
-            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
         </Style>
-        <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{StaticResource Muted}"/></Style>
-        <Style Selector="TextBlock.soft"><Setter Property="Foreground" Value="{StaticResource Soft}"/></Style>
-        <Style Selector="TextBlock.light"><Setter Property="Foreground" Value="{StaticResource Light}"/></Style>
+        <Style Selector="TextBlock.muted"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+        <Style Selector="TextBlock.soft"><Setter Property="Foreground" Value="{DynamicResource Soft}"/></Style>
+        <Style Selector="TextBlock.light"><Setter Property="Foreground" Value="{DynamicResource Light}"/></Style>
         <Style Selector="TextBlock.mono">
             <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
             <Setter Property="TextWrapping" Value="NoWrap"/>
         </Style>
         <Style Selector="TextBlock.error">
-            <Setter Property="Foreground" Value="#FF8A7A"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
         </Style>
 
         <!-- Cards -->
         <Style Selector="Border.card">
-            <Setter Property="Background" Value="{StaticResource Surface}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Background" Value="{DynamicResource Surface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="20"/>
             <Setter Property="Padding" Value="24"/>
         </Style>
         <Style Selector="Border.pill">
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="999"/>
             <Setter Property="Padding" Value="10,3"/>
@@ -66,7 +66,7 @@
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
         <Style Selector="Button.primary">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="Foreground" Value="Black"/>
         </Style>
         <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -78,44 +78,44 @@
             <Setter Property="Foreground" Value="Black"/>
         </Style>
         <Style Selector="Button.light">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
         <Style Selector="Button.light:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#E6E6E6"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource InverseHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
         <Style Selector="Button.light:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#CCCCCC"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource InversePressed}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
         <Style Selector="Button.outline">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.outline.strong">
-            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Ink}"/>
             <Setter Property="FontWeight" Value="Bold"/>
         </Style>
         <Style Selector="Button.outline:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#555555"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.btn:disabled /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
-            <Setter Property="Foreground" Value="#6E6E6E"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
         </Style>
         <!-- "Logged ✓": done, so not clickable, but it shouldn't look broken -->
         <Style Selector="Button.btn.logged:disabled /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.link">
             <Setter Property="Background" Value="Transparent"/>
@@ -124,12 +124,12 @@
             <Setter Property="MinHeight" Value="0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#E2FF8A"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentInkHover}"/>
         </Style>
         <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
@@ -140,7 +140,7 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -156,23 +156,23 @@
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.nav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#141414"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.nav.current">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
         <Style Selector="Button.nav.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
 
         <!-- Options inside a SegmentedPill (SegmentedPill.cs): transparent, the pill under them is the selection.
@@ -188,7 +188,7 @@
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Transitions">
                 <Transitions>
@@ -198,16 +198,16 @@
         </Style>
         <Style Selector="Button.seg:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.seg:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Button.seg.on">
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
         <Style Selector="Button.seg.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
         </Style>
 
         <!-- Page content next to the sidebar; Sidebar.axaml.cs marks its DockPanel narrow when the window is -->

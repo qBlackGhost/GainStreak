@@ -5,10 +5,10 @@
              x:Class="GymApp.Desktop.Views.HomeView"
              x:DataType="vm:HomeViewModel">
     <!-- The dashboard, after the "Gym App" design canvas (Dashboard artboard): black, one lime accent, the streak
-         gauge turns from cold to fire once today is checked in. Always dark, whatever the system theme. -->
+         gauge turns from cold to fire once today is checked in. Light or dark, from the Theme setting. -->
 
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <!-- Text -->
         <Style Selector="TextBlock">
@@ -44,8 +44,8 @@
             <Setter Property="Height" Value="8"/>
             <Setter Property="MinHeight" Value="8"/>
             <Setter Property="CornerRadius" Value="999"/>
-            <Setter Property="Background" Value="#222222"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
         </Style>
 
         <!-- Get set up: step cards -->
@@ -53,25 +53,25 @@
             <Setter Property="Padding" Value="18"/>
             <Setter Property="CornerRadius" Value="16"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="#111111"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
         </Style>
         <Style Selector="Border.setupStep.done">
-            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
         </Style>
         <Style Selector="Border.setupStep.next">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
         </Style>
         <Style Selector="Border.setupBadge">
             <Setter Property="Width" Value="28"/>
             <Setter Property="Height" Value="28"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
         </Style>
         <Style Selector="Border.setupBadge.done">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="TextElement.Foreground" Value="Black"/>
         </Style>
@@ -79,8 +79,8 @@
             <Setter Property="Height" Value="6"/>
             <Setter Property="MinHeight" Value="6"/>
             <Setter Property="CornerRadius" Value="999"/>
-            <Setter Property="Background" Value="#222222"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
         </Style>
 
         <!-- Gauge: once checked in, the fire arc fills and the cold dashes fade out -->
@@ -102,13 +102,13 @@
             </Style.Animations>
         </Style>
         <Style Selector="TextBlock.gaugeTitle">
-            <Setter Property="Foreground" Value="#B9C8D6"/>
+            <Setter Property="Foreground" Value="{DynamicResource ColdText}"/>
         </Style>
         <Style Selector="TextBlock.gaugeTitle.rest">
-            <Setter Property="Foreground" Value="#8A8A8A"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
         </Style>
         <Style Selector="TextBlock.gaugeTitle.hot">
-            <Setter Property="Foreground" Value="#FF7A00"/>
+            <Setter Property="Foreground" Value="{DynamicResource FlameHot}"/>
             <Setter Property="Effect">
                 <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="24" Color="#80FF5000"/>
             </Setter>
@@ -127,30 +127,30 @@
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="MinHeight" Value="64"/>
             <Setter Property="Margin" Value="4"/>
-            <Setter Property="Background" Value="#1E1E1E"/>
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="TextElement.Foreground" Value="White"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Border.tile.rest">
-            <Setter Property="Background" Value="#111111"/>
-            <Setter Property="TextElement.Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Muted}"/>
         </Style>
         <Style Selector="Border.tile.missed">
-            <Setter Property="Background" Value="#1A0F0D"/>
-            <Setter Property="BorderBrush" Value="#3A1E1A"/>
+            <Setter Property="Background" Value="{DynamicResource RedTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
         <Style Selector="Border.tile.upcoming">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="TextElement.Foreground" Value="{StaticResource Muted}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Muted}"/>
         </Style>
         <Style Selector="Border.tile.todayOpen">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderBrush" Value="#7D93A8"/>
             <Setter Property="BorderThickness" Value="2"/>
-            <Setter Property="TextElement.Foreground" Value="#B9C8D6"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource ColdText}"/>
         </Style>
         <Style Selector="Border.tile.todayDone">
             <Setter Property="Background" Value="{StaticResource TodayDoneBrush}"/>
@@ -164,36 +164,36 @@
             <Setter Property="Padding" Value="16,14"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
         <Style Selector="Button.option:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#121212"/>
-            <Setter Property="BorderBrush" Value="#444444"/>
-            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource Surface3}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.option.selected">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
             <Setter Property="BorderThickness" Value="2"/>
         </Style>
         <Style Selector="Button.option.selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
         </Style>
         <Style Selector="Border.tag">
-            <Setter Property="BorderBrush" Value="#333333"/>
-            <Setter Property="TextElement.Foreground" Value="{StaticResource Light}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Light}"/>
         </Style>
         <Style Selector="Border.tag.skip">
-            <Setter Property="BorderBrush" Value="#5A2A24"/>
-            <Setter Property="TextElement.Foreground" Value="#FF8A7A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource ErrorText}"/>
         </Style>
 
         <Style Selector="Border.boardRow.you">
-            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
         </Style>
 
         <!-- Inputs -->
@@ -202,8 +202,8 @@
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
@@ -217,9 +217,7 @@
             </Style.Animations>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <Grid x:Name="Root" Background="Black" TextElement.Foreground="White">
+    <Grid x:Name="Root" Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel IsEnabled="{Binding !IsCheckingIn}">
 
         <v:Sidebar Current="Dashboard" FriendRequests="{Binding IncomingRequests}"
@@ -242,10 +240,10 @@
                 </StackPanel>
 
                 <Border x:Name="LevelPill" VerticalAlignment="Bottom"
-                        Padding="12,12,16,12" CornerRadius="16" Background="{StaticResource Surface}"
-                        BorderBrush="{StaticResource Line}" BorderThickness="1">
+                        Padding="12,12,16,12" CornerRadius="16" Background="{DynamicResource Surface}"
+                        BorderBrush="{DynamicResource Line}" BorderThickness="1">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                        <Border Width="48" Height="48" CornerRadius="12" Background="{StaticResource Accent}" VerticalAlignment="Top">
+                        <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource Accent}" VerticalAlignment="Top">
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <TextBlock Text="LVL" Foreground="Black" FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
                                            HorizontalAlignment="Center"/>
@@ -264,7 +262,7 @@
                             <ProgressBar Classes="lvl" Minimum="0" Maximum="1" Value="{Binding LevelProgress}"/>
                             <TextBlock Text="{Binding LevelHint}" FontSize="12" Classes="muted"/>
                             <TextBlock Text="{Binding PointsNotice}" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource Accent}"
+                                       Foreground="{DynamicResource AccentInk}"
                                        IsVisible="{Binding PointsNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             <TextBlock Text="{Binding PointsLostNotice}" FontSize="12" FontWeight="SemiBold" Classes="error"
                                        IsVisible="{Binding PointsLostNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -277,10 +275,10 @@
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
             <!-- Sets logged, no check-in yet -->
-            <Border Padding="18,14" CornerRadius="14" BorderBrush="#333333" BorderThickness="1" Background="#111111"
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1" Background="{DynamicResource Surface2}"
                     IsVisible="{Binding ShowSetsHint}">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                    <v:Icon Data="{StaticResource IcClock}" Stroke="White" Width="20" Height="20" VerticalAlignment="Center"/>
+                    <v:Icon Data="{StaticResource IcClock}" Stroke="{DynamicResource Ink}" Width="20" Height="20" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="You logged sets today but haven't checked in yet." FontSize="14"
                                Classes="light" VerticalAlignment="Center"/>
                     <Button Grid.Column="2" Classes="btn outline strong small" Content="Check in now"
@@ -338,7 +336,7 @@
                                                 </Button.IsVisible>
                                             </Button>
                                             <StackPanel Orientation="Horizontal" Spacing="8" MinHeight="44" IsVisible="{Binding IsDone}">
-                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8"
+                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
                                                         Width="18" Height="18" VerticalAlignment="Center"/>
                                                 <TextBlock Text="{Binding Result}" FontSize="13" FontWeight="SemiBold"
                                                            VerticalAlignment="Center" TextWrapping="Wrap"/>
@@ -360,16 +358,16 @@
                     <Panel x:Name="HeroLeft" VerticalAlignment="Center">
                         <StackPanel Spacing="18">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <v:Icon Data="{StaticResource IcFlame}" Stroke="{StaticResource Accent}" StrokeThickness="2.2"
+                                <v:Icon Data="{StaticResource IcFlame}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2"
                                         Width="22" Height="22"/>
                                 <TextBlock Text="GYM STREAK" Classes="label" VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="14">
                                 <TextBlock Text="{Binding StreakCurrent}" FontSize="100" FontWeight="Black" LetterSpacing="-4" Margin="0,-11,0,-14"
-                                           Foreground="{StaticResource Accent}" TextWrapping="NoWrap"
+                                           Foreground="{DynamicResource AccentInk}" TextWrapping="NoWrap"
                                            Classes.zero="{Binding !StreakCurrent}">
                                     <TextBlock.Styles>
-                                        <Style Selector="TextBlock.zero"><Setter Property="Foreground" Value="#3A3A3A"/></Style>
+                                        <Style Selector="TextBlock.zero"><Setter Property="Foreground" Value="{DynamicResource Ghost}"/></Style>
                                     </TextBlock.Styles>
                                 </TextBlock>
                                 <StackPanel VerticalAlignment="Bottom" Margin="0,0,0,10">
@@ -424,7 +422,7 @@
                                                         </ItemsControl.ItemsPanel>
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate x:DataType="x:String">
-                                                                <Border Background="#1E1E1E" CornerRadius="6" Margin="2" Padding="2,4">
+                                                                <Border Background="{DynamicResource Fill3}" CornerRadius="6" Margin="2" Padding="2,4">
                                                                     <TextBlock Text="{Binding}" FontSize="10" FontWeight="Bold"
                                                                                TextAlignment="Center"/>
                                                                 </Border>
@@ -466,9 +464,9 @@
                             <Viewbox Stretch="Uniform" MaxWidth="360" HorizontalAlignment="Center">
                                 <Grid Width="480" Height="260">
                                     <Canvas Width="480" Height="260">
-                                        <Path Data="{StaticResource IcArc}" Stroke="#1A1A1A" StrokeThickness="28" StrokeLineCap="Round"/>
+                                        <Path Data="{StaticResource IcArc}" Stroke="{DynamicResource Fill2}" StrokeThickness="28" StrokeLineCap="Round"/>
                                         <!-- Rest day: a plain grey arc -->
-                                        <Path Data="{StaticResource IcArc}" Stroke="#2E2E2E" StrokeThickness="28" StrokeLineCap="Round"
+                                        <Path Data="{StaticResource IcArc}" Stroke="{DynamicResource TrackStrong}" StrokeThickness="28" StrokeLineCap="Round"
                                               IsVisible="{Binding IsRestOpen}"/>
                                         <!-- Training day, not done: a cold arc (it fades out under the fire) -->
                                         <Path Data="{StaticResource IcArc}" Stroke="{StaticResource ColdBrush}" StrokeThickness="28"
@@ -487,7 +485,7 @@
                                         <TextBlock Text="{Binding GaugeKicker}" FontSize="15" FontWeight="SemiBold" LetterSpacing="2.4"
                                                    HorizontalAlignment="Center" Classes="muted" Classes.makeUp="{Binding IsMakeUpDay}">
                                             <TextBlock.Styles>
-                                                <Style Selector="TextBlock.makeUp"><Setter Property="Foreground" Value="White"/></Style>
+                                                <Style Selector="TextBlock.makeUp"><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
                                             </TextBlock.Styles>
                                         </TextBlock>
                                         <Viewbox StretchDirection="DownOnly" MaxWidth="330" HorizontalAlignment="Center">
@@ -501,7 +499,7 @@
                                 </Grid>
                             </Viewbox>
 
-                            <Border Padding="18,14" CornerRadius="12" BorderBrush="{StaticResource Line}" BorderThickness="1">
+                            <Border Padding="18,14" CornerRadius="12" BorderBrush="{DynamicResource Line}" BorderThickness="1">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding StatusText}" FontSize="14" Classes="light"/>
@@ -524,7 +522,7 @@
                                                 Content="{Binding LogLabel}" Command="{Binding LogTodayCommand}"
                                                 IsEnabled="{Binding CanLog}"/>
                                         <!-- Today only: undo the check-in (the sets stay) -->
-                                        <Button Classes="btn outline" Padding="14,0" FontSize="13" Foreground="{StaticResource Soft}"
+                                        <Button Classes="btn outline" Padding="14,0" FontSize="13" Foreground="{DynamicResource Soft}"
                                                 Content="Undo" Command="{Binding StartUndoCommand}" IsVisible="{Binding CanUndo}"/>
                                     </StackPanel>
                                 </Grid>
@@ -543,26 +541,26 @@
                         <TextBlock Text="This week" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
                         <WrapPanel Grid.Column="1" ItemSpacing="14" LineSpacing="4" VerticalAlignment="Center">
                             <WrapPanel.Styles>
-                                <Style Selector="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{StaticResource Muted}"/></Style>
+                                <Style Selector="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
                             </WrapPanel.Styles>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="3" Width="13" Height="13"/>
+                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="3" Width="13" Height="13"/>
                                 <TextBlock Text="Done"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="White" StrokeThickness="2.6" Width="13" Height="13"/>
+                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="{DynamicResource Ink}" StrokeThickness="2.6" Width="13" Height="13"/>
                                 <TextBlock Text="Made up"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <v:Icon Data="{StaticResource IcX}" Stroke="{StaticResource MissRed}" StrokeThickness="3" Width="13" Height="13"/>
+                                <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource MissRed}" StrokeThickness="3" Width="13" Height="13"/>
                                 <TextBlock Text="Missed"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="12" Height="2" Background="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                <Border Width="12" Height="2" Background="{DynamicResource Muted}" VerticalAlignment="Center"/>
                                 <TextBlock Text="Rest"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="10" Height="10" CornerRadius="3" BorderBrush="#6E6E6E" BorderThickness="1" VerticalAlignment="Center"/>
+                                <Border Width="10" Height="10" CornerRadius="3" BorderBrush="{DynamicResource Faint}" BorderThickness="1" VerticalAlignment="Center"/>
                                 <TextBlock Text="Upcoming"/>
                             </StackPanel>
                         </WrapPanel>
@@ -581,11 +579,11 @@
                                             <TextBlock Text="{Binding Day}" FontSize="11" FontWeight="SemiBold" Opacity="0.75"
                                                        VerticalAlignment="Center"/>
                                             <Panel Grid.Column="1">
-                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="3"
+                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="3"
                                                         Width="14" Height="14" IsVisible="{Binding IsDone}"/>
-                                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="White" StrokeThickness="2.6"
+                                                <v:Icon Data="{StaticResource IcMadeUp}" Stroke="{DynamicResource Ink}" StrokeThickness="2.6"
                                                         Width="14" Height="14" IsVisible="{Binding IsMadeUp}"/>
-                                                <v:Icon Data="{StaticResource IcX}" Stroke="{StaticResource MissRed}" StrokeThickness="3"
+                                                <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource MissRed}" StrokeThickness="3"
                                                         Width="14" Height="14" IsVisible="{Binding IsMissed}"/>
                                             </Panel>
                                         </Grid>
@@ -627,7 +625,7 @@
                             <ItemsControl ItemsSource="{Binding Exercises}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:TodayExerciseViewModel">
-                                        <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,10">
+                                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,10">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -646,7 +644,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
-                        <Border MinHeight="140" CornerRadius="14" BorderBrush="#333333" BorderThickness="1" Padding="20"
+                        <Border MinHeight="140" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1" Padding="20"
                                 IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
                                 <TextBlock Text="{Binding EmptyText}" FontSize="14" Classes="soft" TextAlignment="Center"/>
@@ -674,11 +672,11 @@
                         </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="22">
                             <Grid Width="126" Height="126" ToolTip.Tip="{Binding CaloriesTitle}">
-                                <Ellipse Stroke="#222222" StrokeThickness="12"/>
-                                <Arc StartAngle="-90" SweepAngle="{Binding CaloriesSweep}" Stroke="White" StrokeThickness="12"
+                                <Ellipse Stroke="{DynamicResource Line}" StrokeThickness="12"/>
+                                <Arc StartAngle="-90" SweepAngle="{Binding CaloriesSweep}" Stroke="{DynamicResource Ink}" StrokeThickness="12"
                                      Classes.hit="{Binding CaloriesHit}">
                                     <Arc.Styles>
-                                        <Style Selector="Arc.hit"><Setter Property="Stroke" Value="{StaticResource Accent}"/></Style>
+                                        <Style Selector="Arc.hit"><Setter Property="Stroke" Value="{DynamicResource AccentInk}"/></Style>
                                     </Arc.Styles>
                                 </Arc>
                                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
@@ -690,7 +688,7 @@
                             <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding CaloriesTitle}" FontSize="18" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding CaloriesHint}" FontSize="13" Classes="soft" LineHeight="19"/>
-                                <TextBlock Text="{Binding GoalReviewHint}" FontSize="12" Foreground="#E8C15A"
+                                <TextBlock Text="{Binding GoalReviewHint}" FontSize="12" Foreground="{DynamicResource Warn}"
                                            IsVisible="{Binding GoalReviewHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
                         </Grid>
@@ -709,7 +707,7 @@
                             <TextBlock Text="{Binding CaloriesTip}" FontSize="12" Classes="muted"
                                        IsVisible="{Binding CaloriesTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
-                        <Border Padding="14,12" CornerRadius="12" Background="#111111" IsVisible="{Binding !ShowCaloriesForm}">
+                        <Border Padding="14,12" CornerRadius="12" Background="{DynamicResource Surface2}" IsVisible="{Binding !ShowCaloriesForm}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="{Binding CaloriesResult}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
                                 <Button Grid.Column="1" Classes="btn outline small" Content="Edit" Command="{Binding EditCaloriesCommand}"/>
@@ -724,13 +722,13 @@
                     <StackPanel Spacing="12" x:DataType="vm:RecentPrsCardViewModel">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="Recent PRs" Classes="h2"/>
-                            <v:Icon Grid.Column="1" Data="{StaticResource IcTrophy}" Stroke="{StaticResource Accent}" Width="22" Height="22"
+                            <v:Icon Grid.Column="1" Data="{StaticResource IcTrophy}" Stroke="{DynamicResource AccentInk}" Width="22" Height="22"
                                     VerticalAlignment="Center"/>
                         </Grid>
                         <ItemsControl ItemsSource="{Binding Items}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:RecentPrViewModel">
-                                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,0,0,1" MinHeight="48">
+                                    <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1" MinHeight="48">
                                         <Grid ColumnDefinitions="*,Auto,52" ColumnSpacing="16" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Exercise}" FontWeight="SemiBold" FontSize="14"
                                                        TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
@@ -760,7 +758,7 @@
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                             </StackPanel>
-                            <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616" IsVisible="{Binding HasFriends}">
+                            <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" IsVisible="{Binding HasFriends}">
                                 <v:SegmentedPill SelectedIndex="{Binding IsAllTime, Converter={x:Static v:SegmentedPill.BoolToIndex}}"
                                                  PillCornerRadius="8" PillInset="0">
                                     <Button Classes="seg" Classes.on="{Binding IsThisWeek}" MinHeight="32" Padding="12,0" FontSize="12"
@@ -782,10 +780,10 @@
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                                     <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center"
                                                                 ToolTip.Tip="Current streak">
-                                                        <v:Icon Data="{StaticResource IcFlame}" Stroke="{StaticResource Flame}"
+                                                        <v:Icon Data="{StaticResource IcFlame}" Stroke="{DynamicResource Flame}"
                                                                 StrokeThickness="2.4" Width="12" Height="12"/>
                                                         <TextBlock Text="{Binding Streak}" FontSize="12" FontWeight="SemiBold"
-                                                                   Foreground="{StaticResource Flame}"/>
+                                                                   Foreground="{DynamicResource Flame}"/>
                                                     </StackPanel>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Level}" FontSize="12" Classes="muted"/>
@@ -826,18 +824,18 @@
     </DockPanel>
 
     <!-- Check-in popup over Home -->
-    <Border Background="#B3000000" IsVisible="{Binding IsCheckingIn}">
+    <Border Background="{DynamicResource Scrim}" IsVisible="{Binding IsCheckingIn}">
         <ContentControl Content="{Binding CheckIn}" Margin="16"/>
     </Border>
 
     <!-- Undo today's check-in -->
-    <Border Background="#B3000000" IsVisible="{Binding IsConfirmingUndo}" Padding="24">
+    <Border Background="{DynamicResource Scrim}" IsVisible="{Binding IsConfirmingUndo}" Padding="24">
         <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center"
-                Padding="24" CornerRadius="18" Background="#111111" BorderBrush="#333333" BorderThickness="1">
+                Padding="24" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <StackPanel Spacing="14">
                 <TextBlock Text="Undo today's check-in?" FontSize="22" FontWeight="ExtraBold"/>
                 <TextBlock Text="{Binding UndoConfirmText}" FontSize="14" Classes="soft"/>
-                <TextBlock Text="{Binding UndoLossText}" Classes="mono" FontSize="14" Foreground="#FF8A7A" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding UndoLossText}" Classes="mono" FontSize="14" Foreground="{DynamicResource ErrorText}" TextWrapping="Wrap"/>
                 <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
                     <Button Classes="btn outline" Content="Keep it" Command="{Binding CancelUndoCommand}"/>
                     <Button Classes="btn light" Content="Undo check-in" Command="{Binding ConfirmUndoCommand}"/>
@@ -849,13 +847,13 @@
     <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
     <Border Classes="toast" Classes.show="{Binding ShowGymPrompt}" IsVisible="{Binding ShowGymPrompt}"
             VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,24,16,0" Width="420"
-            CornerRadius="16" Background="#161616" BorderBrush="#333333" BorderThickness="1" ClipToBounds="True"
+            CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
         <DockPanel>
-            <Border DockPanel.Dock="Top" Height="3" Background="{StaticResource Accent}"/>
+            <Border DockPanel.Dock="Top" Height="3" Background="{DynamicResource Accent}"/>
             <StackPanel Spacing="12" Margin="18,15,18,18">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                    <v:Icon Data="{StaticResource IcPin}" Stroke="White" VerticalAlignment="Center"/>
+                    <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource Ink}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="Want to log your gym?" FontWeight="Bold" FontSize="15" VerticalAlignment="Center"/>
                     <Button Grid.Column="2" Classes="icon" Width="32" Height="32" Command="{Binding SkipGymPromptCommand}"
                             ToolTip.Tip="Close" AutomationProperties.Name="Close">
@@ -870,9 +868,9 @@
                     <Button Grid.Column="1" Classes="link" Content="Change" Command="{Binding ChooseGymCommand}"
                             IsVisible="{Binding HasLastGym}"/>
                 </Grid>
-                <CheckBox IsChecked="{Binding MakeMyGym}" FontSize="13" Foreground="{StaticResource Muted}"
+                <CheckBox IsChecked="{Binding MakeMyGym}" FontSize="13" Foreground="{DynamicResource Muted}"
                           IsVisible="{Binding ShowMakeMyGym}">Make this my gym</CheckBox>
-                <CheckBox IsChecked="{Binding DontAskForGym}" FontSize="13" Foreground="{StaticResource Muted}">Don't ask me again</CheckBox>
+                <CheckBox IsChecked="{Binding DontAskForGym}" FontSize="13" Foreground="{DynamicResource Muted}">Don't ask me again</CheckBox>
                 <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                     <Button Classes="btn outline small" HorizontalAlignment="Stretch" MinHeight="42" Content="Not now"
                             Command="{Binding SkipGymPromptCommand}"/>
@@ -886,13 +884,13 @@
     <!-- Asked once, after the first check-in with a gym (FRIENDS_GYM_MAP.md 4f) -->
     <Border Classes="toast" Classes.show="{Binding ShowShareQuestion}" IsVisible="{Binding ShowShareQuestion}"
             VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,24,16,0" Width="420"
-            CornerRadius="16" Background="#161616" BorderBrush="#333333" BorderThickness="1" ClipToBounds="True"
+            CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
         <DockPanel>
-            <Border DockPanel.Dock="Top" Height="3" Background="{StaticResource Accent}"/>
+            <Border DockPanel.Dock="Top" Height="3" Background="{DynamicResource Accent}"/>
             <StackPanel Spacing="12" Margin="18,15,18,18">
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                    <v:Icon Data="{StaticResource IcFriends}" Stroke="White" VerticalAlignment="Center"/>
+                    <v:Icon Data="{StaticResource IcFriends}" Stroke="{DynamicResource Ink}" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="Show this check-in to friends?" FontWeight="Bold" FontSize="15" VerticalAlignment="Center"/>
                 </Grid>
                 <TextBlock FontSize="13" Classes="soft" TextWrapping="Wrap" LineHeight="19"
@@ -910,5 +908,4 @@
     <!-- Points history popup, over the whole page (sidebar included) -->
     <ContentControl Content="{Binding PointsHistory}" IsVisible="{Binding IsPointsHistoryOpen}"/>
     </Grid>
-    </ThemeVariantScope>
 </UserControl>

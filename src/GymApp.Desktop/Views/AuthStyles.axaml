@@ -10,10 +10,10 @@
     <Style Selector="TextBlock.fieldLabel">
         <Setter Property="FontSize" Value="13"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Foreground" Value="{StaticResource Light}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Light}"/>
     </Style>
     <Style Selector="TextBlock.fieldError">
-        <Setter Property="Foreground" Value="#FF8A7A"/>
+        <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
     </Style>
 
     <Style Selector="TextBox.field">
@@ -21,24 +21,24 @@
         <Setter Property="CornerRadius" Value="10"/>
         <Setter Property="FontSize" Value="15"/>
         <Setter Property="Padding" Value="44,0,14,0"/>
-        <Setter Property="Background" Value="Black"/>
-        <Setter Property="BorderBrush" Value="#333333"/>
+        <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
     <Style Selector="TextBox.field:pointerover /template/ Border#PART_BorderElement">
-        <Setter Property="Background" Value="Black"/>
-        <Setter Property="BorderBrush" Value="#4A4A4A"/>
+        <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
     </Style>
     <Style Selector="TextBox.field:focus /template/ Border#PART_BorderElement">
-        <Setter Property="Background" Value="Black"/>
-        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
     </Style>
     <!-- The icon drawn inside the left of a field -->
     <Style Selector="v|Icon.fieldIcon">
         <Setter Property="HorizontalAlignment" Value="Left"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="15,0,0,0"/>
-        <Setter Property="Stroke" Value="{StaticResource Muted}"/>
+        <Setter Property="Stroke" Value="{DynamicResource Muted}"/>
         <Setter Property="IsHitTestVisible" Value="False"/>
     </Style>
 
@@ -53,7 +53,7 @@
         <Setter Property="Padding" Value="14,12"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="BorderBrush" Value="#4A1E18"/>
-        <Setter Property="Background" Value="#140A08"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+        <Setter Property="Background" Value="{DynamicResource RedTint}"/>
     </Style>
 </Styles>

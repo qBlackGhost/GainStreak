@@ -7,7 +7,7 @@
     <!-- After the "Gym App" design canvas (Friends artboard): the leaderboard and your friends on the left, adding
          friends and requests on the right. Below 880 px of content the right column goes under the left. -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
@@ -16,14 +16,14 @@
             <Setter Property="Width" Value="36"/>
             <Setter Property="Height" Value="36"/>
             <Setter Property="CornerRadius" Value="18"/>
-            <Setter Property="Background" Value="#1E1E1E"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="TextElement.Foreground" Value="White"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector="Border.avatar.you">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="TextElement.Foreground" Value="Black"/>
         </Style>
@@ -35,30 +35,30 @@
             <Setter Property="BorderBrush" Value="Transparent"/>
         </Style>
         <Style Selector="Border.boardRow.you">
-            <Setter Property="Background" Value="#161616"/>
-            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
         </Style>
-        <Style Selector="TextBlock.rank"><Setter Property="Foreground" Value="{StaticResource Muted}"/></Style>
-        <Style Selector="TextBlock.rank.first"><Setter Property="Foreground" Value="{StaticResource Accent}"/></Style>
-        <Style Selector="StackPanel.streak"><Setter Property="TextElement.Foreground" Value="#6E6E6E"/></Style>
-        <Style Selector="StackPanel.streak.lit"><Setter Property="TextElement.Foreground" Value="{StaticResource Flame}"/></Style>
+        <Style Selector="TextBlock.rank"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+        <Style Selector="TextBlock.rank.first"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
+        <Style Selector="StackPanel.streak"><Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/></Style>
+        <Style Selector="StackPanel.streak.lit"><Setter Property="TextElement.Foreground" Value="{DynamicResource Flame}"/></Style>
         <Style Selector="Border.listRow">
             <Setter Property="MinHeight" Value="56"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Divider}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
             <Setter Property="BorderThickness" Value="0,1,0,0"/>
         </Style>
 
         <Style Selector="Button.danger">
-            <Setter Property="Background" Value="#1A0F0D"/>
-            <Setter Property="BorderBrush" Value="#5A2A24"/>
-            <Setter Property="Foreground" Value="#FF8A7A"/>
+            <Setter Property="Background" Value="{DynamicResource RedTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
         </Style>
         <Style Selector="TextBox.field">
             <Setter Property="MinHeight" Value="44"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Background" Value="Black"/>
-            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
 
@@ -75,9 +75,7 @@
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
     </UserControl.Styles>
-
-    <ThemeVariantScope RequestedThemeVariant="Dark">
-    <DockPanel Background="Black" TextElement.Foreground="White">
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Friends" FriendRequests="{Binding IncomingCount}"/>
 
         <ScrollViewer>
@@ -87,14 +85,14 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="Friends" FontSize="34" FontWeight="ExtraBold"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
                         <TextBlock Text="Friends see your username, level, points and streak. Nothing else." FontSize="14" Classes="soft"/>
                     </StackPanel>
                 </StackPanel>
                 <TextBlock Grid.Column="1" Text="{Binding FriendCountText}" Classes="mono muted" FontSize="13" VerticalAlignment="Bottom"/>
             </Grid>
 
-            <TextBlock Text="{Binding Notice}" Foreground="{StaticResource Accent}" FontWeight="SemiBold"
+            <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
                        IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -112,7 +110,7 @@
                                     <TextBlock Text="Leaderboard" Classes="h2"/>
                                     <TextBlock Text="{Binding PeriodText}" FontSize="13" Classes="muted"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" VerticalAlignment="Center">
                                     <v:SegmentedPill SelectedIndex="{Binding IsAllTime, Converter={x:Static v:SegmentedPill.BoolToIndex}}"
                                                      PillCornerRadius="8" PillInset="0">
                                         <Button Classes="seg" Classes.on="{Binding IsThisWeek}" CornerRadius="8" Content="This week"
@@ -155,14 +153,14 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                             <Panel IsVisible="{Binding HasNoFriends}">
-                                <Rectangle Stroke="#333333" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
+                                <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
                                 <StackPanel Spacing="6" Margin="22" HorizontalAlignment="Center">
                                     <TextBlock Text="Add friends to compete" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
                                     <TextBlock Text="Search for a username to send a request." FontSize="13" Classes="muted" TextAlignment="Center"/>
                                 </StackPanel>
                             </Panel>
                             <TextBlock Text="Ranked by points. Ties share a rank. The streak is shown, not used for ranking."
-                                       FontSize="12" Foreground="#6E6E6E"/>
+                                       FontSize="12" Foreground="{DynamicResource Faint}"/>
                         </StackPanel>
                     </Border>
 
@@ -185,10 +183,10 @@
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                                     <TextBlock Text="{Binding SinceText}" FontSize="12" Classes="muted"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="2" Classes="link" FontSize="12" Foreground="{StaticResource Muted}"
+                                                <Button Grid.Column="2" Classes="link" FontSize="12" Foreground="{DynamicResource Muted}"
                                                         Content="Cancel" Command="{Binding CancelRemoveCommand}"
                                                         IsVisible="{Binding IsConfirmingRemove}" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="3" Classes="btn outline small" Foreground="{StaticResource Soft}"
+                                                <Button Grid.Column="3" Classes="btn outline small" Foreground="{DynamicResource Soft}"
                                                         Classes.danger="{Binding IsConfirmingRemove}" Content="{Binding RemoveLabel}"
                                                         Command="{Binding RemoveCommand}" VerticalAlignment="Center"/>
                                             </Grid>
@@ -231,7 +229,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="{Binding SentCountText}" FontSize="12" Foreground="#6E6E6E"/>
+                            <TextBlock Text="{Binding SentCountText}" FontSize="12" Foreground="{DynamicResource Faint}"/>
                         </StackPanel>
                     </Border>
 
@@ -240,7 +238,7 @@
                         <StackPanel Spacing="12">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="Requests" Classes="h2" VerticalAlignment="Center"/>
-                                <Border MinWidth="22" Height="22" Padding="6,0" CornerRadius="11" Background="{StaticResource Accent}"
+                                <Border MinWidth="22" Height="22" Padding="6,0" CornerRadius="11" Background="{DynamicResource Accent}"
                                         VerticalAlignment="Center" IsVisible="{Binding HasIncoming}">
                                     <TextBlock Text="{Binding IncomingCount}" Foreground="Black" FontSize="12" FontWeight="Bold"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -282,7 +280,7 @@
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                                     <TextBlock Text="{Binding StatusText}" FontSize="12" Classes="muted"/>
                                                 </StackPanel>
-                                                <Button Grid.Column="2" Classes="btn outline small" Foreground="{StaticResource Soft}"
+                                                <Button Grid.Column="2" Classes="btn outline small" Foreground="{DynamicResource Soft}"
                                                         Content="Cancel" Command="{Binding CancelCommand}"/>
                                             </Grid>
                                         </Border>
@@ -296,5 +294,4 @@
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
-    </ThemeVariantScope>
 </UserControl>

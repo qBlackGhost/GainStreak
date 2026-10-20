@@ -103,9 +103,14 @@ public partial class App : Application
                 api.BackOnline += (_, _) => sync.RequestSync();
                 sync.StartTimer();
             }
+            // The Theme setting: the signed-in user's; the system's on the login screens
+            var themeSession = Services.GetRequiredService<SessionService>();
+            themeSession.Changed += () => AppTheme.Apply(themeSession.CurrentUser?.ThemePreference);
+
             // Stays signed in until logging out. Off the UI thread, like the backfill; offline it uses the cached account
             var restore = Services.GetRequiredService<IAccountService>();
             Task.Run(restore.RestoreAsync).GetAwaiter().GetResult();
+            AppTheme.Apply(themeSession.CurrentUser?.ThemePreference);   // now, before the window shows, not after
         }
         catch (InvalidOperationException e) when (e.Message.Contains(ServerAddress.EnvironmentVariable))
         {

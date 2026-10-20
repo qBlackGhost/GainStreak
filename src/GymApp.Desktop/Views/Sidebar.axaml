@@ -5,7 +5,7 @@
     <!-- The left navigation shared by the dark screens. Below 900 px of window it becomes a bar along the top
          (Sidebar.axaml.cs sets "narrow" on it and on the DockPanel it sits in). -->
     <UserControl.Styles>
-        <!-- The shared dark styles, here rather than app-wide so the other screens keep their own classes -->
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="v|Sidebar">
             <Setter Property="DockPanel.Dock" Value="Left"/>
@@ -80,34 +80,34 @@
         </Style>
     </UserControl.Styles>
 
-    <Border x:Name="Side" Background="Black" BorderBrush="{StaticResource Line}">
+    <Border x:Name="Side" Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}">
         <DockPanel>
             <Border x:Name="Brand" Padding="8,0">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                     <Image Source="{StaticResource GainStreakLogo}" Width="36" Height="36"/>
-                    <TextBlock FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{StaticResource Accent}"/></TextBlock>
+                    <TextBlock FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
                 </StackPanel>
             </Border>
 
             <!-- Profile and log out -->
             <Border x:Name="ProfileBox" Padding="10" CornerRadius="12"
-                    BorderBrush="{StaticResource Line}" BorderThickness="1">
+                    BorderBrush="{DynamicResource Line}" BorderThickness="1">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <Button Classes="nav" Padding="0" Click="OnProfile" ToolTip.Tip="Profile">
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border Width="36" Height="36" CornerRadius="18" Background="White">
-                                <TextBlock x:Name="InitialsText" Foreground="Black" FontWeight="Bold" FontSize="14"
+                            <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource Inverse}">
+                                <TextBlock x:Name="InitialsText" Foreground="{DynamicResource OnInverse}" FontWeight="Bold" FontSize="14"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel x:Name="ProfileText" Spacing="2" VerticalAlignment="Center">
-                                <TextBlock x:Name="NameText" FontWeight="SemiBold" FontSize="14" Foreground="White"
+                                <TextBlock x:Name="NameText" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource Ink}"
                                            TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100"/>
                                 <TextBlock Text="Profile" FontSize="12" Classes="muted"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
                     <Button Grid.Column="1" Classes="btn outline" Width="40" Height="40" MinHeight="40" Padding="0"
-                            Foreground="{StaticResource Soft}" Click="OnLogout"
+                            Foreground="{DynamicResource Soft}" Click="OnLogout"
                             ToolTip.Tip="Log out" AutomationProperties.Name="Log out">
                         <v:Icon Data="{StaticResource IcLogout}"/>
                     </Button>
@@ -158,7 +158,7 @@
 
                 <!-- Support: its own section under the screens; opens the feedback popup over the current screen -->
                 <StackPanel x:Name="SupportItems" Spacing="4">
-                    <Border x:Name="SupportRule" Height="1" Background="{StaticResource Line}" Margin="12,0,12,14"/>
+                    <Border x:Name="SupportRule" Height="1" Background="{DynamicResource Line}" Margin="12,0,12,14"/>
                     <TextBlock x:Name="SupportLabel" Text="SUPPORT" Classes="caps" FontWeight="SemiBold" Margin="12,0,0,6"/>
                     <Button x:Name="NavFeedback" Classes="nav" Click="OnFeedback">
                         <StackPanel Orientation="Horizontal" Spacing="12">
