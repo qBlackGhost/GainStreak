@@ -4,7 +4,7 @@
              xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.LoginView"
              x:DataType="vm:LoginViewModel">
-    <!-- In the IRONLOG look of the Gym App design canvas: one card on black, brand on top -->
+    <!-- In the GainStreak look of the Gym App design canvas: one card on black, brand on top -->
     <UserControl.Styles>
         <StyleInclude Source="/Views/AuthStyles.axaml"/>
     </UserControl.Styles>
@@ -14,11 +14,8 @@
         <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
             <!-- Brand -->
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                <Border Width="40" Height="40" CornerRadius="11" Background="{StaticResource Accent}">
-                    <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="22" Height="22"
-                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <TextBlock Text="IRONLOG" FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+                <Image Source="{StaticResource GainStreakLogo}" Width="40" Height="40"/>
+                <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{StaticResource Accent}"/></TextBlock>
             </StackPanel>
 
             <Border Classes="card" Padding="32">
@@ -100,7 +97,7 @@
 
                     <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0" IsVisible="{Binding IsSigningIn}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                            <TextBlock Text="New to IronLog?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
+                            <TextBlock Text="New to GainStreak?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
                             <Button Classes="link" Content="Create an account" FontSize="14" Command="{Binding GoToRegisterCommand}"
                                     VerticalAlignment="Center"/>
                         </StackPanel>

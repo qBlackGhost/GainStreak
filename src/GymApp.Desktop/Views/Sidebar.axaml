@@ -66,11 +66,8 @@
         <DockPanel>
             <Border x:Name="Brand" Padding="8,0">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Border Width="36" Height="36" CornerRadius="10" Background="{StaticResource Accent}">
-                        <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="20" Height="20"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="IRONLOG" FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+                    <Image Source="{StaticResource GainStreakLogo}" Width="36" Height="36"/>
+                    <TextBlock FontSize="20" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{StaticResource Accent}"/></TextBlock>
                 </StackPanel>
             </Border>
 

@@ -267,7 +267,7 @@ public partial class AdminViewModel : ObservableObject
         var self = Environment.ProcessPath!;
         var args = new System.Collections.Generic.List<string>();
         if (System.IO.Path.GetFileNameWithoutExtension(self) == "dotnet")
-            args.Add(typeof(Program).Assembly.Location);   // started as "dotnet GymApp.TestBench.dll"
+            args.Add(typeof(Program).Assembly.Location);   // started as "dotnet GainStreak.TestBench.dll"
         args.AddRange(["--after", Environment.ProcessId.ToString(CultureInfo.InvariantCulture)]);
         Process.Start(self, args);
 

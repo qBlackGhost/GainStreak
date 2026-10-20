@@ -28,7 +28,7 @@ sealed class Program
 
         App.MainWindowCreated = main =>
         {
-            main.Title = "GymApp (TestBench)";
+            main.Title = "GainStreak (TestBench)";
             main.Opened += (_, _) => new AdminWindow { DataContext = new AdminViewModel(settings) }.Show(main);
         };
 

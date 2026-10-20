@@ -4,6 +4,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\gainstreak.ico</ApplicationIcon>
+    <!-- The executable's name, which the macOS Dock and the Windows taskbar show. Namespaces stay GymApp.Desktop -->
+    <AssemblyName>GainStreak</AssemblyName>
+    <RootNamespace>GymApp.Desktop</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>

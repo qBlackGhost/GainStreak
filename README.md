@@ -1,6 +1,8 @@
-# GymApp
+# GainStreak
 
 A desktop gym tracker built with .NET 10 and Avalonia. Pick a training split, check in when you've trained, log your sets and PRs, and keep a streak going. Points, levels and a friends-only leaderboard make it a bit of a game.
+
+The code keeps its original working name: projects, namespaces, the data folder and the `GYMAPP_*` settings are still called GymApp.
 
 ## What it does
 
@@ -76,7 +78,7 @@ Windows (x64):
 dotnet publish src/GymApp.Desktop -c Release -r win-x64 --self-contained true -o publish/win-x64
 ```
 
-Start `publish/osx-arm64/GymApp.Desktop` or `publish\win-x64\GymApp.Desktop.exe`. The macOS build is a plain unsigned executable, not a signed `.app` bundle, so Gatekeeper may ask you to confirm the first time.
+Start `publish/osx-arm64/GainStreak` or `publish\win-x64\GainStreak.exe`. The macOS build is a plain unsigned executable, not a signed `.app` bundle, so Gatekeeper may ask you to confirm the first time.
 
 ## Running the app against a local server
 

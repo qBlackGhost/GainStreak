@@ -906,6 +906,9 @@
             </StackPanel>
         </DockPanel>
     </Border>
+
+    <!-- Points history popup, over the whole page (sidebar included) -->
+    <ContentControl Content="{Binding PointsHistory}" IsVisible="{Binding IsPointsHistoryOpen}"/>
     </Grid>
     </ThemeVariantScope>
 </UserControl>

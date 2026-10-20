@@ -33,8 +33,9 @@ public partial class HomeViewModel : ViewModelBase
                          PointsService points, GymService gyms, ProfileService profiles,
                          IFriendService friends, ILeaderboardService leaderboard,
                          SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
-                         GymSummaryService gymSummary, IAccountService accounts)
+                         GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory)
     {
+        PointsHistory = pointsHistory;
         _session = session;
         _accounts = accounts;
         _shell = shell;
@@ -796,8 +797,16 @@ public partial class HomeViewModel : ViewModelBase
 
     private static string N(int n) => n.ToString("N0", CultureInfo.InvariantCulture);
 
+    // ===== Points history popup =====
+    public PointsHistoryViewModel PointsHistory { get; }
+    [ObservableProperty] public partial bool IsPointsHistoryOpen { get; set; }
+
     [RelayCommand]
-    private void ShowPointsHistory() => _shell().ShowPointsHistory();
+    private void ShowPointsHistory()
+    {
+        _ = PointsHistory.Open(() => IsPointsHistoryOpen = false);
+        IsPointsHistoryOpen = true;
+    }
     [RelayCommand]
     private Task Logout() => _accounts.LogOutAsync();
     [RelayCommand]

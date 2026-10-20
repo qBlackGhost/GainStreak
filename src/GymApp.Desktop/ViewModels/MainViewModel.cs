@@ -44,7 +44,6 @@ public partial class MainViewModel : ViewModelBase
     public void ShowWorkouts() => Current = _sp.GetRequiredService<WorkoutsViewModel>();
     public void ShowProfile() => Current = _sp.GetRequiredService<ProfileViewModel>();
     public void ShowCalories() => Current = _sp.GetRequiredService<CaloriesViewModel>();
-    public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
     public void ShowGyms(bool pickToday = false, bool chooseCity = false)

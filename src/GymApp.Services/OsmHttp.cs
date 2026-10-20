@@ -9,7 +9,7 @@ namespace GymApp.Services;
 /// <summary>Shared setup for the OpenStreetMap APIs (Nominatim, Overpass): they ask for an identifying User-Agent.</summary>
 public static class OsmHttp
 {
-    public const string UserAgent = "GymApp/1.0 (student project)";
+    public const string UserAgent = "GainStreak/1.0 (student project)";
 
     public static HttpClient CreateClient(TimeSpan timeout, HttpMessageHandler? handler = null)
     {

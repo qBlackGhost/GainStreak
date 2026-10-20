@@ -1,6 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- The dark "IRONLOG" look from the Gym App design canvas: colors, fonts and icons shared by its screens -->
+    <!-- The dark GainStreak look (formerly "IRONLOG") from the Gym App design canvas: colors, fonts and icons shared by its screens -->
         <SolidColorBrush x:Key="Accent" Color="#C6F432"/>
         <SolidColorBrush x:Key="Surface" Color="#0B0B0B"/>
         <SolidColorBrush x:Key="Line" Color="#222222"/>
@@ -28,10 +28,26 @@
             <GradientStop Offset="1" Color="#FFB000"/>
         </LinearGradientBrush>
 
+        <!-- The GainStreak logo (the app icon, Assets/gainstreak-icon.svg), on a 100×100 grid -->
+        <DrawingImage x:Key="GainStreakLogo">
+            <DrawingGroup>
+                <GeometryDrawing Brush="#0B0B0B" Geometry="M22.5 0.5H77.5A22 22 0 0 1 99.5 22.5V77.5A22 22 0 0 1 77.5 99.5H22.5A22 22 0 0 1 0.5 77.5V22.5A22 22 0 0 1 22.5 0.5Z">
+                    <GeometryDrawing.Pen><Pen Brush="#222222" Thickness="1"/></GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Geometry="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z">
+                    <GeometryDrawing.Pen><Pen Brush="#C6F432" Thickness="7" LineJoin="Round"/></GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FF4A00" Geometry="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z"/>
+                <GeometryDrawing Brush="#FF9A00" Geometry="M50 45 C57 52 60 57 60 63 A10 10 0 0 1 40 63 C40 57 43 52 50 45 Z"/>
+                <GeometryDrawing Brush="#FFD400" Geometry="M50 55 C53 58 54.5 60.5 54.5 63.5 A4.5 4.5 0 0 1 45.5 63.5 C45.5 60.5 47 58 50 55 Z"/>
+            </DrawingGroup>
+        </DrawingImage>
+
         <!-- Icons, on a 24×24 grid (see Icon.cs) -->
         <StreamGeometry x:Key="IcDumbbell">M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12</StreamGeometry>
         <StreamGeometry x:Key="IcGrid">M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z</StreamGeometry>
         <StreamGeometry x:Key="IcCalendar">M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4</StreamGeometry>
+        <StreamGeometry x:Key="IcCalendarCheck">M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M9 15l2 2 4-4</StreamGeometry>
         <StreamGeometry x:Key="IcFlame">M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z</StreamGeometry>
         <StreamGeometry x:Key="IcMap">M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14</StreamGeometry>
         <StreamGeometry x:Key="IcFriends">M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M14.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16.5 14.2c2.9 0.3 5 2.4 5 5.8</StreamGeometry>

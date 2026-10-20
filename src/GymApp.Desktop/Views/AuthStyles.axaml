@@ -1,7 +1,7 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="using:GymApp.Desktop.Views">
-    <!-- Sign in and Create account: the IRONLOG card, labelled fields with an icon inside, an accent focus ring -->
+    <!-- Sign in and Create account: the GainStreak card, labelled fields with an icon inside, an accent focus ring -->
     <StyleInclude Source="/Views/IronlogStyles.axaml"/>
 
     <Style Selector="TextBlock">

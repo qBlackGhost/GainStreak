@@ -20,12 +20,12 @@ namespace GymApp.Desktop;
 public partial class App : Application
 {
     private static string DataErrorText =>
-        "GymApp couldn't open its data, so it can't start. The details were saved to errors.log in " +
-        $"{AppDbContext.DataDirectory}. Close any other copy of GymApp and try again.";
+        "GainStreak couldn't open its data, so it can't start. The details were saved to errors.log in " +
+        $"{AppDbContext.DataDirectory}. Close any other copy of GainStreak and try again.";
 
     private static Window StartupErrorWindow(string text) => new()
     {
-        Title = "GymApp",
+        Title = "GainStreak",
         Width = 460,
         SizeToContent = SizeToContent.Height,
         WindowStartupLocation = WindowStartupLocation.CenterScreen,
@@ -52,6 +52,7 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        MacDockIcon.Apply();
         Services = AppServices.Create(LocalSocial).BuildServiceProvider();
 
         var log = new ErrorLog(AppDbContext.DataDirectory);
@@ -102,7 +103,7 @@ public partial class App : Application
         {
             // A release build with no (or no https) server address
             log.Write(e, "Startup");
-            if (desktop is not null) desktop.MainWindow = StartupErrorWindow($"GymApp can't reach its server: {e.Message}");
+            if (desktop is not null) desktop.MainWindow = StartupErrorWindow($"GainStreak can't reach its server: {e.Message}");
             base.OnFrameworkInitializationCompleted();
             return;
         }

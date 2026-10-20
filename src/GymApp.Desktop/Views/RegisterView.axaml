@@ -14,11 +14,8 @@
         <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
             <!-- Brand -->
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                <Border Width="40" Height="40" CornerRadius="11" Background="{StaticResource Accent}">
-                    <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="22" Height="22"
-                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                </Border>
-                <TextBlock Text="IRONLOG" FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+                <Image Source="{StaticResource GainStreakLogo}" Width="40" Height="40"/>
+                <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{StaticResource Accent}"/></TextBlock>
             </StackPanel>
 
             <Border Classes="card" Padding="32">

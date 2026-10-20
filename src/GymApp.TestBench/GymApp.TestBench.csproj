@@ -1,10 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- GymApp with an admin window for testing: its own data folder, a movable clock, points and check-in shortcuts.
+  <!-- GainStreak with an admin window for testing: its own data folder, a movable clock, points and check-in shortcuts.
        Never published; run it with "dotnet run" on src/GymApp.TestBench -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <AssemblyName>GainStreak.TestBench</AssemblyName>
+    <RootNamespace>GymApp.TestBench</RootNamespace>
   </PropertyGroup>
 
   <!-- Same as the app: Network.framework on macOS, so the gym fetch gets TLS 1.3 -->
