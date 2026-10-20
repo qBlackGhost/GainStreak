@@ -1,0 +1,39 @@
+namespace GymApp.Server.Data;
+
+/// <summary>A server account. Ids come from the server's own sequence, so they're unique across every phone.</summary>
+public class User
+{
+    public int Id { get; set; }
+
+    /// <summary>As typed at registration (trimmed), for display.</summary>
+    public string Username { get; set; } = "";
+
+    /// <summary>Lowercase <see cref="Username"/>; unique, so usernames are unique ignoring case.</summary>
+    public string UsernameNormalized { get; set; } = "";
+
+    /// <summary>Stored normalized (<see cref="Core.Credentials.NormalizeEmail"/>); unique.</summary>
+    public string Email { get; set; } = "";
+
+    public string PasswordHash { get; set; } = "";
+
+    /// <summary>Null until the user has been asked.</summary>
+    public bool? ShareGymCheckIns { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
+}
+
+/// <summary>A signed-in device. Only the SHA-256 of the token is stored, so a database leak doesn't hand out logins.</summary>
+public class Session
+{
+    public const int MaxDeviceNameLength = 64;
+
+    public long Id { get; set; }
+    public int UserId { get; set; }
+    public string TokenHash { get; set; } = "";
+    public string DeviceName { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public DateTime LastUsedAt { get; set; }
+    public DateTime ExpiresAt { get; set; }
+}

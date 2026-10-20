@@ -1,0 +1,67 @@
+using System.Security.Claims;
+using GymApp.Contracts;
+using GymApp.Server.Auth;
+using GymApp.Server.Data;
+using GymApp.Social;
+using Microsoft.EntityFrameworkCore;
+using CorePeriod = GymApp.Core.LeaderboardPeriod;
+using Period = GymApp.Contracts.LeaderboardPeriod;
+
+namespace GymApp.Server.Endpoints;
+
+/// <summary><c>PUT /v1/me/stats</c> (the phone's projection) and <c>GET /v1/leaderboard</c> (the shared
+/// <see cref="LeaderboardService"/> over the stored projections).</summary>
+public static class StatsEndpoints
+{
+    public const int MaxDays = 31;
+
+    public static void MapStats(this IEndpointRouteBuilder app)
+    {
+        app.MapPut("/v1/me/stats", UploadStats);
+        app.MapGet("/v1/leaderboard", GetLeaderboard);
+    }
+
+    private static async Task<IResult> UploadStats(StatsUploadRequest request, ClaimsPrincipal me, ServerDbContext db, TimeProvider clock)
+    {
+        var days = request.Days ?? [];
+        if (days.Count == 0) return Problems.BadRequest("Send at least one day.");
+        if (days.Count > MaxDays) return Problems.BadRequest($"Send at most {MaxDays} days.");
+        if (days.DistinctBy(d => d.Date).Count() != days.Count) return Problems.BadRequest("Each date can only be sent once.");
+        if (!clock.IsNearServerDate(days.Min(d => d.Date)))
+            return Problems.BadRequest($"The first day must be within {ClientDates.AllowanceDays} days of today.");
+        if (days.Any(d => d.TotalPoints < 0 || d.WeekPoints < 0 || d.CurrentStreak < 0))
+            return Problems.BadRequest("Points and streaks can't be negative.");
+
+        var userId = me.UserId();
+        await using var tx = await db.Database.BeginTransactionAsync();
+        await db.ProjectedStats.Where(d => d.UserId == userId).ExecuteDeleteAsync();
+        db.ProjectedStats.AddRange(days.Select(d => new StatsDay
+        {
+            UserId = userId, Date = d.Date, TotalPoints = d.TotalPoints, WeekPoints = d.WeekPoints, CurrentStreak = d.CurrentStreak
+        }));
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> GetLeaderboard(string? period, string? today, ClaimsPrincipal me,
+        LeaderboardService leaderboard, TimeProvider clock)
+    {
+        Period? parsed = period?.ToLowerInvariant() switch
+        {
+            "thisweek" => Period.ThisWeek,
+            "alltime" => Period.AllTime,
+            _ => null
+        };
+        if (parsed is null) return Problems.BadRequest("Set period to thisWeek or allTime.");
+        if (ClientDates.Parse(today) is not { } day) return Problems.BadRequest($"Send today's date as {ApiFormat.Date}.");
+        if (!clock.IsNearServerDate(day)) return Problems.BadRequest($"Today must be within {ClientDates.AllowanceDays} days of the server's date.");
+
+        var view = await leaderboard.GetAsync(me.UserId(), parsed == Period.ThisWeek ? CorePeriod.ThisWeek : CorePeriod.AllTime, day);
+        if (view is null) return Results.NotFound();
+
+        return Results.Ok(new LeaderboardResponse(parsed.Value, view.WeekStart, view.WeekEnd,
+            view.Rows.Select(r => new LeaderboardRowResponse(
+                r.Rank, r.UserId, r.Username, r.Points, r.Level.Number, r.Level.Name, r.CurrentStreak, r.IsYou)).ToList()));
+    }
+}

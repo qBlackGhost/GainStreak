@@ -1,0 +1,16 @@
+# Only the server's sources go into the image (see src/GymApp.Server/Dockerfile)
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+.git/
+.idea/
+.DS_Store
+publish/
+docs/
+tests/
+src/GymApp.Desktop/
+src/GymApp.TestBench/
+src/GymApp.Data/
+src/GymApp.Services/
+src/GymApp.Server/appsettings.Development.json

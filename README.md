@@ -71,6 +71,52 @@ dotnet publish src/GymApp.Desktop -c Release -r win-x64 --self-contained true -o
 
 Start `publish/osx-arm64/GymApp.Desktop` or `publish\win-x64\GymApp.Desktop.exe`. The macOS build is a plain unsigned executable, not a signed `.app` bundle, so Gatekeeper may ask you to confirm the first time.
 
+## Running the server
+
+The social server (accounts, friends, the leaderboard and shared gym check-ins) is `src/GymApp.Server`, an ASP.NET Core API on Postgres. The app doesn't talk to it yet; that's Phase 14. See `docs/PHASE_13_SOCIAL_SERVER.md`.
+
+Start a local Postgres (Docker), then the server. In Development it applies migrations on start and listens on `http://localhost:5080`:
+
+```bash
+docker compose up -d
+```
+
+```bash
+dotnet run --project src/GymApp.Server
+```
+
+`curl http://localhost:5080/health` should answer `Healthy`.
+
+The server tests start their own throwaway Postgres with Testcontainers, so Docker must be running, but `docker compose` isn't needed:
+
+```bash
+dotnet test tests/GymApp.Server.Tests
+```
+
+### In production
+
+Build the image from the repository root:
+
+```bash
+docker build -f src/GymApp.Server/Dockerfile -t gymapp-server .
+```
+
+Settings come from environment variables only:
+
+| Variable | What it is |
+|---|---|
+| `ConnectionStrings__Social` | The Postgres connection string |
+| `AllowedHosts` | The host name(s) clients use, separated by `;`. Required |
+| `ForwardedHeaders__KnownNetworks__0` (`__1`, …) | The proxy's network in CIDR form, e.g. `10.0.0.0/8`, if it isn't on the same machine. Only these may set the client IP |
+
+HTTPS ends at the host's proxy; the container listens on plain HTTP on port 8080 and runs as a non-root user. Migrations never run on start: apply them first with the same image.
+
+```bash
+docker run --rm -e ConnectionStrings__Social="Host=...;Database=...;Username=...;Password=..." gymapp-server migrate
+```
+
+Outside Docker, the same is `dotnet GymApp.Server.dll migrate`.
+
 ## Project layout
 
 | Project | What's in it |
@@ -79,7 +125,12 @@ Start `publish/osx-arm64/GymApp.Desktop` or `publish\win-x64\GymApp.Desktop.exe`
 | `src/GymApp.Data` | EF Core entities, `AppDbContext` and migrations (SQLite) |
 | `src/GymApp.Services` | Services over the database, plus the OpenStreetMap clients (Overpass, Nominatim) |
 | `src/GymApp.Desktop` | Avalonia views and view models (CommunityToolkit.Mvvm) |
+| `src/GymApp.Social` | The friend and leaderboard rules and the `ISocialStore` interface, shared by the app and the server |
+| `src/GymApp.Contracts` | Request and response records for the server's HTTP API |
+| `src/GymApp.Server` | The social server: ASP.NET Core minimal API, `ServerDbContext` and migrations (Postgres) |
 | `tests/GymApp.Tests` | xUnit tests. Service tests run against in-memory SQLite with the real migrations |
+| `tests/GymApp.Server.Tests` | Endpoint tests against a real Postgres (Testcontainers) |
+| `tests/Shared` | Test cases compiled into both test projects, e.g. the `FriendService` rules run against both stores |
 
 Phase specs and design notes are in `docs/`.
 
@@ -87,6 +138,12 @@ Phase specs and design notes are in `docs/`.
 
 ```bash
 dotnet ef migrations add <Name> --project src/GymApp.Data --startup-project src/GymApp.Desktop
+```
+
+For the server's database:
+
+```bash
+dotnet ef migrations add <Name> --project src/GymApp.Server --output-dir Data/Migrations
 ```
 
 ## Versioning

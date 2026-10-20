@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GymApp.Core;
 using GymApp.Services;
+using GymApp.Social;
 
 namespace GymApp.Desktop.ViewModels;
 

@@ -1,11 +1,14 @@
 using GymApp.Core;
-using GymApp.Data.Models;
-using GymApp.Services;
-using Microsoft.EntityFrameworkCore;
+using GymApp.Social;
 
-namespace GymApp.Tests;
+namespace GymApp.Tests.Shared;
 
-public class FriendServiceTests : IDisposable
+/// <summary>
+/// The <see cref="FriendService"/> rules, run against every <see cref="ISocialStore"/>: the app's SQLite store
+/// (GymApp.Tests) and the server's Postgres store (GymApp.Server.Tests). This file is linked into both projects;
+/// each derives from it and fills in the database hooks.
+/// </summary>
+public abstract class FriendServiceTests : IAsyncLifetime
 {
     /// <summary>A clock the test moves by hand, so "newest first" is deterministic.</summary>
     private sealed class ManualClock : TimeProvider
@@ -14,26 +17,39 @@ public class FriendServiceTests : IDisposable
         public override DateTimeOffset GetUtcNow() => Now;
     }
 
-    private readonly TestDb _db = new();
     private readonly ManualClock _clock = new();
-    private readonly FriendService _svc;
-    private readonly int _alice, _bob, _carol;
+    private ISocialStore _store = null!;
+    private FriendService _svc = null!;
+    private int _alice, _bob, _carol;
 
-    public FriendServiceTests()
+    /// <summary>Sets up an empty database and returns the store on it.</summary>
+    protected abstract Task<ISocialStore> CreateStoreAsync();
+
+    /// <summary>Drops whatever <see cref="CreateStoreAsync"/> set up.</summary>
+    protected abstract Task DeleteStoreAsync();
+
+    /// <summary>Adds a user with that username straight into the database and returns its id.</summary>
+    protected abstract Task<int> AddUserAsync(string username);
+
+    /// <summary>Deletes the user the way account deletion does, so the database's cascades run.</summary>
+    protected abstract Task DeleteUserAsync(int userId);
+
+    /// <summary>Every friendship row, read straight from the database.</summary>
+    protected abstract Task<IReadOnlyList<FriendshipRecord>> RowsAsync();
+
+    /// <summary>Inserts friendship rows straight into the database.</summary>
+    protected abstract Task SeedFriendshipsAsync(IReadOnlyList<FriendshipRecord> rows);
+
+    public async Task InitializeAsync()
     {
-        _svc = new FriendService(new LocalSocialStore(_db), _clock);
-        _alice = _db.AddUser("alice");
-        _bob = _db.AddUser("bob");
-        _carol = _db.AddUser("carol");
+        _store = await CreateStoreAsync();
+        _svc = new FriendService(_store, _clock);
+        _alice = await AddUserAsync("alice");
+        _bob = await AddUserAsync("bob");
+        _carol = await AddUserAsync("carol");
     }
 
-    public void Dispose() => _db.Dispose();
-
-    private List<Friendship> Rows()
-    {
-        using var db = _db.CreateDbContext();
-        return db.Friendships.AsNoTracking().ToList();
-    }
+    public Task DisposeAsync() => DeleteStoreAsync();
 
     private async Task MakeFriends(int x, int y)
     {
@@ -57,7 +73,7 @@ public class FriendServiceTests : IDisposable
         Assert.Equal(["bob"], (await _svc.GetFriendsAsync(_alice)).Select(f => f.Username));
         Assert.Equal(["alice"], (await _svc.GetFriendsAsync(_bob)).Select(f => f.Username));
 
-        var row = Assert.Single(Rows());
+        var row = Assert.Single(await RowsAsync());
         Assert.Equal(FriendshipStatus.Accepted, row.Status);
         Assert.Equal(_clock.Now.UtcDateTime, row.AcceptedAt);
     }
@@ -67,7 +83,7 @@ public class FriendServiceTests : IDisposable
         Assert.True(_alice < _carol);
         await _svc.SendRequestAsync(_carol, _alice);   // the higher id sends
 
-        var row = Assert.Single(Rows());
+        var row = Assert.Single(await RowsAsync());
         Assert.Equal((_alice, _carol, _carol), (row.UserAId, row.UserBId, row.RequestedById));
         Assert.Equal(FriendshipStatus.Pending, row.Status);
         Assert.Null(row.AcceptedAt);
@@ -80,7 +96,7 @@ public class FriendServiceTests : IDisposable
 
         Assert.True(r.Success);
         Assert.True(r.BecameFriends);
-        var row = Assert.Single(Rows());
+        var row = Assert.Single(await RowsAsync());
         Assert.Equal((FriendshipStatus.Accepted, _alice), (row.Status, row.RequestedById));
     }
 
@@ -91,7 +107,7 @@ public class FriendServiceTests : IDisposable
 
         Assert.False(r.Success);
         Assert.Equal("You can't accept your own request.", r.Error);
-        Assert.Equal(FriendshipStatus.Pending, Assert.Single(Rows()).Status);
+        Assert.Equal(FriendshipStatus.Pending, Assert.Single(await RowsAsync()).Status);
     }
 
     [Fact] public async Task AcceptWithoutARequest_Fails()
@@ -107,10 +123,10 @@ public class FriendServiceTests : IDisposable
         await _svc.SendRequestAsync(_alice, _bob);
         Assert.False((await _svc.DeclineAsync(_alice, _bob)).Success);   // only the receiver declines
         Assert.True((await _svc.DeclineAsync(_bob, _alice)).Success);
-        Assert.Empty(Rows());
+        Assert.Empty(await RowsAsync());
 
         Assert.True((await _svc.SendRequestAsync(_alice, _bob)).Success);
-        Assert.Single(Rows());
+        Assert.Single(await RowsAsync());
     }
 
     [Fact] public async Task Cancel_DeletesTheRow_AndANewRequestWorks()
@@ -118,10 +134,10 @@ public class FriendServiceTests : IDisposable
         await _svc.SendRequestAsync(_alice, _bob);
         Assert.False((await _svc.CancelAsync(_bob, _alice)).Success);    // only the sender cancels
         Assert.True((await _svc.CancelAsync(_alice, _bob)).Success);
-        Assert.Empty(Rows());
+        Assert.Empty(await RowsAsync());
 
         Assert.True((await _svc.SendRequestAsync(_bob, _alice)).Success);
-        Assert.Equal(_bob, Assert.Single(Rows()).RequestedById);
+        Assert.Equal(_bob, Assert.Single(await RowsAsync()).RequestedById);
     }
 
     [Theory]
@@ -133,7 +149,7 @@ public class FriendServiceTests : IDisposable
         var r = bySender ? await _svc.RemoveAsync(_alice, _bob) : await _svc.RemoveAsync(_bob, _alice);
 
         Assert.True(r.Success);
-        Assert.Empty(Rows());
+        Assert.Empty(await RowsAsync());
         Assert.Empty(await _svc.GetFriendsAsync(_alice));
         Assert.Empty(await _svc.GetFriendsAsync(_bob));
     }
@@ -142,7 +158,7 @@ public class FriendServiceTests : IDisposable
     {
         await _svc.SendRequestAsync(_alice, _bob);
         Assert.Equal("You're not friends.", (await _svc.RemoveAsync(_alice, _bob)).Error);
-        Assert.Single(Rows());
+        Assert.Single(await RowsAsync());
     }
 
     [Fact] public async Task DeclineAndCancel_DontRemoveAFriendship()
@@ -150,7 +166,7 @@ public class FriendServiceTests : IDisposable
         await MakeFriends(_alice, _bob);
         Assert.False((await _svc.DeclineAsync(_bob, _alice)).Success);
         Assert.False((await _svc.CancelAsync(_alice, _bob)).Success);
-        Assert.Single(Rows());
+        Assert.Single(await RowsAsync());
     }
 
     // ---- refusals and limits ----
@@ -159,7 +175,7 @@ public class FriendServiceTests : IDisposable
     {
         var r = await _svc.SendRequestAsync(_alice, _alice);
         Assert.Equal((false, "You can't add yourself."), (r.Success, r.Error));
-        Assert.Empty(Rows());
+        Assert.Empty(await RowsAsync());
     }
 
     [Fact] public async Task NoRequestToAMissingUser()
@@ -173,7 +189,7 @@ public class FriendServiceTests : IDisposable
         await _svc.SendRequestAsync(_alice, _bob);
         var r = await _svc.SendRequestAsync(_alice, _bob);
         Assert.Equal((false, "You already sent a request."), (r.Success, r.Error));
-        Assert.Single(Rows());
+        Assert.Single(await RowsAsync());
     }
 
     [Fact] public async Task NoRequestWhenAlreadyFriends()
@@ -183,23 +199,22 @@ public class FriendServiceTests : IDisposable
         Assert.Equal("You're already friends.", (await _svc.SendRequestAsync(_bob, _alice)).Error);
     }
 
-    /// <summary>Adds users and accepted friendships for <paramref name="userId"/> straight into the database.</summary>
-    private void SeedFriends(int userId, int count, string prefix, FriendshipStatus status = FriendshipStatus.Accepted)
+    /// <summary>Adds users and friendships with <paramref name="userId"/> straight into the store's database.</summary>
+    private async Task SeedFriendsAsync(int userId, int count, string prefix, FriendshipStatus status = FriendshipStatus.Accepted)
     {
-        var ids = Enumerable.Range(0, count).Select(i => _db.AddUser($"{prefix}{i:D2}")).ToList();
-        using var db = _db.CreateDbContext();
-        foreach (var id in ids)
-            db.Friendships.Add(new Friendship
-            {
-                UserAId = Math.Min(userId, id), UserBId = Math.Max(userId, id), RequestedById = userId, Status = status,
-                AcceptedAt = status == FriendshipStatus.Accepted ? DateTime.UtcNow : null
-            });
-        db.SaveChanges();
+        var rows = new List<FriendshipRecord>();
+        for (var i = 0; i < count; i++)
+        {
+            var id = await AddUserAsync($"{prefix}{i:D2}");
+            rows.Add(new FriendshipRecord(Math.Min(userId, id), Math.Max(userId, id), userId, status, _clock.Now.UtcDateTime,
+                status == FriendshipStatus.Accepted ? _clock.Now.UtcDateTime : null));
+        }
+        await SeedFriendshipsAsync(rows);
     }
 
     [Fact] public async Task FriendLimit_OnSend()
     {
-        SeedFriends(_alice, FriendService.MaxFriends, "pal");
+        await SeedFriendsAsync(_alice, FriendService.MaxFriends, "pal");
         var r = await _svc.SendRequestAsync(_alice, _bob);
         Assert.Equal((false, "You can have at most 50 friends."), (r.Success, r.Error));
     }
@@ -207,17 +222,17 @@ public class FriendServiceTests : IDisposable
     [Fact] public async Task FriendLimit_OnAccept_ForTheReceiver()
     {
         await _svc.SendRequestAsync(_bob, _alice);
-        SeedFriends(_alice, FriendService.MaxFriends, "pal");
+        await SeedFriendsAsync(_alice, FriendService.MaxFriends, "pal");
 
         var r = await _svc.AcceptAsync(_alice, _bob);
         Assert.Equal((false, "You can have at most 50 friends."), (r.Success, r.Error));
-        Assert.Equal(FriendshipStatus.Pending, Rows().Single(f => f.RequestedById == _bob).Status);
+        Assert.Equal(FriendshipStatus.Pending, (await RowsAsync()).Single(f => f.RequestedById == _bob).Status);
     }
 
     [Fact] public async Task FriendLimit_OnAccept_ForTheSender()
     {
         await _svc.SendRequestAsync(_bob, _alice);
-        SeedFriends(_bob, FriendService.MaxFriends, "pal");
+        await SeedFriendsAsync(_bob, FriendService.MaxFriends, "pal");
 
         var r = await _svc.AcceptAsync(_alice, _bob);
         Assert.Equal((false, "They already have the most friends allowed."), (r.Success, r.Error));
@@ -226,13 +241,13 @@ public class FriendServiceTests : IDisposable
     [Fact] public async Task FriendLimit_OnAutoAccept()
     {
         await _svc.SendRequestAsync(_bob, _alice);
-        SeedFriends(_alice, FriendService.MaxFriends, "pal");
+        await SeedFriendsAsync(_alice, FriendService.MaxFriends, "pal");
         Assert.False((await _svc.SendRequestAsync(_alice, _bob)).Success);
     }
 
     [Fact] public async Task PendingOutgoingLimit()
     {
-        SeedFriends(_alice, FriendService.MaxPendingOutgoing, "ask", FriendshipStatus.Pending);
+        await SeedFriendsAsync(_alice, FriendService.MaxPendingOutgoing, "ask", FriendshipStatus.Pending);
         var r = await _svc.SendRequestAsync(_alice, _bob);
         Assert.False(r.Success);
         Assert.StartsWith("You can have at most 20 requests waiting.", r.Error);
@@ -245,8 +260,8 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Friends_OrderedByUsername()
     {
-        var zed = _db.AddUser("Zed");
-        var ana = _db.AddUser("ana");
+        var zed = await AddUserAsync("Zed");
+        var ana = await AddUserAsync("ana");
         await MakeFriends(_alice, zed);
         await MakeFriends(_alice, _carol);
         await MakeFriends(ana, _alice);
@@ -257,7 +272,7 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Requests_IncomingAndOutgoing_NewestFirst()
     {
-        var dan = _db.AddUser("dan");
+        var dan = await AddUserAsync("dan");
         await _svc.SendRequestAsync(_bob, _alice);
         _clock.Now = _clock.Now.AddMinutes(1);
         await _svc.SendRequestAsync(_carol, _alice);
@@ -284,8 +299,8 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Search_PrefixIgnoringCase_LeavesYouOut()
     {
-        _db.AddUser("Alicia");
-        _db.AddUser("malice");   // contains "ali" but doesn't start with it
+        await AddUserAsync("Alicia");
+        await AddUserAsync("malice");   // contains "ali" but doesn't start with it
 
         var r = await _svc.SearchAsync(_alice, "ALI");
         Assert.True(r.Success);
@@ -306,7 +321,7 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Search_AtMost20Results()
     {
-        for (var i = 0; i < 25; i++) _db.AddUser($"lifter{i:D2}");
+        for (var i = 0; i < 25; i++) await AddUserAsync($"lifter{i:D2}");
         var r = await _svc.SearchAsync(_alice, "lifter");
         Assert.Equal(20, r.Users.Count);
         Assert.Equal("lifter00", r.Users[0].Username);
@@ -314,9 +329,9 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Search_ShowsTheRelationship()
     {
-        var bobby = _db.AddUser("bobby");
-        var bobo = _db.AddUser("bobo");
-        _db.AddUser("bobcat");
+        var bobby = await AddUserAsync("bobby");
+        var bobo = await AddUserAsync("bobo");
+        await AddUserAsync("bobcat");
         await MakeFriends(_alice, _bob);
         await _svc.SendRequestAsync(_alice, bobby);
         await _svc.SendRequestAsync(bobo, _alice);
@@ -330,8 +345,8 @@ public class FriendServiceTests : IDisposable
 
     [Fact] public async Task Search_WildcardsAreLiteral()
     {
-        _db.AddUser("a_bcd");
-        _db.AddUser("axbcd");
+        await AddUserAsync("a_bcd");
+        await AddUserAsync("axbcd");
         var r = await _svc.SearchAsync(_alice, "a_b");
         Assert.Equal(["a_bcd"], r.Users.Select(u => u.Username));
     }
@@ -343,13 +358,9 @@ public class FriendServiceTests : IDisposable
         await MakeFriends(_alice, _bob);
         await _svc.SendRequestAsync(_carol, _bob);
 
-        using (var db = _db.CreateDbContext())
-        {
-            db.Users.Remove(db.Users.Single(u => u.Id == _bob));
-            db.SaveChanges();
-        }
+        await DeleteUserAsync(_bob);
 
-        Assert.Empty(Rows());
+        Assert.Empty(await RowsAsync());
         Assert.Empty(await _svc.GetFriendsAsync(_alice));
         Assert.Empty((await _svc.GetRequestsAsync(_carol)).Outgoing);
     }
@@ -359,7 +370,7 @@ public class FriendServiceTests : IDisposable
     [Fact] public async Task ConflictingWrite_IsReportedNotThrown()
     {
         // Simulate another click winning between the check and the write: the unique index refuses the second row
-        await using var s = await new LocalSocialStore(_db).OpenAsync();
+        await using var s = await _store.OpenAsync();
         var (a, b) = (Math.Min(_alice, _bob), Math.Max(_alice, _bob));
         await s.AddFriendshipAsync(new FriendshipRecord(a, b, _alice, FriendshipStatus.Pending, DateTime.UtcNow, null));
         await s.AddFriendshipAsync(new FriendshipRecord(a, b, _bob, FriendshipStatus.Pending, DateTime.UtcNow, null));

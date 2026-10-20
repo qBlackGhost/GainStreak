@@ -7,6 +7,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using GymApp.Data;
 using GymApp.Services;
+using GymApp.Social;
 using GymApp.Desktop.ViewModels;
 using GymApp.Desktop.Views;
 using Microsoft.EntityFrameworkCore;

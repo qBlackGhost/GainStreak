@@ -2,6 +2,7 @@ using GymApp.Core;
 using GymApp.Data;
 using GymApp.Data.Models;
 using GymApp.Services;
+using GymApp.Social;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Tests;
@@ -103,7 +104,7 @@ public class LeaderboardServiceTests : IDisposable
             new PointsEntry { UserId = _bob, Reason = PointsReason.Workout, Amount = 100, Date = Oct(12), DedupKey = "d" }));
 
         await using var s = await new LocalSocialStore(_db).OpenAsync();
-        var stats = await s.GetPublicStatsAsync([_bob, _alice], Oct(5), Oct(11));
+        var stats = await s.GetPublicStatsAsync([_bob, _alice], Oct(5), Oct(11), Oct(8));
         Assert.Equal(32, stats.Single(x => x.UserId == _bob).WeekPoints);
         Assert.Equal(0, stats.Single(x => x.UserId == _alice).WeekPoints);
     }

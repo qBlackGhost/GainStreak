@@ -1,0 +1,17 @@
+# Local development only: the Postgres the social server uses (see src/GymApp.Server/appsettings.Development.json).
+# Start it with `docker compose up -d`. The password is a dev-only value; production reads its connection string
+# from the ConnectionStrings__Social environment variable.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: gymapp_social
+      POSTGRES_USER: gymapp
+      POSTGRES_PASSWORD: gymapp_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - gymapp-postgres:/var/lib/postgresql/data
+
+volumes:
+  gymapp-postgres:

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GymApp.Core\GymApp.Core.csproj" />
     <ProjectReference Include="..\GymApp.Data\GymApp.Data.csproj" />
+    <ProjectReference Include="..\GymApp.Social\GymApp.Social.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

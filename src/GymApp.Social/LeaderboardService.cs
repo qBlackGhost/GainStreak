@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GymApp.Core;
 
-namespace GymApp.Services;
+namespace GymApp.Social;
 
 /// <summary>The board for one period. <see cref="WeekStart"/>..<see cref="WeekEnd"/> is the week containing today,
 /// also on the all-time board. <see cref="IsAlone"/>: only you on it, so the UI shows "Add friends to compete".</summary>
@@ -40,7 +40,7 @@ public class LeaderboardService(ISocialStore store)
 
         IReadOnlyList<PublicStats> stats;
         await using (var s = await store.OpenAsync())
-            stats = await s.GetPublicStatsAsync(ids, monday, sunday);
+            stats = await s.GetPublicStatsAsync(ids, monday, sunday, day);
         if (stats.All(x => x.UserId != userId)) return null;   // deleted meanwhile
 
         var entries = stats.Select(x => new LeaderboardEntry(x.UserId, x.Username,

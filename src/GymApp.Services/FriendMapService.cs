@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using GymApp.Core;
+using GymApp.Social;
 
 namespace GymApp.Services;
 

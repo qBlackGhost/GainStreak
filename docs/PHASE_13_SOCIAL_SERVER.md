@@ -68,15 +68,16 @@ The server can't replay a friend's logs, but a streak can break, and grow on res
 public sealed record ProjectedStats(DateOnly Date, int TotalPoints, int WeekPoints, int CurrentStreak);
 
 public static IReadOnlyList<ProjectedStats> Project(
-    IEnumerable<DateOnly> workoutDates,
+    IReadOnlyCollection<DateOnly> workoutDates,
     IReadOnlyList<ScheduleChange> schedule,
     IReadOnlyDictionary<DateOnly, MissChoice> choices,
-    DateOnly? scheduleStart,
-    IEnumerable<CalorieRecord> calories,
-    IReadOnlyList<PointsAward> currentAwards,   // the ledger as it stands today
+    IReadOnlyCollection<CalorieRecord> calories,   // from the previous week's Monday on
+    IReadOnlyList<PointsAward> ledger,             // the stored entries, synced as of today
     DateOnly today,
     int days = 14);
 ```
+
+`StatsProjectionService.ProjectAsync(userId, today)` in Services loads these from the database (read only).
 
 - One entry per day from `today` to `today + days - 1`.
 - Each day runs `StreakCalculator.Calculate` and the `PointsCalculator` pipeline **with that day as "today"** and the same inputs, so no workouts are added. That covers rest days growing the streak, a missed day breaking it, and week bonuses paid at a week's end.

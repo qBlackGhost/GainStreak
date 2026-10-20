@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using GymApp.Core;
 
-namespace GymApp.Services;
+namespace GymApp.Social;
 
 public record FriendResult(bool Success, string? Error = null, bool BecameFriends = false);
 
@@ -34,7 +34,11 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null)
     public const int MinSearchLength = 3;
     public const int MaxSearchResults = 20;
 
-    private const string Conflict = "That request just changed. Refresh and try again.";
+    /// <summary>The error when another write got there first. Public so an API can map it to a conflict.</summary>
+    public const string ConflictError = "That request just changed. Refresh and try again.";
+
+    /// <summary>The error when the other user doesn't exist. Public so an API can map it to "not found".</summary>
+    public const string UnknownUserError = "That user doesn't exist.";
 
     private DateTime Now => (clock ?? TimeProvider.System).GetUtcNow().UtcDateTime;
 
@@ -65,7 +69,7 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null)
         if (userId == otherId) return new(false, "You can't add yourself.");
 
         await using var s = await store.OpenAsync();
-        if (await s.FindUserAsync(otherId) is null) return new(false, "That user doesn't exist.");
+        if (await s.FindUserAsync(otherId) is null) return new(false, UnknownUserError);
 
         var (a, b) = Pair(userId, otherId);
         if (await s.GetFriendshipAsync(a, b) is { } existing)
@@ -168,7 +172,7 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null)
     private static async Task<FriendResult> CommitAsync(ISocialSession s, FriendResult ok)
     {
         try { await s.CommitAsync(); }
-        catch (SocialStoreConflictException) { return new(false, Conflict); }
+        catch (SocialStoreConflictException) { return new(false, ConflictError); }
         return ok;
     }
 }

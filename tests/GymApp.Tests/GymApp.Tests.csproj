@@ -28,4 +28,9 @@
     <ProjectReference Include="..\..\src\GymApp.Data\GymApp.Data.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The FriendService cases, shared with the other test project and run against its store -->
+    <Compile Include="..\Shared\FriendServiceTests.cs" Link="Shared\FriendServiceTests.cs" />
+  </ItemGroup>
+
 </Project>
