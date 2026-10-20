@@ -46,6 +46,7 @@
         <StreamGeometry x:Key="IcBack">M19 12H5M11 6l-6 6 6 6</StreamGeometry>
         <StreamGeometry x:Key="IcLock">M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM8 10V7a4 4 0 0 1 8 0v3</StreamGeometry>
         <StreamGeometry x:Key="IcMail">M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 7l9 6 9-6</StreamGeometry>
+        <StreamGeometry x:Key="IcUser">M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21c0-4 3.6-7 8-7s8 3 8 7</StreamGeometry>
         <StreamGeometry x:Key="IcShield">M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z</StreamGeometry>
         <StreamGeometry x:Key="IcCopy">M10 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zM16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2</StreamGeometry>
         <StreamGeometry x:Key="IcSearch">M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5</StreamGeometry>

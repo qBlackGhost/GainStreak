@@ -1,36 +1,102 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
+             xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.RegisterView"
              x:DataType="vm:RegisterViewModel">
-    <StackPanel Spacing="12" Width="320"
-                HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock Text="Create account" FontSize="24" FontWeight="SemiBold"/>
-        <StackPanel Spacing="4">
-            <TextBox PlaceholderText="Username (letters, digits, _ . -)" MaxLength="32" Text="{Binding Username}"/>
-            <TextBlock Classes="fieldError" Text="{Binding UsernameError}"
-                       IsVisible="{Binding UsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+    <!-- Same card as Sign in (LoginView.axaml) -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/AuthStyles.axaml"/>
+    </UserControl.Styles>
+
+    <ThemeVariantScope RequestedThemeVariant="Dark">
+    <ScrollViewer Background="Black" TextElement.Foreground="White">
+        <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- Brand -->
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                <Border Width="40" Height="40" CornerRadius="11" Background="{StaticResource Accent}">
+                    <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="22" Height="22"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="IRONLOG" FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Classes="card" Padding="32">
+                <StackPanel Spacing="18">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Create your account" FontSize="30" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Pick a split, check in, and earn points from day one." FontSize="14" Classes="soft"/>
+                    </StackPanel>
+
+                    <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <v:Icon Data="{StaticResource IcInfo}" Stroke="#FF8A7A" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="#FF8A7A" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Username" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" MaxLength="32" PlaceholderText="Letters, digits, _ . -" Text="{Binding Username}"
+                                     AutomationProperties.Name="Username"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
+                        </Panel>
+                        <TextBlock Classes="fieldError" Text="{Binding UsernameError}"
+                                   IsVisible="{Binding UsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Email" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" MaxLength="254" PlaceholderText="you@example.com" Text="{Binding Email}"
+                                     AutomationProperties.Name="Email"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcMail}"/>
+                        </Panel>
+                        <TextBlock Classes="fieldError" Text="{Binding EmailError}"
+                                   IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Password" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
+                                     Text="{Binding Password}" AutomationProperties.Name="Password"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                        </Panel>
+                        <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
+                                   IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Confirm password" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
+                                     Text="{Binding ConfirmPassword}" AutomationProperties.Name="Confirm password"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                        </Panel>
+                        <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
+                                   IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <Button Classes="btn primary block" Content="Create account" Command="{Binding RegisterCommand}" IsDefault="True"
+                            Margin="0,4,0,0"/>
+
+                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="Already have an account?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
+                            <Button Classes="link" Content="Sign in" FontSize="14" Command="{Binding GoToLoginCommand}"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
+                <TextBlock Text="Your account and workouts are stored only on this computer." FontSize="12" Classes="muted"/>
+            </StackPanel>
         </StackPanel>
-        <StackPanel Spacing="4">
-            <TextBox PlaceholderText="Email" MaxLength="254" Text="{Binding Email}"/>
-            <TextBlock Classes="fieldError" Text="{Binding EmailError}"
-                       IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        </StackPanel>
-        <StackPanel Spacing="4">
-            <TextBox PlaceholderText="Password (8 to 128 characters)" MaxLength="128" PasswordChar="●" Text="{Binding Password}"/>
-            <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
-                       IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        </StackPanel>
-        <StackPanel Spacing="4">
-            <TextBox PlaceholderText="Confirm password" MaxLength="128" PasswordChar="●" Text="{Binding ConfirmPassword}"/>
-            <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
-                       IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        </StackPanel>
-        <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        <Button Content="Register" Command="{Binding RegisterCommand}"
-                IsDefault="True" HorizontalAlignment="Stretch"/>
-        <Button Content="Back to sign in" Command="{Binding GoToLoginCommand}"
-                HorizontalAlignment="Stretch"/>
-    </StackPanel>
+    </ScrollViewer>
+    </ThemeVariantScope>
 </UserControl>

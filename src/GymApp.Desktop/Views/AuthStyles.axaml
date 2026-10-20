@@ -1,0 +1,59 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:v="using:GymApp.Desktop.Views">
+    <!-- Sign in and Create account: the IRONLOG card, labelled fields with an icon inside, an accent focus ring -->
+    <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+
+    <Style Selector="TextBlock">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+    <Style Selector="TextBlock.fieldLabel">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource Light}"/>
+    </Style>
+    <Style Selector="TextBlock.fieldError">
+        <Setter Property="Foreground" Value="#FF8A7A"/>
+    </Style>
+
+    <Style Selector="TextBox.field">
+        <Setter Property="MinHeight" Value="48"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Padding" Value="44,0,14,0"/>
+        <Setter Property="Background" Value="Black"/>
+        <Setter Property="BorderBrush" Value="#333333"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="TextBox.field:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Black"/>
+        <Setter Property="BorderBrush" Value="#4A4A4A"/>
+    </Style>
+    <Style Selector="TextBox.field:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="Black"/>
+        <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+    </Style>
+    <!-- The icon drawn inside the left of a field -->
+    <Style Selector="v|Icon.fieldIcon">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Margin" Value="15,0,0,0"/>
+        <Setter Property="Stroke" Value="{StaticResource Muted}"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <Style Selector="Button.btn.block">
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="MinHeight" Value="50"/>
+        <Setter Property="FontSize" Value="15"/>
+    </Style>
+
+    <!-- A whole-form message (wrong password, could not connect) -->
+    <Style Selector="Border.formError">
+        <Setter Property="Padding" Value="14,12"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="#4A1E18"/>
+        <Setter Property="Background" Value="#140A08"/>
+    </Style>
+</Styles>

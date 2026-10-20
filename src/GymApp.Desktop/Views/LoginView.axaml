@@ -1,19 +1,77 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
+             xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.LoginView"
              x:DataType="vm:LoginViewModel">
-    <StackPanel Spacing="12" Width="320"
-                HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock Text="Sign in" FontSize="24" FontWeight="SemiBold"/>
-        <TextBox PlaceholderText="Username or email" Text="{Binding Username}"/>
-        <TextBox PlaceholderText="Password" PasswordChar="●" Text="{Binding Password}"/>
-        <CheckBox Content="Remember me" IsChecked="{Binding RememberMe}"/>
-        <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-        <Button Content="Log in" Command="{Binding LoginCommand}"
-                IsDefault="True" HorizontalAlignment="Stretch"/>
-        <Button Content="Create an account" Command="{Binding GoToRegisterCommand}"
-                HorizontalAlignment="Stretch"/>
-    </StackPanel>
+    <!-- In the IRONLOG look of the Gym App design canvas: one card on black, brand on top -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/AuthStyles.axaml"/>
+    </UserControl.Styles>
+
+    <ThemeVariantScope RequestedThemeVariant="Dark">
+    <ScrollViewer Background="Black" TextElement.Foreground="White">
+        <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <!-- Brand -->
+            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                <Border Width="40" Height="40" CornerRadius="11" Background="{StaticResource Accent}">
+                    <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="22" Height="22"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock Text="IRONLOG" FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <Border Classes="card" Padding="32">
+                <StackPanel Spacing="20">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Welcome back" FontSize="30" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Sign in to log today's workout and keep your streak." FontSize="14" Classes="soft"/>
+                    </StackPanel>
+
+                    <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <v:Icon Data="{StaticResource IcInfo}" Stroke="#FF8A7A" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="#FF8A7A" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Username or email" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
+                                     AutomationProperties.Name="Username or email"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
+                        </Panel>
+                    </StackPanel>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="Password" Classes="fieldLabel"/>
+                        <Panel>
+                            <TextBox Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                     AutomationProperties.Name="Password"/>
+                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                        </Panel>
+                    </StackPanel>
+
+                    <CheckBox Content="Keep me signed in on this computer" FontSize="14" IsChecked="{Binding RememberMe}"/>
+
+                    <Button Classes="btn primary block" Content="Log in" Command="{Binding LoginCommand}" IsDefault="True"/>
+
+                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                            <TextBlock Text="New to IronLog?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
+                            <Button Classes="link" Content="Create an account" FontSize="14" Command="{Binding GoToRegisterCommand}"
+                                    VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
+                <TextBlock Text="Your account and workouts are stored only on this computer." FontSize="12" Classes="muted"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+    </ThemeVariantScope>
 </UserControl>
