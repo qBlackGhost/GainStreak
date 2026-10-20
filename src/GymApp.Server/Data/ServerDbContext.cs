@@ -1,9 +1,10 @@
+using GymApp.Contracts;
 using GymApp.Core;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Server.Data;
 
-/// <summary>The server's Postgres database: accounts, sessions, friendships, projected stats and shared check-ins.
+/// <summary>The server's Postgres database: accounts, sessions, friendships, projected stats, shared check-ins and feedback.
 /// Separate from the app's AppDbContext, which never leaves the phone.</summary>
 public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
 {
@@ -15,6 +16,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<StatsDay> ProjectedStats => Set<StatsDay>();
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
+    public DbSet<FeedbackEntry> Feedback => Set<FeedbackEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -67,6 +69,18 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.ToTable(t => t.HasCheckConstraint("CK_CheckIns_CustomGymHasNoPosition",
                 "\"GymOsmId\" IS NOT NULL OR (\"Latitude\" IS NULL AND \"Longitude\" IS NULL)"));
             e.HasOne<User>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<FeedbackEntry>(e =>
+        {
+            e.ToTable("Feedback");
+            e.Property(f => f.Kind).HasConversion<string>().HasMaxLength(16);
+            e.Property(f => f.Text).HasMaxLength(FeedbackRules.MaxTextLength);
+            e.Property(f => f.Report).HasMaxLength(FeedbackRules.MaxReportLength);
+            e.Property(f => f.AppVersion).HasMaxLength(32);
+            e.HasIndex(f => f.CreatedAt);
+            // Deleting an account deletes what it sent
+            e.HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

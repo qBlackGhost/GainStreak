@@ -121,7 +121,8 @@ public sealed class SocialSync(
     {
         if (!IsSignedInLinked(userId)) return false;   // signed out or switched accounts mid-sync
         var r = await upload(userId);
-        if (r is { IsOffline: true }) return false;
+        // Offline, or too old a build for the server: keep the flag, the upload goes once it can get through
+        if (r is { IsOffline: true } or { IsUpdateRequired: true }) return false;
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var q = db.SyncStates.Where(s => s.UserId == userId);

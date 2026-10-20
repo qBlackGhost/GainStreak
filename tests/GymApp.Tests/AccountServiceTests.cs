@@ -199,6 +199,28 @@ public sealed class AccountServiceTests : IDisposable
         Assert.Null(r.MoveOnline);
     }
 
+    [Fact] public async Task SignIn_TooOldABuild_SignsInFromTheCache_NotMarkedOffline()
+    {
+        var id = AddLinked(Alice);
+        _server.On("POST v1/auth/login", HttpStatusCode.UpgradeRequired, FakeSocialServer.Problem(426, "Update the app."));
+
+        var r = await _accounts.SignInAsync("alice", Pw);
+
+        Assert.True(r.Success);
+        Assert.Equal(id, _session.CurrentUser!.Id);
+        Assert.False(_session.SignedInOffline);   // the update banner explains, not "you're offline"
+    }
+
+    [Fact] public async Task SignIn_TooOldABuild_WithNoCachedAccount_ShowsTheServersMessage()
+    {
+        _server.On("POST v1/auth/login", HttpStatusCode.UpgradeRequired, FakeSocialServer.Problem(426, "Update the app."));
+
+        var r = await _accounts.SignInAsync("alice", Pw);
+
+        Assert.Equal("Update the app.", r.Error);
+        Assert.False(_session.IsLoggedIn);
+    }
+
     [Fact] public async Task SignIn_WrongPerTheServer_NeverFallsBackToTheCache()
     {
         AddLinked(Alice);   // the cached hash matches, but the password was changed on another device
@@ -356,6 +378,17 @@ public sealed class AccountServiceTests : IDisposable
         Assert.Equal(id, _session.CurrentUser!.Id);
         Assert.True(_session.SignedInOffline);
         Assert.Equal("token-1", _server.Tokens.Get());
+    }
+
+    [Fact] public async Task Restore_TooOldABuild_KeepsTheToken_AndSignsInFromTheCache()
+    {
+        var id = await SignedInAsync();
+        _session.SignOut();
+        _server.On("GET v1/me", HttpStatusCode.UpgradeRequired, FakeSocialServer.Problem(426, "Update the app."));
+
+        Assert.True(await _accounts.RestoreAsync());
+        Assert.Equal(id, _session.CurrentUser!.Id);
+        Assert.Equal("token-1", _server.Tokens.Get());   // still good after the update
     }
 
     [Fact] public async Task Restore_WithNoToken_DoesNothing()

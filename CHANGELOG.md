@@ -7,6 +7,12 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 - **New name and icon:** the app is now GainStreak. Window titles, the sidebar and sign-in brand, messages and the version line in Profile use the new name, and the app icon is the fire-orange flame-arrow with a lime outline. The executable is `GainStreak` (`GainStreak.exe` on Windows), and on macOS the Dock shows the GainStreak name and icon. Code, project names and the data folder are unchanged.
 - **Points history as a popup:** "History" on the dashboard's level card opens it over the page instead of a separate screen. It shows the total and progress to the next level, the ledger by week with a subtotal each, a filter (All, Workouts, Weeks, Calories) and how points are earned. Escape, the close button or a click outside closes it.
 
+- **Phase 15, crash reports and the version check:**
+  - Every `errors.log` entry names the app version and system. **Feedback**, in its own Support section of the sidebar, opens a popup to report a problem or suggest an idea. **Send** posts it to the server, which stores it and forwards it to the developer's Discord channel. A problem attaches the error report (the app, the system and the log, newest 100 KB) unless turned off; "See what's sent" shows it first, and user names are taken out of file paths before anything leaves the device. Offline or refused, the note stays and "Copy instead" puts it on the clipboard. "Show log file" opens its folder.
+  - Server: `POST /v1/feedback` (signed in, 5 an hour per user), the `Feedback` table (deleted with the account) and `Feedback__DiscordWebhookUrl` for forwarding.
+  - The app sends its version (`X-App-Version`) with every server call. With `MinClientVersion` set, the server answers older builds, and builds that send no version, with 426 and "please update". The app shows that as a banner, keeps signing in from its cache so workouts still work, and keeps its pending uploads for after the update.
+  - **Migration:** `AddFeedback` in the server's Postgres (the `Feedback` table). The app's database is unchanged.
+
 ## 0.14.1
 
 The app on the social server. Workouts stay on the device; accounts, friends, the leaderboard and shared check-ins move to the server.

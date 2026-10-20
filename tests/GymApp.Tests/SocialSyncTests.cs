@@ -251,6 +251,21 @@ public sealed class SocialSyncTests : IDisposable
         Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.StatsDirtySince));
     }
 
+    [Fact] public async Task TooOldABuild_KeepsTheFlags_LikeOffline()
+    {
+        Share(true);
+        foreach (var route in new[] { "PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats" })
+            _server.On(route, HttpStatusCode.UpgradeRequired, FakeSocialServer.Problem(426, "Update the app."));
+
+        await MarkAllAsync();
+
+        var state = State();
+        Assert.NotNull(state.SharingDirtySince);
+        Assert.NotNull(state.CheckInsDirtySince);
+        Assert.NotNull(state.StatsDirtySince);
+        Assert.Null(state.LastError);
+    }
+
     [Fact] public async Task Refusal_ClearsTheFlag_AndRecordsTheError()
     {
         _server.On("PUT v1/me/stats", HttpStatusCode.BadRequest, FakeSocialServer.Problem(400, "The first day must be within 2 days of today."));

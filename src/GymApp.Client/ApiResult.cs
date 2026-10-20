@@ -16,6 +16,7 @@ public class ApiResult
     public const string OfflineMessage = "You're offline. Try again when you're connected.";
     public const string TooManyMessage = "Too many tries. Wait a minute and try again.";
     public const string FallbackMessage = "Something went wrong. Try again.";
+    public const string UpdateRequiredMessage = "This version of GainStreak is too old. Update the app to keep using friends and the leaderboard.";
 
     protected ApiResult(ApiOutcome outcome, int? status, string? detail, string? field)
     {
@@ -30,6 +31,10 @@ public class ApiResult
     public bool IsRefused => Outcome == ApiOutcome.Refused;
     public bool IsOffline => Outcome == ApiOutcome.Offline;
 
+    /// <summary>The server turned this build away as too old (426). Like offline, nothing reached the server: callers
+    /// keep queued uploads and cached data instead of treating it as a final "no".</summary>
+    public bool IsUpdateRequired => Outcome == ApiOutcome.Refused && Status == 426;
+
     /// <summary>The HTTP status of a refusal (or of an Ok); null when offline.</summary>
     public int? Status { get; }
 
@@ -43,7 +48,7 @@ public class ApiResult
     public string? Error => Outcome switch
     {
         ApiOutcome.Offline => OfflineMessage,
-        ApiOutcome.Refused => Detail ?? (Status == 429 ? TooManyMessage : FallbackMessage),
+        ApiOutcome.Refused => Detail ?? Status switch { 429 => TooManyMessage, 426 => UpdateRequiredMessage, _ => FallbackMessage },
         _ => null
     };
 

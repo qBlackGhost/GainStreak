@@ -1,6 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using GymApp.Contracts;
 using GymApp.Services;
 using Microsoft.Extensions.DependencyInjection;
 using GymApp.Data.Models;
@@ -24,6 +25,26 @@ public partial class MainViewModel : ViewModelBase
 
     [RelayCommand] private void DismissGlobalError() => GlobalError = null;
 
+    /// <summary>The server's "please update" for a build it no longer accepts, or null. Workouts keep working; it
+    /// comes back with the next refused call if dismissed.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdateNotice))]
+    public partial string? UpdateNotice { get; set; }
+
+    public bool HasUpdateNotice => UpdateNotice is not null;
+
+    [RelayCommand] private void DismissUpdateNotice() => UpdateNotice = null;
+
+    /// <summary>The feedback popup, over whatever screen is showing (the sidebar's Support section opens it).</summary>
+    public FeedbackViewModel Feedback => _sp.GetRequiredService<FeedbackViewModel>();
+    [ObservableProperty] public partial bool IsFeedbackOpen { get; set; }
+
+    public void ShowFeedback(FeedbackKind kind = FeedbackKind.Problem)
+    {
+        Feedback.Open(() => IsFeedbackOpen = false, kind);
+        IsFeedbackOpen = true;
+    }
+
     public MainViewModel(SessionService session, IServiceProvider sp)
     {
         _session = session;
@@ -32,10 +53,13 @@ public partial class MainViewModel : ViewModelBase
         Refresh();
     }
 
-    private void Refresh() =>
+    private void Refresh()
+    {
+        IsFeedbackOpen = false;
         Current = _session.IsLoggedIn
             ? _sp.GetRequiredService<HomeViewModel>()
             : _sp.GetRequiredService<LoginViewModel>();
+    }
 
     public void ShowRegister() => Current = _sp.GetRequiredService<RegisterViewModel>();
     public void ShowLogin() => Current = _sp.GetRequiredService<LoginViewModel>();

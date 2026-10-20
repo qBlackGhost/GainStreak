@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
+  <!-- GainStreak app icon (A2 · Fire + lime outline, from the icon drafts canvas) -->
+  <rect x="0.5" y="0.5" width="99" height="99" rx="22" fill="#0B0B0B" stroke="#222222" stroke-width="1"/>
+  <path d="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z" fill="none" stroke="#C6F432" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z" fill="#FF4A00"/>
+  <path d="M50 45 C57 52 60 57 60 63 A10 10 0 0 1 40 63 C40 57 43 52 50 45 Z" fill="#FF9A00"/>
+  <path d="M50 55 C53 58 54.5 60.5 54.5 63.5 A4.5 4.5 0 0 1 45.5 63.5 C45.5 60.5 47 58 50 55 Z" fill="#FFD400"/>
+</svg>

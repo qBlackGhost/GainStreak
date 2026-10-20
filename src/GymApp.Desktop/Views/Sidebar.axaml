@@ -53,6 +53,24 @@
             <Setter Property="Orientation" Value="Horizontal"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
+        <Style Selector="v|Sidebar.narrow StackPanel#NavSections">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="Spacing" Value="4"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow StackPanel#SupportItems">
+            <Setter Property="Orientation" Value="Horizontal"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- In the top bar the section is set apart by a short upright rule instead of the heading -->
+        <Style Selector="v|Sidebar.narrow Border#SupportRule">
+            <Setter Property="Width" Value="1"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Margin" Value="8,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="v|Sidebar.narrow TextBlock#SupportLabel">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
         <Style Selector="v|Sidebar.narrow ScrollViewer#NavScroll">
             <Setter Property="HorizontalScrollBarVisibility" Value="Auto"/>
             <Setter Property="VerticalScrollBarVisibility" Value="Disabled"/>
@@ -97,6 +115,7 @@
             </Border>
 
             <ScrollViewer x:Name="NavScroll">
+                <StackPanel x:Name="NavSections" Spacing="28">
                 <StackPanel x:Name="NavItems" Spacing="4">
                     <Button x:Name="NavDashboard" Classes="nav" Click="OnDashboard">
                         <StackPanel Orientation="Horizontal" Spacing="12">
@@ -135,6 +154,18 @@
                             </Border>
                         </StackPanel>
                     </Button>
+                </StackPanel>
+
+                <!-- Support: its own section under the screens; opens the feedback popup over the current screen -->
+                <StackPanel x:Name="SupportItems" Spacing="4">
+                    <Border x:Name="SupportRule" Height="1" Background="{StaticResource Line}" Margin="12,0,12,14"/>
+                    <TextBlock x:Name="SupportLabel" Text="SUPPORT" Classes="caps" FontWeight="SemiBold" Margin="12,0,0,6"/>
+                    <Button x:Name="NavFeedback" Classes="nav" Click="OnFeedback">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcChat}"/><TextBlock Text="Feedback" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
