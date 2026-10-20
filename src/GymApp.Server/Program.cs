@@ -50,7 +50,9 @@ builder.Services.AddHostedService<CheckInCleanup>();
 builder.Services.AddSingleton<FeedbackQueue>();
 if (discordWebhook is not null)
 {
-    builder.Services.AddHttpClient(DiscordFeedbackForwarder.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
+    // No request logging: it would print the webhook URL, and the URL is the secret. The forwarder logs failures itself
+    builder.Services.AddHttpClient(DiscordFeedbackForwarder.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15))
+        .RemoveAllLoggers();
     builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<DiscordFeedbackForwarder>(sp, discordWebhook));
     builder.Services.AddHostedService(sp => sp.GetRequiredService<DiscordFeedbackForwarder>());
 }

@@ -2,6 +2,6 @@
   <!-- One version for every project. Bump it here for a release (see CHANGELOG.md). -->
   <PropertyGroup>
     <Product>GainStreak</Product>
-    <Version>0.14.1</Version>
+    <Version>0.15.0</Version>
   </PropertyGroup>
 </Project>

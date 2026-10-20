@@ -2,7 +2,7 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
-## Unreleased
+## 0.15.0
 
 - **New name and icon:** the app is now GainStreak. Window titles, the sidebar and sign-in brand, messages and the version line in Profile use the new name, and the app icon is the fire-orange flame-arrow with a lime outline. The executable is `GainStreak` (`GainStreak.exe` on Windows), and on macOS the Dock shows the GainStreak name and icon. Code, project names and the data folder are unchanged.
 - **Points history as a popup:** "History" on the dashboard's level card opens it over the page instead of a separate screen. It shows the total and progress to the next level, the ledger by week with a subtotal each, a filter (All, Workouts, Weeks, Calories) and how points are earned. Escape, the close button or a click outside closes it.
