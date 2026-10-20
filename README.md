@@ -173,11 +173,13 @@ dotnet ef migrations add <Name> --project src/GymApp.Server --output-dir Data/Mi
 
 The version is set once in `Directory.Build.props` and shown at the bottom of Profile. See `CHANGELOG.md`.
 
-- **1.0.x**: bug fixes only, with no new features and no schema changes.
-- **1.x.0**: new features, migrations allowed.
-- **2.0.0**: a breaking change, such as a migration that can't carry existing data forward or a change to seeded ids.
+Before the first public release the version is **0.&lt;phase&gt;.&lt;fix&gt;**:
 
-## Known limitations (1.1.0)
+- **0.&lt;phase&gt;.0**: the implementation plan's phase is done (0.14.0 is Phase 14). New features and migrations come with a new phase.
+- **0.&lt;phase&gt;.x**: fixes and small changes within that phase, with no schema changes.
+- **1.0.0**: the first public release. After it, 1.0.x is bug fixes only, 1.x.0 new features (migrations allowed) and 2.0.0 a breaking change, such as a migration that can't carry existing data forward or a change to seeded ids.
+
+## Known limitations (0.14.1)
 
 - The server has no production host yet, so a release build has nothing to connect to. There's no password reset or email verification.
 - Workouts don't sync between devices: signing in on a second device starts it with no workout history.

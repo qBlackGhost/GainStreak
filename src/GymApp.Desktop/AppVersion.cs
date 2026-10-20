@@ -4,7 +4,7 @@ namespace GymApp.Desktop;
 
 public static class AppVersion
 {
-    /// <summary>The release version, e.g. "1.0.0", from <c>Version</c> in Directory.Build.props. The informational
+    /// <summary>The release version, e.g. "0.14.1", from <c>Version</c> in Directory.Build.props. The informational
     /// version can carry a "+commit" suffix from the SDK, which is cut off.</summary>
     public static string Current { get; } =
         (typeof(AppVersion).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion

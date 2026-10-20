@@ -202,7 +202,7 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial bool HasCityCandidates { get; set; }
     [ObservableProperty] public partial bool ShareGymCheckIns { get; set; }
 
-    /// <summary>"GymApp 1.0.0", from the assembly version (Directory.Build.props).</summary>
+    /// <summary>"GymApp 0.14.1", from the assembly version (Directory.Build.props).</summary>
     public string VersionText { get; } = $"GymApp {AppVersion.Current}";
 
     [ObservableProperty] public partial string? Error { get; set; }

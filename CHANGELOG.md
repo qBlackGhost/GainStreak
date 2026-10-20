@@ -1,12 +1,11 @@
 # Changelog
 
-Versions follow the rules in the README: **1.0.x** for bug fixes, **1.x.0** for new features (migrations allowed), **2.0.0** for breaking changes.
+Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
-## 1.1.0 (unreleased)
+## 0.14.1
 
-The app on the social server (Phase 13's server, Phase 14 of the plan). Workouts stay on the device; accounts, friends, the leaderboard and shared check-ins move to the server.
+The app on the social server. Workouts stay on the device; accounts, friends, the leaderboard and shared check-ins move to the server.
 
-- **Phase 13, the social server:** an ASP.NET Core API on Postgres for accounts, friends, the leaderboard and shared gym check-ins, with rate limits, a Docker image and migrations run on their own.
 - **Phase 14, the app on the server:**
   - Server additions: change the account email, and replace all of your shared check-ins in one call.
   - `GymApp.Client`: a typed client for the server, where every call is Ok, Refused (with the server's message) or Offline, a 10-second timeout, and the session token stored in a file only you can read.
@@ -19,9 +18,13 @@ The app on the social server (Phase 13's server, Phase 14 of the plan). Workouts
   - TestBench: a Social switch, Local (the default, no server needed) or Server.
 - **Migration:** `SocialServerLink` in the app's database (the link to the server account, the offline cache and the pending uploads). Existing data is unchanged.
 
-## 1.0.0 (unreleased)
+## 0.13.0
 
-The first release. It covers Phases 0 to 12 of the implementation plan.
+- **Phase 13, the social server:** an ASP.NET Core API on Postgres for accounts, friends, the leaderboard and shared gym check-ins, with rate limits, a Docker image and migrations run on their own. The app doesn't use it yet.
+
+## 0.12.0
+
+The first complete version of the app. It covers Phases 0 to 12 of the implementation plan.
 
 - **Phase 0, project setup:** a solution with Core, Data, Services, Desktop (Avalonia) and Tests projects.
 - **Phase 1, data model:** EF Core with SQLite, the first migration, and seeded preset splits (PPL, Upper/Lower, PPL + Upper/Lower, Full Body, Bro Split).
