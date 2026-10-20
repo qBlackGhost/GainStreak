@@ -23,6 +23,8 @@ sealed class Program
         // Before anything touches the app: its own data folder and the moved clock
         Environment.SetEnvironmentVariable("GYMAPP_DATA_DIR", BenchSettings.DataDir);
         AppClock.Offset = TimeSpan.FromDays(settings.DayOffset);
+        // Local accounts and friends by default: the server refuses a clock more than 2 days off
+        App.LocalSocial = !settings.ServerSocial;
 
         App.MainWindowCreated = main =>
         {

@@ -29,7 +29,8 @@ public class SocialStoreConflictException(string message, Exception? inner = nul
 /// Where friends and public stats live. The local store reads this install's database; a server-backed store can
 /// replace it later without changes to the services or UI, so nothing here exposes EF types.
 /// </summary>
-public interface ISocialStore
+/// <remarks>Also the friends map's check-in source (<see cref="IFriendCheckInSource"/>), for the local mode and the server.</remarks>
+public interface ISocialStore : IFriendCheckInSource
 {
     /// <summary>A unit of work. Writes are only kept after <see cref="ISocialSession.CommitAsync"/>, and reads and
     /// writes in one session see a consistent state, so a check-then-write can't race another click.</summary>
@@ -39,13 +40,6 @@ public interface ISocialStore
     /// midnight without anything being logged, so a friend who hasn't opened the app would otherwise show a stale one.
     /// Call it outside a session.</summary>
     Task RefreshStatsAsync(IReadOnlyCollection<int> userIds, DateOnly today);
-
-    /// <summary>
-    /// Gym check-ins of the user's accepted friends from <paramref name="since"/> on (inclusive): only friends who share
-    /// them (<c>ShareGymCheckIns == true</c>; not asked yet means no) and only logs with a gym. Gym and day only, never
-    /// a time; a custom gym never comes with coordinates. A read, so it needs no session.
-    /// </summary>
-    Task<IReadOnlyList<FriendCheckIn>> GetFriendGymCheckInsAsync(int userId, DateOnly since);
 }
 
 public interface ISocialSession : IAsyncDisposable
@@ -72,4 +66,15 @@ public interface ISocialSession : IAsyncDisposable
 
     /// <summary>Keeps the writes. Throws <see cref="SocialStoreConflictException"/> if another write got there first.</summary>
     Task CommitAsync();
+}
+
+/// <summary>Where the friends map gets friends' check-ins: the local store, or the app's remote source (the server).</summary>
+public interface IFriendCheckInSource
+{
+    /// <summary>
+    /// Gym check-ins of the user's accepted friends from <paramref name="since"/> on (inclusive): only friends who share
+    /// them (<c>ShareGymCheckIns == true</c>; not asked yet means no) and only logs with a gym. Gym and day only, never
+    /// a time; a custom gym never comes with coordinates. A read, so it needs no session.
+    /// </summary>
+    Task<IReadOnlyList<FriendCheckIn>> GetFriendGymCheckInsAsync(int userId, DateOnly since);
 }

@@ -52,16 +52,16 @@ public partial class WeightEntryViewModel : ObservableObject
 public partial class ProfileViewModel : ViewModelBase
 {
     private readonly ProfileService _profiles;
-    private readonly AuthService _auth;
+    private readonly IAccountService _accounts;
     private readonly GeocodingService _geocoding;
     private readonly CityService _cities;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public ProfileViewModel(ProfileService profiles, AuthService auth, GeocodingService geocoding,
+    public ProfileViewModel(ProfileService profiles, IAccountService accounts, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell)
     {
-        _profiles = profiles; _auth = auth; _geocoding = geocoding; _cities = cities;
+        _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, this)).ToList();
         _ = ReloadAsync();
@@ -98,6 +98,23 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string? EmailPasswordError { get; set; }
     public string EditEmailLabel => HasEmail ? "Change" : "Add email";
     partial void OnHasEmailChanged(bool value) => OnPropertyChanged(nameof(EditEmailLabel));
+
+    [ObservableProperty] public partial bool IsChangingPassword { get; set; }
+    [ObservableProperty] public partial string CurrentPassword { get; set; } = "";
+    [ObservableProperty] public partial string NewPassword { get; set; } = "";
+    [ObservableProperty] public partial string ConfirmNewPassword { get; set; } = "";
+    [ObservableProperty] public partial string? CurrentPasswordError { get; set; }
+    [ObservableProperty] public partial string? NewPasswordError { get; set; }
+    [ObservableProperty] public partial string? ConfirmNewPasswordError { get; set; }
+
+    [ObservableProperty] public partial bool IsConfirmingDelete { get; set; }
+    [ObservableProperty] public partial string DeletePassword { get; set; } = "";
+    [ObservableProperty] public partial string? DeleteError { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SaveEmailCommand), nameof(SavePasswordCommand), nameof(DeleteAccountCommand))]
+    public partial bool IsAccountBusy { get; set; }
+    private bool CanChangeAccount() => !IsAccountBusy;
 
     // ===== Body data form =====
     [ObservableProperty]
@@ -495,15 +512,16 @@ public partial class ProfileViewModel : ViewModelBase
         EmailError = EmailPasswordError = null;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanChangeAccount))]
     private async Task SaveEmailAsync()
     {
+        IsAccountBusy = true;
         try
         {
             Info = null;
             Error = null;
             EmailError = EmailPasswordError = null;
-            var r = await _auth.ChangeEmailAsync(UserId, NewEmail, EmailPassword);
+            var r = await _accounts.ChangeEmailAsync(NewEmail, EmailPassword);
             if (!r.Success)
             {
                 switch (r.Field)
@@ -514,14 +532,113 @@ public partial class ProfileViewModel : ViewModelBase
                 return;
             }
 
-            _session.CurrentUser!.Email = r.User!.Email;
-            ApplyEmail(r.User.Email);
+            ApplyEmail(r.User!.Email);
             CancelEmail();
             Info = $"Email saved. You can now sign in with {r.User.Email}.";
         }
         catch (Exception)
         {
             EmailError = "Could not save your email.";
+        }
+        finally
+        {
+            IsAccountBusy = false;
+        }
+    }
+
+    // ===== Account password =====
+
+    [RelayCommand]
+    private void ChangePassword()
+    {
+        CancelDelete();
+        CancelPassword();
+        IsChangingPassword = true;
+    }
+
+    [RelayCommand]
+    private void CancelPassword()
+    {
+        IsChangingPassword = false;
+        CurrentPassword = NewPassword = ConfirmNewPassword = "";
+        CurrentPasswordError = NewPasswordError = ConfirmNewPasswordError = null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanChangeAccount))]
+    private async Task SavePasswordAsync()
+    {
+        Info = Error = null;
+        CurrentPasswordError = NewPasswordError = ConfirmNewPasswordError = null;
+        if (NewPassword != ConfirmNewPassword) { ConfirmNewPasswordError = "Passwords do not match."; return; }
+
+        IsAccountBusy = true;
+        try
+        {
+            var r = await _accounts.ChangePasswordAsync(CurrentPassword, NewPassword);
+            if (!r.Success)
+            {
+                switch (r.Field)
+                {
+                    case FormField.Password: CurrentPasswordError = r.Error; break;
+                    case FormField.NewPassword: NewPasswordError = r.Error; break;
+                    default: CurrentPasswordError = r.Error; break;
+                }
+                return;
+            }
+            CancelPassword();
+            Info = "Password changed. Other devices have to sign in again.";
+        }
+        catch (Exception)
+        {
+            CurrentPasswordError = "Could not change your password.";
+        }
+        finally
+        {
+            IsAccountBusy = false;
+        }
+    }
+
+    // ===== Deleting the account =====
+
+    /// <summary>What the confirmation says is deleted, so nobody is surprised.</summary>
+    public string DeleteWarning =>
+        "This deletes your online account (friends, leaderboard and shared check-ins) and every workout, set, PR, " +
+        "weigh-in, calorie log and point on this computer. It can't be undone.";
+
+    [RelayCommand]
+    private void AskDelete()
+    {
+        CancelPassword();
+        DeletePassword = "";
+        DeleteError = null;
+        IsConfirmingDelete = true;
+    }
+
+    [RelayCommand]
+    private void CancelDelete()
+    {
+        IsConfirmingDelete = false;
+        DeletePassword = "";
+        DeleteError = null;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanChangeAccount))]
+    private async Task DeleteAccountAsync()
+    {
+        DeleteError = null;
+        IsAccountBusy = true;
+        try
+        {
+            var r = await _accounts.DeleteAccountAsync(DeletePassword);
+            if (!r.Success) DeleteError = r.Error;   // on success the app signs out to the login screen
+        }
+        catch (Exception)
+        {
+            DeleteError = "Could not delete your account. Try again.";
+        }
+        finally
+        {
+            IsAccountBusy = false;
         }
     }
 

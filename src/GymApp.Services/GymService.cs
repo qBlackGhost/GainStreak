@@ -42,7 +42,7 @@ public record DeleteGymResult(bool Success, CustomGymDeleteOutcome? Outcome = nu
 
 /// <summary>Which gyms a user can see and pick, and the gym on today's workout log. Gyms never earn points
 /// and never change the streak: the workout is already logged before a gym is picked.</summary>
-public class GymService(IDbContextFactory<AppDbContext> dbFactory)
+public class GymService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHooks? sync = null)
 {
     private static DateOnly Today => AppClock.Today;
 
@@ -78,6 +78,7 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         log.GymId = gymId;
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException) { return new(false, "Could not save the gym."); }
+        (sync ?? NoSocialSync.Instance).MarkCheckInsDirty(userId);
         return new(true);
     }
 
@@ -200,10 +201,16 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory)
         if (others.FirstOrDefault(n => CustomGyms.SameName(n, cleanName)) is { } taken)
             return new(false, $"You already have a gym called \"{taken}\" here.", Field: FormField.Name);
 
+        var renamed = gym.Name != cleanName;
         gym.Name = cleanName;
         if (!keepAddress) SetAddress(gym, address);
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException) { return new(false, "Could not save the gym."); }
+
+        // Shared check-ins carry the gym's name (never a custom gym's address), so only a rename needs a resync
+        var since = Today.AddDays(-(SocialSync.CheckInDays - 1));
+        if (renamed && await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.GymId == gymId && w.Date >= since))
+            (sync ?? NoSocialSync.Instance).MarkCheckInsDirty(userId);
         return new(true, GymId: gym.Id);
     }
 

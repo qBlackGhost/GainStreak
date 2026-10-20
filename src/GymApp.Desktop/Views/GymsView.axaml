@@ -242,12 +242,13 @@
                 <!-- ===== Friends map ===== -->
                 <Border x:Name="MapCard" Classes="mapCard">
                     <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <!-- Title and pills side by side; the code-behind puts the pills under the title when the card is narrow -->
+                        <Grid x:Name="MapHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
                             <WrapPanel ItemSpacing="10" VerticalAlignment="Center">
-                                <TextBlock Text="Friends map" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding RangeTitle}" FontSize="13" Classes="muted" VerticalAlignment="Center"/>
+                                <TextBlock Text="Friends map" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                <TextBlock Text="{Binding RangeTitle}" FontSize="13" Classes="muted" VerticalAlignment="Center" TextWrapping="NoWrap"/>
                             </WrapPanel>
-                            <WrapPanel Grid.Column="1" ItemSpacing="8" LineSpacing="8">
+                            <WrapPanel x:Name="MapPills" Grid.Column="1" ItemSpacing="8" LineSpacing="8">
                                 <Border Padding="3" CornerRadius="10" Background="#161616" Width="234">
                                     <v:SegmentedPill SelectedIndex="{Binding RangeIndex}" PillInset="0" PillCornerRadius="8">
                                         <Button Classes="seg" Classes.on="{Binding RangeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
@@ -274,9 +275,9 @@
                             <Grid>
                                 <mapsui:MapControl x:Name="FriendMap"/>
 
-                                <!-- Legend -->
-                                <Border Classes="overlay" Padding="12,10" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Top"
-                                        IsHitTestVisible="False">
+                                <!-- Legend, bottom left; hidden while the gym card is open so they never overlap -->
+                                <Border Classes="overlay" Padding="12,10" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                        IsHitTestVisible="False" IsVisible="{Binding !HasSelection}">
                                     <StackPanel Spacing="7">
                                         <TextBlock Text="LAST CHECK-IN" FontSize="11" FontWeight="Bold" LetterSpacing="0.7" Classes="muted"/>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -324,7 +325,7 @@
                                 <!-- Nothing to pin: a small note in the corner, so the map stays usable -->
                                 <Border Classes="overlay" Padding="12,9" CornerRadius="10" MaxWidth="230" Margin="12"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False"
-                                        IsVisible="{Binding ShowMapEmpty}">
+                                        IsVisible="{Binding ShowMapNote}">
                                     <TextBlock Text="{Binding MapEmptyText}" FontSize="12" Classes="light" TextWrapping="Wrap" LineHeight="17"/>
                                 </Border>
 
@@ -428,6 +429,8 @@
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Friends" FontSize="18" FontWeight="Bold"/>
                                     <TextBlock Text="{Binding FriendCountText}" FontSize="12" Classes="muted"/>
+                                    <TextBlock Text="{Binding FriendsStale}" FontSize="12" Classes="muted" TextWrapping="Wrap"
+                                               IsVisible="{Binding FriendsStale, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="#161616" Width="196" VerticalAlignment="Center">
                                     <v:SegmentedPill SelectedIndex="{Binding SortIndex}" PillInset="0" PillCornerRadius="8">

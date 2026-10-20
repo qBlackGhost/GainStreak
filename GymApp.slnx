@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/GymApp.Core/GymApp.Core.csproj" />
+    <Project Path="src/GymApp.Client/GymApp.Client.csproj" />
     <Project Path="src/GymApp.Contracts/GymApp.Contracts.csproj" />
     <Project Path="src/GymApp.Data/GymApp.Data.csproj" />
     <Project Path="src/GymApp.Desktop/GymApp.Desktop.csproj" />

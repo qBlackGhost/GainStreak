@@ -98,6 +98,10 @@ public partial class GymsViewModel : ViewModelBase
     /// <summary>Opens the picker for today's gym as soon as the screen has loaded.</summary>
     public void PickTodayWhenLoaded() => _pickTodayWhenLoaded = true;
 
+    private bool _chooseCityWhenLoaded;
+    /// <summary>From the dashboard's "Choose your home city" step: open the city search once loaded, if there's no city yet.</summary>
+    public void ChooseCityWhenLoaded() => _chooseCityWhenLoaded = true;
+
     public GymsViewModel(GymService gyms, ProfileService profiles, FriendMapService friendMap, GymSummaryService summaries,
         GymPickerViewModel picker, SessionService session, Func<MainViewModel> shell)
     {
@@ -147,7 +151,9 @@ public partial class GymsViewModel : ViewModelBase
     public IReadOnlyList<MapGymDot> GymDots { get; private set; } = [];
     public MapMyPin? MyPin { get; private set; }
 
-    [ObservableProperty] public partial bool ShowMapEmpty { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowMapNote))] public partial bool ShowMapEmpty { get; set; }
+    /// <summary>The "nothing to pin" note steps aside while a toast is showing, so the two never overlap.</summary>
+    public bool ShowMapNote => ShowMapEmpty && string.IsNullOrEmpty(Toast);
     [ObservableProperty] public partial string MapEmptyText { get; set; } = "";
 
     // Gym card (a pin or gym dot clicked)
@@ -166,7 +172,25 @@ public partial class GymsViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsSelectedToday { get; set; }
 
     // Toast after today's gym changed
-    [ObservableProperty] public partial string? Toast { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowMapNote))] public partial string? Toast { get; set; }
+
+    private const int ToastSeconds = 5;
+    private int _toastId;
+
+    // A toast goes away by itself after a few seconds (a newer toast restarts the wait)
+    partial void OnToastChanged(string? value)
+    {
+        var id = ++_toastId;
+        if (value is not null) _ = HideToastLaterAsync(id);
+    }
+
+    private async Task HideToastLaterAsync(int id)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(ToastSeconds));
+        if (id != _toastId) return;
+        Toast = null;
+        CanUndoToast = false;
+    }
     [ObservableProperty] public partial bool CanUndoToast { get; set; }
 
     // ===== Your gym =====
@@ -180,6 +204,9 @@ public partial class GymsViewModel : ViewModelBase
     // ===== Friends card =====
     public ObservableCollection<MapFriendGroupViewModel> FriendGroups { get; } = new();
     [ObservableProperty] public partial string FriendCountText { get; set; } = "";
+
+    /// <summary>"You're offline. Last updated 14:05." when friends' check-ins came from the cache.</summary>
+    [ObservableProperty] public partial string? FriendsStale { get; set; }
     [ObservableProperty] public partial bool HasFriendRows { get; set; }
 
     public string FriendsEmptyText => Range == MapRange.Month
@@ -229,6 +256,8 @@ public partial class GymsViewModel : ViewModelBase
             await LoadMonthAsync();
             if (_pickTodayWhenLoaded && _today?.LoggedToday == true) OpenTodayPickerNow();
             _pickTodayWhenLoaded = false;
+            if (_chooseCityWhenLoaded && _homeCity is null) ChangeCity();
+            _chooseCityWhenLoaded = false;
         }
         catch (Exception)
         {
@@ -252,6 +281,7 @@ public partial class GymsViewModel : ViewModelBase
             var r = await _friendMap.GetAsync(UserId, _homeCity?.Id, _homeGym?.Id, Origin, Range, Mode, Sort);
             Pins = r.Layout.Pins;
             _latestPerFriend = r.Layout.LatestPerFriend;
+            FriendsStale = StaleText.For(r);
             SetGroups(r.Groups);
             RebuildMap();
         }
@@ -506,8 +536,7 @@ public partial class GymsViewModel : ViewModelBase
 
     // ===== The picker dialog =====
 
-    private IReadOnlyDictionary<int, int> FriendsAtGym() =>
-        _latestPerFriend.GroupBy(c => c.GymId).ToDictionary(g => g.Key, g => g.Count());
+    private IReadOnlyDictionary<int, int> FriendsAtGym() => FriendMapRules.FriendsAtGym(_latestPerFriend);
 
     [RelayCommand]
     private void OpenHomeGymPicker() =>

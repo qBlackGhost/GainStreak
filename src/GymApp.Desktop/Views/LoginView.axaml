@@ -23,41 +23,82 @@
 
             <Border Classes="card" Padding="32">
                 <StackPanel Spacing="20">
-                    <StackPanel Spacing="6">
+                    <StackPanel Spacing="6" IsVisible="{Binding IsSigningIn}">
                         <TextBlock Text="Welcome back" FontSize="30" FontWeight="ExtraBold"/>
                         <TextBlock Text="Sign in to log today's workout and keep your streak." FontSize="14" Classes="soft"/>
+                    </StackPanel>
+                    <StackPanel Spacing="6" IsVisible="{Binding IsMovingOnline}">
+                        <TextBlock Text="Move this account online" FontSize="26" FontWeight="ExtraBold" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding MoveOnlineText}" FontSize="14" Classes="soft" TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <v:Icon Data="{StaticResource IcInfo}" Stroke="#FF8A7A" Width="16" Height="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="#FF8A7A" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="#FF8A7A" VerticalAlignment="Center" TextWrapping="Wrap"/>
                         </StackPanel>
                     </Border>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Username or email" Classes="fieldLabel"/>
-                        <Panel>
-                            <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
-                                     AutomationProperties.Name="Username or email"/>
-                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
-                        </Panel>
+                    <StackPanel Orientation="Horizontal" Spacing="10"
+                                IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <v:Icon Data="{StaticResource IcInfo}" Stroke="{StaticResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Notice}" FontSize="13" Classes="soft" VerticalAlignment="Center" TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="Password" Classes="fieldLabel"/>
-                        <Panel>
-                            <TextBox Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
-                                     AutomationProperties.Name="Password"/>
-                            <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
-                        </Panel>
+                    <!-- Sign in -->
+                    <StackPanel Spacing="20" IsVisible="{Binding IsSigningIn}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Username or email" Classes="fieldLabel"/>
+                            <Panel>
+                                <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
+                                         AutomationProperties.Name="Username or email"/>
+                                <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
+                            </Panel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Password" Classes="fieldLabel"/>
+                            <Panel>
+                                <TextBox Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                         AutomationProperties.Name="Password"/>
+                                <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                            </Panel>
+                        </StackPanel>
+
+                        <Button Classes="btn primary block" Content="Log in" Command="{Binding LoginCommand}"
+                                IsDefault="{Binding IsSigningIn}"/>
                     </StackPanel>
 
-                    <CheckBox Content="Keep me signed in on this computer" FontSize="14" IsChecked="{Binding RememberMe}"/>
+                    <!-- Move this account online: an email if it has none, another username if it's taken -->
+                    <StackPanel Spacing="20" IsVisible="{Binding IsMovingOnline}">
+                        <StackPanel Spacing="8" IsVisible="{Binding ShowMoveEmail}">
+                            <TextBlock Text="Email" Classes="fieldLabel"/>
+                            <Panel>
+                                <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding MoveEmail}"
+                                         AutomationProperties.Name="Email"/>
+                                <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
+                            </Panel>
+                            <TextBlock Text="{Binding MoveEmailError}" Classes="fieldError" TextWrapping="Wrap"
+                                       IsVisible="{Binding MoveEmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
-                    <Button Classes="btn primary block" Content="Log in" Command="{Binding LoginCommand}" IsDefault="True"/>
+                        <StackPanel Spacing="8" IsVisible="{Binding ShowMoveUsername}">
+                            <TextBlock Text="Pick another username" Classes="fieldLabel"/>
+                            <Panel>
+                                <TextBox Classes="field" Text="{Binding MoveUsername}" AutomationProperties.Name="Username"/>
+                                <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
+                            </Panel>
+                            <TextBlock Text="{Binding MoveUsernameError}" Classes="fieldError" TextWrapping="Wrap"
+                                       IsVisible="{Binding MoveUsernameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
 
-                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                        <Button Classes="btn primary block" Content="Move it online" Command="{Binding MoveOnlineCommand}"
+                                IsDefault="{Binding IsMovingOnline}"/>
+                        <Button Classes="link" Content="Back" FontSize="14" HorizontalAlignment="Center"
+                                Command="{Binding CancelMoveOnlineCommand}"/>
+                    </StackPanel>
+
+                    <Border BorderBrush="{StaticResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0" IsVisible="{Binding IsSigningIn}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                             <TextBlock Text="New to IronLog?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
                             <Button Classes="link" Content="Create an account" FontSize="14" Command="{Binding GoToRegisterCommand}"
@@ -69,7 +110,7 @@
 
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
-                <TextBlock Text="Your account and workouts are stored only on this computer." FontSize="12" Classes="muted"/>
+                <TextBlock Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" Classes="muted" TextWrapping="Wrap" MaxWidth="380"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

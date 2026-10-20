@@ -8,14 +8,18 @@ namespace GymApp.Desktop.ViewModels;
 
 public partial class RegisterViewModel : ViewModelBase
 {
-    private readonly AuthService _auth;
-    private readonly SessionService _session;
+    private readonly IAccountService _accounts;
     private readonly Func<MainViewModel> _shell;
 
-    public RegisterViewModel(AuthService auth, SessionService session, Func<MainViewModel> shell)
+    public RegisterViewModel(IAccountService accounts, Func<MainViewModel> shell)
     {
-        _auth = auth; _session = session; _shell = shell;
+        _accounts = accounts; _shell = shell;
     }
+
+    /// <summary>The server is being asked; the button waits.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RegisterCommand))]
+    public partial bool IsBusy { get; set; }
 
     [ObservableProperty] public partial string Username { get; set; } = "";
     [ObservableProperty] public partial string Email { get; set; } = "";
@@ -27,16 +31,19 @@ public partial class RegisterViewModel : ViewModelBase
     [ObservableProperty] public partial string? PasswordError { get; set; }
     [ObservableProperty] public partial string? ConfirmPasswordError { get; set; }
 
-    [RelayCommand]
+    private bool CanRegister() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanRegister))]
     private async Task RegisterAsync()
     {
         Error = UsernameError = EmailError = PasswordError = ConfirmPasswordError = null;
         if (Password != ConfirmPassword) { ConfirmPasswordError = "Passwords do not match."; return; }
 
+        IsBusy = true;
         try
         {
-            var result = await _auth.RegisterAsync(Username, Email, Password);
-            if (result.Success) { _session.SignIn(result.User!); return; }   // log in straight after registering
+            var result = await _accounts.RegisterAsync(Username, Email, Password);
+            if (result.Success) return;   // signed in straight after registering, which navigates
             switch (result.Field)
             {
                 case FormField.Username: UsernameError = result.Error; break;
@@ -48,6 +55,10 @@ public partial class RegisterViewModel : ViewModelBase
         catch (Exception)
         {
             Error = "Could not create your account. Try again.";
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 

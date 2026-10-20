@@ -38,7 +38,8 @@ public record TodayExercise(string Name, int WarmupSets, int WorkingSets, SetEnt
 /// and make-up chains) and its exercises in order. <see cref="DayName"/> is null on a rest day or with no split.</summary>
 public record TodayWorkoutInfo(DateOnly Date, bool HasSplit, string? DayName, IReadOnlyList<TodayExercise> Exercises);
 
-public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakService streaks, PointsService points)
+public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakService streaks, PointsService points,
+    ISocialSyncHooks? sync = null)
 {
     private record Plan(int SplitId, TodayWorkout Workout, SplitDay? Day);
 
@@ -136,14 +137,13 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                     return new LogResult(false,
                         $"Fill in at least {status.Required} of {status.Total} exercises to log this workout.");
 
-                db.WorkoutLogs.Add(new WorkoutLog
-                {
-                    UserId = userId, Date = date, SplitDayId = day.SplitDayId,
-                    GymId = await AutomaticGymAsync(db, userId)
-                });
+                var gymId = await AutomaticGymAsync(db, userId);
+                db.WorkoutLogs.Add(new WorkoutLog { UserId = userId, Date = date, SplitDayId = day.SplitDayId, GymId = gymId });
                 try
                 {
                     await db.SaveChangesAsync();
+                    // With no gym yet there's no check-in; it comes when the gym is picked (SetGymForTodayAsync)
+                    if (gymId is not null) Hooks.MarkCheckInsDirty(userId);
                 }
                 catch (DbUpdateException)
                 {
@@ -180,6 +180,7 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         int deleted;
         await using (var db = await dbFactory.CreateDbContextAsync())
             deleted = await db.WorkoutLogs.Where(w => w.UserId == userId && w.Date == date).ExecuteDeleteAsync();
+        if (deleted > 0) Hooks.MarkCheckInsDirty(userId);
 
         return await RefreshAsync(userId, date, undoneToday: deleted > 0);
     }
@@ -191,6 +192,8 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     }
 
     private static DateOnly Today() => AppClock.Today;
+
+    private ISocialSyncHooks Hooks => sync ?? NoSocialSync.Instance;
 
     private static CheckInStatus Status(IReadOnlyList<CheckInExerciseInfo> exercises) =>
         CheckInRule.Evaluate(exercises.Select(e => new CheckInExercise(e.ExerciseId, e.WorkingSets, e.TodaySets)));

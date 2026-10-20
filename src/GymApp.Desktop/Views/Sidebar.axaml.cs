@@ -95,5 +95,5 @@ public partial class Sidebar : UserControl
     private void OnGyms(object? sender, RoutedEventArgs e) => Shell.ShowGyms();
     private void OnFriends(object? sender, RoutedEventArgs e) => Shell.ShowFriends();
     private void OnProfile(object? sender, RoutedEventArgs e) => Shell.ShowProfile();
-    private void OnLogout(object? sender, RoutedEventArgs e) => App.Services.GetRequiredService<SessionService>().SignOut();
+    private async void OnLogout(object? sender, RoutedEventArgs e) => await App.Services.GetRequiredService<IAccountService>().LogOutAsync();
 }

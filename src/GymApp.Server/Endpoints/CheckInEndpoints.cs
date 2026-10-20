@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using GymApp.Contracts;
 using GymApp.Core;
@@ -18,6 +19,7 @@ public static class CheckInEndpoints
     public static void MapCheckIns(this IEndpointRouteBuilder app)
     {
         app.MapPut("/v1/me/sharing", SetSharing);
+        app.MapPut("/v1/me/checkins", ReplaceCheckIns);
         app.MapPut("/v1/me/checkins/{date}", PutCheckIn);
         app.MapDelete("/v1/me/checkins/{date}", DeleteCheckIn);
         app.MapGet("/v1/friends/checkins", GetFriendCheckIns);
@@ -47,22 +49,13 @@ public static class CheckInEndpoints
         var sharing = await db.Users.Where(u => u.Id == userId).Select(u => u.ShareGymCheckIns).FirstOrDefaultAsync();
         if (sharing != true) return Problems.Forbidden("Turn on sharing gym check-ins first.");
 
-        var isCustom = request.GymOsmId is null;
         var row = await db.CheckIns.FirstOrDefaultAsync(c => c.UserId == userId && c.Date == day);
         if (row is null)
         {
             row = new CheckIn { UserId = userId, Date = day };
             db.CheckIns.Add(row);
         }
-        row.GymOsmType = isCustom ? null : ToCore(request.GymOsmType!.Value);
-        row.GymOsmId = request.GymOsmId;
-        row.GymName = request.GymName.Trim();
-        row.CityOsmType = ToCore(request.CityOsmType);
-        row.CityOsmId = request.CityOsmId;
-        row.CityName = request.CityName.Trim();
-        // A custom gym's position may be someone's home: it's dropped, never stored
-        row.Latitude = isCustom ? null : request.Latitude;
-        row.Longitude = isCustom ? null : request.Longitude;
+        Fill(row, request);
 
         try
         {
@@ -70,6 +63,49 @@ public static class CheckInEndpoints
         }
         catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
+            return Problems.Conflict("That check-in just changed. Try again.");
+        }
+        return Results.NoContent();
+    }
+
+    /// <summary>
+    /// Replaces all of the user's check-ins in one transaction, for resyncs. Same rules as the single PUT, plus at most
+    /// <see cref="StatsEndpoints.MaxDays"/> entries and no date twice. Entries older than the server keeps are dropped,
+    /// not refused, so the phone can always send its last 31 days. An empty list clears everything.
+    /// </summary>
+    private static async Task<IResult> ReplaceCheckIns(CheckInsUploadRequest request, ClaimsPrincipal me, ServerDbContext db, TimeProvider clock)
+    {
+        var entries = request.CheckIns ?? [];
+        if (entries.Count > MaxBulk) return Problems.BadRequest($"Send at most {MaxBulk} check-ins.");
+        if (entries.DistinctBy(e => e.Date).Count() != entries.Count) return Problems.BadRequest("Each date can only be sent once.");
+        var today = clock.ServerToday();
+        if (entries.Any(e => e.Date.DayNumber > today.DayNumber + ClientDates.AllowanceDays))
+            return Problems.BadRequest("A check-in can't be in the future.");
+        foreach (var e in entries)
+            if (Check(Gym(e)) is { } error) return Problems.BadRequest($"{e.Date.ToString(ApiFormat.Date, CultureInfo.InvariantCulture)}: {error}");
+
+        var userId = me.UserId();
+        await using var tx = await db.Database.BeginTransactionAsync();
+        var sharing = await db.Users.Where(u => u.Id == userId).Select(u => u.ShareGymCheckIns).FirstOrDefaultAsync();
+        if (sharing != true) return Problems.Forbidden("Turn on sharing gym check-ins first.");
+
+        await db.CheckIns.Where(c => c.UserId == userId).ExecuteDeleteAsync();
+        var cutoff = today.AddDays(-CheckInCleanup.KeepDays);
+        foreach (var e in entries.Where(e => e.Date >= cutoff))
+        {
+            var row = new CheckIn { UserId = userId, Date = e.Date };
+            Fill(row, Gym(e));
+            db.CheckIns.Add(row);
+        }
+
+        try
+        {
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+        }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Another upload from this user landed in between
             return Problems.Conflict("That check-in just changed. Try again.");
         }
         return Results.NoContent();
@@ -111,6 +147,26 @@ public static class CheckInEndpoints
             // Checked again on the way out: a custom gym never comes with a position
             r.CheckIn.GymOsmId is null ? null : r.CheckIn.Latitude,
             r.CheckIn.GymOsmId is null ? null : r.CheckIn.Longitude)).ToList());
+    }
+
+    private const int MaxBulk = StatsEndpoints.MaxDays;
+
+    private static CheckInRequest Gym(DatedCheckInRequest e) =>
+        new(e.GymOsmType, e.GymOsmId, e.GymName, e.CityOsmType, e.CityOsmId, e.CityName, e.Latitude, e.Longitude);
+
+    /// <summary>Copies a checked request onto a row.</summary>
+    private static void Fill(CheckIn row, CheckInRequest request)
+    {
+        var isCustom = request.GymOsmId is null;
+        row.GymOsmType = isCustom ? null : ToCore(request.GymOsmType!.Value);
+        row.GymOsmId = request.GymOsmId;
+        row.GymName = request.GymName.Trim();
+        row.CityOsmType = ToCore(request.CityOsmType);
+        row.CityOsmId = request.CityOsmId;
+        row.CityName = request.CityName.Trim();
+        // A custom gym's position may be someone's home: it's dropped, never stored
+        row.Latitude = isCustom ? null : request.Latitude;
+        row.Longitude = isCustom ? null : request.Longitude;
     }
 
     private static string? Check(CheckInRequest r)

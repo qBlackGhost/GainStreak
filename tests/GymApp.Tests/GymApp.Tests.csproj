@@ -26,6 +26,8 @@
     <ProjectReference Include="..\..\src\GymApp.Core\GymApp.Core.csproj" />
     <ProjectReference Include="..\..\src\GymApp.Services\GymApp.Services.csproj" />
     <ProjectReference Include="..\..\src\GymApp.Data\GymApp.Data.csproj" />
+    <ProjectReference Include="..\..\src\GymApp.Client\GymApp.Client.csproj" />
+    <ProjectReference Include="..\..\src\GymApp.Desktop\GymApp.Desktop.csproj" />
   </ItemGroup>
 
   <ItemGroup>

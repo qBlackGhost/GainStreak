@@ -37,4 +37,14 @@ public static class LevelCalculator
         var progress = Math.Clamp((double)(points - level.From) / (next.From - level.From), 0, 1);
         return new LevelInfo(level.Number, level.Name, level.From, next.From, next.Name, progress);
     }
+
+    /// <summary>A level from its number alone (the server sends number and name, not the points behind it).
+    /// <see cref="LevelInfo.Progress"/> is unknown, so 0; a number outside the table is clamped into it.</summary>
+    public static LevelInfo ForNumber(int number)
+    {
+        var i = Math.Clamp(number, Levels[0].Number, Levels[^1].Number) - Levels[0].Number;
+        var level = Levels[i];
+        var next = i + 1 < Levels.Count ? Levels[i + 1] : null;
+        return new LevelInfo(level.Number, level.Name, level.From, next?.From, next?.Name, next is null ? 1 : 0);
+    }
 }

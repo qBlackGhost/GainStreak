@@ -14,15 +14,25 @@ public class ResponsiveGrid : Panel
     public static readonly StyledProperty<double> SpacingProperty =
         AvaloniaProperty.Register<ResponsiveGrid, double>(nameof(Spacing), 16);
 
-    static ResponsiveGrid() => AffectsMeasure<ResponsiveGrid>(MinItemWidthProperty, SpacingProperty);
+    /// <summary>Only full rows: drops to fewer columns rather than leave a short last row (4 items: 4, 2 × 2 or 1, never 3 + 1).</summary>
+    public static readonly StyledProperty<bool> BalancedProperty =
+        AvaloniaProperty.Register<ResponsiveGrid, bool>(nameof(Balanced));
+
+    static ResponsiveGrid() => AffectsMeasure<ResponsiveGrid>(MinItemWidthProperty, SpacingProperty, BalancedProperty);
 
     public double MinItemWidth { get => GetValue(MinItemWidthProperty); set => SetValue(MinItemWidthProperty, value); }
     public double Spacing { get => GetValue(SpacingProperty); set => SetValue(SpacingProperty, value); }
+    public bool Balanced { get => GetValue(BalancedProperty); set => SetValue(BalancedProperty, value); }
 
     private (int Columns, double ItemWidth) Columns(double width)
     {
         if (double.IsInfinity(width)) return (1, MinItemWidth);
         var columns = Math.Max(1, (int)Math.Floor((width + Spacing) / (MinItemWidth + Spacing)));
+        if (Balanced && Children.Count > 0)
+        {
+            columns = Math.Min(columns, Children.Count);
+            while (columns > 1 && Children.Count % columns != 0) columns--;
+        }
         return (columns, Math.Max(0, (width - Spacing * (columns - 1)) / columns));
     }
 

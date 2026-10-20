@@ -398,6 +398,81 @@
                                 </StackPanel>
                             </StackPanel>
                             <TextBlock Text="You can sign in with your username or this email." FontSize="12" Classes="muted"/>
+
+                            <!-- Password -->
+                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsChangingPassword}">
+                                        <Border Width="40" Height="40" CornerRadius="10" Background="#1A1A1A">
+                                            <v:Icon Data="{StaticResource IcLock}" Stroke="White" StrokeThickness="2" Width="20" Height="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="Password" FontSize="12" Classes="muted"/>
+                                            <TextBlock Text="●●●●●●●●" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="Change"
+                                                Command="{Binding ChangePasswordCommand}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <StackPanel Spacing="10" IsVisible="{Binding IsChangingPassword}">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding CurrentPassword}" AutomationProperties.Name="Current password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding CurrentPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding CurrentPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="New password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding NewPassword}" AutomationProperties.Name="New password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding NewPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding NewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Confirm new password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding ConfirmNewPassword}" AutomationProperties.Name="Confirm new password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding ConfirmNewPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding ConfirmNewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                            <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelPasswordCommand}"/>
+                                            <Button Classes="btn primary" MinHeight="40" Padding="18,0" Content="Save password"
+                                                    Command="{Binding SavePasswordCommand}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Delete account, behind a confirmation that asks for the password -->
+                            <Border BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                <StackPanel Spacing="10">
+                                    <Button Classes="btn outline small" MinHeight="40" Foreground="#FF8A7A" HorizontalAlignment="Left"
+                                            IsVisible="{Binding !IsConfirmingDelete}" Command="{Binding AskDeleteCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <v:Icon Data="{StaticResource IcTrash}" Stroke="#FF8A7A" Width="16" Height="16"/>
+                                            <TextBlock Text="Delete account" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <StackPanel Spacing="10" IsVisible="{Binding IsConfirmingDelete}">
+                                        <TextBlock Text="Delete your account?" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding DeleteWarning}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding DeletePassword}" AutomationProperties.Name="Password to delete the account"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding DeleteError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding DeleteError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                            <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelDeleteCommand}"/>
+                                            <Button Classes="btn outline small" MinHeight="40" Padding="18,0" Foreground="#FF8A7A"
+                                                    Content="Delete everything" Command="{Binding DeleteAccountCommand}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </Border>
 

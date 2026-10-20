@@ -47,10 +47,11 @@ public partial class MainViewModel : ViewModelBase
     public void ShowPointsHistory() => Current = _sp.GetRequiredService<PointsHistoryViewModel>();
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
-    public void ShowGyms(bool pickToday = false)
+    public void ShowGyms(bool pickToday = false, bool chooseCity = false)
     {
         var vm = _sp.GetRequiredService<GymsViewModel>();
         if (pickToday) vm.PickTodayWhenLoaded();
+        if (chooseCity) vm.ChooseCityWhenLoaded();
         Current = vm;
     }
     /// <summary>Friends, with the leaderboard on the same screen.</summary>

@@ -16,6 +16,7 @@ public static class AccountEndpoints
     private const string EmailUsed = "That email is already used.";
     private const string WrongLogin = "Wrong username or password.";
     private const string WrongPassword = "That password is not right.";
+    private const string SameEmail = "That is already your email.";
 
     /// <summary>Verified against when the login matches no user, so an unknown name costs as much time as a wrong password.</summary>
     private static readonly Lazy<string> DummyHash = new(() => PasswordHasher.Hash(Guid.NewGuid().ToString()));
@@ -29,6 +30,7 @@ public static class AccountEndpoints
 
         var me = app.MapGroup("/v1/me");
         me.MapGet("", GetMe);
+        me.MapPut("/email", ChangeEmail);
         me.MapPut("/password", ChangePassword);
         me.MapDelete("", DeleteAccount);
     }
@@ -113,6 +115,32 @@ public static class AccountEndpoints
         var userId = principal.UserId();
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
         return user is null ? Results.NotFound() : Results.Ok(ToMe(user));
+    }
+
+    private static async Task<IResult> ChangeEmail(ChangeEmailRequest request, ClaimsPrincipal principal, ServerDbContext db)
+    {
+        var email = Credentials.NormalizeEmail(request.Email ?? "");
+        if (Credentials.CheckEmail(email) is { } emailError) return Problems.BadRequest(emailError, ProblemFields.Email);
+
+        var userId = principal.UserId();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return Results.NotFound();
+        if (!PasswordHasher.Verify(request.CurrentPassword ?? "", user.PasswordHash))
+            return Problems.BadRequest(WrongPassword, ProblemFields.Password);
+        if (user.Email == email) return Problems.BadRequest(SameEmail, ProblemFields.Email);
+        if (await db.Users.AnyAsync(u => u.Email == email)) return Problems.Conflict(EmailUsed, ProblemFields.Email);
+
+        user.Email = email;
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Someone took the email between the check and the update
+            return Problems.Conflict(EmailUsed, ProblemFields.Email);
+        }
+        return Results.NoContent();
     }
 
     private static async Task<IResult> ChangePassword(ChangePasswordRequest request, ClaimsPrincipal principal, ServerDbContext db)

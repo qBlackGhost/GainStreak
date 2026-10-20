@@ -22,14 +22,19 @@ public partial class CheckInSetRowViewModel : ObservableObject
         _owner = owner;
         Kind = kind;
         Label = kind == SetKind.Warmup ? $"Warm-up {number}" : $"Set {number}";
+        Tag = kind == SetKind.Warmup ? "W" : number.ToString(CultureInfo.InvariantCulture);
         WeightText = weightText;
         RepsText = repsText;
-        WeightHint = previous is null ? "kg" : $"{NumberParsing.FormatKg(previous.WeightKg)} kg";
-        RepsHint = previous is null ? "reps" : $"{previous.Reps} reps";
+        WeightHint = previous is null ? "—" : NumberParsing.FormatKg(previous.WeightKg);
+        RepsHint = previous is null ? "—" : previous.Reps.ToString(CultureInfo.InvariantCulture);
+        IsComplete = ToInput() is not null;
     }
 
     public SetKind Kind { get; }
     public string Label { get; }
+    /// <summary>The chip's label: "W" for a warm-up, the set number for a working set.</summary>
+    public string Tag { get; }
+    public bool IsWarmup => Kind == SetKind.Warmup;
 
     /// <summary>Placeholders: the same set from the previous workout, only a suggestion until "Fill from previous workout".</summary>
     public string WeightHint { get; }
@@ -38,8 +43,17 @@ public partial class CheckInSetRowViewModel : ObservableObject
     [ObservableProperty] public partial string WeightText { get; set; } = "";
     [ObservableProperty] public partial string RepsText { get; set; } = "";
 
-    partial void OnWeightTextChanged(string value) => _owner.RowChanged();
-    partial void OnRepsTextChanged(string value) => _owner.RowChanged();
+    /// <summary>Both kg and reps are valid: the chip turns solid.</summary>
+    [ObservableProperty] public partial bool IsComplete { get; set; }
+
+    partial void OnWeightTextChanged(string value) => Changed();
+    partial void OnRepsTextChanged(string value) => Changed();
+
+    private void Changed()
+    {
+        IsComplete = ToInput() is not null;
+        _owner.RowChanged();
+    }
 
     public bool IsEmpty => string.IsNullOrWhiteSpace(WeightText) && string.IsNullOrWhiteSpace(RepsText);
 
@@ -62,10 +76,12 @@ public partial class CheckInExerciseViewModel : ObservableObject
         Name = info.Name;
         WorkingSets = info.WorkingSets;
         PlanSummary = info.WarmupSets > 0
-            ? $"{info.WarmupSets} warm-up · {info.WorkingSets} working"
+            ? $"{info.WarmupSets} warm-up + {info.WorkingSets} working"
             : $"{info.WorkingSets} working";
         _lastSession = info.LastSession;
         LastSessionText = LastSessionSummary(info.LastSession);
+        var top = info.LastSession.FirstOrDefault(x => x.Kind == SetKind.Working) ?? info.LastSession.FirstOrDefault();
+        SubText = top is null ? PlanSummary : $"{PlanSummary} · last {NumberParsing.FormatKg(top.WeightKg)} × {top.Reps}";
         Fill(info.TodaySets.Count > 0 ? info.TodaySets : null, info.WarmupSets, info.WorkingSets);
     }
 
@@ -73,6 +89,8 @@ public partial class CheckInExerciseViewModel : ObservableObject
     public string Name { get; }
     public int WorkingSets { get; }
     public string PlanSummary { get; }
+    /// <summary>"1 warm-up + 3 working · last 60 × 8", under the name.</summary>
+    public string SubText { get; }
     public ObservableCollection<CheckInSetRowViewModel> Rows { get; } = new();
 
     private readonly IReadOnlyList<SetEntry> _lastSession;
@@ -94,6 +112,10 @@ public partial class CheckInExerciseViewModel : ObservableObject
     }
 
     [ObservableProperty] public partial bool IsFilled { get; set; }
+    partial void OnIsFilledChanged(bool value) => OnPropertyChanged(nameof(ShowUseLast));
+
+    /// <summary>"Use last time" until the exercise is filled; then a "Filled" badge takes its place.</summary>
+    public bool ShowUseLast => HasLastSession && !IsFilled;
     [ObservableProperty] public partial string? Info { get; set; }
 
     /// <summary>Rows from <paramref name="sets"/> when given (today's or last time's), padded to the plan;
@@ -160,6 +182,7 @@ public partial class CheckInViewModel : ViewModelBase
     public ObservableCollection<CheckInDay> PickableDays { get; } = new();
 
     [ObservableProperty] public partial string Title { get; set; } = "Check in";
+    [ObservableProperty] public partial string Subtitle { get; set; } = "";
     [ObservableProperty] public partial bool IsLoaded { get; set; }
     [ObservableProperty] public partial bool HasExercises { get; set; }
     [ObservableProperty] public partial bool ShowDayPicker { get; set; }
@@ -188,7 +211,7 @@ public partial class CheckInViewModel : ViewModelBase
             ShowDayPicker = info.PlannedDay is null && PickableDays.Count > 0;
             PickedDay = ShowDayPicker ? PickableDays.FirstOrDefault(d => d.SplitDayId == info.Day?.SplitDayId) : null;
 
-            Title = info.PlannedDay is { } planned ? $"{planned.Name} day" : "Extra workout";
+            Title = info.PlannedDay is { } planned ? $"Check in · {planned.Name}" : "Check in · Extra workout";
             Exercises.Clear();
             foreach (var e in info.Exercises) Exercises.Add(new CheckInExerciseViewModel(this, e));
             HasExercises = Exercises.Count > 0;
@@ -233,8 +256,9 @@ public partial class CheckInViewModel : ViewModelBase
     {
         foreach (var e in Exercises) e.IsFilled = CheckInRule.IsFilled(e.ToRuleInput(_today));
         var status = CheckInRule.Evaluate(Exercises.Select(e => e.ToRuleInput(_today)));
-        CounterText = status.Total == 0 ? ""
-            : $"{status.Filled} of {status.Total} exercise{(status.Total == 1 ? "" : "s")} filled · need {status.Required}";
+        CounterText = status.Total == 0 ? "" : $"{status.Filled} / {status.Required} needed";
+        Subtitle = status.Total == 0 ? "Nothing to fill in yet."
+            : $"Fill in at least {status.Required} of {status.Total} exercise{(status.Total == 1 ? "" : "s")} to log today.";
         CanLog = status.CanLog && !IsSaving;
     }
 

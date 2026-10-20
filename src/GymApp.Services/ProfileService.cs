@@ -30,7 +30,7 @@ public record ProfileSummary(
     IReadOnlyList<WeightLog> RecentWeights,
     MaintenanceEstimate Maintenance);
 
-public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
+public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHooks? sync = null)
 {
     public const int RecentWeightCount = 10;
 
@@ -160,6 +160,9 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
 
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException) { return new(false, "Could not save that setting."); }
+        var hooks = sync ?? NoSocialSync.Instance;
+        hooks.MarkSharingDirty(userId);
+        if (share) hooks.MarkCheckInsDirty(userId);   // turning it on sends the last 31 days
         return new(true);
     }
 
@@ -182,7 +185,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory)
     }
 
     /// <summary>The user's profile row, tracked, created (not yet saved) when there is none. Null if the user doesn't exist.</summary>
-    private static async Task<UserProfile?> ProfileForWriteAsync(AppDbContext db, int userId)
+    internal static async Task<UserProfile?> ProfileForWriteAsync(AppDbContext db, int userId)
     {
         if (!await db.Users.AnyAsync(u => u.Id == userId)) return null;
         var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);

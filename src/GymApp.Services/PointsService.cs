@@ -23,7 +23,9 @@ public record PointsLine(DateOnly Date, PointsReason Reason, int Amount);
 /// <summary>The user's total, level and ledger, newest first.</summary>
 public record PointsOverview(int Total, LevelInfo Level, IReadOnlyList<PointsLine> History);
 
-public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
+/// <param name="sync">Told after every sync and rebuild, since every stats change ends here (log, undo, missed-day
+/// choice, split changes, calorie logs, the startup catch-up). A no-op when absent.</param>
+public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHooks? sync = null)
 {
     /// <summary>Reads the cached total and the ledger. Doesn't sync; the hooks keep it current.</summary>
     public async Task<PointsOverview?> GetAsync(int userId)
@@ -54,9 +56,11 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return null;
 
-        if (!user.PointsBackfilled)
-            return await ApplyAsync(db, user, await FirstLogAsync(db, userId, day), day, rebuild: true);
-        return await ApplyAsync(db, user, WindowStart(day), day, rebuild: false);
+        var result = !user.PointsBackfilled
+            ? await ApplyAsync(db, user, await FirstLogAsync(db, userId, day), day, rebuild: true)
+            : await ApplyAsync(db, user, WindowStart(day), day, rebuild: false);
+        (sync ?? NoSocialSync.Instance).MarkStatsDirty(userId);
+        return result;
     }
 
     /// <summary>The same as <see cref="SyncAsync"/>, with the window starting at the user's first log, so existing
@@ -67,7 +71,9 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory)
         await using var db = await dbFactory.CreateDbContextAsync();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return null;
-        return await ApplyAsync(db, user, await FirstLogAsync(db, userId, day), day, rebuild: true);
+        var result = await ApplyAsync(db, user, await FirstLogAsync(db, userId, day), day, rebuild: true);
+        (sync ?? NoSocialSync.Instance).MarkStatsDirty(userId);
+        return result;
     }
 
     /// <summary>Runs the one-time rebuild for every user that hasn't had it. Call once at startup.</summary>

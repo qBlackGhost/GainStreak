@@ -63,6 +63,17 @@
 
                 <Border Classes="section">
                     <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Social"/>
+                        <TextBlock Classes="note" Text="{Binding SocialModeText}"/>
+                        <WrapPanel>
+                            <Button Content="{Binding SwitchSocialLabel}" Command="{Binding SwitchSocialCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note" Text="Switching restarts the TestBench. Start the server first for Server mode (see the README)."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
                         <TextBlock Classes="header" Text="Account"/>
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
                             <ComboBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}"
@@ -71,7 +82,8 @@
                                     ToolTip.Tip="Reload the user list (e.g. after registering one)"/>
                         </Grid>
                         <WrapPanel>
-                            <Button Content="Sign in as (no password)" Command="{Binding SignInAsCommand}"/>
+                            <Button Content="Sign in as (no password)" Command="{Binding SignInAsCommand}"
+                                    ToolTip.Tip="Local mode only: the server needs the account's password"/>
                             <Button Content="Sign out" Command="{Binding SignOutCommand}"/>
                         </WrapPanel>
                     </StackPanel>

@@ -74,4 +74,20 @@ public class AuthService(IDbContextFactory<AppDbContext> dbFactory)
         catch (DbUpdateException) { return new(false, "Another account already uses that email.", Field: FormField.Email); }
         return new(true, User: user);
     }
+
+    /// <summary>Changes the password after checking the current one.</summary>
+    public async Task<AuthResult> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
+    {
+        if (Credentials.CheckPassword(newPassword) is { } passwordError) return new(false, passwordError, Field: FormField.NewPassword);
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return new(false, "User not found.");
+        if (!PasswordHasher.Verify(currentPassword, user.PasswordHash))
+            return new(false, "That password is not right.", Field: FormField.Password);
+
+        user.PasswordHash = PasswordHasher.Hash(newPassword);
+        await db.SaveChangesAsync();
+        return new(true, User: user);
+    }
 }

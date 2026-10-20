@@ -7,12 +7,16 @@ namespace GymApp.TestBench;
 /// <summary>What happens to the test data on the next start.</summary>
 public enum DataReset { None, Empty, CopyReal }
 
-/// <summary>The TestBench's own state, kept next to its data so it survives restarts: how far the clock is moved and
-/// a pending data reset (done at the next start, before anything opens the database).</summary>
+/// <summary>The TestBench's own state, kept next to its data so it survives restarts: how far the clock is moved,
+/// a pending data reset (done at the next start, before anything opens the database) and the social mode.</summary>
 public sealed class BenchSettings
 {
     public int DayOffset { get; set; }
     public DataReset PendingReset { get; set; }
+
+    /// <summary>False (the default): accounts and friends on this computer only, so the clock can move freely and
+    /// "sign in as" works. True: the app's own wiring against the social server (GYMAPP_SERVER_URL or localhost:5080).</summary>
+    public bool ServerSocial { get; set; }
 
     private static string LocalData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     public static string Root => Path.Combine(LocalData, "GymApp-TestBench");

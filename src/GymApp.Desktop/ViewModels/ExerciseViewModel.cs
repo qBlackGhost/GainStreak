@@ -285,7 +285,7 @@ public partial class ExerciseViewModel : ViewModelBase
         var n = 0;
         foreach (var d in data) Rows.Add(new SetRowViewModel(this, ++n, d.Kind, d.Weight, d.Reps));
         _loading = false;
-        CountRows();
+        RowsReshaped();   // today's saved sets set the plan too, so the day list says what the counters say
         RefreshPrompts();
     }
 
@@ -308,8 +308,10 @@ public partial class ExerciseViewModel : ViewModelBase
     private void RowsReshaped()
     {
         CountRows();
-        _ = SavePlanAsync();
+        _planSave = SavePlanAsync();
     }
+
+    private Task _planSave = Task.CompletedTask;
 
     // The plan keeps the service's limits (at least one working set); the rows themselves can go beyond them
     private async Task SavePlanAsync()
@@ -385,7 +387,6 @@ public partial class ExerciseViewModel : ViewModelBase
 
             RebuildRows(last.Select(s => new RowData(
                 s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
-            await SavePlanAsync();
             Error = null;
             Info = $"Filled from {FormatDate(last[0].Date)}. Change anything, then save.";
 
@@ -641,6 +642,12 @@ public partial class ExerciseViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand] private void Back() => _shell().ShowDay(_day, _splitName);
+    // Waits for a plan save still in flight, so the day list shows the new set counts
+    [RelayCommand]
+    private async Task BackAsync()
+    {
+        await _planSave;
+        _shell().ShowDay(_day, _splitName);
+    }
     [RelayCommand] private void ShowDashboard() => _shell().ShowHome();
 }

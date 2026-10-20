@@ -23,6 +23,8 @@ public class AppDbContext : DbContext
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
     public DbSet<City> Cities => Set<City>();
+    public DbSet<SocialCache> SocialCache => Set<SocialCache>();
+    public DbSet<SyncState> SyncStates => Set<SyncState>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
     public AppDbContext() { }
@@ -50,6 +52,16 @@ public class AppDbContext : DbContext
         b.Entity<User>().HasIndex(u => u.Email).IsUnique();   // SQLite allows any number of NULLs here
         b.Entity<User>().Property(u => u.Email).HasMaxLength(254).UseCollation("NOCASE");
         b.Entity<User>().Property(u => u.GoalType).HasConversion<string>();
+        b.Entity<User>().HasIndex(u => u.ServerUserId).IsUnique();   // NULLs (unlinked accounts) don't clash
+
+        // Social server: cached reads and pending uploads, both gone with the user
+        b.Entity<SocialCache>().HasKey(c => new { c.UserId, c.Key });
+        b.Entity<SocialCache>().Property(c => c.Key).HasMaxLength(40);
+        b.Entity<SocialCache>().HasOne(c => c.User).WithMany()
+            .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<SyncState>().HasKey(s => s.UserId);
+        b.Entity<SyncState>().HasOne(s => s.User).WithOne()
+            .HasForeignKey<SyncState>(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
 
         // Two separate relationships between User and WorkoutSplit, so be explicit
         b.Entity<User>().HasOne(u => u.SelectedSplit).WithMany()

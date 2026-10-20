@@ -9,14 +9,18 @@ namespace GymApp.Social;
 /// <summary>The board for one period. <see cref="WeekStart"/>..<see cref="WeekEnd"/> is the week containing today,
 /// also on the all-time board. <see cref="IsAlone"/>: only you on it, so the UI shows "Add friends to compete".</summary>
 public record LeaderboardView(LeaderboardPeriod Period, DateOnly WeekStart, DateOnly WeekEnd, IReadOnlyList<LeaderboardRow> Rows)
+    : ICachedResult
 {
+    public bool IsStale { get; init; }
+    public DateTime? FetchedAt { get; init; }
+
     public bool IsAlone => Rows.Count <= 1;
     public LeaderboardRow? You => Rows.FirstOrDefault(r => r.IsYou);
 }
 
 /// <summary>The friends-only leaderboard: you and your accepted friends, never pending requests or other users.
 /// Only reads points and streaks; ranking is <see cref="Leaderboard"/> in Core.</summary>
-public class LeaderboardService(ISocialStore store)
+public class LeaderboardService(ISocialStore store) : ILeaderboardService
 {
     /// <summary>The board, or null if the user doesn't exist.</summary>
     public async Task<LeaderboardView?> GetAsync(int userId, LeaderboardPeriod period, DateOnly? today = null)

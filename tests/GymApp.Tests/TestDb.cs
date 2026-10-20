@@ -8,18 +8,39 @@ namespace GymApp.Tests;
 
 public sealed class TestDb : IDbContextFactory<AppDbContext>, IDisposable
 {
-    private readonly SqliteConnection _conn = new("Data Source=:memory:");
-    private readonly DbContextOptions<AppDbContext> _options;
+    private readonly SqliteConnection? _conn;
+    private readonly string? _path;
+    private readonly DbContextOptions<AppDbContext>? _options;
+    private readonly IDbContextFactory<AppDbContext>? _wrapped;
 
-    public TestDb()
+    /// <summary>An in-memory database on one shared connection: fast, but for one thread at a time.</summary>
+    public TestDb() : this(onDisk: false) { }
+
+    private TestDb(bool onDisk)
     {
-        _conn.Open();   // the in-memory database lives as long as this connection
-        _options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_conn).Options;
+        if (onDisk)
+        {
+            // A file, with a connection per context like the app: safe for code that writes from background tasks
+            _path = Path.Combine(Path.GetTempPath(), $"gymapp-test-{Guid.NewGuid():N}.db");
+            _options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={_path};Pooling=False").Options;
+        }
+        else
+        {
+            _conn = new SqliteConnection("Data Source=:memory:");
+            _conn.Open();   // the in-memory database lives as long as this connection
+            _options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(_conn).Options;
+        }
         using var db = CreateDbContext();
         db.Database.Migrate();
     }
 
-    public AppDbContext CreateDbContext() => new(_options);
+    /// <summary>The seeding helpers over someone else's database (e.g. the app's own factory); it isn't owned or migrated.</summary>
+    public TestDb(IDbContextFactory<AppDbContext> wrapped) => _wrapped = wrapped;
+
+    /// <summary>A database in a temporary file, for tests where several threads use it at once.</summary>
+    public static TestDb OnDisk() => new(onDisk: true);
+
+    public AppDbContext CreateDbContext() => _wrapped?.CreateDbContext() ?? new(_options!);
 
     public int AddUser(string username)
     {
@@ -71,5 +92,11 @@ public sealed class TestDb : IDbContextFactory<AppDbContext>, IDisposable
         db.SaveChanges();
     }
 
-    public void Dispose() => _conn.Dispose();
+    public void Dispose()
+    {
+        _conn?.Dispose();
+        if (_path is null) return;
+        foreach (var file in new[] { _path, _path + "-wal", _path + "-shm" })
+            if (File.Exists(file)) File.Delete(file);
+    }
 }

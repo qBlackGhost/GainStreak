@@ -20,14 +20,18 @@ public record Friend(int UserId, string Username, DateTime Since);
 public record FriendRequest(int UserId, string Username, DateTime SentAt);
 
 /// <summary>Pending requests, newest first.</summary>
-public record FriendRequests(IReadOnlyList<FriendRequest> Incoming, IReadOnlyList<FriendRequest> Outgoing);
+public record FriendRequests(IReadOnlyList<FriendRequest> Incoming, IReadOnlyList<FriendRequest> Outgoing) : ICachedResult
+{
+    public bool IsStale { get; init; }
+    public DateTime? FetchedAt { get; init; }
+}
 
 /// <summary>
 /// Friend requests and friendships. Friendship is mutual: a request has to be accepted before either user sees the
 /// other on the leaderboard. Declining, cancelling and removing delete the row, so a new request can follow.
 /// Social actions never earn points.
 /// </summary>
-public class FriendService(ISocialStore store, TimeProvider? clock = null)
+public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFriendService
 {
     public const int MaxFriends = 50;
     public const int MaxPendingOutgoing = 20;

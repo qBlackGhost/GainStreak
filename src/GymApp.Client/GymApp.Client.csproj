@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The typed client for the social server. No Data, Services or Avalonia here, so a mobile head can reuse it as-is. -->
+  <ItemGroup>
+    <ProjectReference Include="..\GymApp.Contracts\GymApp.Contracts.csproj" />
+    <ProjectReference Include="..\GymApp.Social\GymApp.Social.csproj" />
+    <ProjectReference Include="..\GymApp.Core\GymApp.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

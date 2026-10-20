@@ -168,6 +168,52 @@ public class AccountTests(PostgresFixture postgres) : ServerTest(postgres)
         await LogInAsync("alice");
     }
 
+    // --- Email ---
+
+    private static Task<HttpResponseMessage> ChangeEmailAsync(SignedIn user, string email, string password = DefaultPassword) =>
+        user.Client.PutAsJsonAsync("/v1/me/email", new ChangeEmailRequest(password, email));
+
+    [Fact] public async Task ChangeEmail_OldEmailStopsWorking_AndTheNewOneLogsIn()
+    {
+        var alice = await SignUpAsync("alice");
+
+        Assert.Equal(HttpStatusCode.NoContent, (await ChangeEmailAsync(alice, " Alice.New@Example.com ")).StatusCode);
+
+        Assert.Equal("alice.new@example.com", (await alice.Client.GetFromJsonAsync<MeResponse>("/v1/me"))!.Email);
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await Client.PostAsJsonAsync("/v1/auth/login", new LoginRequest("alice@example.com", DefaultPassword, "x"))).StatusCode);
+        Assert.Equal(alice.User.Id, (await LogInAsync("alice.new@example.com")).User.Id);
+    }
+
+    [Fact] public async Task ChangeEmail_WrongPassword_Is400_AndKeepsTheEmail()
+    {
+        var alice = await SignUpAsync("alice");
+
+        var response = await ChangeEmailAsync(alice, "new@example.com", "wrong password");
+        Assert.Equal("That password is not right.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+        Assert.Equal("alice@example.com", (await alice.Client.GetFromJsonAsync<MeResponse>("/v1/me"))!.Email);
+    }
+
+    [Fact] public async Task ChangeEmail_TakenInAnotherCase_Is409()
+    {
+        var alice = await SignUpAsync("alice");
+        await SignUpAsync("bob");
+
+        var response = await ChangeEmailAsync(alice, "BOB@example.com");
+        Assert.Equal("That email is already used.", await ProblemAsync(response, HttpStatusCode.Conflict));
+    }
+
+    [Fact] public async Task ChangeEmail_SameOrBadEmail_Is400()
+    {
+        var alice = await SignUpAsync("alice");
+
+        var same = await ChangeEmailAsync(alice, "ALICE@example.com");
+        Assert.Equal("That is already your email.", await ProblemAsync(same, HttpStatusCode.BadRequest));
+
+        var bad = await ChangeEmailAsync(alice, "not-an-email");
+        Assert.Equal("Enter a valid email address, e.g. name@example.com.", await ProblemAsync(bad, HttpStatusCode.BadRequest));
+    }
+
     // --- Delete ---
 
     [Fact] public async Task DeleteAccount_WrongPassword_Is400_AndKeepsTheAccount()

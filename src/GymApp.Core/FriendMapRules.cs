@@ -200,6 +200,11 @@ public static class FriendMapRules
         return groups;
     }
 
+    /// <summary>The gym picker's "N friends" badges: friends whose newest check-in is at each gym. Only gyms on this phone
+    /// (positive ids); a friend's gym the phone doesn't know has a negative id and no row to badge.</summary>
+    public static IReadOnlyDictionary<int, int> FriendsAtGym(IEnumerable<FriendCheckIn> latestPerFriend) =>
+        latestPerFriend.Where(c => c.GymId > 0).GroupBy(c => c.GymId).ToDictionary(g => g.Key, g => g.Count());
+
     /// <summary>Two-letter initials from a username's letters: "andrei.m" → "AN". "?" when it has no letters.</summary>
     public static string Initials(string username)
     {

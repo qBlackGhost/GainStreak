@@ -5,6 +5,8 @@ using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
+using GymApp.Client;
 using GymApp.Data;
 using GymApp.Services;
 using GymApp.Social;
@@ -17,7 +19,11 @@ namespace GymApp.Desktop;
 
 public partial class App : Application
 {
-    private static Window StartupErrorWindow() => new()
+    private static string DataErrorText =>
+        "GymApp couldn't open its data, so it can't start. The details were saved to errors.log in " +
+        $"{AppDbContext.DataDirectory}. Close any other copy of GymApp and try again.";
+
+    private static Window StartupErrorWindow(string text) => new()
     {
         Title = "GymApp",
         Width = 460,
@@ -28,8 +34,7 @@ public partial class App : Application
         {
             Margin = new Thickness(24),
             TextWrapping = TextWrapping.Wrap,
-            Text = "GymApp couldn't open its data, so it can't start. The details were saved to errors.log in " +
-                   $"{AppDbContext.DataDirectory}. Close any other copy of GymApp and try again."
+            Text = text
         }
     };
 
@@ -38,56 +43,16 @@ public partial class App : Application
     /// <summary>Called with the main window once it exists. The TestBench uses it to open its admin window.</summary>
     public static Action<Window>? MainWindowCreated { get; set; }
 
+    /// <summary>Accounts and friends on this computer only (<see cref="LocalAccountService"/>, the local
+    /// <see cref="FriendService"/>) instead of the social server. Set by the TestBench before startup; the app itself
+    /// always uses the server.</summary>
+    public static bool LocalSocial { get; set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
     {
-        var sc = new ServiceCollection();
-        sc.AddDbContextFactory<AppDbContext>();
-        sc.AddSingleton<SessionService>();
-        sc.AddTransient<AuthService>();
-        sc.AddSingleton<MainViewModel>();
-        sc.AddSingleton<Func<MainViewModel>>(sp => () => sp.GetRequiredService<MainViewModel>());
-        sc.AddTransient<LoginViewModel>();
-        sc.AddTransient<RegisterViewModel>();
-        sc.AddTransient<HomeViewModel>();
-        sc.AddSingleton<RememberMeService>();
-        sc.AddTransient<SplitService>();
-        sc.AddTransient<SplitsViewModel>();
-        sc.AddTransient<SplitEditorViewModel>();
-        sc.AddTransient<SplitDetailViewModel>();
-        sc.AddTransient<StreakService>();
-        sc.AddTransient<PointsService>();
-        sc.AddTransient<WorkoutService>();
-        sc.AddTransient<MissedDayService>();
-        sc.AddTransient<ExerciseService>();
-        sc.AddTransient<DayExerciseService>();
-        sc.AddTransient<SetService>();
-        sc.AddTransient<WorkoutMenuService>();
-        sc.AddTransient<WorkoutsViewModel>();
-        sc.AddTransient<DayViewModel>();
-        sc.AddTransient<ExerciseViewModel>();
-        sc.AddTransient<CustomExercisesViewModel>();
-        sc.AddTransient<ProfileService>();
-        sc.AddTransient<CalorieService>();
-        sc.AddTransient<ProfileViewModel>();
-        sc.AddTransient<CaloriesViewModel>();
-        sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
-        sc.AddTransient<CityService>();
-        sc.AddSingleton(sp => new GymFetchService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
-        sc.AddTransient<GymService>();
-        sc.AddSingleton(sp => new GymAddressLookupService(
-            sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<GeocodingService>()));
-        sc.AddTransient<GymPickerViewModel>();
-        sc.AddTransient<GymSummaryService>();
-        sc.AddTransient<GymsViewModel>();
-        sc.AddTransient<PointsHistoryViewModel>();
-        sc.AddTransient<ISocialStore, LocalSocialStore>();   // 10f may swap in a server-backed store here
-        sc.AddTransient<FriendService>();
-        sc.AddTransient<LeaderboardService>();
-        sc.AddTransient<FriendMapService>();
-        sc.AddTransient<FriendsViewModel>();
-        Services = sc.BuildServiceProvider();
+        Services = AppServices.Create(LocalSocial).BuildServiceProvider();
 
         var log = new ErrorLog(AppDbContext.DataDirectory);
         var desktop = ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
@@ -106,18 +71,52 @@ public partial class App : Application
         {
             // The data can't be opened (locked, corrupt, read-only...): say so instead of crashing with no window
             log.Write(e, "Startup");
-            if (desktop is not null) desktop.MainWindow = StartupErrorWindow();
+            if (desktop is not null) desktop.MainWindow = StartupErrorWindow(DataErrorText);
             base.OnFrameworkInitializationCompleted();
             return;
         }
 
-        Services.GetRequiredService<RememberMeService>().TryRestore();
+        try
+        {
+            if (!LocalSocial)
+            {
+                // A token the server stopped accepting signs out to the login screen. The event can come from any
+                // thread (a background upload), and signing out navigates, so it goes through the UI thread
+                var accounts = Services.GetRequiredService<AccountService>();
+                var api = Services.GetRequiredService<SocialApiClient>();
+                api.SessionExpired += (_, _) => Dispatcher.UIThread.Post(() => _ = accounts.EndSessionAsync());
+
+                // Upload what's waiting at sign-in and restore, when a request gets through after being offline,
+                // and every 15 minutes (the window coming to the front is wired below)
+                var sync = Services.GetRequiredService<SocialSync>();
+                var session = Services.GetRequiredService<SessionService>();
+                session.Changed += () => { if (session.IsLoggedIn) sync.RequestSync(); };
+                api.BackOnline += (_, _) => sync.RequestSync();
+                sync.StartTimer();
+            }
+            // Stays signed in until logging out. Off the UI thread, like the backfill; offline it uses the cached account
+            var restore = Services.GetRequiredService<IAccountService>();
+            Task.Run(restore.RestoreAsync).GetAwaiter().GetResult();
+        }
+        catch (InvalidOperationException e) when (e.Message.Contains(ServerAddress.EnvironmentVariable))
+        {
+            // A release build with no (or no https) server address
+            log.Write(e, "Startup");
+            if (desktop is not null) desktop.MainWindow = StartupErrorWindow($"GymApp can't reach its server: {e.Message}");
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
 
         var main = Services.GetRequiredService<MainViewModel>();
         ErrorHandling.Install(log, message => main.GlobalError = message);
         if (desktop is not null)
         {
             desktop.MainWindow = new MainWindow { DataContext = main };
+            if (!LocalSocial)
+            {
+                var sync = Services.GetRequiredService<SocialSync>();
+                desktop.MainWindow.Activated += (_, _) => sync.RequestSync();
+            }
             MainWindowCreated?.Invoke(desktop.MainWindow);
         }
 

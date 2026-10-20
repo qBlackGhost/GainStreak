@@ -22,11 +22,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\GymApp.Server\GymApp.Server.csproj" />
+    <ProjectReference Include="..\..\src\GymApp.Client\GymApp.Client.csproj" />
+    <ProjectReference Include="..\..\src\GymApp.Services\GymApp.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- The FriendService cases, shared with the other test project and run against its store -->
     <Compile Include="..\Shared\FriendServiceTests.cs" Link="Shared\FriendServiceTests.cs" />
+    <!-- The app's in-memory SQLite, for the phone side of the end-to-end tests -->
+    <Compile Include="..\GymApp.Tests\TestDb.cs" Link="Shared\TestDb.cs" />
   </ItemGroup>
 
 </Project>

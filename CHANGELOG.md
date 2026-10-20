@@ -2,6 +2,23 @@
 
 Versions follow the rules in the README: **1.0.x** for bug fixes, **1.x.0** for new features (migrations allowed), **2.0.0** for breaking changes.
 
+## 1.1.0 (unreleased)
+
+The app on the social server (Phase 13's server, Phase 14 of the plan). Workouts stay on the device; accounts, friends, the leaderboard and shared check-ins move to the server.
+
+- **Phase 13, the social server:** an ASP.NET Core API on Postgres for accounts, friends, the leaderboard and shared gym check-ins, with rate limits, a Docker image and migrations run on their own.
+- **Phase 14, the app on the server:**
+  - Server additions: change the account email, and replace all of your shared check-ins in one call.
+  - `GymApp.Client`: a typed client for the server, where every call is Ok, Refused (with the server's message) or Offline, a 10-second timeout, and the session token stored in a file only you can read.
+  - Accounts on the server: register, sign in with your username or email and stay signed in until you log out. Change your email or password, and delete your account (online and on the device) from Profile. "Remember me" is gone.
+  - Offline sign-in on your own device with your last password; a wrong password from the server never falls back to it.
+  - "Move this account online" for accounts from before the server: keeps their workouts, points and streak.
+  - Friends, requests and both leaderboards from the server, kept on the device and shown offline with "Last updated ...". Friend actions need a connection.
+  - Uploads of your sharing setting, the last 31 days of check-ins and the 14-day points and streak projection, retried until they get through (after a check-in or undo, a gym change, a sharing change, at sign-in, every 15 minutes and when the connection comes back).
+  - The friends map from the server, matched to the gyms and cities on this device.
+  - TestBench: a Social switch, Local (the default, no server needed) or Server.
+- **Migration:** `SocialServerLink` in the app's database (the link to the server account, the offline cache and the pending uploads). Existing data is unchanged.
+
 ## 1.0.0 (unreleased)
 
 The first release. It covers Phases 0 to 12 of the implementation plan.

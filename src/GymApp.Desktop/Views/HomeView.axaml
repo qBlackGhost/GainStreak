@@ -48,6 +48,41 @@
             <Setter Property="Foreground" Value="{StaticResource Accent}"/>
         </Style>
 
+        <!-- Get set up: step cards -->
+        <Style Selector="Border.setupStep">
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#111111"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+        </Style>
+        <Style Selector="Border.setupStep.done">
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+        </Style>
+        <Style Selector="Border.setupStep.next">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        </Style>
+        <Style Selector="Border.setupBadge">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#444444"/>
+        </Style>
+        <Style Selector="Border.setupBadge.done">
+            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextElement.Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="ProgressBar.setup">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="MinHeight" Value="6"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="#222222"/>
+            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
+        </Style>
+
         <!-- Gauge: once checked in, the fire arc fills and the cold dashes fade out -->
         <Style Selector="Path.fire">
             <Style.Animations>
@@ -202,6 +237,8 @@
                     <TextBlock Text="{Binding StreakNote}" FontSize="15" Classes="soft"/>
                     <TextBlock Text="{Binding StreakEndedNotice}" FontSize="13" Classes="muted"
                                IsVisible="{Binding StreakEndedNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding OfflineNotice}" FontSize="13" Classes="muted" TextWrapping="Wrap"
+                               IsVisible="{Binding OfflineNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
 
                 <Border x:Name="LevelPill" VerticalAlignment="Bottom"
@@ -249,6 +286,72 @@
                     <Button Grid.Column="2" Classes="btn outline strong small" Content="Check in now"
                             Command="{Binding LogTodayCommand}" IsEnabled="{Binding CanLog}"/>
                 </Grid>
+            </Border>
+
+            <!-- ===== Get set up: until the four first-time steps are done (steps 1 and 2 unlock check-in) ===== -->
+            <Border Classes="card" Padding="28,26" IsVisible="{Binding ShowSetup}">
+                <StackPanel Spacing="18">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Get set up" Classes="h2"/>
+                            <TextBlock Text="Steps 1 and 2 unlock your first check-in." FontSize="13" Classes="muted"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding SetupDoneText}" Classes="mono soft" FontSize="14"
+                                   VerticalAlignment="Center"/>
+                    </Grid>
+                    <ProgressBar Classes="setup" Minimum="0" Maximum="1" Value="{Binding SetupProgress}"/>
+                    <ItemsControl ItemsSource="{Binding SetupSteps}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><v:ResponsiveGrid MinItemWidth="220" Spacing="14" Balanced="True"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SetupStepViewModel">
+                                <Border Classes="setupStep" Classes.done="{Binding IsDone}" Classes.next="{Binding IsNext}">
+                                    <DockPanel>
+                                        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" ColumnSpacing="10" Margin="0,0,0,10">
+                                            <Border Classes="setupBadge" Classes.done="{Binding IsDone}" VerticalAlignment="Top">
+                                                <TextBlock Text="{Binding Number}" FontSize="13" FontWeight="Bold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="15" FontWeight="Bold"
+                                                       VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        </Grid>
+
+                                        <!-- Bottom: the button while to do, the result once done -->
+                                        <Panel DockPanel.Dock="Bottom" Margin="0,10,0,0">
+                                            <Button Classes="btn primary" Content="{Binding Cta}" HorizontalAlignment="Left"
+                                                    Command="{Binding OpenCommand}" IsEnabled="{Binding !IsLocked}">
+                                                <Button.IsVisible>
+                                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                        <Binding Path="IsTodo"/>
+                                                        <Binding Path="IsNext"/>
+                                                    </MultiBinding>
+                                                </Button.IsVisible>
+                                            </Button>
+                                            <Button Classes="btn outline strong" Content="{Binding Cta}" HorizontalAlignment="Left"
+                                                    Command="{Binding OpenCommand}" IsEnabled="{Binding !IsLocked}">
+                                                <Button.IsVisible>
+                                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                        <Binding Path="IsTodo"/>
+                                                        <Binding Path="IsOther"/>
+                                                    </MultiBinding>
+                                                </Button.IsVisible>
+                                            </Button>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" MinHeight="44" IsVisible="{Binding IsDone}">
+                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{StaticResource Accent}" StrokeThickness="2.8"
+                                                        Width="18" Height="18" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Result}" FontSize="13" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Panel>
+
+                                        <TextBlock Text="{Binding Text}" FontSize="13" Classes="soft" LineHeight="19" TextWrapping="Wrap"/>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
             </Border>
 
             <!-- ===== Streak hero ===== -->
@@ -695,6 +798,8 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                         <TextBlock Text="{Binding FriendsTitle}" FontSize="13" Classes="muted"/>
+                        <TextBlock Text="{Binding FriendsStale}" FontSize="12" Classes="muted" TextWrapping="Wrap"
+                                   IsVisible="{Binding FriendsStale, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                             <Button Grid.ColumnSpan="2" Classes="btn outline small" HorizontalAlignment="Stretch"
                                     Command="{Binding ShowFriendsCommand}" IsVisible="{Binding !HasFriends}">

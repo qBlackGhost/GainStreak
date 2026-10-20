@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using GymApp.Client;
 using GymApp.Contracts;
 using GymApp.Server.Data;
 using Microsoft.AspNetCore.Hosting;
@@ -39,6 +40,22 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return client;
     }
+
+    /// <summary>The app's API client on the in-memory server, with its own token store.</summary>
+    protected SocialApiClient Api(ITokenStore? tokens = null) => new(_factory.CreateClient(), tokens ?? new MemoryTokenStore());
+
+    /// <summary>A phone with <paramref name="username"/> registered and signed in through the app's AccountService.
+    /// Several phones register from one test client, so keep to the register rate limit (5 per test).</summary>
+    protected async Task<Phone> PhoneAsync(string username)
+    {
+        var phone = new Phone(tokens => Api(tokens));
+        _phones.Add(phone);
+        var r = await phone.Accounts.RegisterAsync(username, $"{username}@example.com", DefaultPassword);
+        Assert.True(r.Success, r.Error);
+        return phone;
+    }
+
+    private readonly List<Phone> _phones = [];
 
     /// <summary>Registers <paramref name="username"/> (email username@example.com) and returns a signed-in client.</summary>
     protected async Task<SignedIn> SignUpAsync(string username, string password = DefaultPassword, string device = "test phone")
@@ -80,6 +97,7 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        foreach (var phone in _phones) phone.Dispose();
         await using (var db = Db())
             await db.Database.EnsureDeletedAsync();
         await _factory.DisposeAsync();

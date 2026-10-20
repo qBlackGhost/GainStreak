@@ -15,6 +15,20 @@ public sealed record CheckInRequest(
     OsmType CityOsmType, long CityOsmId, string CityName,
     double? Latitude, double? Longitude);
 
+/// <summary>One day of <see cref="CheckInsUploadRequest"/>: the date and the same gym fields as <see cref="CheckInRequest"/>.</summary>
+public sealed record DatedCheckInRequest(
+    DateOnly Date,
+    OsmType? GymOsmType, long? GymOsmId, string GymName,
+    OsmType CityOsmType, long CityOsmId, string CityName,
+    double? Latitude, double? Longitude);
+
+/// <summary>
+/// Replaces every check-in the server holds for you (<c>PUT /v1/me/checkins</c>). At most 31 entries, no date twice.
+/// Entries older than the server keeps are dropped rather than refused, so a phone can always send its last 31 days.
+/// An empty list clears everything.
+/// </summary>
+public sealed record CheckInsUploadRequest(IReadOnlyList<DatedCheckInRequest> CheckIns);
+
 /// <summary>A friend's check-in: gym and day, never a time. Coordinates are null for a custom gym.</summary>
 public sealed record FriendCheckInResponse(
     int UserId, string Username, DateOnly Date,

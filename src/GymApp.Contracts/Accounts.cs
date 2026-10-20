@@ -13,6 +13,9 @@ public sealed record MeResponse(int Id, string Username, string Email, bool? Sha
 
 public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
+/// <summary>Same email rules as register; the current password is asked for, like any account change.</summary>
+public sealed record ChangeEmailRequest(string CurrentPassword, string Email);
+
 public sealed record DeleteAccountRequest(string Password);
 
 /// <summary>The form field a 400 or 409 is about, sent as the <c>field</c> extension of the ProblemDetails

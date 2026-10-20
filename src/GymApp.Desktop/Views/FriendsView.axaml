@@ -98,6 +98,8 @@
                        IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <TextBlock Text="{Binding StaleNotice}" Classes="muted" TextWrapping="Wrap"
+                       IsVisible="{Binding StaleNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
                 <StackPanel x:Name="LeftColumn" Spacing="24">

@@ -31,6 +31,21 @@ public class CheckInEndpointTests : ServerTest
     private static async Task<List<FriendCheckInResponse>> FriendsCheckInsAsync(SignedIn user, DateOnly since) =>
         (await user.Client.GetFromJsonAsync<List<FriendCheckInResponse>>($"/v1/friends/checkins?since={since:yyyy-MM-dd}", ApiFormat.Json))!;
 
+    private static DatedCheckInRequest Dated(DateOnly date, CheckInRequest g) =>
+        new(date, g.GymOsmType, g.GymOsmId, g.GymName, g.CityOsmType, g.CityOsmId, g.CityName, g.Latitude, g.Longitude);
+
+    private static Task<HttpResponseMessage> ReplaceAsync(SignedIn user, params DatedCheckInRequest[] checkIns) =>
+        user.Client.PutAsJsonAsync("/v1/me/checkins", new CheckInsUploadRequest(checkIns), ApiFormat.Json);
+
+    private static async Task ReplaceOkAsync(SignedIn user, params DatedCheckInRequest[] checkIns) =>
+        Assert.Equal(HttpStatusCode.NoContent, (await ReplaceAsync(user, checkIns)).StatusCode);
+
+    private async Task<List<(DateOnly Date, string Gym)>> StoredAsync()
+    {
+        await using var db = Db();
+        return (await db.CheckIns.OrderByDescending(c => c.Date).ToListAsync()).Select(c => (c.Date, c.GymName)).ToList();
+    }
+
     private static async Task MakeFriendsAsync(SignedIn a, SignedIn b)
     {
         Assert.Equal(HttpStatusCode.OK, (await a.Client.PostAsync($"/v1/friends/{b.User.Id}/request", null)).StatusCode);
@@ -201,5 +216,113 @@ public class CheckInEndpointTests : ServerTest
 
         await using var db = Db();
         Assert.Empty(await db.CheckIns.ToListAsync());
+    }
+
+    // --- Bulk replace ---
+
+    [Fact] public async Task Replace_ReplacesEveryOlderRow()
+    {
+        var (alice, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+        await PutOkAsync(bob, Today.AddDays(-5), OsmGym("Old"));
+        await PutOkAsync(bob, Today, OsmGym("Also old"));
+
+        await ReplaceOkAsync(bob, Dated(Today, OsmGym("New", 202)), Dated(Today.AddDays(-2), OsmGym("Newer list")));
+
+        Assert.Equal([(Today, "New"), (Today.AddDays(-2), "Newer list")], await StoredAsync());
+        Assert.Equal(["New", "Newer list"], (await FriendsCheckInsAsync(alice, Today.AddDays(-7))).Select(c => c.GymName));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(false)]
+    public async Task Replace_NotSharing_Is403_AndNothingIsStored(bool? share)
+    {
+        var (_, bob) = await FriendsAsync();
+        if (share is { } s) await ShareAsync(bob, s);
+
+        var response = await ReplaceAsync(bob, Dated(Today, OsmGym()));
+        Assert.Equal("Turn on sharing gym check-ins first.", await ProblemAsync(response, HttpStatusCode.Forbidden));
+        Assert.Empty(await StoredAsync());
+    }
+
+    [Fact] public async Task Replace_CustomGym_CoordinatesAreDropped()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+
+        await ReplaceOkAsync(bob, Dated(Today, CustomGym()), Dated(Today.AddDays(-1), OsmGym()));
+
+        await using var db = Db();
+        var rows = await db.CheckIns.OrderByDescending(c => c.Date).ToListAsync();
+        Assert.Equal((null, null, null), (rows[0].GymOsmId, rows[0].Latitude, rows[0].Longitude));
+        Assert.Equal((45.75, 21.23), (rows[1].Latitude, rows[1].Longitude));
+    }
+
+    [Fact] public async Task Replace_RepeatedDate_Is400_AndKeepsTheOldRows()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+        await PutOkAsync(bob, Today, OsmGym("Kept"));
+
+        var response = await ReplaceAsync(bob, Dated(Today.AddDays(-1), OsmGym("A")), Dated(Today.AddDays(-1), OsmGym("B")));
+        Assert.Equal("Each date can only be sent once.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+        Assert.Equal([(Today, "Kept")], await StoredAsync());
+    }
+
+    [Fact] public async Task Replace_MoreThan31Entries_Is400()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+
+        var entries = Enumerable.Range(0, 32).Select(i => Dated(Today.AddDays(-i), OsmGym())).ToArray();
+        Assert.Equal("Send at most 31 check-ins.", await ProblemAsync(await ReplaceAsync(bob, entries), HttpStatusCode.BadRequest));
+        await ReplaceOkAsync(bob, entries[..31]);
+    }
+
+    [Fact] public async Task Replace_OldEntries_AreDroppedNotRefused()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+
+        await ReplaceOkAsync(bob,
+            Dated(Today.AddDays(-31), OsmGym("Kept")),
+            Dated(Today.AddDays(-32), OsmGym("Dropped")),
+            Dated(Today.AddDays(-90), OsmGym("Dropped too")));
+
+        Assert.Equal([(Today.AddDays(-31), "Kept")], await StoredAsync());
+    }
+
+    [Fact] public async Task Replace_FutureDates_BeyondTheAllowance_AreRefused()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+
+        await ReplaceOkAsync(bob, Dated(Today.AddDays(2), OsmGym()));
+        var response = await ReplaceAsync(bob, Dated(Today, OsmGym()), Dated(Today.AddDays(3), OsmGym()));
+        Assert.Equal("A check-in can't be in the future.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+        Assert.Equal([(Today.AddDays(2), "World Class")], await StoredAsync());
+    }
+
+    [Fact] public async Task Replace_BadEntry_Is400_NamingItsDate()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+
+        var response = await ReplaceAsync(bob, Dated(Today, OsmGym()), Dated(Today.AddDays(-1), OsmGym() with { Latitude = 91 }));
+        Assert.Equal("2026-10-13: Those coordinates aren't on the map.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+        Assert.Empty(await StoredAsync());
+    }
+
+    [Fact] public async Task Replace_EmptyList_ClearsEverything()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+        await PutOkAsync(bob, Today, OsmGym());
+        await PutOkAsync(bob, Today.AddDays(-1), OsmGym());
+
+        await ReplaceOkAsync(bob);
+
+        Assert.Empty(await StoredAsync());
     }
 }

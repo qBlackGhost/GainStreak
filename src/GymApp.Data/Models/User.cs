@@ -12,6 +12,9 @@ public class User
     public string PasswordHash { get; set; } = "";   // never the plain password
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? RememberTokenHash { get; set; }
+    /// <summary>The linked social-server account, the real login since Phase 14; null for an account not moved online
+    /// (and in the TestBench's local mode). Email and PasswordHash are then its cache, for signing in offline.</summary>
+    public int? ServerUserId { get; set; }
 
     public int? SelectedSplitId { get; set; }
     public WorkoutSplit? SelectedSplit { get; set; }

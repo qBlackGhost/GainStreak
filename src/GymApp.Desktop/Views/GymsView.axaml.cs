@@ -53,7 +53,7 @@ public partial class GymsView : UserControl
 
         var map = new Map { BackColor = MapInk };
         var tiles = OpenStreetMap.CreateTileLayer(OsmHttp.UserAgent);   // the OSM tile policy asks for a real User-Agent
-        tiles.Opacity = 0.35;   // the light OSM tiles, dimmed onto the dark background (the OSM credit is Mapsui's own)
+        tiles.Opacity = 0.6;    // the light OSM tiles, dimmed onto the dark background (the OSM credit is Mapsui's own)
         map.Layers.Add(tiles);
         map.Layers.Add(_dots);
         map.Layers.Add(_friends);   // added after the dots: drawn on top
@@ -61,6 +61,7 @@ public partial class GymsView : UserControl
         FriendMap.Map = map;
         FriendMap.MapTapped += OnMapTapped;
         FriendMap.SizeChanged += (_, _) => ZoomToCityIfNeeded();
+        MapCard.SizeChanged += (_, e) => LayOutMapHeader(e.NewSize.Width);
 
         // The map zooms on the wheel; stop the event there so the page doesn't scroll too (small windows)
         FriendMap.AddHandler(PointerWheelChangedEvent, (_, e) => e.Handled = true, RoutingStrategies.Bubble, handledEventsToo: true);
@@ -84,6 +85,18 @@ public partial class GymsView : UserControl
         Columns.ColumnDefinitions = fit ? new ColumnDefinitions("1.6*,20,*") : new ColumnDefinitions("*");
         Columns.RowDefinitions = fit ? new RowDefinitions("*") : new RowDefinitions("Auto,Auto");
         PageScroll.VerticalScrollBarVisibility = fit ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto;
+    }
+
+    /// <summary>Below this card width the range and mode pills go under the title instead of beside it.</summary>
+    private const double MapHeaderMinWidth = 640;
+
+    private void LayOutMapHeader(double cardWidth)
+    {
+        var stacked = cardWidth < MapHeaderMinWidth;
+        Grid.SetRow(MapPills, stacked ? 1 : 0);
+        Grid.SetColumn(MapPills, stacked ? 0 : 1);
+        Grid.SetColumnSpan(MapPills, stacked ? 2 : 1);
+        MapPills.Margin = stacked ? new Thickness(0, 10, 0, 0) : default;
     }
 
     private void Attach(GymsViewModel? vm)

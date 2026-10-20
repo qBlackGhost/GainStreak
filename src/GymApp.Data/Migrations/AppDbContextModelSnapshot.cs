@@ -739,6 +739,27 @@ namespace GymApp.Data.Migrations
                     b.ToTable("SetLogs");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.SocialCache", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("FetchedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Json")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId", "Key");
+
+                    b.ToTable("SocialCache");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.SplitDay", b =>
                 {
                     b.Property<int>("Id")
@@ -958,6 +979,28 @@ namespace GymApp.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.SyncState", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("CheckInsDirtySince")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SharingDirtySince")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("StatsDirtySince")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("SyncStates");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -1010,6 +1053,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("SelectedVariantId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ServerUserId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("SplitStartDay")
                         .HasColumnType("INTEGER");
 
@@ -1027,6 +1073,9 @@ namespace GymApp.Data.Migrations
                     b.HasIndex("SelectedSplitId");
 
                     b.HasIndex("SelectedVariantId");
+
+                    b.HasIndex("ServerUserId")
+                        .IsUnique();
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -1383,6 +1432,17 @@ namespace GymApp.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.SocialCache", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.SplitDay", b =>
                 {
                     b.HasOne("GymApp.Data.Models.WorkoutSplit", "Split")
@@ -1403,6 +1463,17 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Split");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.SyncState", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("GymApp.Data.Models.SyncState", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.User", b =>

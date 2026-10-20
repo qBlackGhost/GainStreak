@@ -2,88 +2,224 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.Desktop.ViewModels"
              xmlns:svc="using:GymApp.Services"
+             xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.CheckInView"
              x:DataType="vm:CheckInViewModel">
-    <!-- The "I went today" popup, shown over Home -->
-    <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
-            BorderBrush="#40808080" BorderThickness="1" CornerRadius="8" Padding="16"
-            Width="400" MaxHeight="640" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <!-- The "I went today" popup over Home (design: Main board, check-in dialog). Each exercise is a box that turns
+         green when filled; each set is a chip you type kg and reps into, with last time's values as placeholders. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+
+        <!-- Exercise box -->
+        <Style Selector="Border.exercise">
+            <Setter Property="Padding" Value="14"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{StaticResource Line}"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.exercise.filled">
+            <Setter Property="BorderBrush" Value="#2E3A12"/>
+            <Setter Property="Background" Value="#0F1208"/>
+        </Style>
+
+        <!-- Set chip: "1  60 kg × 8" -->
+        <Style Selector="Border.chip">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="10,0,8,0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#2A2A2A"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.chip.warm">
+            <Setter Property="BorderBrush" Value="Transparent"/>   <!-- the dashed outline is drawn underneath -->
+        </Style>
+        <Style Selector="Border.chip.done">
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Background" Value="#1E1E1E"/>
+        </Style>
+        <Style Selector="Border.chip.warm.done">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.chip:focus-within">
+            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        </Style>
+        <Style Selector="TextBlock.chipText">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="#6E6E6E"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.chip.done TextBlock.chipText">
+            <Setter Property="Foreground" Value="{StaticResource Soft}"/>
+        </Style>
+        <Style Selector="TextBlock.chipTag">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+        </Style>
+
+        <!-- The kg and reps boxes inside a chip: no box of their own -->
+        <Style Selector="TextBox.chipBox">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="2,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="PlaceholderForeground" Value="#6E6E6E"/>
+            <Setter Property="HorizontalContentAlignment" Value="Right"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="MaxLength" Value="6"/>
+        </Style>
+        <Style Selector="TextBox.chipBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="TextBox.chipBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+
+        <!-- "Use last time" / "Filled" -->
+        <Style Selector="Button.chipBtn">
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+
+        <!-- Log workout, greyed out until enough exercises are filled -->
+        <Style Selector="Button.log">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="22,0"/>
+        </Style>
+        <Style Selector="Button.log:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="#161616"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#6E6E6E"/>
+        </Style>
+
+        <Style Selector="ComboBox.day">
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="BorderBrush" Value="#333333"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+    </UserControl.Styles>
+
+    <ThemeVariantScope RequestedThemeVariant="Dark">
+    <Border MaxWidth="560" MaxHeight="760" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+            Padding="24" CornerRadius="18" Background="#111111" BorderBrush="#333333" BorderThickness="1"
+            BoxShadow="0 24 80 0 #B3000000" TextElement.Foreground="White">
         <DockPanel>
-            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,8">
-                <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold"/>
-
-                <!-- Rest day: pick which day you trained -->
-                <StackPanel Spacing="4" IsVisible="{Binding ShowDayPicker}">
-                    <TextBlock Text="Rest day. Which workout did you do?" Opacity="0.8" TextWrapping="Wrap"/>
-                    <ComboBox ItemsSource="{Binding PickableDays}" SelectedItem="{Binding PickedDay}"
-                              HorizontalAlignment="Stretch">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="svc:CheckInDay">
-                                <TextBlock Text="{Binding Name}"/>
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
+            <!-- Title -->
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,0,0,16">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="Black" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Subtitle}" FontSize="13" Classes="muted" TextWrapping="Wrap"/>
                 </StackPanel>
+                <Button Grid.Column="1" Classes="icon" Width="36" Height="36" Padding="0" VerticalAlignment="Top"
+                        Foreground="{StaticResource Muted}" Command="{Binding CancelCommand}" IsCancel="True"
+                        ToolTip.Tip="Close" AutomationProperties.Name="Close">
+                    <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="18" Height="18"/>
+                </Button>
+            </Grid>
 
+            <!-- Rest day: pick which workout you did -->
+            <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,16" IsVisible="{Binding ShowDayPicker}">
+                <TextBlock Text="Rest day. Which workout did you do?" FontSize="13" Classes="soft"/>
+                <ComboBox Classes="day" ItemsSource="{Binding PickableDays}" SelectedItem="{Binding PickedDay}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="svc:CheckInDay">
+                            <TextBlock Text="{Binding Name}"/>
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
             </StackPanel>
 
-            <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,12,0,0">
-                <TextBlock Text="{Binding CounterText}" FontWeight="SemiBold" IsVisible="{Binding HasExercises}"/>
-                <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+            <!-- Footer: progress and the button -->
+            <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,16,0,0">
+                <TextBlock Text="{Binding Error}" Classes="error" FontSize="13" TextWrapping="Wrap"
                            IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-                    <Button Content="Cancel" Command="{Binding CancelCommand}" IsCancel="True"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                    <Button Grid.Column="1" Content="Log workout" Command="{Binding LogCommand}"
-                            IsEnabled="{Binding CanLog}" IsVisible="{Binding HasExercises}" Classes="btn primary"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                    <Button Grid.Column="1" Content="Go to Workouts" Command="{Binding OpenWorkoutsCommand}"
-                            IsVisible="{Binding CanOpenWorkouts}" Classes="btn primary"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                    <Button Grid.Column="1" Content="Go to Splits" Command="{Binding OpenSplitsCommand}"
-                            IsVisible="{Binding CanOpenSplits}" Classes="btn primary"
-                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding CounterText}" Classes="mono soft" FontSize="13" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="btn primary log" Content="Log workout" Command="{Binding LogCommand}"
+                            IsEnabled="{Binding CanLog}" IsVisible="{Binding HasExercises}"/>
+                    <Button Grid.Column="1" Classes="btn primary log" Content="Go to Workouts" Command="{Binding OpenWorkoutsCommand}"
+                            IsVisible="{Binding CanOpenWorkouts}"/>
+                    <Button Grid.Column="1" Classes="btn primary log" Content="Go to Splits" Command="{Binding OpenSplitsCommand}"
+                            IsVisible="{Binding CanOpenSplits}"/>
                 </Grid>
             </StackPanel>
 
             <!-- Nothing to fill in yet -->
-            <TextBlock Text="{Binding EmptyText}" TextWrapping="Wrap" Opacity="0.8" VerticalAlignment="Top"
-                       IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <Border Classes="exercise" VerticalAlignment="Top"
+                    IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{Binding EmptyText}" FontSize="14" Classes="soft" TextWrapping="Wrap"/>
+            </Border>
 
-            <ScrollViewer IsVisible="{Binding HasExercises}">
+            <!-- Exercises; only the list scrolls -->
+            <ScrollViewer IsVisible="{Binding HasExercises}" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding Exercises}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="12"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:CheckInExerciseViewModel">
-                            <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,8" Margin="0,0,12,0">
-                                <StackPanel Spacing="6">
-                                    <Grid ColumnDefinitions="*,Auto">
-                                        <StackPanel Spacing="0">
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
-                                                <TextBlock Text="✓" Foreground="SeaGreen" FontWeight="SemiBold"
-                                                           IsVisible="{Binding IsFilled}"/>
-                                            </StackPanel>
-                                            <TextBlock Text="{Binding PlanSummary}" FontSize="12" Opacity="0.7"/>
-                                            <TextBlock Text="{Binding LastSessionText}" FontSize="12"
-                                                       Foreground="{DynamicResource TextControlPlaceholderForeground}"
-                                                       TextWrapping="Wrap" IsVisible="{Binding HasLastSession}"/>
+                            <Border Classes="exercise" Classes.filled="{Binding IsFilled}">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding SubText}" FontSize="12" Classes="muted" TextWrapping="Wrap"
+                                                       ToolTip.Tip="{Binding LastSessionText}"/>
                                         </StackPanel>
-                                        <Button Grid.Column="1" Content="Fill from previous workout" FontSize="12"
-                                                Command="{Binding FillFromPreviousCommand}" IsVisible="{Binding HasLastSession}"
-                                                VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Classes="btn outline chipBtn" Content="Use last time"
+                                                VerticalAlignment="Center" Command="{Binding FillFromPreviousCommand}"
+                                                IsVisible="{Binding ShowUseLast}"/>
+                                        <Border Grid.Column="1" CornerRadius="8" Padding="12,0" MinHeight="36" VerticalAlignment="Center"
+                                                Background="{StaticResource Accent}" IsVisible="{Binding IsFilled}">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="2.8" Width="12" Height="12"/>
+                                                <TextBlock Text="Filled" FontSize="12" FontWeight="SemiBold" Foreground="Black"/>
+                                            </StackPanel>
+                                        </Border>
                                     </Grid>
+
                                     <ItemsControl ItemsSource="{Binding Rows}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6"/></ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="vm:CheckInSetRowViewModel">
-                                                <Grid ColumnDefinitions="90,*,*" ColumnSpacing="8" Margin="0,0,0,4">
-                                                    <TextBlock Text="{Binding Label}" VerticalAlignment="Center" Opacity="0.8"/>
-                                                    <TextBox Grid.Column="1" Text="{Binding WeightText}" PlaceholderText="{Binding WeightHint}"/>
-                                                    <TextBox Grid.Column="2" Text="{Binding RepsText}" PlaceholderText="{Binding RepsHint}"/>
-                                                </Grid>
+                                                <Panel ToolTip.Tip="{Binding Label}">
+                                                    <Rectangle Stroke="#333333" StrokeThickness="1" StrokeDashArray="3,3" RadiusX="8" RadiusY="8"
+                                                               IsVisible="{Binding IsWarmup}"/>
+                                                    <Border Classes="chip" Classes.warm="{Binding IsWarmup}" Classes.done="{Binding IsComplete}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Classes="chipText chipTag" Text="{Binding Tag}"/>
+                                                            <TextBox Classes="chipBox" Width="44" Text="{Binding WeightText}"
+                                                                     PlaceholderText="{Binding WeightHint}"
+                                                                     AutomationProperties.Name="{Binding Label, StringFormat='{}{0} kg'}"/>
+                                                            <TextBlock Classes="chipText" Text=" kg ×"/>
+                                                            <TextBox Classes="chipBox" Width="34" Text="{Binding RepsText}"
+                                                                     PlaceholderText="{Binding RepsHint}"
+                                                                     AutomationProperties.Name="{Binding Label, StringFormat='{}{0} reps'}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </Panel>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
-                                    <TextBlock Text="{Binding Info}" FontSize="12" Opacity="0.8" TextWrapping="Wrap"
+
+                                    <TextBlock Text="{Binding Info}" FontSize="12" Classes="muted" TextWrapping="Wrap"
                                                IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                             </Border>
@@ -93,4 +229,5 @@
             </ScrollViewer>
         </DockPanel>
     </Border>
+    </ThemeVariantScope>
 </UserControl>

@@ -21,8 +21,8 @@ public partial class HomeViewModel : ViewModelBase
     private readonly PointsService _points;
     private readonly GymService _gyms;
     private readonly ProfileService _profiles;
-    private readonly FriendService _friends;
-    private readonly LeaderboardService _leaderboard;
+    private readonly IFriendService _friends;
+    private readonly ILeaderboardService _leaderboard;
     private readonly SetService _sets;
     private readonly WorkoutMenuService _menu;
     private readonly MissedDayService _missedDays;
@@ -31,11 +31,12 @@ public partial class HomeViewModel : ViewModelBase
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
                          PointsService points, GymService gyms, ProfileService profiles,
-                         FriendService friends, LeaderboardService leaderboard,
+                         IFriendService friends, ILeaderboardService leaderboard,
                          SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
-                         GymSummaryService gymSummary)
+                         GymSummaryService gymSummary, IAccountService accounts)
     {
         _session = session;
+        _accounts = accounts;
         _shell = shell;
         _workouts = workouts;
         _streaks = streaks;
@@ -53,7 +54,15 @@ public partial class HomeViewModel : ViewModelBase
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
+    private readonly IAccountService _accounts;
+
     public string Username => _session.CurrentUser?.Username ?? "";
+
+    /// <summary>"You're offline. Last updated 14:05." under the friends card, when the board came from the cache.</summary>
+    [ObservableProperty] public partial string? FriendsStale { get; set; }
+
+    /// <summary>Signed in with the cached password: the server couldn't be reached.</summary>
+    public string? OfflineNotice => _session.SignedInOffline ? "You're offline. Friends will update when you're back online." : null;
     public string Initials => Username.Length == 0 ? "?" : Username[..Math.Min(2, Username.Length)].ToUpperInvariant();
     public string DateText => AppClock.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
     public string Greeting => AppClock.Now.Hour switch
@@ -143,6 +152,12 @@ public partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string CaloriesTitle { get; set; } = "";
     [ObservableProperty] public partial string CaloriesHint { get; set; } = "";
     [ObservableProperty] public partial string? GoalReviewHint { get; set; }
+
+    // ===== Get set up (design: FirstTime board); shown until all four steps are done =====
+    [ObservableProperty] public partial IReadOnlyList<SetupStepViewModel> SetupSteps { get; set; } = [];
+    [ObservableProperty] public partial bool ShowSetup { get; set; }
+    [ObservableProperty] public partial string SetupDoneText { get; set; } = "";
+    [ObservableProperty] public partial double SetupProgress { get; set; }
     [ObservableProperty] public partial string CaloriesInput { get; set; } = "";
     [ObservableProperty] public partial string LogCaloriesLabel { get; set; } = "Log";
     [ObservableProperty] public partial string? CaloriesError { get; set; }
@@ -211,6 +226,7 @@ public partial class HomeViewModel : ViewModelBase
             ApplyPoints(points);
             await RefreshGymAsync(user.Id);
             await RefreshCaloriesAsync(user.Id);
+            await RefreshSetupAsync(user.Id);
         }
         catch (Exception)
         {
@@ -299,7 +315,9 @@ public partial class HomeViewModel : ViewModelBase
             HasFriends = board is { IsAlone: false };
             FriendsTitle = board is { IsAlone: false, You: { } you }
                 ? $"#{you.Rank} of {board.Rows.Count} {(IsAllTime ? "all time" : "this week")}"
+                : board is { IsStale: true } ? "Friends will show when you're back online."
                 : "Add friends to compete.";
+            FriendsStale = board is { IsStale: true, FetchedAt: not null } ? StaleText.For(board) : null;
             Board = board is { IsAlone: false }
                 ? board.Rows.Take(BoardRows).Select(r => new BoardRowViewModel(r)).ToList()
                 : [];
@@ -307,6 +325,7 @@ public partial class HomeViewModel : ViewModelBase
         catch (Exception)
         {
             HasFriends = false;
+            FriendsStale = null;
             FriendsTitle = "Could not load your friends.";
             Board = [];
         }
@@ -324,6 +343,56 @@ public partial class HomeViewModel : ViewModelBase
     {
         IsAllTime = true;
         if (_session.CurrentUser is { } user) await RefreshFriendsAsync(user.Id);
+    }
+
+    /// <summary>The four first-time steps: a split and exercises for its day (these unlock check-in), a calorie goal,
+    /// and a home city. Each one reads what the user already has, so the card fills itself in as they go.</summary>
+    private async Task RefreshSetupAsync(int userId)
+    {
+        var checkIn = await _workouts.GetCheckInAsync(userId);
+        var menu = checkIn.HasSplit ? await _menu.GetAsync(userId) : null;
+        var calories = await _calories.GetAsync(userId);
+        var city = await _profiles.GetHomeCityAsync(userId);
+
+        var day = checkIn.Day;
+        var dayName = day?.Name ?? "your workout";
+        var splitResult = menu is null ? null
+            : checkIn.PlannedDay is { } planned ? $"{menu.SplitName} · today: {planned.Name}" : $"{menu.SplitName} · rest today";
+        var exerciseCount = checkIn.Exercises.Count;
+        var goal = calories?.Goal is { Goal: { } kcal } g ? $"{CalorieGoals.DisplayName(g.GoalType)} · {CalorieGoals.K(kcal)} kcal" : null;
+
+        var steps = new List<SetupStepViewModel>
+        {
+            new(1, "Pick your split",
+                "Choose a weekly plan, its variant and the day your first workout falls on. PPL and Upper / Lower are good starts.",
+                "Choose a split", splitResult, isLocked: false, () => _shell().ShowSplits()),
+            new(2, $"Add exercises to {dayName}",
+                checkIn.PlannedDay is not null
+                    ? $"Today is {dayName}. Pick a few exercises and planned sets so you can check in with today's sets."
+                    : "Pick a few exercises and planned sets for your workout days, so you can check in with your sets.",
+                day is null ? "Open Workouts" : $"Open {dayName}",
+                exerciseCount > 0 ? $"{exerciseCount} exercise{(exerciseCount == 1 ? "" : "s")} added" : null,
+                isLocked: !checkIn.HasSplit, () => OpenSetupDay(menu, day)),
+            new(3, "Set your calorie goal",
+                "Enter your body data and choose lose, maintain or gain to get a suggested daily target.",
+                "Open Calories", goal, isLocked: false, () => _shell().ShowCalories()),
+            new(4, "Choose your home city",
+                "Loads the gyms near you, so you can log where you trained after checking in.",
+                "Choose city", city?.Name, isLocked: false, () => _shell().ShowGyms(chooseCity: true)),
+        };
+        if (steps.FirstOrDefault(x => x.IsTodo) is { } next) next.IsNext = true;
+
+        var done = steps.Count(x => x.IsDone);
+        SetupSteps = steps;
+        SetupDoneText = $"{done} / {steps.Count} done";
+        SetupProgress = done / (double)steps.Count;
+        ShowSetup = done < steps.Count;
+    }
+
+    private void OpenSetupDay(WorkoutMenu? menu, CheckInDay? day)
+    {
+        if (menu?.Days.FirstOrDefault(d => d.SplitDayId == day?.SplitDayId) is { } menuDay) _shell().ShowDay(menuDay, menu.SplitName);
+        else _shell().ShowWorkouts();
     }
 
     private async Task RefreshCaloriesAsync(int userId)
@@ -730,7 +799,7 @@ public partial class HomeViewModel : ViewModelBase
     [RelayCommand]
     private void ShowPointsHistory() => _shell().ShowPointsHistory();
     [RelayCommand]
-    private void Logout() => _session.SignOut();
+    private Task Logout() => _accounts.LogOutAsync();
     [RelayCommand]
     private void ShowSplits() => _shell().ShowSplits();
     [RelayCommand]

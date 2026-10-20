@@ -94,7 +94,7 @@
 
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <v:Icon Data="{StaticResource IcLock}" Stroke="{StaticResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
-                <TextBlock Text="Your account and workouts are stored only on this computer." FontSize="12" Classes="muted"/>
+                <TextBlock Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" Classes="muted" TextWrapping="Wrap" MaxWidth="380"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

@@ -12,6 +12,21 @@ using GymApp.Social;
 
 namespace GymApp.Desktop.ViewModels;
 
+/// <summary>The "you're offline" line for a read that came from the cache, or null when it's fresh.</summary>
+internal static class StaleText
+{
+    public static string? For(ICachedResult? result)
+    {
+        if (result is not { IsStale: true }) return null;
+        if (result.FetchedAt is not { } at) return "You're offline. Friends will show when you're back online.";
+        var local = at.ToLocalTime();
+        var when = local.Date == DateTime.Now.Date
+            ? local.ToString("HH:mm", CultureInfo.InvariantCulture)
+            : local.ToString("d MMM, HH:mm", CultureInfo.InvariantCulture);
+        return $"You're offline. Last updated {when}.";
+    }
+}
+
 /// <summary>"CR" for an avatar: the first two letters of a username.</summary>
 internal static class Initials
 {
@@ -100,15 +115,17 @@ public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) 
 }
 
 /// <summary>The friends screen: the leaderboard (this week or all time), your friends, the username search and
-/// pending requests. Only reads results from FriendService and LeaderboardService.</summary>
+/// pending requests. Only reads results from the friend and leaderboard services (local or the server's). User ids in
+/// the rows are the service's own (server ids in remote mode): they're passed back as they came, never compared with
+/// the signed-in user's local id.</summary>
 public partial class FriendsViewModel : ViewModelBase
 {
-    private readonly FriendService _friends;
-    private readonly LeaderboardService _board;
+    private readonly IFriendService _friends;
+    private readonly ILeaderboardService _board;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
 
-    public FriendsViewModel(FriendService friends, LeaderboardService board, SessionService session, Func<MainViewModel> shell)
+    public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell)
     {
         _friends = friends;
         _board = board;
@@ -154,6 +171,7 @@ public partial class FriendsViewModel : ViewModelBase
             var period = IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek;
             var view = await _board.GetAsync(me, period);
             if (view is null || IsAllTime != (view.Period == LeaderboardPeriod.AllTime)) return levels;   // toggled meanwhile
+            BoardStale = StaleText.For(view);
             Board.Clear();
             foreach (var r in view.Rows) Board.Add(new FriendsBoardRowViewModel(r));
             foreach (var r in view.Rows) levels[r.UserId] = r.Level;
@@ -182,6 +200,10 @@ public partial class FriendsViewModel : ViewModelBase
     [ObservableProperty] public partial string? Notice { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
+    /// <summary>"You're offline. Last updated 14:05." over the lists, when they came from the cache.</summary>
+    [ObservableProperty] public partial string? StaleNotice { get; set; }
+    private string? BoardStale { get; set; }
+
     private int? UserId => _session.CurrentUser?.Id;
 
     private async Task LoadAsync()
@@ -208,6 +230,7 @@ public partial class FriendsViewModel : ViewModelBase
             HasOutgoing = Outgoing.Count > 0;
             HasNoRequests = !HasIncoming && !HasOutgoing;
             IncomingCount = Incoming.Count;
+            StaleNotice = StaleText.For(friends as ICachedResult) ?? StaleText.For(requests) ?? BoardStale;
             SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
         }
         catch (Exception)

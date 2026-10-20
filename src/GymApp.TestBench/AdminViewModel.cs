@@ -91,7 +91,18 @@ public partial class AdminViewModel : ObservableObject
     public ObservableCollection<UserItem> Users { get; } = [];
     [ObservableProperty] public partial UserItem? SelectedUser { get; set; }
 
+    // ===== Social mode =====
+    public bool IsServerSocial => _settings.ServerSocial;
+    public bool IsLocalSocial => !_settings.ServerSocial;
+    public string SocialModeText => _settings.ServerSocial
+        ? "Server: the app's own wiring. Sign in with a real account; the clock must stay within 2 days of today."
+        : "Local: accounts and friends on this computer only. The clock moves freely.";
+    public string SwitchSocialLabel => _settings.ServerSocial ? "Switch to Local" : "Switch to Server";
+
     [RelayCommand]
+    private void SwitchSocial() => Restart(() => _settings.ServerSocial = !_settings.ServerSocial);
+
+    [RelayCommand(CanExecute = nameof(IsLocalSocial))]
     private Task SignInAs() => RunAsync(async () =>
     {
         if (SelectedUser is not { } pick) return "Pick a user first.";
@@ -103,10 +114,11 @@ public partial class AdminViewModel : ObservableObject
     }, reloadHome: false);
 
     [RelayCommand]
-    private Task SignOut() => RunAsync(() =>
+    private Task SignOut() => RunAsync(async () =>
     {
-        _session.SignOut();
-        return Task.FromResult("Signed out.");
+        // Through the account service, so Server mode also forgets the token and the cached friends
+        await App.Services.GetRequiredService<IAccountService>().LogOutAsync();
+        return "Signed out.";
     }, reloadHome: false);
 
     [RelayCommand] private Task ReloadUsers() => LoadUsersAsync();
@@ -242,13 +254,14 @@ public partial class AdminViewModel : ObservableObject
     [RelayCommand]
     private void OpenDataFolder() => Process.Start(new ProcessStartInfo(BenchSettings.DataDir) { UseShellExecute = true });
 
-    [RelayCommand] private void ResetEmpty() => RestartWith(DataReset.Empty);
-    [RelayCommand] private void CopyRealData() => RestartWith(DataReset.CopyReal);
+    [RelayCommand] private void ResetEmpty() => Restart(() => _settings.PendingReset = DataReset.Empty);
+    [RelayCommand] private void CopyRealData() => Restart(() => _settings.PendingReset = DataReset.CopyReal);
 
-    /// <summary>The reset runs at the next start, when nothing has the database open; so start a new copy and quit.</summary>
-    private void RestartWith(DataReset reset)
+    /// <summary>Resets and the social mode take effect at the next start, when nothing has the database open and the
+    /// services are wired again; so save the change, start a new copy and quit.</summary>
+    private void Restart(Action change)
     {
-        _settings.PendingReset = reset;
+        change();
         _settings.Save();
 
         var self = Environment.ProcessPath!;
