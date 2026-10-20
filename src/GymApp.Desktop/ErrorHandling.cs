@@ -12,7 +12,7 @@ namespace GymApp.Desktop;
 /// </summary>
 public static class ErrorHandling
 {
-    public const string UserMessage = "Something went wrong. The details were saved to errors.log in the app's data folder.";
+    public const string UserMessage = "Something went wrong. The details were saved: Feedback → Report a problem attaches them.";
 
     /// <summary>Hooks the three places an unhandled error can surface. <paramref name="show"/> runs on the UI thread.</summary>
     public static void Install(ErrorLog log, Action<string> show)

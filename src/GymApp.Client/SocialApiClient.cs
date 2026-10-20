@@ -19,15 +19,19 @@ public sealed class SocialApiClient
     private readonly HttpClient _http;
     private readonly ITokenStore _tokens;
     private readonly TimeSpan _timeout;
+    private readonly string? _appVersion;
     private int _offline;
 
     /// <param name="http">Its <see cref="HttpClient.BaseAddress"/> is the server (see <see cref="ServerAddress"/>).</param>
     /// <param name="timeout">How long a call may take before it counts as offline; <see cref="DefaultTimeout"/> if null.</param>
-    public SocialApiClient(HttpClient http, ITokenStore tokens, TimeSpan? timeout = null)
+    /// <param name="appVersion">Sent as <see cref="ClientVersions.Header"/> on every call, so the server can turn away
+    /// builds that are too old. Null sends none (a server with a minimum version then refuses every call).</param>
+    public SocialApiClient(HttpClient http, ITokenStore tokens, TimeSpan? timeout = null, string? appVersion = null)
     {
         _http = http;
         _tokens = tokens;
         _timeout = timeout ?? DefaultTimeout;
+        _appVersion = appVersion;
     }
 
     /// <summary>A signed-in call got 401: the token expired or was revoked. Not raised by login (a wrong password)
@@ -36,6 +40,9 @@ public sealed class SocialApiClient
 
     /// <summary>A call reached the server after the previous one was offline.</summary>
     public event EventHandler? BackOnline;
+
+    /// <summary>The server refused this build as too old (426). Carries the server's message to show.</summary>
+    public event EventHandler<string>? UpdateRequired;
 
     // --- Accounts ---
 
@@ -118,6 +125,12 @@ public sealed class SocialApiClient
     public Task<ApiResult<List<FriendCheckInResponse>>> GetFriendCheckInsAsync(DateOnly since, CancellationToken ct = default) =>
         SendAsync<List<FriendCheckInResponse>>(HttpMethod.Get, $"v1/friends/checkins?since={Date(since)}", null, ct);
 
+    // --- Feedback ---
+
+    /// <summary>A problem report or an idea from the Feedback popup; scrub the report first (<see cref="FeedbackRules.Scrub"/>).</summary>
+    public Task<ApiResult> SendFeedbackAsync(FeedbackRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "v1/feedback", request, ct);
+
     // --- Plumbing ---
 
     private static string Date(DateOnly date) => date.ToString(ApiFormat.Date, CultureInfo.InvariantCulture);
@@ -142,6 +155,7 @@ public sealed class SocialApiClient
         using var request = new HttpRequestMessage(method, path);
         if (body is not null) request.Content = JsonContent.Create(body, body.GetType(), options: ApiFormat.Json);
         if (_tokens.Get() is { } token) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        if (_appVersion is not null) request.Headers.TryAddWithoutValidation(ClientVersions.Header, _appVersion);
 
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(_timeout);
@@ -183,6 +197,8 @@ public sealed class SocialApiClient
             BackOnline?.Invoke(this, EventArgs.Empty);
         if (result.Status == 401 && expiresSession)
             SessionExpired?.Invoke(this, EventArgs.Empty);
+        if (result.IsUpdateRequired)
+            UpdateRequired?.Invoke(this, result.Error!);
         return result;
     }
 

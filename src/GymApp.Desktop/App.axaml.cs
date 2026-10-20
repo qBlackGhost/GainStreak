@@ -55,7 +55,10 @@ public partial class App : Application
         MacDockIcon.Apply();
         Services = AppServices.Create(LocalSocial).BuildServiceProvider();
 
-        var log = new ErrorLog(AppDbContext.DataDirectory);
+        var log = Services.GetRequiredService<ErrorLog>();
+        // The server's "please update" (426), kept until the main window exists to show it
+        MainViewModel? shell = null;
+        string? updateNotice = null;
         var desktop = ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
 
         try
@@ -86,6 +89,11 @@ public partial class App : Application
                 var accounts = Services.GetRequiredService<AccountService>();
                 var api = Services.GetRequiredService<SocialApiClient>();
                 api.SessionExpired += (_, _) => Dispatcher.UIThread.Post(() => _ = accounts.EndSessionAsync());
+                api.UpdateRequired += (_, message) => Dispatcher.UIThread.Post(() =>
+                {
+                    updateNotice = message;
+                    if (shell is not null) shell.UpdateNotice = message;
+                });
 
                 // Upload what's waiting at sign-in and restore, when a request gets through after being offline,
                 // and every 15 minutes (the window coming to the front is wired below)
@@ -108,7 +116,8 @@ public partial class App : Application
             return;
         }
 
-        var main = Services.GetRequiredService<MainViewModel>();
+        var main = shell = Services.GetRequiredService<MainViewModel>();
+        main.UpdateNotice ??= updateNotice;
         ErrorHandling.Install(log, message => main.GlobalError = message);
         if (desktop is not null)
         {

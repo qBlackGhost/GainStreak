@@ -71,6 +71,50 @@ namespace GymApp.Server.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.FeedbackEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AppVersion")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ForwardedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Report")
+                        .HasMaxLength(110000)
+                        .HasColumnType("character varying(110000)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(5000)
+                        .HasColumnType("character varying(5000)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Feedback", (string)null);
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.Friendship", b =>
                 {
                     b.Property<long>("Id")
@@ -223,6 +267,15 @@ namespace GymApp.Server.Data.Migrations
                 });
 
             modelBuilder.Entity("GymApp.Server.Data.CheckIn", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.FeedbackEntry", b =>
                 {
                     b.HasOne("GymApp.Server.Data.User", null)
                         .WithMany()

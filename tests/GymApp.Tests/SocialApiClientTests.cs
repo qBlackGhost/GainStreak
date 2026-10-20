@@ -207,6 +207,56 @@ public class SocialApiClientTests
 
         Assert.Equal([null, "Bearer abc", null], h.Requests.Select(r => r.Headers.Authorization?.ToString()));
     }
+
+    // --- Version check ---
+
+    [Fact] public async Task AppVersion_IsSentOnEveryCall_WhenGiven()
+    {
+        var h = Status(HttpStatusCode.NoContent);
+        await new SocialApiClient(new HttpClient(h) { BaseAddress = Base }, new MemoryTokenStore(), appVersion: "0.15.0").AcceptAsync(1);
+        await Api(h).AcceptAsync(1);
+
+        Assert.Equal(["0.15.0"], h.Requests[0].Headers.GetValues(ClientVersions.Header));
+        Assert.False(h.Requests[1].Headers.Contains(ClientVersions.Header));
+    }
+
+    [Fact] public async Task UpgradeRequired_RaisesUpdateRequired_WithTheServersMessage_AndNotSessionExpired()
+    {
+        var api = Api(Status(HttpStatusCode.UpgradeRequired, Problem(426, "Too old. Update the app.")), "tok");
+        var messages = new List<string>();
+        var expired = 0;
+        api.UpdateRequired += (_, m) => messages.Add(m);
+        api.SessionExpired += (_, _) => expired++;
+
+        var r = await api.GetFriendsAsync();
+
+        Assert.True(r.IsUpdateRequired);
+        Assert.False(r.IsOffline);
+        Assert.Equal(["Too old. Update the app."], messages);
+        Assert.Equal(0, expired);
+    }
+
+    [Fact] public async Task UpgradeRequired_WithNoBody_HasItsOwnMessage()
+    {
+        var api = Api(Status(HttpStatusCode.UpgradeRequired));
+        var r = await api.LoginAsync(new LoginRequest("alice", "pw", "phone"));
+        Assert.Equal(ApiResult.UpdateRequiredMessage, r.Error);
+    }
+
+    [Theory]
+    [InlineData("0.15.0", 0, 15, 0)]
+    [InlineData("0.15", 0, 15, 0)]
+    [InlineData(" 1.2.3-beta ", 1, 2, 3)]
+    [InlineData("0.15.1+abc123", 0, 15, 1)]
+    public void ClientVersions_Parse(string text, int major, int minor, int patch) =>
+        Assert.Equal(new Version(major, minor, patch), ClientVersions.Parse(text));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("latest")]
+    [InlineData("1")]
+    public void ClientVersions_Parse_NotAVersion_IsNull(string? text) => Assert.Null(ClientVersions.Parse(text));
 }
 
 public class TokenStoreTests : IDisposable

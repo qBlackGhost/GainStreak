@@ -3,6 +3,7 @@ using GymApp.Server;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
 using GymApp.Server.Endpoints;
+using GymApp.Server.Feedback;
 using GymApp.Server.Friends;
 using GymApp.Social;
 using Microsoft.AspNetCore.Authentication;
@@ -20,6 +21,14 @@ var missing =
     : !migrateOnly && builder.Environment.IsProduction() && string.IsNullOrWhiteSpace(builder.Configuration["AllowedHosts"])
         ? "Set AllowedHosts to the server's host name(s), separated by ';'."
     : null;
+// The oldest app build the API accepts (unset: any); a value that isn't a version is a startup error like the above
+Version? minClientVersion = null;
+try { minClientVersion = ClientVersionCheck.ReadMinimum(builder.Configuration); }
+catch (InvalidOperationException e) { missing ??= e.Message; }
+// Where feedback is forwarded (unset: only stored); a value that isn't an https URL is a startup error too
+Uri? discordWebhook = null;
+try { discordWebhook = DiscordFeedbackForwarder.ReadWebhook(builder.Configuration); }
+catch (InvalidOperationException e) { missing ??= e.Message; }
 if (missing is not null)
 {
     Console.Error.WriteLine(missing);
@@ -38,6 +47,13 @@ builder.Services.ConfigureHttpJsonOptions(o => ApiFormat.Configure(o.SerializerO
 builder.Services.AddProblemDetails();
 builder.Services.AddGymRateLimits();
 builder.Services.AddHostedService<CheckInCleanup>();
+builder.Services.AddSingleton<FeedbackQueue>();
+if (discordWebhook is not null)
+{
+    builder.Services.AddHttpClient(DiscordFeedbackForwarder.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
+    builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<DiscordFeedbackForwarder>(sp, discordWebhook));
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<DiscordFeedbackForwarder>());
+}
 builder.Services.AddHealthChecks().AddDbContextCheck<ServerDbContext>();
 builder.Services.AddTrustedProxies(builder.Configuration);
 
@@ -64,6 +80,8 @@ if (migrateOnly || app.Environment.IsDevelopment())
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+// Before sign-in, so an old build gets "please update" even at login, not a 401 it would misread
+app.UseClientVersionCheck(minClientVersion);
 app.UseAuthentication();
 app.UseAuthorization();
 // After authentication, so the global limit can be per signed-in user
@@ -74,6 +92,7 @@ app.MapAccounts();
 app.MapFriends();
 app.MapStats();
 app.MapCheckIns();
+app.MapFeedback();
 
 app.Run();
 

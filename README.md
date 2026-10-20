@@ -43,7 +43,7 @@ The database is created and migrated on first start, in:
 - macOS: `~/Library/Application Support/GymApp/`
 - Windows: `%LOCALAPPDATA%\GymApp\`
 
-The same folder holds `session.token` (the server session that keeps you signed in, readable only by you) and `errors.log` (unexpected errors). To run against a copy of your data, set `GYMAPP_DATA_DIR` to another folder.
+The same folder holds `session.token` (the server session that keeps you signed in, readable only by you) and `errors.log` (unexpected errors, each stamped with the app version and system). Testers send it with **Feedback** (the sidebar's Support section) → Report a problem → Send, which posts their note and the report to the server (user names are taken out of file paths first). If sending fails, "Copy instead" puts it on the clipboard. To run against a copy of your data, set `GYMAPP_DATA_DIR` to another folder.
 
 The app needs the social server to register and to sign in for the first time on a device; see [Running the app against a local server](#running-the-app-against-a-local-server).
 
@@ -100,6 +100,8 @@ dotnet run --project src/GymApp.Server
 dotnet run --project src/GymApp.Desktop
 ```
 
+To try feedback forwarding locally, give the dev server a webhook: `dotnet user-secrets set Feedback:DiscordWebhookUrl "https://discord.com/api/webhooks/..." --project src/GymApp.Server`.
+
 To use another server, set `GYMAPP_SERVER_URL` before starting the app, e.g. a server on another machine on your network:
 
 ```bash
@@ -130,6 +132,8 @@ Settings come from environment variables only:
 |---|---|
 | `ConnectionStrings__Social` | The Postgres connection string |
 | `AllowedHosts` | The host name(s) clients use, separated by `;`. Required |
+| `MinClientVersion` | Optional. The oldest app version the API accepts, e.g. `0.15.0`. Older builds, and builds from before 0.15 (which don't send their version), get a 426 and show "please update"; workouts keep working on the device. Unset, every build is accepted |
+| `Feedback__DiscordWebhookUrl` | Optional. A Discord webhook (Channel settings → Integrations → Webhooks → New Webhook → Copy URL). Each problem report or idea from the app is posted there, the error report as an attached file. Unset, feedback is only stored in the `Feedback` table. Keep it secret: anyone with the URL can post to the channel |
 | `ForwardedHeaders__KnownNetworks__0` (`__1`, …) | The proxy's network in CIDR form, e.g. `10.0.0.0/8`, if it isn't on the same machine. Only these may set the client IP |
 
 HTTPS ends at the host's proxy; the container listens on plain HTTP on port 8080 and runs as a non-root user. Migrations never run on start: apply them first with the same image.

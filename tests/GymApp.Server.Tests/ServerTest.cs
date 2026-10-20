@@ -25,10 +25,16 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
 
     private WebApplicationFactory<Program> _factory = null!;
 
+    /// <summary>The server's MinClientVersion setting; unset (every build accepted) unless a test class overrides it.</summary>
+    protected virtual string? MinClientVersion => null;
+
     /// <summary>A client with no sign-in.</summary>
     protected HttpClient Client { get; private set; } = null!;
 
     /// <summary>A context on this test's database, for seeding and checking rows directly.</summary>
+    /// <summary>The server's services, for the ones a test drives directly (the feedback queue and forwarder).</summary>
+    protected IServiceProvider Services => _factory.Services;
+
     protected ServerDbContext Db() => _factory.Services.CreateScope().ServiceProvider.GetRequiredService<ServerDbContext>();
 
     public const string DefaultPassword = "correct horse 1";
@@ -42,7 +48,8 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
     }
 
     /// <summary>The app's API client on the in-memory server, with its own token store.</summary>
-    protected SocialApiClient Api(ITokenStore? tokens = null) => new(_factory.CreateClient(), tokens ?? new MemoryTokenStore());
+    protected SocialApiClient Api(ITokenStore? tokens = null, string? appVersion = null) =>
+        new(_factory.CreateClient(), tokens ?? new MemoryTokenStore(), appVersion: appVersion);
 
     /// <summary>A phone with <paramref name="username"/> registered and signed in through the app's AccountService.
     /// Several phones register from one test client, so keep to the register rate limit (5 per test).</summary>
@@ -89,6 +96,7 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
             .UseEnvironment("Testing")
             .UseSetting("ConnectionStrings:Social", postgres.ConnectionString($"test_{Guid.NewGuid():N}"))
+            .UseSetting(ClientVersionCheck.SettingName, MinClientVersion)
             .ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock)));
         await using (var db = Db())
             await db.Database.MigrateAsync();

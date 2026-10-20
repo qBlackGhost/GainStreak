@@ -63,14 +63,17 @@ public class AccountService(
             return SignedIn(user, r.Value.Token);
         }
 
-        if (r.IsOffline)
+        // Offline, or this build is too old for the server: this phone's own account still signs in from its cache,
+        // so workouts can be logged; friends show cached data until there's a connection (or an update)
+        if (r.IsOffline || r.IsUpdateRequired)
         {
             await using var db = await dbFactory.CreateDbContextAsync();
             var cached = await FindLocalAsync(db, login, linked: true);
             if (cached is null || !PasswordHasher.Verify(password, cached.PasswordHash))
-                return AccountResult.Fail(cached is null ? ApiResult.OfflineMessage : WrongLogin);
-            session.SignIn(cached, offline: true);
-            return AccountResult.Ok(cached, offline: true);
+                return AccountResult.Fail(cached is null ? r.Error! : WrongLogin);
+            // Too old a build isn't offline: the update banner says why friends are stale, not "you're offline"
+            session.SignIn(cached, offline: r.IsOffline);
+            return AccountResult.Ok(cached, offline: r.IsOffline);
         }
 
         // Refused. A 401 is a wrong login, and never falls back to the cache; it may be an account not online yet
@@ -127,13 +130,14 @@ public class AccountService(
             session.SignIn(user);
             return true;
         }
-        if (r.IsOffline)
+        // Offline, or too old a build (the token may still be good: keep it for after the update)
+        if (r.IsOffline || r.IsUpdateRequired)
         {
             await using var db = await dbFactory.CreateDbContextAsync();
             var hash = TokenHash(token);
             var cached = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.ServerUserId != null && u.RememberTokenHash == hash);
             if (cached is null) return false;
-            session.SignIn(cached, offline: true);
+            session.SignIn(cached, offline: r.IsOffline);
             return true;
         }
         // 401: expired or revoked. Anything else: the token is no good either way

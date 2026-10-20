@@ -20,6 +20,7 @@ public static class AppServices
     {
         var sc = new ServiceCollection();
         sc.AddDbContextFactory<AppDbContext>();
+        sc.AddSingleton(_ => new ErrorLog(AppDbContext.DataDirectory, appInfo: AppVersion.Description));
         sc.AddSingleton<SessionService>();
         if (localSocial)
         {
@@ -30,13 +31,15 @@ public static class AppServices
             sc.AddTransient<IFriendCheckInSource, LocalSocialStore>();
             sc.AddTransient<IFriendService, FriendService>();
             sc.AddTransient<ILeaderboardService, LeaderboardService>();
+            sc.AddTransient<IFeedbackService, LocalFeedbackService>();
         }
         else
         {
             // The session token is the stored credential: a file only this user can read
             sc.AddSingleton<ITokenStore>(_ => new FileTokenStore(Path.Combine(AppDbContext.DataDirectory, "session.token")));
             sc.AddSingleton(sp => new SocialApiClient(
-                new HttpClient { BaseAddress = ServerAddress.FromEnvironment() }, sp.GetRequiredService<ITokenStore>()));
+                new HttpClient { BaseAddress = ServerAddress.FromEnvironment() }, sp.GetRequiredService<ITokenStore>(),
+                appVersion: AppVersion.Current));
             sc.AddSingleton(sp => new AccountService(sp.GetRequiredService<SocialApiClient>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<ITokenStore>(),
                 sp.GetRequiredService<SessionService>()));
@@ -45,6 +48,7 @@ public static class AppServices
             sc.AddTransient<IFriendService, RemoteFriendService>();
             sc.AddTransient<ILeaderboardService, RemoteLeaderboardService>();
             sc.AddTransient<IFriendCheckInSource, RemoteFriendCheckInSource>();
+            sc.AddTransient<IFeedbackService, RemoteFeedbackService>();
             // Uploads stats, check-ins and the sharing setting; the services mark what changed through the hooks
             sc.AddTransient(sp => new StatsProjectionService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
@@ -87,6 +91,7 @@ public static class AppServices
         sc.AddTransient<GymSummaryService>();
         sc.AddTransient<GymsViewModel>();
         sc.AddTransient<PointsHistoryViewModel>();
+        sc.AddSingleton<FeedbackViewModel>();   // one, so a half-written note survives closing the popup
         sc.AddTransient<FriendMapService>();
         sc.AddTransient<FriendsViewModel>();
         return sc;

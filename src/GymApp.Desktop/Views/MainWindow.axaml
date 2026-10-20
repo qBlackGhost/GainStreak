@@ -24,7 +24,19 @@
                 <Button Grid.Column="1" Content="Dismiss" Command="{Binding DismissGlobalErrorCommand}"/>
             </Grid>
         </Border>
-        <ContentControl Content="{Binding Current}" />
+        <!-- The server no longer accepts this build: its own message, e.g. "This version of GainStreak is too old..." -->
+        <Border DockPanel.Dock="Top" Background="#20E0A030" BorderBrush="#80E0A030" BorderThickness="0,0,0,1"
+                Padding="12,8" IsVisible="{Binding HasUpdateNotice}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding UpdateNotice}" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="Dismiss" Command="{Binding DismissUpdateNoticeCommand}"/>
+            </Grid>
+        </Border>
+        <Panel>
+            <ContentControl Content="{Binding Current}" />
+            <!-- The feedback popup covers the screen below the banners -->
+            <ContentControl Content="{Binding Feedback}" IsVisible="{Binding IsFeedbackOpen}"/>
+        </Panel>
     </DockPanel>
 
 </Window>
