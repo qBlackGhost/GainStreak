@@ -2,6 +2,13 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.15.3
+
+- **Split usage:** a split's page has a "Who uses it" card under the setup card: a donut of the share of lifters on each preset and on custom splits, with this split's slice in the accent and its share in the middle. Splits under 10% (other than the one shown) are grouped into "Other", whose legend row names them. Preset cards in the split list show "N% of lifters". The numbers come from the server; without them the card and the line stay hidden, and offline the last fetched numbers are shown.
+- **Recommended days:** preset cards and the split page show "Recommended for N days / week", from the preset's default number of days.
+- **Server:** the stats upload (`PUT /v1/me/stats`) also carries the active split: the preset's id, or no id for a custom split. Older builds don't send it and aren't counted. `GET /v1/splits/usage` (signed in) returns how many accounts use each preset and custom splits.
+- **Migration:** `SplitUsage` in the server's Postgres (`Users.SplitPresetId` and `Users.UsesCustomSplit`). Run it before deploying. The app's database is unchanged.
+
 ## 0.15.2
 
 The first build for beta testers, with 0.15.1's light theme. 0.15.1 had no release of its own.
