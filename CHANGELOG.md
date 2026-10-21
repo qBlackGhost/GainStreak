@@ -7,6 +7,8 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 - **Split usage:** a split's page has a "Who uses it" card under the setup card: a donut of the share of lifters on each preset and on custom splits, with this split's slice in the accent and its share in the middle. Splits under 10% (other than the one shown) are grouped into "Other", whose legend row names them. Preset cards in the split list show "N% of lifters". The numbers come from the server; without them the card and the line stay hidden, and offline the last fetched numbers are shown.
 - **Recommended days:** preset cards and the split page show "Recommended for N days / week", from the preset's default number of days.
 - **Server:** the stats upload (`PUT /v1/me/stats`) also carries the active split: the preset's id, or no id for a custom split. Older builds don't send it and aren't counted. `GET /v1/splits/usage` (signed in) returns how many accounts use each preset and custom splits.
+- **Map:** turning "Visible to friends" on or off reloads the map, your pin and your friends' check-ins at once. Your pin now also shows when today's gym is in a city whose gyms were loaded after the Map opened (before, it appeared only after reopening the Map). Your pin never depended on the setting.
+- **Gym list loading:** the public map servers can take minutes when busy. After 15 seconds the loading line says "Still loading. The map servers are busy right now." with **Try again**, which drops the waiting request and sends a new one.
 - **Migration:** `SplitUsage` in the server's Postgres (`Users.SplitPresetId` and `Users.UsesCustomSplit`). Run it before deploying. The app's database is unchanged.
 
 ## 0.15.2

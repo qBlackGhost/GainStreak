@@ -248,7 +248,7 @@ public partial class GymsViewModel : ViewModelBase
             Bounds = _homeCity is { } c ? new MapBounds(c.South, c.West, c.North, c.East) : null;
             _homeGym = s.Profile.HomeGymId is { } id ? await _gyms.GetPickableGymAsync(UserId, id) : null;
             _today = await _gyms.GetTodayAsync(UserId);
-            _cityGyms = _homeCity is { } city ? (await _gyms.GetGymsForCityAsync(UserId, city.Id))?.Rows ?? [] : [];
+            _cityGyms = await CityGymsAsync();
             _myVisits = await _gyms.GetMonthVisitsAsync(UserId, Today.Year, Today.Month);
 
             ApplyHomeGym();
@@ -268,6 +268,9 @@ public partial class GymsViewModel : ViewModelBase
             _loading = false;
         }
     }
+
+    private async Task<IReadOnlyList<GymRow>> CityGymsAsync() =>
+        _homeCity is { } city ? (await _gyms.GetGymsForCityAsync(UserId, city.Id))?.Rows ?? [] : [];
 
     /// <summary>Where distances are measured from: your gym if it has a position, else the city's centre.</summary>
     private (double, double)? Origin =>
@@ -405,8 +408,17 @@ public partial class GymsViewModel : ViewModelBase
     partial void OnShareCheckInsChanged(bool value)
     {
         if (_loading) return;
-        _ = SaveAsync(() => _profiles.SetShareGymCheckInsAsync(UserId, value), "Could not save that setting.");
-        RebuildMap();
+        _ = ShareChangedAsync(value);
+    }
+
+    /// <summary>Saves "Visible to friends", then reloads your pin and your friends' check-ins, so the map shows the
+    /// setting's effect at once.</summary>
+    private async Task ShareChangedAsync(bool share)
+    {
+        await SaveAsync(() => _profiles.SetShareGymCheckInsAsync(UserId, share), "Could not save that setting.");
+        try { await ReloadTodayAsync(); }
+        catch (Exception) { Error = "Could not refresh the map."; }
+        await LoadFriendMapAsync();
     }
 
     partial void OnAskForGymChanged(bool value)
@@ -518,6 +530,8 @@ public partial class GymsViewModel : ViewModelBase
     private async Task ReloadTodayAsync()
     {
         _today = await _gyms.GetTodayAsync(UserId);
+        // Again, since the picker may have just loaded this city's gyms: today's gym needs its dot for your pin
+        _cityGyms = await CityGymsAsync();
         _myVisits = await _gyms.GetMonthVisitsAsync(UserId, Today.Year, Today.Month);
         ApplyHomeGym();
         RebuildMap();

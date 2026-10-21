@@ -151,7 +151,9 @@
                         </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsFetching}">
                             <ProgressBar IsIndeterminate="True" Width="80" Height="4" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
-                            <TextBlock Text="Loading gyms from OpenStreetMap…" FontSize="12" Classes="muted"/>
+                            <TextBlock Text="{Binding FetchingText}" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                            <Button Classes="link" FontSize="12" Content="Try again" Command="{Binding RestartFetchCommand}"
+                                    IsVisible="{Binding IsFetchSlow}"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="8"
                                     IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">

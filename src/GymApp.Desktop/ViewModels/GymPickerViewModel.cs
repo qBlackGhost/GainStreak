@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -176,6 +177,16 @@ public partial class GymPickerViewModel : ViewModelBase
     // ===== Fetch status =====
     [ObservableProperty] public partial string LastUpdatedText { get; set; } = "";
     [ObservableProperty] public partial bool IsFetching { get; set; }
+
+    /// <summary>The fetch has run longer than <see cref="SlowFetchAfter"/>: the loading line says so and offers to
+    /// start over (the public servers can take minutes when busy, and a fresh request often answers at once).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FetchingText))]
+    public partial bool IsFetchSlow { get; set; }
+
+    public TimeSpan SlowFetchAfter { get; set; } = TimeSpan.FromSeconds(15);   // shorter in the tests
+    public string FetchingText => IsFetchSlow ? "Still loading. The map servers are busy right now." : "Loading gyms from OpenStreetMap…";
+    private CancellationTokenSource? _fetchCts;   // the running fetch; a newer one cancels it
     [ObservableProperty] public partial string? RefreshNote { get; set; }
     [ObservableProperty] public partial string? FetchError { get; set; }
     [ObservableProperty] public partial string? AddressLookupText { get; set; }
@@ -296,12 +307,16 @@ public partial class GymPickerViewModel : ViewModelBase
     /// Opening the picker never waits on this: the cached list is already shown.</summary>
     private async Task RunFetchAsync(int cityId, bool force)
     {
+        _fetchCts?.Cancel();
+        var cts = _fetchCts = new CancellationTokenSource();
         IsFetching = true;
+        IsFetchSlow = false;
         FetchError = null;
         RefreshNote = null;
+        _ = MarkSlowAsync(cts.Token);
         try
         {
-            var r = force ? await _fetch.RefreshAsync(cityId) : await _fetch.RefreshIfNeededAsync(cityId);
+            var r = force ? await _fetch.RefreshAsync(cityId, cts.Token) : await _fetch.RefreshIfNeededAsync(cityId, cts.Token);
             if (cityId != _cityId) return;
 
             ApplyFetchedAt(r.FetchedAt);
@@ -318,14 +333,43 @@ public partial class GymPickerViewModel : ViewModelBase
                     break;
             }
         }
+        catch (OperationCanceledException) when (cts.IsCancellationRequested)
+        {
+            // "Try again" or another city started a newer fetch, which owns the status now
+        }
         catch (Exception)
         {
             if (cityId == _cityId) FetchError = "Couldn't load gyms.";
         }
         finally
         {
-            if (cityId == _cityId) IsFetching = false;
+            if (_fetchCts == cts)
+            {
+                IsFetching = false;
+                IsFetchSlow = false;
+                _fetchCts = null;
+            }
+            cts.Cancel();   // stops the slow timer
         }
+    }
+
+    private async Task MarkSlowAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(SlowFetchAfter, ct);
+            IsFetchSlow = true;
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    /// <summary>"Try again" on a slow fetch: drops the waiting request and sends a new one.</summary>
+    [RelayCommand]
+    private async Task RestartFetchAsync()
+    {
+        if (_cityId is not { } id) return;
+        await RunFetchAsync(id, force: true);
+        await RunAddressLookupAsync(id);
     }
 
     private void ApplyFetchedAt(DateTime? utc) =>
