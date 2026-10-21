@@ -2,11 +2,16 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
-## Unreleased
+## 0.15.2
+
+The first build for beta testers, with 0.15.1's light theme. 0.15.1 had no release of its own.
 
 - **Light theme (12e):** Profile → Appearance now works: System (the default, follows Windows or macOS), Light or Dark, applied at once and kept on the account. The login screens follow the system. Every screen takes its colors from one set of light and dark tokens (`IronlogResources.axaml`) instead of fixed dark colors, after the Light page of the Gym App design canvas: off-white page, white cards, ink text, and a darker lime for accent text and outlines on white.
 - **Installers and updates:** releases are built with Velopack (`build/release.sh`): a `.pkg` installing `GainStreak.app` for Apple silicon and Intel Macs, and a `Setup.exe` for Windows. Installed copies check the release folder at startup and download a newer version in the background; a banner offers "Restart now", or it installs at the next start.
 - **Server address built in:** a release now carries the social server's address (`GymAppServerUrl` in `Directory.Build.props`), so testers don't set `GYMAPP_SERVER_URL`. The variable still overrides it, and publishing a release without an address stops with an error.
+- **Hosted social server:** the beta server runs on Google Cloud Run (scales to zero, one instance at most) with Postgres on Neon, and release builds point at it. Secrets (the connection string and the Discord webhook) live in Secret Manager.
+- **Server works on hosts that scale to zero:** the check-in cleanup runs from check-in uploads, at most once a day per instance, instead of on a daily timer an idle instance never reaches. Feedback is posted to Discord before the request answers instead of from a background queue. A failed post still answers 204, and each new feedback retries the last week's unforwarded rows (10 at most, stopping at the first failure).
+- **Proxy check:** `Diagnostics__LogProxyHeaders=true` logs the proxy's address, `X-Forwarded-For`/`X-Forwarded-Proto` and the client IP the server settles on, for setting `ForwardedHeaders__KnownNetworks` on a new host. Off by default, since it logs client IPs. On Cloud Run that's `169.254.0.0/16`.
 - **Migration:** `ThemePreference` in the app's database (`Users.ThemePreference`, "System" for existing accounts).
 
 ## 0.15.0

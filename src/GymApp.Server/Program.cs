@@ -76,6 +76,19 @@ if (migrateOnly || app.Environment.IsDevelopment())
     }
 }
 
+// Temporary, for setting up ForwardedHeaders on a new host: logs the address the proxy connects from, the headers it
+// sends and the client IP the server settles on. Off unless Diagnostics__LogProxyHeaders=true; it logs client IPs
+if (app.Configuration.GetValue<bool>("Diagnostics:LogProxyHeaders"))
+    app.Use(async (context, next) =>
+    {
+        var proxy = context.Connection.RemoteIpAddress;
+        var forwardedFor = context.Request.Headers["X-Forwarded-For"].ToString();
+        var forwardedProto = context.Request.Headers["X-Forwarded-Proto"].ToString();
+        await next();
+        app.Logger.LogInformation("Proxy check: connection from {Proxy}, X-Forwarded-For '{ForwardedFor}', " +
+            "X-Forwarded-Proto '{ForwardedProto}', client IP used {ClientIp}, scheme {Scheme}",
+            proxy, forwardedFor, forwardedProto, context.Connection.RemoteIpAddress, context.Request.Scheme);
+    });
 // First, so everything after it (the rate limiter above all) sees the client's IP, not the proxy's
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
