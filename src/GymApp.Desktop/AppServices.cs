@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net.Http;
 using GymApp.Client;
@@ -38,7 +38,7 @@ public static class AppServices
             // The session token is the stored credential: a file only this user can read
             sc.AddSingleton<ITokenStore>(_ => new FileTokenStore(Path.Combine(AppDbContext.DataDirectory, "session.token")));
             sc.AddSingleton(sp => new SocialApiClient(
-                new HttpClient { BaseAddress = ServerAddress.FromEnvironment() }, sp.GetRequiredService<ITokenStore>(),
+                new HttpClient { BaseAddress = ServerAddress.FromEnvironment(BuildSettings.ServerUrl) }, sp.GetRequiredService<ITokenStore>(),
                 appVersion: AppVersion.Current));
             sc.AddSingleton(sp => new AccountService(sp.GetRequiredService<SocialApiClient>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<ITokenStore>(),

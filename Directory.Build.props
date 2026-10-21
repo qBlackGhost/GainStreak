@@ -2,6 +2,15 @@
   <!-- One version for every project. Bump it here for a release (see CHANGELOG.md). -->
   <PropertyGroup>
     <Product>GainStreak</Product>
-    <Version>0.15.0</Version>
+    <Version>0.15.2</Version>
+  </PropertyGroup>
+
+  <!-- Release settings built into the desktop app (see "Releases for testers" in the README). Fill them in here or pass
+       them to publish with -p:GymAppServerUrl=... Neither is secret. -->
+  <PropertyGroup>
+    <!-- The social server, https. GYMAPP_SERVER_URL still overrides it; Debug builds use localhost -->
+    <GymAppServerUrl></GymAppServerUrl>
+    <!-- The folder the Velopack releases are uploaded to; the app checks it for updates. Empty: no update checks -->
+    <GymAppUpdateUrl>https://github.com/qBlackGhost/GainStreak-releases</GymAppUpdateUrl>
   </PropertyGroup>
 </Project>

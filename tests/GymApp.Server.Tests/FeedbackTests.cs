@@ -14,6 +14,13 @@ namespace GymApp.Server.Tests;
 
 public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgres)
 {
+    /// <summary>Discord as the server's forwarder sees it; every test runs with a webhook set.</summary>
+    private readonly Recorder _discord = new();
+
+    protected override void ConfigureServices(IServiceCollection services) =>
+        services.AddSingleton(sp => new DiscordFeedbackForwarder(
+            sp.GetRequiredService<IServiceScopeFactory>(), _discord, Webhook, Clock, NullLogger<DiscordFeedbackForwarder>.Instance));
+
     private static async Task<HttpResponseMessage> SendAsync(SignedIn user, FeedbackRequest request, string? version = "0.15.0")
     {
         var message = new HttpRequestMessage(HttpMethod.Post, "/v1/feedback") { Content = JsonContent.Create(request, options: ApiFormat.Json) };
@@ -27,7 +34,7 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         return db.Feedback.AsNoTracking().OrderBy(f => f.Id).ToList();
     }
 
-    [Fact] public async Task Problem_IsStored_Scrubbed_WithTheAppVersion_AndQueuedForDiscord()
+    [Fact] public async Task Problem_IsStored_Scrubbed_WithTheAppVersion_AndForwardedBeforeAnswering()
     {
         var alice = await SignUpAsync("alice");
 
@@ -37,9 +44,22 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         var row = Assert.Single(Stored());
         Assert.Equal((alice.User.Id, FeedbackKind.Problem, "The map froze", "0.15.0"), (row.UserId, row.Kind, row.Text, row.AppVersion));
         Assert.Equal("at Foo in /Users/<user>/GymApp/Foo.cs", row.Report);
-        Assert.Null(row.ForwardedAt);
-        Assert.True(Services.GetRequiredService<FeedbackQueue>().Reader.TryRead(out var queued));
-        Assert.Equal(row.Id, queued);
+        Assert.NotNull(row.ForwardedAt);
+        Assert.Single(_discord.Posts);
+    }
+
+    [Fact] public async Task DiscordDown_StillAnswers204_AndTheNextFeedbackRetriesIt()
+    {
+        var alice = await SignUpAsync("alice");
+        _discord.Status = HttpStatusCode.ServiceUnavailable;
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "first"))).StatusCode);
+        Assert.Null(Assert.Single(Stored()).ForwardedAt);
+
+        _discord.Status = HttpStatusCode.NoContent;
+        await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "second"));
+
+        Assert.All(Stored(), f => Assert.NotNull(f.ForwardedAt));
+        Assert.Equal(3, _discord.Posts.Count);   // the failed try, then both
     }
 
     [Fact] public async Task Invalid_IsRefused_WithTheMessage()
@@ -122,8 +142,17 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
     private static readonly Uri Webhook = new("https://discord.com/api/webhooks/1/secret");
 
     private DiscordFeedbackForwarder Forwarder(Recorder recorder) => new(
-        Services.GetRequiredService<FeedbackQueue>(), Services.GetRequiredService<IServiceScopeFactory>(), recorder, Webhook,
-        Clock, NullLogger<DiscordFeedbackForwarder>.Instance);
+        Services.GetRequiredService<IServiceScopeFactory>(), recorder, Webhook, Clock, NullLogger<DiscordFeedbackForwarder>.Instance);
+
+    /// <summary>Stores feedback without forwarding it, as if Discord had refused it.</summary>
+    private int Unforwarded(int userId, DateTime createdAt)
+    {
+        using var db = Db();
+        var entry = new FeedbackEntry { UserId = userId, Kind = FeedbackKind.Idea, Text = "stored", CreatedAt = createdAt };
+        db.Feedback.Add(entry);
+        db.SaveChanges();
+        return entry.Id;
+    }
 
     [Fact] public async Task Forward_PostsTheEmbed_AndTheReportFile_WithMentionsOff_AndMarksTheRow()
     {
@@ -165,10 +194,37 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
     [Fact] public async Task Forward_Refused_LeavesTheRowUnforwarded()
     {
         var alice = await SignUpAsync("alice");
-        await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "idea"));
+        Unforwarded(alice.User.Id, Clock.GetUtcNow().UtcDateTime);
 
         Assert.False(await Forwarder(new Recorder { Status = HttpStatusCode.BadRequest }).ForwardAsync(Assert.Single(Stored()).Id));
         Assert.Null(Assert.Single(Stored()).ForwardedAt);
+    }
+
+    [Fact] public async Task ForwardPending_SendsRecentUnforwarded_SkipsOlderThanAWeek()
+    {
+        var alice = await SignUpAsync("alice");
+        var now = Clock.GetUtcNow().UtcDateTime;
+        var old = Unforwarded(alice.User.Id, now - DiscordFeedbackForwarder.RetryWindow - TimeSpan.FromHours(1));
+        var recent = Unforwarded(alice.User.Id, now - TimeSpan.FromDays(6));
+        var recorder = new Recorder();
+
+        Assert.Equal(1, await Forwarder(recorder).ForwardPendingAsync());
+
+        Assert.Equal($"#{recent}", JsonDocument.Parse(Assert.Single(recorder.Posts).Parts["payload_json"].Text)
+            .RootElement.GetProperty("embeds")[0].GetProperty("fields")[2].GetProperty("value").GetString());
+        Assert.Null(Stored().Single(f => f.Id == old).ForwardedAt);
+    }
+
+    [Fact] public async Task ForwardPending_StopsAtTheFirstFailure()
+    {
+        var alice = await SignUpAsync("alice");
+        var now = Clock.GetUtcNow().UtcDateTime;
+        Unforwarded(alice.User.Id, now);
+        Unforwarded(alice.User.Id, now);
+        var recorder = new Recorder { Status = HttpStatusCode.BadGateway };
+
+        Assert.Equal(0, await Forwarder(recorder).ForwardPendingAsync());
+        Assert.Single(recorder.Posts);
     }
 
     [Fact] public void ReadWebhook_UnsetIsNull_AndNotHttpsThrows()

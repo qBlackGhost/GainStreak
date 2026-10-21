@@ -2,38 +2,36 @@ using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Channels;
 using GymApp.Contracts;
 using GymApp.Server.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Server.Feedback;
 
-/// <summary>New feedback ids waiting to go to Discord. Saving never waits on Discord: the endpoint stores the row,
-/// queues its id and answers. A full queue drops the id (the row is still stored).</summary>
-public sealed class FeedbackQueue
-{
-    private readonly Channel<int> _ids = Channel.CreateBounded<int>(new BoundedChannelOptions(500) { FullMode = BoundedChannelFullMode.DropWrite });
-
-    public void Enqueue(int feedbackId) => _ids.Writer.TryWrite(feedbackId);
-    public ChannelReader<int> Reader => _ids.Reader;
-}
-
 /// <summary>
 /// Posts each new feedback to a Discord channel through its webhook (<c>Feedback:DiscordWebhookUrl</c>, env
 /// <c>Feedback__DiscordWebhookUrl</c>). Unset, nothing is forwarded and feedback is only stored. The note goes in an
 /// embed; the error report (and a note too long for the embed) as an attached text file. Mentions are switched off, so
 /// "@everyone" in a note is just text. A failed post is logged and the row keeps a null <see cref="FeedbackEntry.ForwardedAt"/>.
+/// Posting happens inside the feedback request, not in a background queue: a host that scales to zero (Cloud Run) only
+/// runs the app while a request is open, so work left for after the response may never happen. Each new feedback also
+/// retries the recent rows that didn't go through.
 /// </summary>
 public sealed class DiscordFeedbackForwarder(
-    FeedbackQueue queue, IServiceScopeFactory scopes, IHttpClientFactory http, Uri webhook, TimeProvider clock,
-    ILogger<DiscordFeedbackForwarder> log) : BackgroundService
+    IServiceScopeFactory scopes, IHttpClientFactory http, Uri webhook, TimeProvider clock,
+    ILogger<DiscordFeedbackForwarder> log)
 {
     public const string SettingName = "Feedback:DiscordWebhookUrl";
     public const string HttpClientName = "discord";
 
     /// <summary>Discord's limit on an embed description is 4096; past this the note goes in the file instead.</summary>
     public const int MaxEmbedText = 4_000;
+
+    /// <summary>Unforwarded rows older than this are left alone: Discord refusing one for a week means it never will.</summary>
+    public static readonly TimeSpan RetryWindow = TimeSpan.FromDays(7);
+
+    /// <summary>The most rows one pass posts, so a long Discord outage doesn't make one request slow.</summary>
+    public const int MaxPerPass = 10;
 
     /// <summary>The configured webhook, null when unset. Throws for a value that isn't an https URL, so a typo stops
     /// startup instead of silently dropping every report.</summary>
@@ -46,26 +44,33 @@ public sealed class DiscordFeedbackForwarder(
             : throw new InvalidOperationException($"{SettingName.Replace(":", "__")} must be a Discord webhook URL starting with https://.");
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    /// <summary>Posts the unforwarded feedback from the last <see cref="RetryWindow"/>, oldest first, at most
+    /// <see cref="MaxPerPass"/>. Stops at the first failure, since Discord is likely down for the rest too. Never
+    /// throws; returns how many went through.</summary>
+    public async Task<int> ForwardPendingAsync(CancellationToken ct = default)
     {
+        var forwarded = 0;
         try
         {
-            await foreach (var id in queue.Reader.ReadAllAsync(stoppingToken))
+            List<int> ids;
+            await using (var scope = scopes.CreateAsyncScope())
             {
-                try
-                {
-                    await ForwardAsync(id, stoppingToken);
-                }
-                catch (Exception e) when (e is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
-                {
-                    log.LogError(e, "Forwarding feedback {Id} to Discord failed.", id);
-                }
+                var since = clock.GetUtcNow().UtcDateTime - RetryWindow;
+                ids = await scope.ServiceProvider.GetRequiredService<ServerDbContext>().Feedback
+                    .Where(f => f.ForwardedAt == null && f.CreatedAt >= since)
+                    .OrderBy(f => f.Id).Select(f => f.Id).Take(MaxPerPass).ToListAsync(ct);
+            }
+            foreach (var id in ids)
+            {
+                if (!await ForwardAsync(id, ct)) break;
+                forwarded++;
             }
         }
-        catch (OperationCanceledException)
+        catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {
-            // Shutting down
+            log.LogError(e, "Forwarding feedback to Discord failed.");
         }
+        return forwarded;
     }
 
     /// <summary>Posts one stored feedback and marks it forwarded. False if Discord refused it.</summary>

@@ -205,6 +205,27 @@ public class CheckInEndpointTests : ServerTest
         Assert.Equal("Kept", (await db.CheckIns.SingleAsync()).GymName);
     }
 
+    [Fact] public async Task Uploads_RunTheCleanup_AtMostOnceADay()
+    {
+        var (_, bob) = await FriendsAsync();
+        await ShareAsync(bob, true);
+        // The first upload's pass runs before its own write, so this old row stays until the next pass
+        await PutOkAsync(bob, Today.AddDays(-40), OsmGym("Old"));
+        await PutOkAsync(bob, Today, OsmGym("Today"));
+        Assert.Equal(2, await CheckInCount());
+
+        Clock.Fixed = Clock.Fixed!.Value.AddDays(1);
+        await PutOkAsync(bob, Today, OsmGym("Today again"));
+
+        Assert.Equal(1, await CheckInCount());
+    }
+
+    private async Task<int> CheckInCount()
+    {
+        await using var db = Db();
+        return await db.CheckIns.CountAsync();
+    }
+
     [Fact] public async Task DeletingTheAccount_RemovesItsCheckIns()
     {
         var (_, bob) = await FriendsAsync();

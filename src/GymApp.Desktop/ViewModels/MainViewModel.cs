@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GymApp.Contracts;
@@ -25,8 +25,8 @@ public partial class MainViewModel : ViewModelBase
 
     [RelayCommand] private void DismissGlobalError() => GlobalError = null;
 
-    /// <summary>The server's "please update" for a build it no longer accepts, or null. Workouts keep working; it
-    /// comes back with the next refused call if dismissed.</summary>
+    /// <summary>The server's "please update" for a build it no longer accepts, or that an update is ready, or null.
+    /// Workouts keep working; the server's comes back with the next refused call if dismissed.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasUpdateNotice))]
     public partial string? UpdateNotice { get; set; }
@@ -34,6 +34,15 @@ public partial class MainViewModel : ViewModelBase
     public bool HasUpdateNotice => UpdateNotice is not null;
 
     [RelayCommand] private void DismissUpdateNotice() => UpdateNotice = null;
+
+    /// <summary>Restarts into an update that has finished downloading (see AppUpdater), or null when none is waiting.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRestartForUpdate))]
+    public partial Action? RestartForUpdate { get; set; }
+
+    public bool CanRestartForUpdate => RestartForUpdate is not null;
+
+    [RelayCommand] private void RestartNow() => RestartForUpdate?.Invoke();
 
     /// <summary>The feedback popup, over whatever screen is showing (the sidebar's Support section opens it).</summary>
     public FeedbackViewModel Feedback => _sp.GetRequiredService<FeedbackViewModel>();

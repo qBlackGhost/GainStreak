@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using GymApp.Client;
 using GymApp.Contracts;
@@ -313,6 +313,16 @@ public class ServerAddressTests
         Assert.Throws<InvalidOperationException>(() => ServerAddress.Resolve(null, debugBuild: false));
         Assert.Throws<InvalidOperationException>(() => ServerAddress.Resolve("http://social.example.com", debugBuild: false));
     }
+
+    [Fact] public void Release_UsesTheBuiltInAddress_UnlessTheSettingOverridesIt()
+    {
+        Assert.Equal("https://built.example.com/", ServerAddress.Resolve(null, debugBuild: false, builtIn: "https://built.example.com").AbsoluteUri);
+        Assert.Equal("https://other.example.com/", ServerAddress.Resolve("https://other.example.com", debugBuild: false, builtIn: "https://built.example.com").AbsoluteUri);
+        Assert.Throws<InvalidOperationException>(() => ServerAddress.Resolve(null, debugBuild: false, builtIn: "http://built.example.com"));
+    }
+
+    [Fact] public void Debug_IgnoresTheBuiltInAddress() =>
+        Assert.Equal("http://localhost:5080/", ServerAddress.Resolve(null, debugBuild: true, builtIn: "https://built.example.com").AbsoluteUri);
 
     [Theory]
     [InlineData("localhost:5080")]

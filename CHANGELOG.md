@@ -5,6 +5,8 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 ## Unreleased
 
 - **Light theme (12e):** Profile → Appearance now works: System (the default, follows Windows or macOS), Light or Dark, applied at once and kept on the account. The login screens follow the system. Every screen takes its colors from one set of light and dark tokens (`IronlogResources.axaml`) instead of fixed dark colors, after the Light page of the Gym App design canvas: off-white page, white cards, ink text, and a darker lime for accent text and outlines on white.
+- **Installers and updates:** releases are built with Velopack (`build/release.sh`): a `.pkg` installing `GainStreak.app` for Apple silicon and Intel Macs, and a `Setup.exe` for Windows. Installed copies check the release folder at startup and download a newer version in the background; a banner offers "Restart now", or it installs at the next start.
+- **Server address built in:** a release now carries the social server's address (`GymAppServerUrl` in `Directory.Build.props`), so testers don't set `GYMAPP_SERVER_URL`. The variable still overrides it, and publishing a release without an address stops with an error.
 - **Migration:** `ThemePreference` in the app's database (`Users.ThemePreference`, "System" for existing accounts).
 
 ## 0.15.0

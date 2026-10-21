@@ -38,13 +38,16 @@ public static class CheckInEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<IResult> PutCheckIn(string date, CheckInRequest request, ClaimsPrincipal me, ServerDbContext db, TimeProvider clock)
+    private static async Task<IResult> PutCheckIn(string date, CheckInRequest request, ClaimsPrincipal me, ServerDbContext db,
+        TimeProvider clock, CheckInCleanup cleanup)
     {
         if (ClientDates.Parse(date) is not { } day) return Problems.BadRequest($"Send the date as {ApiFormat.Date}.");
         if (day.DayNumber > clock.ServerToday().DayNumber + ClientDates.AllowanceDays)
             return Problems.BadRequest("A check-in can't be in the future.");
         if (Check(request) is { } error) return Problems.BadRequest(error);
 
+        // Before this upload's own write, so an old date it sends isn't swept straight away
+        await cleanup.RunIfDueAsync(db);
         var userId = me.UserId();
         var sharing = await db.Users.Where(u => u.Id == userId).Select(u => u.ShareGymCheckIns).FirstOrDefaultAsync();
         if (sharing != true) return Problems.Forbidden("Turn on sharing gym check-ins first.");
@@ -73,7 +76,8 @@ public static class CheckInEndpoints
     /// <see cref="StatsEndpoints.MaxDays"/> entries and no date twice. Entries older than the server keeps are dropped,
     /// not refused, so the phone can always send its last 31 days. An empty list clears everything.
     /// </summary>
-    private static async Task<IResult> ReplaceCheckIns(CheckInsUploadRequest request, ClaimsPrincipal me, ServerDbContext db, TimeProvider clock)
+    private static async Task<IResult> ReplaceCheckIns(CheckInsUploadRequest request, ClaimsPrincipal me, ServerDbContext db,
+        TimeProvider clock, CheckInCleanup cleanup)
     {
         var entries = request.CheckIns ?? [];
         if (entries.Count > MaxBulk) return Problems.BadRequest($"Send at most {MaxBulk} check-ins.");
@@ -84,6 +88,7 @@ public static class CheckInEndpoints
         foreach (var e in entries)
             if (Check(Gym(e)) is { } error) return Problems.BadRequest($"{e.Date.ToString(ApiFormat.Date, CultureInfo.InvariantCulture)}: {error}");
 
+        await cleanup.RunIfDueAsync(db);
         var userId = me.UserId();
         await using var tx = await db.Database.BeginTransactionAsync();
         var sharing = await db.Users.Where(u => u.Id == userId).Select(u => u.ShareGymCheckIns).FirstOrDefaultAsync();

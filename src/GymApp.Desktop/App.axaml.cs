@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -134,6 +134,12 @@ public partial class App : Application
             }
             MainWindowCreated?.Invoke(desktop.MainWindow);
         }
+
+        _ = AppUpdater.DownloadAsync(log, (version, restart) => Dispatcher.UIThread.Post(() =>
+        {
+            main.UpdateNotice = $"GainStreak {version} is ready. Restart now, or it installs the next time you open the app.";
+            main.RestartForUpdate = restart;
+        }));
 
         base.OnFrameworkInitializationCompleted();
     }

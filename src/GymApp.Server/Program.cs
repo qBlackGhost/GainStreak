@@ -46,15 +46,13 @@ builder.Services.AddScoped(sp => new LeaderboardService(sp.GetRequiredService<IS
 builder.Services.ConfigureHttpJsonOptions(o => ApiFormat.Configure(o.SerializerOptions));
 builder.Services.AddProblemDetails();
 builder.Services.AddGymRateLimits();
-builder.Services.AddHostedService<CheckInCleanup>();
-builder.Services.AddSingleton<FeedbackQueue>();
+builder.Services.AddSingleton<CheckInCleanup>();
 if (discordWebhook is not null)
 {
     // No request logging: it would print the webhook URL, and the URL is the secret. The forwarder logs failures itself
-    builder.Services.AddHttpClient(DiscordFeedbackForwarder.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15))
+    builder.Services.AddHttpClient(DiscordFeedbackForwarder.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(10))
         .RemoveAllLoggers();
     builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<DiscordFeedbackForwarder>(sp, discordWebhook));
-    builder.Services.AddHostedService(sp => sp.GetRequiredService<DiscordFeedbackForwarder>());
 }
 builder.Services.AddHealthChecks().AddDbContextCheck<ServerDbContext>();
 builder.Services.AddTrustedProxies(builder.Configuration);

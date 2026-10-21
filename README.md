@@ -62,23 +62,37 @@ It has its own data folder (`GymApp-TestBench/data` next to the real one), so it
 - **Local** (the default): accounts and friends on this computer only, as before the server existed, with the friend rules run locally. Needs no server. The clock moves freely and "Sign in as" works. Nothing is uploaded.
 - **Server**: the app's own wiring against the social server (start it first, see below). Sign in with a real account; "Sign in as" is off. Keep the clock within 2 days of today: the server refuses dates further off, so uploads made with a moved clock are rejected.
 
-## Publish
+## Releases for testers
 
-Self-contained builds, so the target machine doesn't need .NET installed.
+Releases are built with [Velopack](https://velopack.io): an installer for each system, and the app updates itself.
 
-macOS (Apple silicon):
+1. Fill in `GymAppServerUrl` (the social server, https) and `GymAppUpdateUrl` (the folder the releases will be served from) in `Directory.Build.props`. Both are built into the app. A Release publish without a server address stops with an error. Without an update folder the app never checks for updates.
+2. Bump `Version` in `Directory.Build.props`. Velopack only offers a higher version.
+3. On a Mac:
 
-```bash
-dotnet publish src/GymApp.Desktop -c Release -r osx-arm64 --self-contained true -o publish/osx-arm64
-```
+   ```bash
+   build/release.sh
+   ```
 
-Windows (x64):
+   It publishes self-contained builds (osx-arm64, osx-x64, win-x64), so testers don't need .NET, and packs them into `Releases/`:
+   - `GainStreak-osx-arm64-Setup.pkg` / `GainStreak-osx-x64-Setup.pkg`: installs `GainStreak.app` (Apple silicon / Intel). The `-Portable.zip` is the same `.app` without an installer.
+   - `GainStreak-win-x64-Setup.exe`: installs for the current user, no admin needed, with Start menu and desktop shortcuts.
+   - `releases.<channel>.json`, the `.nupkg` packages and the rest: what the app reads to update. Each architecture is its own channel, so a copy only updates to its own build.
+4. Upload everything in `Releases/` to the update folder and keep the files from earlier versions there. Keep `Releases/` locally too: the next run builds small delta updates against it.
 
-```bash
-dotnet publish src/GymApp.Desktop -c Release -r win-x64 --self-contained true -o publish/win-x64
-```
+   **On GitHub:** set `GymAppUpdateUrl` to a public repository used only for releases (e.g. `https://github.com/qBlackGhost/GainStreak-releases`; this repository is private, so testers' copies couldn't read its releases). Then, signed in with `gh auth login`:
 
-Start `publish/osx-arm64/GainStreak` or `publish\win-x64\GainStreak.exe`. The macOS build is a plain unsigned executable, not a signed `.app` bundle, so Gatekeeper may ask you to confirm the first time.
+   ```bash
+   build/upload-github.sh
+   ```
+
+   It creates the release `v<Version>` with all three channels' files. Testers download the `Setup` file for their system from the release page. Without a token the app may check GitHub 60 times an hour per network, so one check per start is fine.
+
+Installed copies check the folder at startup and download a newer release in the background. The banner offers "Restart now", and otherwise the update installs the next time the app opens. `dotnet run`, the TestBench and plain `dotnet publish` folders never update.
+
+**Signing.** Unsigned builds work, but the first start is harder: on macOS testers open the app once, then choose "Open Anyway" in System Settings → Privacy & Security; on Windows SmartScreen asks, and "More info" → "Run anyway" starts it. To sign and notarize the Mac builds, set `VPK_SIGN_APP_IDENTITY`, `VPK_SIGN_INSTALL_IDENTITY` and `VPK_NOTARY_PROFILE` before running the script (Apple Developer ID certificates).
+
+For a quick local build without an installer, `dotnet publish src/GymApp.Desktop -c Release -r osx-arm64 --self-contained true -o publish/osx-arm64` still works (it needs `GymAppServerUrl` too).
 
 ## Running the app against a local server
 
@@ -108,7 +122,7 @@ To use another server, set `GYMAPP_SERVER_URL` before starting the app, e.g. a s
 GYMAPP_SERVER_URL=http://192.168.1.20:5080 dotnet run --project src/GymApp.Desktop
 ```
 
-Release builds have no default and need an `https://` address in `GYMAPP_SERVER_URL`; without one the app shows why it can't start. Requests time out after 10 seconds, which counts as offline.
+Release builds use the `https://` address they were published with (`GymAppServerUrl`), and `GYMAPP_SERVER_URL` overrides it. Without either, the app shows why it can't start. Requests time out after 10 seconds, which counts as offline.
 
 **Accounts from before the server.** The first sign-in with an account that only existed on this computer offers "Move this account online": it registers the account on the server (asking for an email if it has none, or another username if it's taken) and keeps its workouts, points and streak. Local friendships don't carry over; friends add each other again.
 

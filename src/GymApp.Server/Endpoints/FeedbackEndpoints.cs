@@ -7,7 +7,8 @@ using GymApp.Server.Feedback;
 namespace GymApp.Server.Endpoints;
 
 /// <summary><c>POST /v1/feedback</c>: a problem report or an idea from the app's Feedback popup. Stored, then
-/// forwarded to Discord in the background when a webhook is set (<see cref="DiscordFeedbackForwarder"/>).</summary>
+/// forwarded to Discord before answering when a webhook is set (<see cref="DiscordFeedbackForwarder"/>). A failed
+/// post still answers 204: the row is stored, and the next feedback retries it.</summary>
 public static class FeedbackEndpoints
 {
     public const string TextField = "text";
@@ -16,7 +17,7 @@ public static class FeedbackEndpoints
         app.MapPost("/v1/feedback", Send).RequireRateLimiting(RateLimits.Feedback);
 
     private static async Task<IResult> Send(FeedbackRequest request, HttpContext http, ClaimsPrincipal me,
-        ServerDbContext db, FeedbackQueue queue, TimeProvider clock)
+        ServerDbContext db, TimeProvider clock)
     {
         // Scrubbed again (an old or other client may not have), before the length checks: "<user>" can be longer
         var text = FeedbackRules.Scrub((request.Text ?? "").Trim());
@@ -38,7 +39,9 @@ public static class FeedbackEndpoints
         };
         db.Feedback.Add(entry);
         await db.SaveChangesAsync();
-        queue.Enqueue(entry.Id);
+        // Not the request's token: the row is saved, so the post should finish even if the phone stops waiting
+        if (http.RequestServices.GetService<DiscordFeedbackForwarder>() is { } forwarder)
+            await forwarder.ForwardPendingAsync();
         return Results.NoContent();
     }
 }

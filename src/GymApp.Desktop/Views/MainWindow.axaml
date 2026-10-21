@@ -1,4 +1,4 @@
-<Window xmlns="https://github.com/avaloniaui"
+﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:GymApp.Desktop.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -24,12 +24,15 @@
                 <Button Grid.Column="1" Content="Dismiss" Command="{Binding DismissGlobalErrorCommand}"/>
             </Grid>
         </Border>
-        <!-- The server no longer accepts this build: its own message, e.g. "This version of GainStreak is too old..." -->
+        <!-- The server no longer accepts this build (its own message, e.g. "This version of GainStreak is too old..."),
+             or an update has downloaded and "Restart now" installs it -->
         <Border DockPanel.Dock="Top" Background="#20E0A030" BorderBrush="#80E0A030" BorderThickness="0,0,0,1"
                 Padding="12,8" IsVisible="{Binding HasUpdateNotice}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <TextBlock Text="{Binding UpdateNotice}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="Dismiss" Command="{Binding DismissUpdateNoticeCommand}"/>
+                <Button Grid.Column="1" Content="Restart now" Command="{Binding RestartNowCommand}"
+                        IsVisible="{Binding CanRestartForUpdate}"/>
+                <Button Grid.Column="2" Content="Dismiss" Command="{Binding DismissUpdateNoticeCommand}"/>
             </Grid>
         </Border>
         <Panel>

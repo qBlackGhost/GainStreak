@@ -32,7 +32,7 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
     protected HttpClient Client { get; private set; } = null!;
 
     /// <summary>A context on this test's database, for seeding and checking rows directly.</summary>
-    /// <summary>The server's services, for the ones a test drives directly (the feedback queue and forwarder).</summary>
+    /// <summary>The server's services, for the ones a test drives directly (the check-in cleanup, say).</summary>
     protected IServiceProvider Services => _factory.Services;
 
     protected ServerDbContext Db() => _factory.Services.CreateScope().ServiceProvider.GetRequiredService<ServerDbContext>();
@@ -91,13 +91,20 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
         return problem?.Detail;
     }
 
+    /// <summary>Extra service registrations for a test class, on top of the server's own.</summary>
+    protected virtual void ConfigureServices(IServiceCollection services) { }
+
     public async Task InitializeAsync()
     {
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
             .UseEnvironment("Testing")
             .UseSetting("ConnectionStrings:Social", postgres.ConnectionString($"test_{Guid.NewGuid():N}"))
             .UseSetting(ClientVersionCheck.SettingName, MinClientVersion)
-            .ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock)));
+            .ConfigureTestServices(services =>
+            {
+                services.AddSingleton<TimeProvider>(Clock);
+                ConfigureServices(services);
+            }));
         await using (var db = Db())
             await db.Database.MigrateAsync();
         Client = _factory.CreateClient();

@@ -14,6 +14,18 @@
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
 
+  <!-- The release settings from Directory.Build.props, read back by BuildSettings -->
+  <ItemGroup>
+    <AssemblyMetadata Include="GymAppServerUrl" Value="$(GymAppServerUrl)" Condition="'$(GymAppServerUrl)' != ''" />
+    <AssemblyMetadata Include="GymAppUpdateUrl" Value="$(GymAppUpdateUrl)" Condition="'$(GymAppUpdateUrl)' != ''" />
+  </ItemGroup>
+
+  <!-- A release published without a server address would only show "can't reach its server" -->
+  <Target Name="RequireServerUrl" BeforeTargets="PrepareForPublish"
+          Condition="'$(Configuration)' == 'Release' and '$(GymAppServerUrl)' == ''">
+    <Error Text="Set GymAppServerUrl (in Directory.Build.props or with -p:GymAppServerUrl=https://...) before publishing a release." />
+  </Target>
+
   <!-- macOS: use Network.framework for HTTPS, which supports TLS 1.3. The default (SecureTransport) stops at
        TLS 1.2, and overpass-api.de (gym fetch) only accepts TLS 1.3. No effect on Windows or Linux. -->
   <ItemGroup>
@@ -38,6 +50,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
     <!-- Map view in the gym picker. The Avalonia 12 build of Mapsui; only the map tiles need the network -->
     <PackageReference Include="Mapsui.Avalonia12" Version="5.1.0" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup>
