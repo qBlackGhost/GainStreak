@@ -25,6 +25,7 @@ public partial class SplitItemViewModel : ObservableObject
             ? split.Variants.Select(v => v.Pattern.Count(c => c == 'W')).Distinct().Order().ToList()
             : [split.Days.Any(d => d.Weekday is not null) ? split.Days.Count(d => d.Weekday is not null) : split.Days.Count];
         DaysText = perWeek.Count > 1 ? $"{perWeek[0]}–{perWeek[^1]} / wk" : $"{perWeek[0]} / wk";
+        RecommendedDaysTag = SplitTags.RecommendedDays(split);
     }
 
     public string Name => Split.Name;
@@ -34,6 +35,10 @@ public partial class SplitItemViewModel : ObservableObject
     public string VariantsText { get; }          // "2 days / week  ·  3 days / week", empty for custom splits
     public IReadOnlyList<string> Sequence { get; }   // the day names in rotation order, for the chips
     public string DaysText { get; }
+    public string? RecommendedDaysTag { get; }   // presets only
+
+    /// <summary>"18% of lifters", once the server's counts are in; presets only.</summary>
+    [ObservableProperty] public partial string? UsageText { get; set; }
 
     /// <summary>Choosing a split happens on its detail page (variant and start day), so "Set active" opens it.</summary>
     public string ActivateLabel => IsSelected ? "Current split" : "Set active";

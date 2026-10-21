@@ -202,6 +202,31 @@ public sealed class SocialSyncTests : IDisposable
         Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.StatsDirtySince));
     }
 
+    [Fact] public async Task Stats_CarryTheActiveSplit_PresetById_CustomWithoutOne()
+    {
+        async Task<ActiveSplitRequest?> UploadedSplitAsync(int? splitId)
+        {
+            using (var db = _db.CreateDbContext())
+                db.Users.Where(u => u.Id == _me).ExecuteUpdate(u => u.SetProperty(x => x.SelectedSplitId, splitId));
+            _sync.MarkStatsDirty(_me);
+            await _sync.WhenIdleAsync();
+            return _server.LastBody<StatsUploadRequest>("PUT v1/me/stats")!.Split;
+        }
+
+        int customId;
+        using (var db = _db.CreateDbContext())
+        {
+            var custom = new WorkoutSplit { Name = "Mine", OwnerUserId = _me };
+            db.WorkoutSplits.Add(custom);
+            db.SaveChanges();
+            customId = custom.Id;
+        }
+
+        Assert.Null(await UploadedSplitAsync(null));
+        Assert.Equal(new ActiveSplitRequest(2), await UploadedSplitAsync(2));
+        Assert.Equal(new ActiveSplitRequest(null), await UploadedSplitAsync(customId));
+    }
+
     [Fact] public async Task CheckIns_AreTheLast31DaysWithAGym_ByOsmKey_AndACustomGymHasNoPosition()
     {
         Share(true);

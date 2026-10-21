@@ -192,7 +192,17 @@ public sealed class SocialSync(
         var days = await projection.ProjectAsync(userId, AppClock.Today);
         if (days is null) return null;
         return await api.UploadStatsAsync(new StatsUploadRequest(
-            days.Select(d => new StatsDayRequest(d.Date, d.TotalPoints, d.WeekPoints, d.CurrentStreak)).ToList()));
+            days.Select(d => new StatsDayRequest(d.Date, d.TotalPoints, d.WeekPoints, d.CurrentStreak)).ToList(),
+            await ActiveSplitAsync(userId)));
+    }
+
+    /// <summary>The user's split for the usage counts: the preset's id, or no id for a custom split.</summary>
+    private async Task<ActiveSplitRequest?> ActiveSplitAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var split = await db.Users.Where(u => u.Id == userId && u.SelectedSplit != null)
+            .Select(u => new { u.SelectedSplit!.Id, u.SelectedSplit.OwnerUserId }).FirstOrDefaultAsync();
+        return split is null ? null : new ActiveSplitRequest(split.OwnerUserId is null ? split.Id : null);
     }
 
     /// <summary>Records that <paramref name="flag"/> changed now, then syncs. The time is the latest change, so a sync

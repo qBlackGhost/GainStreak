@@ -9,8 +9,9 @@ using Period = GymApp.Contracts.LeaderboardPeriod;
 
 namespace GymApp.Server.Endpoints;
 
-/// <summary><c>PUT /v1/me/stats</c> (the phone's projection) and <c>GET /v1/leaderboard</c> (the shared
-/// <see cref="LeaderboardService"/> over the stored projections).</summary>
+/// <summary><c>PUT /v1/me/stats</c> (the phone's projection and active split), <c>GET /v1/leaderboard</c> (the shared
+/// <see cref="LeaderboardService"/> over the stored projections) and <c>GET /v1/splits/usage</c> (how many users
+/// train with each split, over every account).</summary>
 public static class StatsEndpoints
 {
     public const int MaxDays = 31;
@@ -19,6 +20,7 @@ public static class StatsEndpoints
     {
         app.MapPut("/v1/me/stats", UploadStats);
         app.MapGet("/v1/leaderboard", GetLeaderboard);
+        app.MapGet("/v1/splits/usage", GetSplitUsage);
     }
 
     private static async Task<IResult> UploadStats(StatsUploadRequest request, ClaimsPrincipal me, ServerDbContext db, TimeProvider clock)
@@ -31,6 +33,7 @@ public static class StatsEndpoints
             return Problems.BadRequest($"The first day must be within {ClientDates.AllowanceDays} days of today.");
         if (days.Any(d => d.TotalPoints < 0 || d.WeekPoints < 0 || d.CurrentStreak < 0))
             return Problems.BadRequest("Points and streaks can't be negative.");
+        if (request.Split?.PresetId <= 0) return Problems.BadRequest("Unknown preset split.");
 
         var userId = me.UserId();
         await using var tx = await db.Database.BeginTransactionAsync();
@@ -40,8 +43,24 @@ public static class StatsEndpoints
             UserId = userId, Date = d.Date, TotalPoints = d.TotalPoints, WeekPoints = d.WeekPoints, CurrentStreak = d.CurrentStreak
         }));
         await db.SaveChangesAsync();
+        var presetId = request.Split?.PresetId;
+        var custom = request.Split is { PresetId: null };
+        await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(u => u
+            .SetProperty(x => x.SplitPresetId, presetId)
+            .SetProperty(x => x.UsesCustomSplit, custom));
         await tx.CommitAsync();
         return Results.NoContent();
+    }
+
+    private static async Task<IResult> GetSplitUsage(ServerDbContext db)
+    {
+        var presets = await db.Users.Where(u => u.SplitPresetId != null)
+            .GroupBy(u => u.SplitPresetId!.Value)
+            .Select(g => new SplitUsageRow(g.Key, g.Count()))
+            .ToListAsync();
+        var custom = await db.Users.CountAsync(u => u.UsesCustomSplit);
+        return Results.Ok(new SplitUsageResponse(presets.Sum(p => p.Users) + custom,
+            presets.OrderByDescending(p => p.Users).ThenBy(p => p.PresetId).ToList(), custom));
     }
 
     private static async Task<IResult> GetLeaderboard(string? period, string? today, ClaimsPrincipal me,

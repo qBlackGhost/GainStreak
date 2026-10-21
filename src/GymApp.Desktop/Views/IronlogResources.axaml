@@ -26,6 +26,12 @@
                 <!-- Empty part of a bar -->
                 <SolidColorBrush x:Key="Track" Color="#222222"/>
                 <SolidColorBrush x:Key="TrackStrong" Color="#2E2E2E"/>
+                <!-- Split usage donut: the other splits' slices, biggest share first -->
+                <SolidColorBrush x:Key="Tone1" Color="#9A9A9A"/>
+                <SolidColorBrush x:Key="Tone2" Color="#7A7A7A"/>
+                <SolidColorBrush x:Key="Tone3" Color="#5E5E5E"/>
+                <SolidColorBrush x:Key="Tone4" Color="#474747"/>
+                <SolidColorBrush x:Key="Tone5" Color="#343434"/>
                 <!-- The selected surface: current nav item, the sliding pill, avatars -->
                 <SolidColorBrush x:Key="Inverse" Color="#FFFFFF"/>
                 <SolidColorBrush x:Key="InverseHover" Color="#E6E6E6"/>
@@ -90,6 +96,11 @@
                 <SolidColorBrush x:Key="Fill3" Color="#E8E8E4"/>
                 <SolidColorBrush x:Key="Track" Color="#E2E2DD"/>
                 <SolidColorBrush x:Key="TrackStrong" Color="#D6D6D1"/>
+                <SolidColorBrush x:Key="Tone1" Color="#5E5E5A"/>
+                <SolidColorBrush x:Key="Tone2" Color="#7E7E79"/>
+                <SolidColorBrush x:Key="Tone3" Color="#9E9E99"/>
+                <SolidColorBrush x:Key="Tone4" Color="#BDBDB8"/>
+                <SolidColorBrush x:Key="Tone5" Color="#D6D6D1"/>
                 <SolidColorBrush x:Key="Inverse" Color="#0B0B0B"/>
                 <SolidColorBrush x:Key="InverseHover" Color="#2A2A2A"/>
                 <SolidColorBrush x:Key="InversePressed" Color="#3A3A3A"/>

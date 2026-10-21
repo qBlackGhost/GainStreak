@@ -12,7 +12,7 @@ namespace GymApp.Services;
 public record DayInput(DayOfWeek Weekday, string Name);
 public record SplitResult(bool Success, string? Error = null, string? Field = null);
 
-public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsService points)
+public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsService points, ISocialSyncHooks? sync = null)
 {
     public const int MaxCustomSplits = 5;
 
@@ -103,7 +103,9 @@ public class SplitService(IDbContextFactory<AppDbContext> dbFactory, PointsServi
     public async Task DeleteAsync(int userId, int splitId)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
+        var wasActive = await db.Users.AnyAsync(u => u.Id == userId && u.SelectedSplitId == splitId);
         await db.WorkoutSplits.Where(s => s.Id == splitId && s.OwnerUserId == userId).ExecuteDeleteAsync();
+        if (wasActive) (sync ?? NoSocialSync.Instance).MarkStatsDirty(userId);   // the upload carries the active split
     }
 
     /// <summary>

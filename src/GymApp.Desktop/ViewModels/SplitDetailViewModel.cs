@@ -23,6 +23,57 @@ public record RotationStep(string Name, bool HasArrow);
 /// <summary>One row of "About this split": the day and the muscle groups of the user's exercises on it.</summary>
 public record SplitDayInfo(string Name, string Muscles);
 
+/// <summary>One slice of the "Who uses it" donut and its legend row: a preset, "Custom splits" or "Other" (whose
+/// <see cref="Detail"/> names what it holds). <see cref="Tone"/> 0 is this split's accent, 1–5 the greys in order.</summary>
+public record SplitUsageSlice(string Name, string? Detail, double Percent, string PercentText, bool IsThis, int Tone)
+{
+    public bool HasDetail => Detail is not null;
+}
+
+/// <summary>Turns user counts into the donut's slices.</summary>
+public static class SplitUsageChart
+{
+    /// <summary>Shares under this go into "Other", unless it's the split being viewed or the only small one.</summary>
+    public const double MinPercent = 10;
+
+    /// <param name="splits">Every preset and "Custom splits" with its user count; exactly one is the split being viewed.</param>
+    /// <param name="total">Everyone with a split.</param>
+    public static IReadOnlyList<SplitUsageSlice> Build(IEnumerable<(string Name, int Users, bool IsThis)> splits, int total)
+    {
+        var shares = splits.Select(s => (s.Name, Percent: 100.0 * s.Users / total, s.IsThis))
+            .OrderByDescending(s => s.Percent).ToList();
+        var small = shares.Where(s => s.Percent < MinPercent && !s.IsThis).ToList();
+        if (small.Count > 1)
+        {
+            shares = shares.Except(small).ToList();
+            shares.Add(("Other", small.Sum(s => s.Percent), false));
+        }
+
+        var tone = 0;
+        return shares.Select(s => new SplitUsageSlice(s.Name,
+                s.Name == "Other" && small.Count > 1 ? string.Join(" · ", small.Select(x => x.Name)) : null,
+                s.Percent, SplitTags.Percent(s.Percent), s.IsThis, s.IsThis ? 0 : ++tone))
+            .ToList();
+    }
+}
+
+/// <summary>Shared by the split list and detail pages.</summary>
+public static class SplitTags
+{
+    /// <summary>"Recommended for 4 days / week" from a preset's default variant; null for custom splits.</summary>
+    public static string? RecommendedDays(WorkoutSplit split)
+    {
+        var variant = split.Variants.FirstOrDefault(v => v.IsDefault) ?? split.Variants.FirstOrDefault();
+        if (split.OwnerUserId is not null || variant is null) return null;
+        var days = variant.Pattern.Count(c => c == 'W');
+        return days == 1 ? "Recommended for 1 day / week" : $"Recommended for {days} days / week";
+    }
+
+    /// <summary>"23%", or "<1%" for a share too small to round up.</summary>
+    public static string Percent(double percent) =>
+        percent is > 0 and < 0.5 ? "<1%" : $"{Math.Round(percent).ToString(CultureInfo.InvariantCulture)}%";
+}
+
 /// <summary>A "days per week" card for a preset's variant.</summary>
 public partial class VariantOptionViewModel(SplitVariant variant, SplitDetailViewModel owner) : ObservableObject
 {
@@ -54,6 +105,7 @@ public partial class SplitDetailViewModel : ViewModelBase
     private readonly SplitService _splits;
     private readonly DayExerciseService _dayExercises;
     private readonly SessionService _session;
+    private readonly ISplitUsageService _usage;
     private readonly Func<MainViewModel> _shell;
     private WorkoutSplit _split = null!;
 
@@ -75,6 +127,7 @@ public partial class SplitDetailViewModel : ViewModelBase
     [ObservableProperty] public partial string TrainCount { get; set; } = "0";
     [ObservableProperty] public partial string RestCount { get; set; } = "7";
     [ObservableProperty] public partial string DaysTag { get; set; } = "";
+    [ObservableProperty] public partial string? RecommendedDaysTag { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Toast { get; set; }
 
@@ -88,6 +141,14 @@ public partial class SplitDetailViewModel : ViewModelBase
     [ObservableProperty] public partial IReadOnlyList<SplitDayInfo> DayInfo { get; set; } = [];
     public bool HasGoodFor => GoodFor.Count > 0;
     partial void OnGoodForChanged(IReadOnlyList<string> value) => OnPropertyChanged(nameof(HasGoodFor));
+
+    // Who uses it: every preset and "Custom splits", from the server's counts; hidden when there are none
+    [ObservableProperty] public partial IReadOnlyList<SplitUsageSlice> UsageSlices { get; set; } = [];
+    [ObservableProperty] public partial string MinePercent { get; set; } = "";
+    [ObservableProperty] public partial string UsageHeadline { get; set; } = "";
+    [ObservableProperty] public partial string UsageNote { get; set; } = "";
+    public bool HasUsage => UsageSlices.Count > 0;
+    partial void OnUsageSlicesChanged(IReadOnlyList<SplitUsageSlice> value) => OnPropertyChanged(nameof(HasUsage));
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(UseLabel), nameof(FootNote))]
@@ -117,9 +178,10 @@ public partial class SplitDetailViewModel : ViewModelBase
         : IsPreset ? $"Switching split keeps your past streak days. Your new week starts on {StartDay}."
                    : "Switching split keeps your past streak days.";
 
-    public SplitDetailViewModel(SplitService splits, DayExerciseService dayExercises, SessionService session, Func<MainViewModel> shell)
+    public SplitDetailViewModel(SplitService splits, DayExerciseService dayExercises, SessionService session,
+        ISplitUsageService usage, Func<MainViewModel> shell)
     {
-        _splits = splits; _dayExercises = dayExercises; _session = session; _shell = shell;
+        _splits = splits; _dayExercises = dayExercises; _session = session; _usage = usage; _shell = shell;
         StartDayOptions = StartDays.Select(d => new StartDayOptionViewModel(d, this)).ToList();
     }
 
@@ -137,6 +199,7 @@ public partial class SplitDetailViewModel : ViewModelBase
         IsActive = user.SelectedSplitId == split.Id;
         Rotation = string.Join(" → ", days.Select(d => d.Name));
         RotationSteps = days.Select((d, i) => new RotationStep(d.Name, i < days.Count - 1)).ToList();
+        RecommendedDaysTag = SplitTags.RecommendedDays(split);
         Variants = split.Variants.OrderBy(v => v.Id).ToList();
         VariantOptions = Variants.Select(v => new VariantOptionViewModel(v, this)).ToList();
         RotationStepLabel = HasVariants ? "2 · ROTATION" : "1 · ROTATION";
@@ -155,6 +218,32 @@ public partial class SplitDetailViewModel : ViewModelBase
         foreach (var v in VariantOptions) v.IsSelected = v.Variant == SelectedVariant;
         Rebuild();
         _ = LoadDayInfoAsync(days);
+        _ = LoadUsageAsync();
+    }
+
+    /// <summary>The share of users on each preset and on custom splits, this split's bar marked.</summary>
+    private async Task LoadUsageAsync()
+    {
+        try
+        {
+            var usage = await _usage.GetAsync(_session.CurrentUser!.Id);
+            if (usage is null || usage.Users == 0) return;
+
+            var presets = await _splits.GetPresetsAsync();
+            var slices = SplitUsageChart.Build(presets
+                .Select(p => (p.Name, Users: usage.Presets.FirstOrDefault(r => r.PresetId == p.Id)?.Users ?? 0, IsThis: IsPreset && p.Id == _split.Id))
+                .Append((Name: "Custom splits", Users: usage.Custom, IsThis: !IsPreset)), usage.Users);
+
+            var mine = slices.First(s => s.IsThis);
+            MinePercent = mine.PercentText;
+            UsageHeadline = IsPreset ? $"{mine.PercentText} of lifters use {Name}." : $"{mine.PercentText} of lifters use a custom split.";
+            UsageNote = usage.Users == 1 ? "Based on 1 lifter with a split." : $"Based on {usage.Users} lifters with a split.";
+            UsageSlices = slices;
+        }
+        catch (Exception)
+        {
+            UsageSlices = [];   // the card just stays hidden
+        }
     }
 
     /// <summary>Each day's muscle groups, from the exercises the user put on it.</summary>

@@ -107,6 +107,10 @@ public sealed class SocialApiClient
         SendAsync<LeaderboardResponse>(HttpMethod.Get,
             $"v1/leaderboard?period={(period == LeaderboardPeriod.ThisWeek ? "thisWeek" : "allTime")}&today={Date(today)}", null, ct);
 
+    /// <summary>How many users train with each split, over every account.</summary>
+    public Task<ApiResult<SplitUsageResponse>> GetSplitUsageAsync(CancellationToken ct = default) =>
+        SendAsync<SplitUsageResponse>(HttpMethod.Get, "v1/splits/usage", null, ct);
+
     // --- Check-ins ---
 
     public Task<ApiResult> SetSharingAsync(bool share, CancellationToken ct = default) =>

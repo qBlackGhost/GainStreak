@@ -19,6 +19,12 @@ public class User
     /// <summary>Null until the user has been asked.</summary>
     public bool? ShareGymCheckIns { get; set; }
 
+    /// <summary>The preset the user trains with (the app's preset id), from the last stats upload. Null with
+    /// <see cref="UsesCustomSplit"/> false: no split chosen, or never uploaded.</summary>
+    public int? SplitPresetId { get; set; }
+
+    public bool UsesCustomSplit { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();

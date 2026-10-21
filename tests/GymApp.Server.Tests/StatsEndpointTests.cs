@@ -179,6 +179,49 @@ public class StatsEndpointTests : ServerTest
         Assert.Equal("Today must be within 2 days of the server's date.", await Get("period=allTime&today=2026-10-17"));
     }
 
+    private static async Task UploadSplitAsync(SignedIn user, ActiveSplitRequest? split) =>
+        Assert.Equal(HttpStatusCode.NoContent, (await user.Client.PutAsJsonAsync("/v1/me/stats",
+            new StatsUploadRequest([Day(Wednesday, 0, 0, 0)], split), ApiFormat.Json)).StatusCode);
+
+    private static async Task<SplitUsageResponse> UsageAsync(SignedIn user)
+    {
+        var response = await user.Client.GetAsync("/v1/splits/usage");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<SplitUsageResponse>(ApiFormat.Json))!;
+    }
+
+    [Fact] public async Task SplitUsage_CountsEveryAccountsLatestSplit_NotJustFriends()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bob");
+        var carol = await SignUpAsync("carol");
+        var dave = await SignUpAsync("dave");
+        await SignUpAsync("erin");                                // never uploaded: not counted
+
+        await UploadSplitAsync(alice, new ActiveSplitRequest(2));
+        await UploadSplitAsync(bob, new ActiveSplitRequest(1));
+        await UploadSplitAsync(bob, new ActiveSplitRequest(2));   // switched: only the latest counts
+        await UploadSplitAsync(carol, new ActiveSplitRequest(null));
+        await UploadSplitAsync(dave, null);                       // no split chosen
+
+        var usage = await UsageAsync(dave);
+        Assert.Equal(3, usage.Users);
+        Assert.Equal([new SplitUsageRow(2, 2)], usage.Presets);
+        Assert.Equal(1, usage.Custom);
+
+        await UploadSplitAsync(carol, null);
+        var after = await UsageAsync(alice);
+        Assert.Equal((2, 0), (after.Users, after.Custom));
+    }
+
+    [Fact] public async Task SplitUsage_BadPresetId_Is400()
+    {
+        var alice = await SignUpAsync("alice");
+        var response = await alice.Client.PutAsJsonAsync("/v1/me/stats",
+            new StatsUploadRequest([Day(Wednesday, 0, 0, 0)], new ActiveSplitRequest(0)), ApiFormat.Json);
+        Assert.Equal("Unknown preset split.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+    }
+
     [Fact] public async Task DeletingTheAccount_RemovesItsStats()
     {
         var alice = await SignUpAsync("alice");

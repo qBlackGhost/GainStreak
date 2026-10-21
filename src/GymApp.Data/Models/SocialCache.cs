@@ -21,4 +21,5 @@ public static class SocialCacheKeys
     public const string LeaderboardThisWeek = "leaderboard:thisWeek";
     public const string LeaderboardAllTime = "leaderboard:allTime";
     public const string CheckIns = "checkins";
+    public const string SplitUsage = "splitUsage";
 }

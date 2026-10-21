@@ -32,6 +32,7 @@ public static class AppServices
             sc.AddTransient<IFriendService, FriendService>();
             sc.AddTransient<ILeaderboardService, LeaderboardService>();
             sc.AddTransient<IFeedbackService, LocalFeedbackService>();
+            sc.AddTransient<ISplitUsageService, LocalSplitUsageService>();
         }
         else
         {
@@ -49,6 +50,7 @@ public static class AppServices
             sc.AddTransient<ILeaderboardService, RemoteLeaderboardService>();
             sc.AddTransient<IFriendCheckInSource, RemoteFriendCheckInSource>();
             sc.AddTransient<IFeedbackService, RemoteFeedbackService>();
+            sc.AddTransient<ISplitUsageService, RemoteSplitUsageService>();
             // Uploads stats, check-ins and the sharing setting; the services mark what changed through the hooks
             sc.AddTransient(sp => new StatsProjectionService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),

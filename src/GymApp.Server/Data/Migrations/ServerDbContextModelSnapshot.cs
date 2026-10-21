@@ -243,6 +243,9 @@ namespace GymApp.Server.Data.Migrations
                     b.Property<bool?>("ShareGymCheckIns")
                         .HasColumnType("boolean");
 
+                    b.Property<int?>("SplitPresetId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -252,6 +255,9 @@ namespace GymApp.Server.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
+
+                    b.Property<bool>("UsesCustomSplit")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 

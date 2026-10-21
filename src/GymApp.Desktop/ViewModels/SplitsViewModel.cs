@@ -12,6 +12,7 @@ public partial class SplitsViewModel : ViewModelBase
 {
     private readonly SplitService _splits;
     private readonly SessionService _session;
+    private readonly ISplitUsageService _usage;
     private readonly Func<MainViewModel> _shell;
 
     public ObservableCollection<SplitItemViewModel> Presets { get; } = new();
@@ -24,9 +25,9 @@ public partial class SplitsViewModel : ViewModelBase
     [ObservableProperty] public partial bool CanAddCustom { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
-    public SplitsViewModel(SplitService splits, SessionService session, Func<MainViewModel> shell)
+    public SplitsViewModel(SplitService splits, SessionService session, ISplitUsageService usage, Func<MainViewModel> shell)
     {
-        _splits = splits; _session = session; _shell = shell;
+        _splits = splits; _session = session; _usage = usage; _shell = shell;
         _ = LoadAsync();
     }
 
@@ -53,6 +54,27 @@ public partial class SplitsViewModel : ViewModelBase
         catch (Exception)
         {
             Error = "Could not load your splits.";
+            return;
+        }
+        await LoadUsageAsync();
+    }
+
+    /// <summary>Each preset's share of everyone with a split. Without the server's counts the cards just leave it out.</summary>
+    private async Task LoadUsageAsync()
+    {
+        try
+        {
+            var usage = await _usage.GetAsync(_session.CurrentUser!.Id);
+            if (usage is null || usage.Users == 0) return;
+            foreach (var item in Presets)
+            {
+                var users = usage.Presets.FirstOrDefault(r => r.PresetId == item.Split.Id)?.Users ?? 0;
+                item.UsageText = $"{SplitTags.Percent(100.0 * users / usage.Users)} of lifters";
+            }
+        }
+        catch (Exception)
+        {
+            // optional, like the chart on the detail page
         }
     }
 

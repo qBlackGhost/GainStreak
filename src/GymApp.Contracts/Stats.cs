@@ -3,8 +3,9 @@ namespace GymApp.Contracts;
 /// <summary>One projected day: what the stats will be on <see cref="Date"/> if nothing new is logged.</summary>
 public sealed record StatsDayRequest(DateOnly Date, int TotalPoints, int WeekPoints, int CurrentStreak);
 
-/// <summary>Replaces every day the server holds for you. At most 31 days, no date twice, the first within 2 days of today.</summary>
-public sealed record StatsUploadRequest(IReadOnlyList<StatsDayRequest> Days);
+/// <summary>Replaces every day the server holds for you. At most 31 days, no date twice, the first within 2 days of today.
+/// <see cref="Split"/> also replaces your active split, for the split usage counts; null means none chosen.</summary>
+public sealed record StatsUploadRequest(IReadOnlyList<StatsDayRequest> Days, ActiveSplitRequest? Split = null);
 
 /// <summary>Sent as <c>thisWeek</c> or <c>allTime</c>, also in the <c>period</c> query parameter.</summary>
 public enum LeaderboardPeriod { ThisWeek, AllTime }

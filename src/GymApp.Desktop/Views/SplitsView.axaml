@@ -58,6 +58,14 @@
                                             <TextBlock Text="Recommended" FontSize="12" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Border>
+                                    <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}"
+                                            IsVisible="{Binding RecommendedDaysTag, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <StackPanel Orientation="Horizontal" Spacing="5">
+                                            <v:Icon Data="{StaticResource IcCalendar}" StrokeThickness="2.4" Width="12" Height="12"
+                                                    VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding RecommendedDaysTag}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                                        </StackPanel>
+                                    </Border>
                                     <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Accent}"
                                             IsVisible="{Binding IsSelected}">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
@@ -68,7 +76,11 @@
                                     </Border>
                                 </WrapPanel>
                             </StackPanel>
-                            <TextBlock Grid.Column="1" Text="{Binding DaysText}" Classes="mono light" FontSize="14" FontWeight="Bold"/>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="{Binding DaysText}" Classes="mono light" FontSize="14" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                <TextBlock Text="{Binding UsageText}" FontSize="12" Classes="muted" HorizontalAlignment="Right"
+                                           IsVisible="{Binding UsageText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
                         </Grid>
                         <ItemsControl ItemsSource="{Binding Sequence}">
                             <ItemsControl.ItemsPanel>
