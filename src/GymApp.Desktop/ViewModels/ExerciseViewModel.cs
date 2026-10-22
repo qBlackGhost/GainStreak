@@ -49,6 +49,13 @@ public partial class SetRowViewModel : ObservableObject
     [ObservableProperty] public partial bool IsNewPr { get; set; }
     [ObservableProperty] public partial bool IsTie { get; set; }
 
+    // Per side mode: what the row adds up to, e.g. "140 kg" and "(60 × 2 + 20 bar)"
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTotalHint))]
+    public partial string TotalHint { get; set; } = "";
+    [ObservableProperty] public partial string TotalDetail { get; set; } = "";
+    public bool HasTotalHint => TotalHint.Length > 0;
+
     public string KindLabel => IsWarmup ? "Warm-up" : "Working";
     public bool HasPrompt => Prompt.Length > 0;
 
@@ -58,7 +65,7 @@ public partial class SetRowViewModel : ObservableObject
 
     public DraftSet ToDraft() => new(
         IsWarmup ? SetKind.Warmup : SetKind.Working,
-        NumberParsing.TryParseKg(WeightText, out var kg) ? kg : (double?)null,
+        _owner.TryReadTotal(WeightText, out var kg) ? kg : (double?)null,
         NumberParsing.TryParseReps(RepsText, out var reps) ? reps : (int?)null);
 
     public void ApplyPrompt(PrPrompt? prompt)
@@ -182,6 +189,24 @@ public partial class ExerciseViewModel : ViewModelBase
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? Info { get; set; }
 
+    // Bar exercises: the weight is typed as the total, or per side plus an optional bar. Sets always save the total.
+    [ObservableProperty] public partial bool UsesBar { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WeightModeIndex), nameof(IsTotalMode), nameof(WeightHeader))]
+    public partial bool IsPerSide { get; set; }
+
+    /// <summary>For the Total / Per side pill: 0 = total, 1 = per side.</summary>
+    public int WeightModeIndex => IsPerSide ? 1 : 0;
+    public bool IsTotalMode => !IsPerSide;
+    public string WeightHeader => IsPerSide ? "KG / SIDE" : "KG";
+
+    [ObservableProperty] public partial string BarText { get; set; } = "";
+    [ObservableProperty] public partial string? BarError { get; set; }
+
+    /// <summary>The bar in kg; null when the field is empty (or not a number, which BarError reports).</summary>
+    private double? BarKg => NumberParsing.TryParseKg(BarText, out var kg) ? kg : null;
+
     private int UserId => _session.CurrentUser!.Id;
 
     public ExerciseViewModel(SetService sets, DayExerciseService days, SessionService session, Func<MainViewModel> shell)
@@ -219,6 +244,13 @@ public partial class ExerciseViewModel : ViewModelBase
             WarmupSets = _planWarmup = row.WarmupSets;
             WorkingSets = _planWorking = row.WorkingSets;
 
+            UsesBar = BarWeight.UsesBar(row.Exercise.Name);
+            var bar = UsesBar ? await _sets.GetBarSettingAsync(UserId, _exerciseId) : BarSetting.Total;
+            _loading = true;
+            IsPerSide = bar.PerSide;
+            BarText = bar.BarKg is { } barKg ? NumberParsing.FormatKg(barKg) : "";
+            _loading = false;
+
             _history = await _sets.GetHistoryAsync(UserId, _exerciseId);
             await LoadLastAsync();
             await RebuildFromSavedAsync();
@@ -250,7 +282,7 @@ public partial class ExerciseViewModel : ViewModelBase
         foreach (var r in Rows)
         {
             var match = r.IsWarmup ? lastWarm.ElementAtOrDefault(warm++) : lastWork.ElementAtOrDefault(work++);
-            r.WeightPlaceholder = match is null ? "kg" : NumberParsing.FormatKg(match.WeightKg);
+            r.WeightPlaceholder = match is null ? "kg" : ShowWeight(match.WeightKg);
             r.RepsPlaceholder = match is null ? "reps" : match.Reps.ToString(CultureInfo.InvariantCulture);
         }
     }
@@ -268,7 +300,7 @@ public partial class ExerciseViewModel : ViewModelBase
         {
             var saved = await _sets.GetDayAsync(UserId, _exerciseId, _today);
             RebuildRows(saved.Count > 0
-                ? saved.Select(s => new RowData(s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture)))
+                ? saved.Select(s => new RowData(s.Kind, ShowWeight(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture)))
                 : PlanRows());
 
         }
@@ -337,7 +369,86 @@ public partial class ExerciseViewModel : ViewModelBase
         ApplyPlaceholders();
         var draft = Rows.Select(r => r.ToDraft()).ToList();
         for (var i = 0; i < Rows.Count; i++)
+        {
             Rows[i].ApplyPrompt(PrPrompts.ForRow(draft, i, _history.Sets, _history.Adjustments, _today));
+            ApplyTotalHint(Rows[i]);
+        }
+    }
+
+    // ---------- total / per side ----------
+
+    /// <summary>A saved total as the weight field shows it: the total, or what goes on each side.</summary>
+    private string ShowWeight(double totalKg) =>
+        NumberParsing.FormatKg(IsPerSide ? BarWeight.PerSide(totalKg, BarKg) : totalKg);
+
+    /// <summary>The total a weight field stands for, whichever way it is typed.</summary>
+    internal bool TryReadTotal(string text, out double totalKg)
+    {
+        if (!NumberParsing.TryParseKg(text, out totalKg)) return false;
+        if (IsPerSide) totalKg = BarWeight.Total(totalKg, BarKg);
+        return true;
+    }
+
+    private void ApplyTotalHint(SetRowViewModel row)
+    {
+        if (!IsPerSide || !NumberParsing.TryParseKg(row.WeightText, out var side))
+        {
+            row.TotalHint = row.TotalDetail = "";
+            return;
+        }
+        var bar = BarKg ?? 0;
+        row.TotalHint = $"{NumberParsing.FormatKg(BarWeight.Total(side, bar))} kg";
+        row.TotalDetail = bar > 0 ? $"({NumberParsing.FormatKg(side)} × 2 + {NumberParsing.FormatKg(bar)} bar)" : "(× 2)";
+    }
+
+    [RelayCommand] private void SetTotalMode() => SwitchWeightMode(perSide: false);
+    [RelayCommand] private void SetPerSideMode() => SwitchWeightMode(perSide: true);
+
+    // What you typed keeps its meaning: 140 total becomes 60 per side on a 20 kg bar, and back
+    private void SwitchWeightMode(bool perSide)
+    {
+        if (IsPerSide == perSide) return;
+        var totals = Rows.Select(r => TryReadTotal(r.WeightText, out var kg) ? kg : (double?)null).ToList();
+        _loading = true;
+        IsPerSide = perSide;
+        for (var i = 0; i < Rows.Count; i++)
+            if (totals[i] is { } kg) Rows[i].WeightText = ShowWeight(kg);
+        _loading = false;
+        RefreshPrompts();
+        QueueBarSave();
+    }
+
+    // A new bar weight keeps the per side numbers, so the totals change with it
+    partial void OnBarTextChanged(string value)
+    {
+        if (_loading) return;
+        BarError = string.IsNullOrWhiteSpace(value) || BarKg is not null ? null : "Enter the bar in kg, or leave it empty.";
+        RefreshPrompts();
+        if (BarError is null) QueueBarSave();
+    }
+
+    private Task _barSave = Task.CompletedTask;
+
+    // Saves run one after another (typing the bar saves on each key), so the last value wins
+    private void QueueBarSave() => _barSave = SaveBarAsync(_barSave);
+
+    private async Task SaveBarAsync(Task previous)
+    {
+        if (!UsesBar) return;
+        try
+        {
+            await previous;
+            var r = await _sets.SaveBarSettingAsync(UserId, _exerciseId, new BarSetting(IsPerSide, BarKg));
+            if (!r.Success)
+            {
+                if (r.Field == FormField.Weight) BarError = r.Error;
+                else Error = r.Error;
+            }
+        }
+        catch (Exception)
+        {
+            Error = "Could not save the bar weight.";
+        }
     }
 
     internal void RemoveRow(SetRowViewModel row)
@@ -386,7 +497,7 @@ public partial class ExerciseViewModel : ViewModelBase
             if (last.Count == 0) { Error = null; Info = "No earlier session to copy yet."; return; }
 
             RebuildRows(last.Select(s => new RowData(
-                s.Kind, NumberParsing.FormatKg(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
+                s.Kind, ShowWeight(s.WeightKg), s.Reps.ToString(CultureInfo.InvariantCulture))));
             Error = null;
             Info = $"Filled from {FormatDate(last[0].Date)}. Change anything, then save.";
 
@@ -400,6 +511,13 @@ public partial class ExerciseViewModel : ViewModelBase
     [RelayCommand]
     private async Task SaveAsync()
     {
+        if (IsPerSide && BarError is not null)
+        {
+            Error = BarError;
+            Info = null;
+            return;
+        }
+
         var inputs = new List<SetInput>();
         for (var i = 0; i < Rows.Count; i++)
         {
@@ -407,7 +525,7 @@ public partial class ExerciseViewModel : ViewModelBase
             if (string.IsNullOrWhiteSpace(row.WeightText) && string.IsNullOrWhiteSpace(row.RepsText))
                 continue;   // empty rows are ignored
 
-            if (!NumberParsing.TryParseKg(row.WeightText, out var kg) ||
+            if (!TryReadTotal(row.WeightText, out var kg) ||
                 !NumberParsing.TryParseReps(row.RepsText, out var reps))
             {
                 Error = $"Set {i + 1}: enter the weight (0 for bodyweight) and the number of reps.";
@@ -647,6 +765,7 @@ public partial class ExerciseViewModel : ViewModelBase
     private async Task BackAsync()
     {
         await _planSave;
+        await _barSave;
         _shell().ShowDay(_day, _splitName);
     }
     [RelayCommand] private void ShowDashboard() => _shell().ShowHome();

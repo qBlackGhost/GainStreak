@@ -283,4 +283,35 @@ public class SetServiceTests : IDisposable
 
     [Fact] public async Task RecentPrs_NoneWithoutSets() =>
         Assert.Empty(await _svc.GetRecentPrsAsync(_alice));
+
+    // ---------- bar setting (Total / Per side) ----------
+
+    [Fact] public async Task BarSetting_DefaultsToTotal()
+    {
+        Assert.Equal(BarSetting.Total, await _svc.GetBarSettingAsync(_alice, 1));
+    }
+
+    [Fact] public async Task BarSetting_RoundTrips_PerUserAndExercise()
+    {
+        Assert.True((await _svc.SaveBarSettingAsync(_alice, 1, new BarSetting(true, 20))).Success);
+        Assert.True((await _svc.SaveBarSettingAsync(_alice, 1, new BarSetting(true, 15))).Success);   // updates the row
+
+        Assert.Equal(new BarSetting(true, 15), await _svc.GetBarSettingAsync(_alice, 1));
+        Assert.Equal(BarSetting.Total, await _svc.GetBarSettingAsync(_alice, 12));
+        Assert.Equal(BarSetting.Total, await _svc.GetBarSettingAsync(_bob, 1));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(101)]
+    [InlineData(double.NaN)]
+    public async Task BarSetting_RejectsABadBar(double bar)
+    {
+        var r = await _svc.SaveBarSettingAsync(_alice, 1, new BarSetting(true, bar));
+        Assert.False(r.Success);
+        Assert.Equal(FormField.Weight, r.Field);
+    }
+
+    [Fact] public async Task BarSetting_RejectsAnUnknownExercise() =>
+        Assert.False((await _svc.SaveBarSettingAsync(_alice, 99999, new BarSetting(true, 20))).Success);
 }

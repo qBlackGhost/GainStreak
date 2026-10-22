@@ -515,6 +515,34 @@ namespace GymApp.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.ExerciseBarSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("BarKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("ExerciseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("PerSide")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExerciseId");
+
+                    b.HasIndex("UserId", "ExerciseId")
+                        .IsUnique();
+
+                    b.ToTable("ExerciseBarSettings");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.Friendship", b =>
                 {
                     b.Property<int>("Id")
@@ -1337,6 +1365,25 @@ namespace GymApp.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.ExerciseBarSetting", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Exercise", "Exercise")
+                        .WithMany()
+                        .HasForeignKey("ExerciseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exercise");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.Friendship", b =>

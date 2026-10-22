@@ -14,6 +14,12 @@ namespace GymApp.Services;
 /// <summary>One row on the exercise screen.</summary>
 public record SetInput(SetKind Kind, int Reps, double WeightKg);
 
+/// <summary>How the weight is typed for a bar exercise (see BarWeight). Default: the total, no bar.</summary>
+public record BarSetting(bool PerSide, double? BarKg)
+{
+    public static readonly BarSetting Total = new(false, null);
+}
+
 public record SetResult(bool Success, string? Error = null, string? Field = null);
 
 /// <summary>Everything the PR logic needs for one exercise. Sets and Adjustments are the raw data, so the
@@ -37,6 +43,7 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
     public const int MaxReps = 100;
     public const double MaxWeightKg = 1000;
     public const double MaxOneRepMaxKg = 2000;
+    public const double MaxBarKg = 100;
 
     private static DateOnly Today() => AppClock.Today;
 
@@ -198,6 +205,36 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
             .Where(a => a.UserId == userId && a.ExerciseId == exerciseId && a.Date == date)
             .ExecuteDeleteAsync();
         return deleted > 0;
+    }
+
+    /// <summary>How this user types the weight for this exercise; the total when never changed.</summary>
+    public async Task<BarSetting> GetBarSettingAsync(int userId, int exerciseId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var row = await db.ExerciseBarSettings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.ExerciseId == exerciseId);
+        return row is null ? BarSetting.Total : new BarSetting(row.PerSide, row.BarKg);
+    }
+
+    /// <summary>Remembers Total / Per side and the bar weight for this exercise. Only changes how the weight is
+    /// typed; the logged sets keep their totals.</summary>
+    public async Task<SetResult> SaveBarSettingAsync(int userId, int exerciseId, BarSetting setting)
+    {
+        if (setting.BarKg is { } bar && (!double.IsFinite(bar) || bar < 0 || bar > MaxBarKg))
+            return new(false, $"The bar must be 0 to {MaxBarKg:0} kg.", FormField.Weight);
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        if (!await ExerciseAvailableAsync(db, userId, exerciseId)) return new(false, "Exercise not found.");
+
+        var row = await db.ExerciseBarSettings.FirstOrDefaultAsync(x => x.UserId == userId && x.ExerciseId == exerciseId);
+        if (row is null)
+            db.ExerciseBarSettings.Add(row = new ExerciseBarSetting { UserId = userId, ExerciseId = exerciseId });
+        row.PerSide = setting.PerSide;
+        row.BarKg = setting.BarKg is { } kg ? Math.Round(kg, 2) : null;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save the bar weight."); }
+        return new(true);
     }
 
     private static SetEntry ToEntry(SetLog s) => new(s.Date, s.SetNumber, s.Kind, s.Reps, s.WeightKg);

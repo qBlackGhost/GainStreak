@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<UserDayExercise> UserDayExercises => Set<UserDayExercise>();
     public DbSet<SetLog> SetLogs => Set<SetLog>();
     public DbSet<PrAdjustment> PrAdjustments => Set<PrAdjustment>();
+    public DbSet<ExerciseBarSetting> ExerciseBarSettings => Set<ExerciseBarSetting>();
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<WeightLog> WeightLogs => Set<WeightLog>();
     public DbSet<PointsEntry> PointsEntries => Set<PointsEntry>();
@@ -125,6 +126,12 @@ public class AppDbContext : DbContext
             .HasForeignKey(a => a.UserId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<PrAdjustment>().HasOne(a => a.Exercise).WithMany()
             .HasForeignKey(a => a.ExerciseId).OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<ExerciseBarSetting>().HasIndex(x => new { x.UserId, x.ExerciseId }).IsUnique();
+        b.Entity<ExerciseBarSetting>().HasOne(x => x.User).WithMany()
+            .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<ExerciseBarSetting>().HasOne(x => x.Exercise).WithMany()
+            .HasForeignKey(x => x.ExerciseId).OnDelete(DeleteBehavior.Cascade);
         
         b.Entity<UserProfile>().HasOne(p => p.User).WithOne()
             .HasForeignKey<UserProfile>(p => p.UserId).OnDelete(DeleteBehavior.Cascade);

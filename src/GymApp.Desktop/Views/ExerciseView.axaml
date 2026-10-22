@@ -202,12 +202,38 @@
                             </WrapPanel>
                         </Border>
 
+                        <!-- Bar exercises: type the total, or what goes on each side plus the bar -->
+                        <Border Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}" IsVisible="{Binding UsesBar}">
+                            <StackPanel Spacing="8">
+                                <WrapPanel ItemSpacing="20" LineSpacing="10">
+                                    <TextBlock Text="WEIGHT" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"
+                                               VerticalAlignment="Center"/>
+                                    <Border Width="200" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
+                                        <v:SegmentedPill SelectedIndex="{Binding WeightModeIndex}" PillInset="0" PillCornerRadius="8">
+                                            <Button Classes="seg" Classes.on="{Binding IsTotalMode}" MinHeight="34" Padding="0"
+                                                    CornerRadius="8" Content="Total" Command="{Binding SetTotalModeCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding IsPerSide}" MinHeight="34" Padding="0"
+                                                    CornerRadius="8" Content="Per side" Command="{Binding SetPerSideModeCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsPerSide}">
+                                        <TextBlock Text="Bar" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                        <TextBox Classes="field" Width="84" MinHeight="40" PlaceholderText="kg" Text="{Binding BarText}"
+                                                 AutomationProperties.Name="Bar weight in kg"/>
+                                        <TextBlock Text="optional" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="{Binding BarError}" Classes="error" FontSize="13"
+                                           IsVisible="{Binding BarError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- The sets -->
                         <StackPanel Spacing="4" Grid.IsSharedSizeScope="True">
                             <Grid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4">
                                 <TextBlock Text="SET" Classes="colHead"/>
                                 <TextBlock Grid.Column="1" Text="TYPE" Classes="colHead"/>
-                                <TextBlock Grid.Column="2" Text="KG" Classes="colHead"/>
+                                <TextBlock Grid.Column="2" Text="{Binding WeightHeader}" Classes="colHead"/>
                                 <TextBlock Grid.Column="3" Text="REPS" Classes="colHead"/>
                             </Grid>
                             <ItemsControl ItemsSource="{Binding Rows}">
@@ -239,6 +265,14 @@
                                                         <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="14" Height="14"/>
                                                     </Button>
                                                 </Grid>
+                                                <!-- Per side: what the row adds up to, under the weight -->
+                                                <TextBlock FontSize="12" Classes="muted" Margin="242,0,0,0" IsVisible="{Binding HasTotalHint}">
+                                                    <Run Text="="/>
+                                                    <Run Text="{Binding TotalHint}" FontFamily="{StaticResource Mono}" FontWeight="Bold"
+                                                         Foreground="{DynamicResource AccentInk}"/>
+                                                    <Run Text="total"/>
+                                                    <Run Text="{Binding TotalDetail}" Foreground="{DynamicResource Faint}"/>
+                                                </TextBlock>
                                                 <TextBlock Classes="prompt" Classes.newpr="{Binding IsNewPr}" Classes.tie="{Binding IsTie}"
                                                            Text="{Binding Prompt}" Margin="42,0,0,0" IsVisible="{Binding HasPrompt}"/>
                                             </StackPanel>
