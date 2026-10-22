@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Server.Data;
 
-/// <summary>The server's Postgres database: accounts, sessions, friendships, projected stats, shared check-ins and feedback.
+/// <summary>The server's Postgres database: accounts, sessions, friendships, projected stats, shared check-ins, feedback
+/// and the splits and workouts friends share.
 /// Separate from the app's AppDbContext, which never leaves the phone.</summary>
 public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
 {
@@ -17,6 +18,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<StatsDay> ProjectedStats => Set<StatsDay>();
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
     public DbSet<FeedbackEntry> Feedback => Set<FeedbackEntry>();
+    public DbSet<Share> Shares => Set<Share>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -81,6 +83,15 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.HasIndex(f => f.CreatedAt);
             // Deleting an account deletes what it sent
             e.HasOne<User>().WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<Share>(e =>
+        {
+            e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16);
+            e.Property(x => x.Payload).HasMaxLength(Share.MaxPayloadLength);
+            e.HasIndex(x => new { x.ToUserId, x.CreatedAt });
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.FromUserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.ToUserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

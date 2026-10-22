@@ -77,20 +77,14 @@ public partial class FriendRowViewModel(Friend friend, string? level, FriendsVie
     [RelayCommand] private void CancelRemove() => IsConfirmingRemove = false;
 }
 
-/// <summary>A pending request: incoming ones can be accepted or declined, outgoing ones cancelled.</summary>
-public partial class RequestRowViewModel(FriendRequest request, bool incoming, FriendsViewModel owner) : ObservableObject
+/// <summary>A request you sent, waiting for an answer; it can be cancelled. Requests you get are in the inbox.</summary>
+public partial class RequestRowViewModel(FriendRequest request, FriendsViewModel owner) : ObservableObject
 {
     public int UserId => request.UserId;
     public string Username => request.Username;
     public string Initials => ViewModels.Initials.Of(request.Username);
-    public bool IsIncoming => incoming;
-    public bool IsOutgoing => !incoming;
-    public string StatusText => incoming ? "Wants to be friends" : "Request sent · waiting";
-    public string SentText => (incoming ? "Sent you a request " : "Requested ")
-                              + request.SentAt.ToLocalTime().ToString("d MMM", CultureInfo.InvariantCulture);
+    public string StatusText => "Request sent · waiting";
 
-    [RelayCommand] private Task Accept() => owner.AcceptAsync(UserId);
-    [RelayCommand] private Task Decline() => owner.DeclineAsync(UserId);
     [RelayCommand] private Task Cancel() => owner.CancelAsync(UserId);
 }
 
@@ -115,7 +109,7 @@ public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) 
 }
 
 /// <summary>The friends screen: the leaderboard (this week or all time), your friends, the username search and
-/// pending requests. Only reads results from the friend and leaderboard services (local or the server's). User ids in
+/// the requests you sent (the ones you get are in the inbox). Only reads results from the friend and leaderboard services (local or the server's). User ids in
 /// the rows are the service's own (server ids in remote mode): they're passed back as they came, never compared with
 /// the signed-in user's local id.</summary>
 public partial class FriendsViewModel : ViewModelBase
@@ -124,10 +118,13 @@ public partial class FriendsViewModel : ViewModelBase
     private readonly ILeaderboardService _board;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
+    private readonly InboxService _inbox;
 
-    public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell)
+    public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell,
+                            InboxService inbox)
     {
         _friends = friends;
+        _inbox = inbox;
         _board = board;
         _session = session;
         _shell = shell;
@@ -145,7 +142,6 @@ public partial class FriendsViewModel : ViewModelBase
     [ObservableProperty] public partial string PeriodText { get; set; } = "";
     [ObservableProperty] public partial string FriendCountText { get; set; } = "";
     [ObservableProperty] public partial string SentCountText { get; set; } = "";
-    [ObservableProperty] public partial int IncomingCount { get; set; }
 
     [RelayCommand]
     private async Task ShowThisWeekAsync()
@@ -186,15 +182,12 @@ public partial class FriendsViewModel : ViewModelBase
     }
 
     public ObservableCollection<FriendRowViewModel> Friends { get; } = new();
-    public ObservableCollection<RequestRowViewModel> Incoming { get; } = new();
     public ObservableCollection<RequestRowViewModel> Outgoing { get; } = new();
     public ObservableCollection<FoundUserViewModel> Results { get; } = new();
 
     [ObservableProperty] public partial string FriendsTitle { get; set; } = "Friends";
     [ObservableProperty] public partial bool HasNoFriends { get; set; }
-    [ObservableProperty] public partial bool HasIncoming { get; set; }
     [ObservableProperty] public partial bool HasOutgoing { get; set; }
-    [ObservableProperty] public partial bool HasNoRequests { get; set; }
     [ObservableProperty] public partial string Query { get; set; } = "";
     [ObservableProperty] public partial string? SearchHint { get; set; }
     [ObservableProperty] public partial string? Notice { get; set; }
@@ -222,14 +215,9 @@ public partial class FriendsViewModel : ViewModelBase
             HasNoFriends = friends.Count == 0;
 
             var requests = await _friends.GetRequestsAsync(me);
-            Incoming.Clear();
-            foreach (var r in requests.Incoming) Incoming.Add(new RequestRowViewModel(r, true, this));
             Outgoing.Clear();
-            foreach (var r in requests.Outgoing) Outgoing.Add(new RequestRowViewModel(r, false, this));
-            HasIncoming = Incoming.Count > 0;
+            foreach (var r in requests.Outgoing) Outgoing.Add(new RequestRowViewModel(r, this));
             HasOutgoing = Outgoing.Count > 0;
-            HasNoRequests = !HasIncoming && !HasOutgoing;
-            IncomingCount = Incoming.Count;
             StaleNotice = StaleText.For(friends as ICachedResult) ?? StaleText.For(requests) ?? BoardStale;
             SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
         }
@@ -264,12 +252,6 @@ public partial class FriendsViewModel : ViewModelBase
     internal Task SendRequestAsync(int otherId) =>
         RunAsync(me => _friends.SendRequestAsync(me, otherId), r => r.BecameFriends ? "You're now friends." : "Request sent.");
 
-    internal Task AcceptAsync(int otherId) =>
-        RunAsync(me => _friends.AcceptAsync(me, otherId), _ => "You're now friends.");
-
-    internal Task DeclineAsync(int otherId) =>
-        RunAsync(me => _friends.DeclineAsync(me, otherId), _ => null);
-
     internal Task CancelAsync(int otherId) =>
         RunAsync(me => _friends.CancelAsync(me, otherId), _ => null);
 
@@ -292,6 +274,8 @@ public partial class FriendsViewModel : ViewModelBase
         }
         await LoadAsync();
         if (Results.Count > 0) await RefreshResultsAsync(me);
+        try { await _inbox.RefreshUnreadAsync(me); }   // accepting from the search clears an inbox request
+        catch (Exception) { }
     }
 
     private async Task RefreshResultsAsync(int me)

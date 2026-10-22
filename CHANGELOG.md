@@ -2,6 +2,18 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.15.5
+
+- **Inbox:** a new Inbox screen, in the sidebar above Friends, holds friend requests and the splits and workouts friends share. An All / Requests / Workouts pill filters it; new items have a dot until **Mark all read**, and the sidebar's red badge (now on every screen) counts them. Accept and Decline work right there; what was done from the inbox is listed under Earlier. Friends now only lists the requests you sent, and the dashboard's Friends card has no badge of its own.
+- **Sharing:** Workouts and Splits have a lime **Share** button. Pick a workout (a day of your split) or a whole split, tick up to 10 friends and send. The friend gets a card in their inbox with a preview:
+  - **A split** comes with every day and its exercises. Adding it asks which weekday day 1 starts on (a custom split keeps its gaps, shifted to that day) and, for a built-in split, whether the shared exercises replace yours on that split or it becomes a new custom split. It becomes the active split.
+  - **A workout** loads into a day of your current split (a day with the same name is picked first), added to the end or replacing the list.
+  - Exercises travel by name: built-ins match by name, a friend's custom exercise reuses yours of the same name or is created. Shares are snapshots, removed once added or dismissed, and dropped after 30 days or when you're no longer friends.
+- **Adding exercises:** adding an exercise to a workout day opens that exercise right away, so its sets can be set up.
+- **Split page:** the button on the active split reads **In use** (greyed) until you change the days per week or the start day, then **Save**.
+- **Server:** `POST /v1/shares`, `GET /v1/shares` and `DELETE /v1/shares/{id}`, friends only, at most 30 shares an hour per user and 30 waiting per receiver.
+- **Migration:** `Shares` in the server's Postgres (a new table). Run it before deploying. The app's database is unchanged; which inbox items were read and the Earlier list are kept in a small `inbox-<user>.json` file next to it.
+
 ## 0.15.4
 
 - **Per side weight:** bar exercises (barbell lifts, Smith machine, EZ bar curls, picked by name; custom exercises too) have a Total / Per side toggle on the exercise screen. Per side takes the plates on one side and an optional bar weight, and each row shows the total, e.g. "= 140 kg total (60 × 2 + 20 bar)". Switching converts what's typed. Sets still store the total, so PRs, points and stats are unchanged. The mode and bar weight are remembered per exercise.

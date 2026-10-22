@@ -98,32 +98,6 @@
         </Style>
 
         <!-- Copy dialog: sources and the add / replace switch -->
-        <Style Selector="Button.source">
-            <Setter Property="MinHeight" Value="56"/>
-            <Setter Property="Padding" Value="14,0"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
-            <Setter Property="Cursor" Value="Hand"/>
-        </Style>
-        <Style Selector="Button.source:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource Fill}"/>
-            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
-        </Style>
-        <Style Selector="Button.source.on">
-            <Setter Property="Background" Value="{DynamicResource Fill}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
-            <Setter Property="BorderThickness" Value="2"/>
-        </Style>
-        <Style Selector="Button.source.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
-        </Style>
-
         <Style Selector="TextBox.field">
             <Setter Property="MinHeight" Value="44"/>
             <Setter Property="CornerRadius" Value="10"/>

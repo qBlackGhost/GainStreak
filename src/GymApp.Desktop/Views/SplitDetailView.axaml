@@ -20,6 +20,39 @@
             <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
         </Style>
 
+        <!-- The use button fades from lime to grey when it becomes "In use"; right after a save the check pops in -->
+        <Style Selector="Button.use /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.3"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Button.use.inUse:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
+        </Style>
+        <Style Selector="Button.use.inUse">
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
+        <Style Selector="Button.use.justSaved v|Icon.useCheck">
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+            <Style.Animations>
+                <Animation Duration="0:0:0.35" Easing="BackEaseOut" FillMode="Forward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="ScaleTransform.ScaleX" Value="0"/>
+                        <Setter Property="ScaleTransform.ScaleY" Value="0"/>
+                        <Setter Property="Opacity" Value="0"/>
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="ScaleTransform.ScaleX" Value="1"/>
+                        <Setter Property="ScaleTransform.ScaleY" Value="1"/>
+                        <Setter Property="Opacity" Value="1"/>
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
         <!-- Days per week cards -->
         <Style Selector="Button.variant">
             <Setter Property="MinWidth" Value="130"/>
@@ -264,8 +297,16 @@
                                            HorizontalAlignment="Left" VerticalAlignment="Center"/>
                                 <Button Grid.Column="1" Classes="btn outline" MinHeight="48" Content="Edit split"
                                         Command="{Binding EditCommand}" IsVisible="{Binding !IsPreset}"/>
-                                <Button Grid.Column="2" Classes="btn primary" MinHeight="48" Padding="24,0" FontSize="15"
-                                        Content="{Binding UseLabel}" Command="{Binding UseCommand}"/>
+                                <!-- "Use this split" / "Save" until saved, then a greyed "In use" with a check -->
+                                <Button Grid.Column="2" Classes="btn primary use" Classes.inUse="{Binding IsInUse}"
+                                        Classes.justSaved="{Binding JustSaved}" MinHeight="48" Padding="24,0" FontSize="15"
+                                        Command="{Binding UseCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <v:Icon Classes="useCheck" Data="{StaticResource IcCheck}" StrokeThickness="2.6" Width="14" Height="14"
+                                                Stroke="{DynamicResource AccentInk}" VerticalAlignment="Center" IsVisible="{Binding IsInUse}"/>
+                                        <TextBlock Text="{Binding UseLabel}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
                         </Border>
                     </StackPanel>

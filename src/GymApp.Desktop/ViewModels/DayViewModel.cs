@@ -241,10 +241,8 @@ public partial class DayViewModel : ViewModelBase
             var r = await _days.AddAsync(UserId, _dayId, item.ExerciseId);
             if (!r.Success) { Error = r.Error; Info = null; return; }
 
-            Error = null;
-            Info = $"Added {item.Name}.";
-            await ReloadAsync();
-
+            // Go straight to the new exercise so its sets can be set up right away
+            _shell().ShowExercise(_menuDay!, _splitName, item.ExerciseId);
         }
         catch (Exception)
         {

@@ -108,6 +108,9 @@ public partial class SplitDetailViewModel : ViewModelBase
     private readonly ISplitUsageService _usage;
     private readonly Func<MainViewModel> _shell;
     private WorkoutSplit _split = null!;
+    // What's saved for this split while it's the active one; a different pick turns "In use" into "Save"
+    private int? _savedVariantId;
+    private DayOfWeek? _savedStartDay;
 
     public IReadOnlyList<DayOfWeek> StartDays { get; } = new[]
     {
@@ -151,8 +154,12 @@ public partial class SplitDetailViewModel : ViewModelBase
     partial void OnUsageSlicesChanged(IReadOnlyList<SplitUsageSlice> value) => OnPropertyChanged(nameof(HasUsage));
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UseLabel), nameof(FootNote))]
+    [NotifyPropertyChangedFor(nameof(UseLabel), nameof(FootNote), nameof(IsInUse), nameof(CanUse))]
+    [NotifyCanExecuteChangedFor(nameof(UseCommand))]
     public partial bool IsActive { get; set; }
+
+    /// <summary>Set right after a save turns the button into "In use", so only then it animates (not on opening the page).</summary>
+    [ObservableProperty] public partial bool JustSaved { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasVariants))]
@@ -171,10 +178,17 @@ public partial class SplitDetailViewModel : ViewModelBase
 
     /// <summary>The selected start day's position in <see cref="StartDays"/>, for the sliding pill.</summary>
     public int StartDayIndex => StartDays.ToList().IndexOf(StartDay);
-    public string UseLabel => IsActive ? "Save changes" : "Use this split";
+    /// <summary>The active split with a days-per-week or start day that differs from what's saved.</summary>
+    public bool IsDirty => IsActive && IsPreset && (SelectedVariant?.Id != _savedVariantId || StartDay != _savedStartDay);
+
+    /// <summary>The active split, nothing to save: the button reads "In use" and can't be clicked.</summary>
+    public bool IsInUse => IsActive && !IsDirty;
+    public bool CanUse => !IsInUse;
+    public string UseLabel => !IsActive ? "Use this split" : IsDirty ? "Save" : "In use";
     public string FootNote => IsActive
-        ? IsPreset ? "This is your current split. Changing the start day updates your schedule from today on."
-                   : "This is your current split. Edit it to change its days."
+        ? IsDirty ? "Save to update your schedule from today on."
+          : IsPreset ? "This is your current split. Changing the start day updates your schedule from today on."
+                     : "This is your current split. Edit it to change its days."
         : IsPreset ? $"Switching split keeps your past streak days. Your new week starts on {StartDay}."
                    : "Switching split keeps your past streak days.";
 
@@ -216,6 +230,8 @@ public partial class SplitDetailViewModel : ViewModelBase
                           ?? Variants.FirstOrDefault();
         foreach (var d in StartDayOptions) d.IsSelected = d.Day == StartDay;   // the change hooks skip an unchanged value
         foreach (var v in VariantOptions) v.IsSelected = v.Variant == SelectedVariant;
+        MarkSaved();
+        JustSaved = false;
         Rebuild();
         _ = LoadDayInfoAsync(days);
         _ = LoadUsageAsync();
@@ -271,6 +287,7 @@ public partial class SplitDetailViewModel : ViewModelBase
     {
         foreach (var v in VariantOptions) v.IsSelected = v.Variant == value;
         Toast = null;
+        PickChanged();
         Rebuild();
     }
 
@@ -278,7 +295,27 @@ public partial class SplitDetailViewModel : ViewModelBase
     {
         foreach (var d in StartDayOptions) d.IsSelected = d.Day == value;
         Toast = null;
+        PickChanged();
         Rebuild();
+    }
+
+    /// <summary>Remembers the current picks as saved (only meaningful while this is the active split).</summary>
+    private void MarkSaved()
+    {
+        _savedVariantId = IsActive ? SelectedVariant?.Id : null;
+        _savedStartDay = IsActive ? StartDay : null;
+        PickChanged();
+    }
+
+    private void PickChanged()
+    {
+        if (IsDirty) JustSaved = false;
+        OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(IsInUse));
+        OnPropertyChanged(nameof(CanUse));
+        OnPropertyChanged(nameof(UseLabel));
+        OnPropertyChanged(nameof(FootNote));
+        UseCommand.NotifyCanExecuteChanged();
     }
 
     private void Rebuild()
@@ -323,7 +360,8 @@ public partial class SplitDetailViewModel : ViewModelBase
         RestCount = "7";
     }
 
-    [RelayCommand]
+    /// <summary>"Use this split" or "Save": saves at once, then the button reads "In use".</summary>
+    [RelayCommand(CanExecute = nameof(CanUse))]
     private async Task UseAsync()
     {
         try
@@ -345,6 +383,8 @@ public partial class SplitDetailViewModel : ViewModelBase
             Error = null;
             var wasActive = IsActive;
             IsActive = true;
+            MarkSaved();
+            JustSaved = true;
             Toast = wasActive
                 ? "Saved. Your schedule changes from today on."
                 : $"{Name} is now your split." + (IsPreset ? $" Your week starts on {StartDay}." : "") + " Past streak days are kept.";

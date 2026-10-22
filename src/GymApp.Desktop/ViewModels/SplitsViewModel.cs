@@ -24,12 +24,20 @@ public partial class SplitsViewModel : ViewModelBase
     [ObservableProperty] public partial string ActiveName { get; set; } = "None";
     [ObservableProperty] public partial bool CanAddCustom { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? Notice { get; set; }
 
-    public SplitsViewModel(SplitService splits, SessionService session, ISplitUsageService usage, Func<MainViewModel> shell)
+    /// <summary>The popup behind the Share button.</summary>
+    public ShareDialogViewModel Share { get; }
+
+    public SplitsViewModel(SplitService splits, SessionService session, ISplitUsageService usage, Func<MainViewModel> shell,
+                           ShareDialogViewModel share)
     {
         _splits = splits; _session = session; _usage = usage; _shell = shell;
+        Share = share;
         _ = LoadAsync();
     }
+
+    [RelayCommand] private Task OpenShare() => Share.OpenAsync(ShareMode.Split, notice => Notice = notice);
 
     private async Task LoadAsync()
     {

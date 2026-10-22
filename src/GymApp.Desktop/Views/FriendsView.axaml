@@ -5,7 +5,7 @@
              x:Class="GymApp.Desktop.Views.FriendsView"
              x:DataType="vm:FriendsViewModel">
     <!-- After the "Gym App" design canvas (Friends artboard): the leaderboard and your friends on the left, adding
-         friends and requests on the right. Below 880 px of content the right column goes under the left. -->
+         friends and sent requests on the right (requests you get are in the inbox). Below 880 px of content the right column goes under the left. -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
@@ -76,7 +76,7 @@
         </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
-        <v:Sidebar Current="Friends" FriendRequests="{Binding IncomingCount}"/>
+        <v:Sidebar Current="Friends"/>
 
         <ScrollViewer>
         <StackPanel Classes="page" Spacing="24">
@@ -233,39 +233,11 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Requests -->
+                    <!-- Sent requests; the ones you get are in the inbox -->
                     <Border Classes="card">
                         <StackPanel Spacing="12">
-                            <StackPanel Orientation="Horizontal" Spacing="10">
-                                <TextBlock Text="Requests" Classes="h2" VerticalAlignment="Center"/>
-                                <Border MinWidth="22" Height="22" Padding="6,0" CornerRadius="11" Background="{DynamicResource Accent}"
-                                        VerticalAlignment="Center" IsVisible="{Binding HasIncoming}">
-                                    <TextBlock Text="{Binding IncomingCount}" Foreground="Black" FontSize="12" FontWeight="Bold"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                </Border>
-                            </StackPanel>
-                            <TextBlock Text="No pending requests." FontSize="14" Classes="muted" IsVisible="{Binding HasNoRequests}"/>
-                            <ItemsControl ItemsSource="{Binding Incoming}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:RequestRowViewModel">
-                                        <Border Classes="listRow">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                                <Border Classes="avatar">
-                                                    <TextBlock Text="{Binding Initials}" FontSize="13" FontWeight="Bold"
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="SemiBold"
-                                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                    <TextBlock Text="{Binding StatusText}" FontSize="12" Classes="muted"/>
-                                                </StackPanel>
-                                                <Button Grid.Column="2" Classes="btn outline small" Content="Decline" Command="{Binding DeclineCommand}"/>
-                                                <Button Grid.Column="3" Classes="btn primary small" Content="Accept" Command="{Binding AcceptCommand}"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <TextBlock Text="Sent requests" Classes="h2"/>
+                            <TextBlock Text="No requests waiting for an answer." FontSize="14" Classes="muted" IsVisible="{Binding !HasOutgoing}"/>
                             <ItemsControl ItemsSource="{Binding Outgoing}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:RequestRowViewModel">

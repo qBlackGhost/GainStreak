@@ -89,6 +89,14 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>Friends, with the leaderboard on the same screen.</summary>
     public void ShowFriends() => Current = _sp.GetRequiredService<FriendsViewModel>();
 
+    /// <summary>Friend requests now; workouts friends share, later.</summary>
+    public void ShowInbox()
+    {
+        var vm = _sp.GetRequiredService<InboxViewModel>();
+        _ = vm.LoadAsync();
+        Current = vm;
+    }
+
     public void ShowDay(MenuDay day, string splitName)
     {
         var vm = _sp.GetRequiredService<DayViewModel>();

@@ -106,6 +106,7 @@ app.MapFriends();
 app.MapStats();
 app.MapCheckIns();
 app.MapFeedback();
+app.MapShares();
 
 app.Run();
 

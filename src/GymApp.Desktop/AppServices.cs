@@ -33,6 +33,7 @@ public static class AppServices
             sc.AddTransient<ILeaderboardService, LeaderboardService>();
             sc.AddTransient<IFeedbackService, LocalFeedbackService>();
             sc.AddTransient<ISplitUsageService, LocalSplitUsageService>();
+            sc.AddTransient<IShareService, LocalShareService>();
         }
         else
         {
@@ -51,6 +52,7 @@ public static class AppServices
             sc.AddTransient<IFriendCheckInSource, RemoteFriendCheckInSource>();
             sc.AddTransient<IFeedbackService, RemoteFeedbackService>();
             sc.AddTransient<ISplitUsageService, RemoteSplitUsageService>();
+            sc.AddTransient<IShareService, RemoteShareService>();
             // Uploads stats, check-ins and the sharing setting; the services mark what changed through the hooks
             sc.AddTransient(sp => new StatsProjectionService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
@@ -95,6 +97,16 @@ public static class AppServices
         sc.AddTransient<PointsHistoryViewModel>();
         sc.AddSingleton<FeedbackViewModel>();   // one, so a half-written note survives closing the popup
         sc.AddTransient<FriendMapService>();
+        sc.AddTransient<IInboxSource, FriendRequestInboxSource>();
+        sc.AddTransient<IInboxSource, ShareInboxSource>();
+        sc.AddTransient<SplitShareService>();
+        sc.AddTransient<ShareDialogViewModel>();
+        sc.AddSingleton(_ => new InboxStore(AppDbContext.DataDirectory));
+        sc.AddSingleton(sp => new InboxService(sp.GetServices<IInboxSource>, sp.GetRequiredService<InboxStore>(),
+            sp.GetRequiredService<SessionService>()));   // one, so every sidebar shows the same badge
+        sc.AddTransient(sp => new InboxViewModel(sp.GetRequiredService<InboxService>(), sp.GetRequiredService<IFriendService>(),
+            sp.GetRequiredService<SessionService>(), sp.GetRequiredService<Func<MainViewModel>>(),
+            sp.GetRequiredService<IShareService>(), sp.GetRequiredService<SplitShareService>(), sp.GetRequiredService<WorkoutMenuService>()));
         sc.AddTransient<FriendsViewModel>();
         return sc;
     }

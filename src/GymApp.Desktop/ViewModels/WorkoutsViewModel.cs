@@ -89,12 +89,19 @@ public partial class WorkoutsViewModel : ViewModelBase
     [ObservableProperty] public partial string? NextName { get; set; }
     [ObservableProperty] public partial bool ShowEmpty { get; set; }     // true once we know there is no split
     [ObservableProperty] public partial string? Error { get; set; }
+    [ObservableProperty] public partial string? Notice { get; set; }
 
-    public WorkoutsViewModel(WorkoutMenuService menu, SessionService session, Func<MainViewModel> shell)
+    /// <summary>The popup behind the Share button.</summary>
+    public ShareDialogViewModel Share { get; }
+
+    public WorkoutsViewModel(WorkoutMenuService menu, SessionService session, Func<MainViewModel> shell, ShareDialogViewModel share)
     {
         _menu = menu; _session = session; _shell = shell;
+        Share = share;
         _ = LoadAsync();
     }
+
+    [RelayCommand] private Task OpenShare() => Share.OpenAsync(ShareMode.Workout, notice => Notice = notice);
 
     private async Task LoadAsync()
     {

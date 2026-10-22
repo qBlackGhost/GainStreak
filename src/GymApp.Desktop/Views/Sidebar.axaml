@@ -142,16 +142,21 @@
                             <v:Icon Data="{StaticResource IcMap}"/><TextBlock Text="Map" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    <Button x:Name="NavInbox" Classes="nav" Click="OnInbox">
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <v:Icon Data="{StaticResource IcInbox}"/><TextBlock Text="Inbox" VerticalAlignment="Center"/>
+                            <!-- New in the inbox (InboxService.UnreadCount) -->
+                            <Border Background="#FF6B5B" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
+                                    VerticalAlignment="Center" x:Name="InboxBadge" IsVisible="False"
+                                    ToolTip.Tip="New in your inbox">
+                                <TextBlock x:Name="InboxText" Foreground="Black" FontSize="11" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="NavFriends" Classes="nav" Click="OnFriends">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <v:Icon Data="{StaticResource IcFriends}"/><TextBlock Text="Friends" VerticalAlignment="Center"/>
-                            <!-- Incoming requests -->
-                            <Border Background="#FF6B5B" CornerRadius="9" MinWidth="18" Height="18" Padding="5,0"
-                                    VerticalAlignment="Center" x:Name="RequestsBadge" IsVisible="False"
-                                    ToolTip.Tip="Friend requests waiting">
-                                <TextBlock x:Name="RequestsText" Foreground="Black" FontSize="11" FontWeight="Bold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
                         </StackPanel>
                     </Button>
                 </StackPanel>

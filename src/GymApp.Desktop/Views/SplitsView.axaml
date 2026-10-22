@@ -101,6 +101,7 @@
             </Border>
         </DataTemplate>
     </UserControl.Resources>
+    <Grid>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Splits"/>
 
@@ -119,7 +120,8 @@
                         <TextBlock Text="Workout splits" FontSize="34" FontWeight="ExtraBold"/>
                         <TextBlock Text="Pick a preset or build your own weekly plan." FontSize="15" Classes="muted"/>
                     </StackPanel>
-                    <Border Grid.Column="1" VerticalAlignment="Bottom" Padding="16,10" CornerRadius="12"
+                    <WrapPanel Grid.Column="1" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom">
+                    <Border VerticalAlignment="Bottom" Padding="16,10" CornerRadius="12"
                             BorderBrush="{DynamicResource Line}" BorderThickness="1" Background="{DynamicResource Surface}">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <TextBlock Text="ACTIVE" FontSize="12" FontWeight="SemiBold" LetterSpacing="1.2" Classes="muted"
@@ -127,9 +129,18 @@
                             <TextBlock Text="{Binding ActiveName}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
+                    <Button Classes="btn primary" Padding="16,0" Command="{Binding OpenShareCommand}" ToolTip.Tip="Share a split with friends">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <v:Icon Data="{StaticResource IcShare}" Width="16" Height="16"/>
+                            <TextBlock Text="Share" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    </WrapPanel>
                 </Grid>
             </StackPanel>
 
+<TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
+                       IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
@@ -179,4 +190,8 @@
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
+
+    <!-- Share a split -->
+    <v:ShareDialog DataContext="{Binding Share}"/>
+    </Grid>
 </UserControl>

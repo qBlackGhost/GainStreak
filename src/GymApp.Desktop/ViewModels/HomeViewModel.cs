@@ -21,7 +21,6 @@ public partial class HomeViewModel : ViewModelBase
     private readonly PointsService _points;
     private readonly GymService _gyms;
     private readonly ProfileService _profiles;
-    private readonly IFriendService _friends;
     private readonly ILeaderboardService _leaderboard;
     private readonly SetService _sets;
     private readonly WorkoutMenuService _menu;
@@ -31,10 +30,12 @@ public partial class HomeViewModel : ViewModelBase
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
                          PointsService points, GymService gyms, ProfileService profiles,
-                         IFriendService friends, ILeaderboardService leaderboard,
+                         ILeaderboardService leaderboard,
                          SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
-                         GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory)
+                         GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory,
+                         InboxService inbox)
     {
+        _inbox = inbox;
         PointsHistory = pointsHistory;
         _session = session;
         _accounts = accounts;
@@ -45,7 +46,6 @@ public partial class HomeViewModel : ViewModelBase
         _points = points;
         _gyms = gyms;
         _profiles = profiles;
-        _friends = friends;
         _leaderboard = leaderboard;
         _sets = sets;
         _menu = menu;
@@ -56,6 +56,7 @@ public partial class HomeViewModel : ViewModelBase
     }
 
     private readonly IAccountService _accounts;
+    private readonly InboxService _inbox;
 
     public string Username => _session.CurrentUser?.Username ?? "";
 
@@ -192,8 +193,6 @@ public partial class HomeViewModel : ViewModelBase
     // ===== Friends card =====
     [ObservableProperty] public partial string FriendsTitle { get; set; } = "Add friends";
     [ObservableProperty] public partial bool HasFriends { get; set; }
-    [ObservableProperty] public partial int IncomingRequests { get; set; }
-    [ObservableProperty] public partial bool HasIncomingRequests { get; set; }
     [ObservableProperty] public partial IReadOnlyList<BoardRowViewModel> Board { get; set; } = [];
 
     [ObservableProperty]
@@ -303,14 +302,13 @@ public partial class HomeViewModel : ViewModelBase
         }
     }
 
-    /// <summary>"#2 of 5 this week" and the incoming-requests badge. Runs after the user's own sync, so their
+    /// <summary>"#2 of 5 this week" and the sidebar's inbox badge. Runs after the user's own sync, so their
     /// weekly points are already current. A failure only hides the card's details.</summary>
     private async Task RefreshFriendsAsync(int userId)
     {
         try
         {
-            IncomingRequests = await _friends.IncomingCountAsync(userId);
-            HasIncomingRequests = IncomingRequests > 0;
+            await _inbox.RefreshUnreadAsync(userId);
 
             var board = await _leaderboard.GetAsync(userId, IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek);
             HasFriends = board is { IsAlone: false };

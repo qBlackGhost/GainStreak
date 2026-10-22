@@ -135,6 +135,20 @@ public sealed class SocialApiClient
     public Task<ApiResult> SendFeedbackAsync(FeedbackRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "v1/feedback", request, ct);
 
+    // --- Shares ---
+
+    /// <summary>Sends a split or a workout to friends (server ids).</summary>
+    public Task<ApiResult<SendShareResponse>> SendShareAsync(ShareRequest request, CancellationToken ct = default) =>
+        SendAsync<SendShareResponse>(HttpMethod.Post, "v1/shares", request, ct);
+
+    /// <summary>Splits and workouts friends sent you, newest first.</summary>
+    public Task<ApiResult<List<ShareResponse>>> GetSharesAsync(CancellationToken ct = default) =>
+        SendAsync<List<ShareResponse>>(HttpMethod.Get, "v1/shares", null, ct);
+
+    /// <summary>Removes a share sent to you, once added or dismissed.</summary>
+    public Task<ApiResult> RemoveShareAsync(long id, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"v1/shares/{id}", null, ct);
+
     // --- Plumbing ---
 
     private static string Date(DateOnly date) => date.ToString(ApiFormat.Date, CultureInfo.InvariantCulture);

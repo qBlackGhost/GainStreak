@@ -5,13 +5,14 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace GymApp.Server;
 
 /// <summary>Rate limit policies. Register, login and search are limited per IP (they're what a script would hammer),
-/// feedback per user; everything else per signed-in user, or per IP before sign-in.</summary>
+/// feedback and sharing per user; everything else per signed-in user, or per IP before sign-in.</summary>
 public static class RateLimits
 {
     public const string Register = "register";
     public const string Login = "login";
     public const string Search = "search";
     public const string Feedback = "feedback";
+    public const string Share = "share";
 
     public static IServiceCollection AddGymRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(o =>
@@ -22,6 +23,7 @@ public static class RateLimits
             o.AddPolicy(Search, ctx => PerIp(ctx, 30, TimeSpan.FromMinutes(1)));
             // Per signed-in user: enough for a tester on a bad day, not for a script filling the Discord channel
             o.AddPolicy(Feedback, ctx => Fixed($"feedback:{UserOrIp(ctx)}", 5, TimeSpan.FromHours(1)));
+            o.AddPolicy(Share, ctx => Fixed($"share:{UserOrIp(ctx)}", 30, TimeSpan.FromHours(1)));
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });

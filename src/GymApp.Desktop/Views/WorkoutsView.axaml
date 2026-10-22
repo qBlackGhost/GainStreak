@@ -65,6 +65,7 @@
             <Setter Property="Padding" Value="21"/>
         </Style>
     </UserControl.Styles>
+    <Grid>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Workouts"/>
 
@@ -81,6 +82,12 @@
                     </TextBlock>
                 </StackPanel>
                 <WrapPanel Grid.Column="1" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom" IsVisible="{Binding HasSplit}">
+                    <Button Classes="btn primary" Padding="16,0" Command="{Binding OpenShareCommand}" ToolTip.Tip="Share a workout with friends">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <v:Icon Data="{StaticResource IcShare}" Width="16" Height="16"/>
+                            <TextBlock Text="Share" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button Classes="btn outline" Padding="16,0" Command="{Binding ChooseSplitCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <v:Icon Data="{StaticResource IcCalendar}" Width="16" Height="16"/>
@@ -96,6 +103,8 @@
                 </WrapPanel>
             </Grid>
 
+<TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
+                       IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
@@ -227,4 +236,8 @@
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
+
+    <!-- Share a workout -->
+    <v:ShareDialog DataContext="{Binding Share}"/>
+    </Grid>
 </UserControl>
