@@ -23,6 +23,7 @@ public static class StatsProjection
     /// </summary>
     /// <param name="ledger">The stored points entries, current as of <paramref name="today"/> (synced).</param>
     /// <param name="calories">Calorie logs from the previous week's Monday on; earlier ones can't change anything.</param>
+    /// <param name="cardio">Cardio minutes from workout logs, over the same range as <paramref name="calories"/>.</param>
     public static IReadOnlyList<ProjectedStats> Project(
         IReadOnlyCollection<DateOnly> workoutDates,
         IReadOnlyList<ScheduleChange> schedule,
@@ -30,7 +31,8 @@ public static class StatsProjection
         IReadOnlyCollection<CalorieRecord> calories,
         IReadOnlyList<PointsAward> ledger,
         DateOnly today,
-        int days = DefaultDays)
+        int days = DefaultDays,
+        IReadOnlyCollection<CardioRecord>? cardio = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(days, 1);
 
@@ -40,7 +42,7 @@ public static class StatsProjection
 
         for (var day = today; day < today.AddDays(days); day = day.AddDays(1))
         {
-            entries = Sync(entries, workoutDates, schedule, choices, calories, scheduleStart, day);
+            entries = Sync(entries, workoutDates, schedule, choices, calories, cardio ?? [], scheduleStart, day);
 
             var monday = PointsCalculator.MondayOf(day);
             var sunday = monday.AddDays(6);
@@ -55,12 +57,12 @@ public static class StatsProjection
     private static List<PointsAward> Sync(
         List<PointsAward> entries, IReadOnlyCollection<DateOnly> workoutDates, IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices, IReadOnlyCollection<CalorieRecord> calories,
-        DateOnly? scheduleStart, DateOnly day)
+        IReadOnlyCollection<CardioRecord> cardio, DateOnly? scheduleStart, DateOnly day)
     {
         var windowStart = PointsCalculator.MondayOf(day).AddDays(-7);   // PointsService.WindowStart
         var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, day,
             windowStart, PointsCalculator.MondayOf(day).AddDays(6));
-        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, day, windowStart);
+        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, day, windowStart, cardio);
 
         return entries
             .Where(e => e.Date < windowStart || e.Reason == PointsReason.Adjustment)

@@ -199,6 +199,28 @@ public class PointsServiceTests : IDisposable
         AssertCachedSum(_alice);
     }
 
+    [Fact] public async Task CardioLoggedWithTheWorkout_EarnsPoints_AndUndoTakesThemBack()
+    {
+        _db.ReadyToCheckIn(_alice, D(0));
+        var workouts = new WorkoutService(_db, new StreakService(_db), _svc);
+        var log = await workouts.LogTodayAsync(_alice, today: D(0), cardioMinutes: 29);
+        Assert.True(log.Success);
+        Assert.Contains(log.Points!.Added, a => a is { Reason: PointsReason.Cardio, Amount: 2 });
+        AssertCachedSum(_alice);
+
+        await workouts.UndoTodayAsync(_alice, D(0));
+        Assert.DoesNotContain(Entries(_alice), p => p.Reason == PointsReason.Cardio);
+        AssertCachedSum(_alice);
+    }
+
+    [Fact] public async Task Cardio_OutOfRange_IsRefused()
+    {
+        _db.ReadyToCheckIn(_alice, D(0));
+        var workouts = new WorkoutService(_db, new StreakService(_db), _svc);
+        Assert.False((await workouts.LogTodayAsync(_alice, today: D(0), cardioMinutes: -1)).Success);
+        Assert.False((await workouts.LogTodayAsync(_alice, today: D(0), cardioMinutes: PointsCalculator.MaxCardioMinutes + 1)).Success);
+    }
+
     [Fact] public async Task CachedPoints_AlwaysEqualTheSumOfEntries()
     {
         Workouts(_alice, 0, 1);

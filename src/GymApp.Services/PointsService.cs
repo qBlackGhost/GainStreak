@@ -97,6 +97,12 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
         return new[] { firstWorkout, firstCalories, today }.Where(d => d is not null).Min()!.Value;
     }
 
+    /// <summary>The cardio minutes saved with workout logs from <paramref name="from"/> on.</summary>
+    internal static Task<List<CardioRecord>> CardioAsync(AppDbContext db, int userId, DateOnly from) =>
+        db.WorkoutLogs.Where(w => w.UserId == userId && w.Date >= from && w.CardioMinutes != null)
+            .Select(w => new CardioRecord(w.Date, w.CardioMinutes!.Value))
+            .ToListAsync();
+
     private static async Task<PointsSync> ApplyAsync(AppDbContext db, User user, DateOnly windowStart, DateOnly today, bool rebuild)
     {
         var userId = user.Id;
@@ -111,12 +117,13 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
         var calories = await db.CalorieLogs.Where(c => c.UserId == userId && c.Date >= windowStart)
             .Select(c => new CalorieRecord(c.Date, c.CaloriesConsumed, c.GoalAtTime))
             .ToListAsync();
+        var cardio = await CardioAsync(db, userId, windowStart);
 
         var choices = await StreakService.LoadChoicesAsync(db, userId);
         var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, today,
             windowStart, PointsCalculator.MondayOf(today).AddDays(6));
         DateOnly? scheduleStart = schedule.Count == 0 ? null : schedule[0].EffectiveFrom;
-        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart)
+        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart, cardio)
             .ToDictionary(a => a.DedupKey);
 
         var oldTotal = user.Points;

@@ -29,10 +29,11 @@ public class StatsProjectionService(IDbContextFactory<AppDbContext> dbFactory)
         var calories = await db.CalorieLogs.Where(c => c.UserId == userId && c.Date >= windowStart)
             .Select(c => new CalorieRecord(c.Date, c.CaloriesConsumed, c.GoalAtTime))
             .ToListAsync();
+        var cardio = await PointsService.CardioAsync(db, userId, windowStart);
         var ledger = await db.PointsEntries.Where(p => p.UserId == userId)
             .Select(p => new PointsAward(p.Reason, p.Amount, p.Date, p.DedupKey))
             .ToListAsync();
 
-        return StatsProjection.Project(workoutDates, schedule, choices, calories, ledger, day, days);
+        return StatsProjection.Project(workoutDates, schedule, choices, calories, ledger, day, days, cardio);
     }
 }

@@ -146,6 +146,9 @@
                             <Run Text="Workout "/><Run Classes="rule" Text="{Binding WorkoutPoints}"/>
                         </TextBlock>
                         <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
+                            <Run Text="Cardio "/><Run Classes="rule" Text="{Binding CardioPoints}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
                             <Run Text="Full week "/><Run Classes="rule" Text="{Binding WeekPoints}"/><Run Text=" (with a grace day "/><Run Classes="rule" Text="{Binding WeekGracePoints}"/><Run Text=")"/>
                         </TextBlock>
                         <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">

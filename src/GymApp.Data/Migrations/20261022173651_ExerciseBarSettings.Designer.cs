@@ -1267,6 +1267,9 @@ namespace GymApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("CardioMinutes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 

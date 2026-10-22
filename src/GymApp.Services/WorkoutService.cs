@@ -107,10 +107,16 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     /// their split's days. Tapping twice is harmless: the unique (user, date) index keeps one log per day, and the
     /// second call just returns the current streak. Refused while yesterday's missed workout still needs a choice
     /// (<see cref="StreakStatus.NeedsChoice"/>).
+    /// <paramref name="cardioMinutes"/> is the optional cardio done with the workout (null or 0 for none); it earns
+    /// <see cref="PointsCalculator.CardioPoints"/> on top of the workout's points.
     /// </summary>
-    public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null)
+    public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null, int? cardioMinutes = null)
     {
         var date = today ?? Today();
+        if (cardioMinutes is < 0 or > PointsCalculator.MaxCardioMinutes)
+            return new LogResult(false, $"Cardio must be between 0 and {PointsCalculator.MaxCardioMinutes} minutes.");
+        if (cardioMinutes == 0) cardioMinutes = null;
+
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
             if (!await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.Date == date))
@@ -138,7 +144,8 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                         $"Fill in at least {status.Required} of {status.Total} exercises to log this workout.");
 
                 var gymId = await AutomaticGymAsync(db, userId);
-                db.WorkoutLogs.Add(new WorkoutLog { UserId = userId, Date = date, SplitDayId = day.SplitDayId, GymId = gymId });
+                db.WorkoutLogs.Add(new WorkoutLog
+                    { UserId = userId, Date = date, SplitDayId = day.SplitDayId, GymId = gymId, CardioMinutes = cardioMinutes });
                 try
                 {
                     await db.SaveChangesAsync();

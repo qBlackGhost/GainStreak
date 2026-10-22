@@ -65,6 +65,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
     public string WeekPoints { get; } = $"+{PointsCalculator.WeekCompletePoints}";
     public string WeekGracePoints { get; } = $"+{PointsCalculator.WeekCompleteGracePoints}";
     public string CaloriePoints { get; } = $"+{PointsCalculator.CalorieTargetPoints}";
+    public string CardioPoints { get; } = $"+1 / {PointsCalculator.CardioMinutesPerPoint} min (max +{PointsCalculator.MaxCardioPoints})";
 
     /// <summary>Shows the popup from the top (All) and loads the ledger; the task ends when it is loaded.</summary>
     public Task Open(Action closed)
@@ -132,7 +133,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
 
     private bool Matches(PointsLine l) => Filter switch
     {
-        PointsFilter.Workouts => l.Reason == PointsReason.Workout,
+        PointsFilter.Workouts => l.Reason is PointsReason.Workout or PointsReason.Cardio,
         PointsFilter.Weeks => l.Reason is PointsReason.WeekComplete or PointsReason.WeekCompleteGrace,
         PointsFilter.Calories => l.Reason == PointsReason.CalorieTarget,
         _ => true
@@ -142,7 +143,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
         PointsCalculator.DisplayName(l.Reason),
         l.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture),
         Signed(l.Amount),
-        l.Reason == PointsReason.Workout,
+        l.Reason is PointsReason.Workout or PointsReason.Cardio,
         l.Reason is PointsReason.WeekComplete or PointsReason.WeekCompleteGrace,
         l.Reason == PointsReason.CalorieTarget,
         l.Reason == PointsReason.Adjustment,

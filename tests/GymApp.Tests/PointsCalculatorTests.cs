@@ -45,6 +45,31 @@ public class PointsCalculatorTests
     [Fact] public void FutureLogs_AreIgnored() =>
         Assert.DoesNotContain(Run([0, 5], 3), x => x.Date == D(5));
 
+    // Cardio
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(9, 0)]
+    [InlineData(10, 1)]
+    [InlineData(29, 2)]
+    [InlineData(30, 3)]
+    [InlineData(45, 3)]
+    [InlineData(600, 3)]
+    [InlineData(-5, 0)]
+    public void CardioPoints_OnePerFullTenMinutes_AtMostThree(int minutes, int points) =>
+        Assert.Equal(points, PointsCalculator.CardioPoints(minutes));
+
+    [Fact] public void Cardio_GivesItsOwnEntry_UnderTenGivesNone()
+    {
+        var dates = new[] { D(0), D(1) };
+        var a = PointsCalculator.Calculate(dates, [], null, [], D(1), D(0), [new CardioRecord(D(0), 29), new CardioRecord(D(1), 9)])
+            .Where(x => x.Reason == PointsReason.Cardio).ToList();
+        var c = Assert.Single(a);
+        Assert.Equal(2, c.Amount);
+        Assert.Equal(D(0), c.Date);
+        Assert.Equal("cardio:2026-10-05", c.DedupKey);
+    }
+
     // Weeks
 
     [Fact] public void FullWeekDone_Gives50_DatedTheLastTrainingDay_BeforeSunday()

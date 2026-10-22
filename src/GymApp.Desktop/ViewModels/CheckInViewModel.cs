@@ -195,6 +195,34 @@ public partial class CheckInViewModel : ViewModelBase
     [ObservableProperty] public partial bool IsSaving { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
+    /// <summary>Optional cardio minutes under the exercises. Empty means none; it never blocks the check-in.</summary>
+    [ObservableProperty] public partial string CardioText { get; set; } = "";
+    [ObservableProperty] public partial string CardioHint { get; set; } = CardioHintFor(null);
+
+    partial void OnCardioTextChanged(string value)
+    {
+        Error = null;
+        CardioHint = CardioHintFor(ParseCardio(value, out var minutes) ? minutes : null);
+    }
+
+    /// <summary>"+2 pts" for 29 minutes, capped at +3; the rule itself while nothing valid is typed.</summary>
+    private static string CardioHintFor(int? minutes) => minutes switch
+    {
+        null or 0 => $"+1 pt for every {PointsCalculator.CardioMinutesPerPoint} minutes, up to +{PointsCalculator.MaxCardioPoints}",
+        var m when PointsCalculator.CardioPoints(m.Value) is var p and > 0 =>
+            $"+{p} pt{(p == 1 ? "" : "s")}{(p == PointsCalculator.MaxCardioPoints ? " (the most cardio can earn)" : "")}",
+        _ => $"Under {PointsCalculator.CardioMinutesPerPoint} minutes earns no points"
+    };
+
+    /// <summary>Empty is valid (no cardio, 0); otherwise a whole number of minutes in range.</summary>
+    private static bool ParseCardio(string? text, out int minutes)
+    {
+        minutes = 0;
+        if (string.IsNullOrWhiteSpace(text)) return true;
+        return int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out minutes)
+               && minutes <= PointsCalculator.MaxCardioMinutes;
+    }
+
     private CheckInDay? _day;
 
     private async Task LoadAsync(int? splitDayId)
@@ -298,6 +326,12 @@ public partial class CheckInViewModel : ViewModelBase
             inputs.Add((e, sets));
         }
 
+        if (!ParseCardio(CardioText, out var cardio))
+        {
+            Error = $"Cardio: enter whole minutes, up to {PointsCalculator.MaxCardioMinutes}, or leave it empty.";
+            return;
+        }
+
         IsSaving = true;
         CanLog = false;
         try
@@ -309,7 +343,7 @@ public partial class CheckInViewModel : ViewModelBase
                 if (!saved.Success) { Error = $"{e.Name}: {saved.Error}"; return; }
             }
 
-            var result = await _workouts.LogTodayAsync(_userId, _day?.SplitDayId);
+            var result = await _workouts.LogTodayAsync(_userId, _day?.SplitDayId, cardioMinutes: cardio);
             if (!result.Success) { Error = result.Error; return; }
             _logged(result);
         }

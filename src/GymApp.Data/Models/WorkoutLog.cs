@@ -12,4 +12,6 @@ public class WorkoutLog
     public SplitDay? SplitDay { get; set; }
     public int? GymId { get; set; }
     public Gym? Gym { get; set; }
+    /// <summary>Optional cardio done with the workout, in minutes. Null when none was entered.</summary>
+    public int? CardioMinutes { get; set; }
 }
