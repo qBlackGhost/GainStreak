@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MobileSpike/MobileSpike.csproj" />
+  <Project Path="MobileSpike.Android/MobileSpike.Android.csproj" />
+  <Project Path="MobileSpike.iOS/MobileSpike.iOS.csproj" />
+  <Project Path="MobileSpike.Desktop/MobileSpike.Desktop.csproj" />
+</Solution>

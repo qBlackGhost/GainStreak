@@ -47,6 +47,66 @@ The same folder holds `session.token` (the server session that keeps you signed 
 
 The app needs the social server to register and to sign in for the first time on a device; see [Running the app against a local server](#running-the-app-against-a-local-server).
 
+## Building the mobile app
+
+The Android and iOS heads need a Mac (Apple silicon) and about 35 GB of free disk space: Xcode takes about 12 GB, the iOS Simulator runtime about 7 GB, the Android SDK and an emulator about 6 GB, the .NET workloads about 3 GB, and an iOS Release build about 2 GB.
+
+**.NET workloads** (`sudo` because the SDK is installed under `/usr/local/share/dotnet`):
+
+```bash
+sudo dotnet workload install android ios
+```
+
+**Xcode:** install it from the App Store. The iOS workload is built for one Xcode version (workload 27.1 needs Xcode 27.1; `dotnet workload list` shows the workload version). Then:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+```bash
+sudo xcodebuild -license accept
+```
+
+```bash
+xcodebuild -runFirstLaunch
+```
+
+```bash
+xcodebuild -downloadPlatform iOS
+```
+
+Only one iOS Simulator runtime is needed; `xcrun simctl runtime list` lists them and `xcrun simctl runtime delete <id>` removes an old one (about 7 GB each).
+
+**Android:** a JDK 21 and the Android command-line tools, from Homebrew (no `sudo`):
+
+```bash
+brew install openjdk@21
+```
+
+```bash
+brew install --cask android-commandlinetools
+```
+
+Accept the SDK licenses and install the SDK into `~/Library/Android/sdk`:
+
+```bash
+yes | JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home sdkmanager --sdk_root=$HOME/Library/Android/sdk --licenses
+```
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home sdkmanager --sdk_root=$HOME/Library/Android/sdk "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-36;google_apis;arm64-v8a"
+```
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home avdmanager create avd -n Pixel -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_7
+```
+
+Android builds find the SDK and JDK through `AndroidSdkDirectory` and `JavaSdkDirectory` (or `ANDROID_HOME` and `JAVA_HOME`).
+
+**iOS Release builds and EF Core:** a Release build for the Simulator (`-r iossimulator-arm64`) is compiled ahead of time like a TestFlight build (full AOT, no JIT), so test EF Core changes there; a Debug build JITs and hides problems. With the default settings EF Core can't build its model at runtime ("Model building is not supported when publishing with NativeAOT"). Either the interpreter is turned on for code generated at runtime (`-p:MtouchInterpreter=-all`; much slower to build, since nothing is trimmed) or GymApp.Data ships a compiled model and precompiled queries. Which one the iOS head uses is still being decided (Phase 16a).
+
+The Android SDK steps above are the planned ones; the system image and emulator have not been set up on a machine yet.
+
 ## TestBench (testing version)
 
 ```bash

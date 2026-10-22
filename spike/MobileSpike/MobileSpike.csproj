@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Phase 16a spike (throwaway): the shared part of the Android and iOS heads -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- The server address from Directory.Build.props, read back by SpikeRunner -->
+  <ItemGroup>
+    <AssemblyMetadata Include="GymAppServerUrl" Value="$(GymAppServerUrl)" />
+  </ItemGroup>
+
+  <!-- The same address as a constant: the iOS trimmer removes AssemblyMetadataAttribute instances -->
+  <Target Name="WriteServerUrl" BeforeTargets="CoreCompile">
+    <WriteLinesToFile File="$(IntermediateOutputPath)ServerUrl.g.cs" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="namespace MobileSpike%3B static class BuiltServerUrl { public const string Value = &quot;$(GymAppServerUrl)&quot;%3B }" />
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)ServerUrl.g.cs" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Mapsui.Avalonia12" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\GymApp.Data\GymApp.Data.csproj" />
+    <ProjectReference Include="..\..\src\GymApp.Services\GymApp.Services.csproj" />
+  </ItemGroup>
+</Project>
