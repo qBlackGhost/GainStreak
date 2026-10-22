@@ -2,6 +2,12 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.15.4
+
+- **Per side weight:** bar exercises (barbell lifts, Smith machine, EZ bar curls, picked by name; custom exercises too) have a Total / Per side toggle on the exercise screen. Per side takes the plates on one side and an optional bar weight, and each row shows the total, e.g. "= 140 kg total (60 × 2 + 20 bar)". Switching converts what's typed. Sets still store the total, so PRs, points and stats are unchanged. The mode and bar weight are remembered per exercise.
+- **Cardio:** the check-in takes optional cardio minutes, saved with the day's workout. +1 point per full 10 minutes, at most +3 a session. Cardio entries show in the points history under Workouts.
+- **Migrations:** `CardioMinutes` (`WorkoutLogs.CardioMinutes`) and `ExerciseBarSettings` (a new table), both in the app's SQLite. The server is unchanged.
+
 ## 0.15.3
 
 - **Split usage:** a split's page has a "Who uses it" card under the setup card: a donut of the share of lifters on each preset and on custom splits, with this split's slice in the accent and its share in the middle. Splits under 10% (other than the one shown) are grouped into "Other", whose legend row names them. Preset cards in the split list show "N% of lifters". The numbers come from the server; without them the card and the line stay hidden, and offline the last fetched numbers are shown.
