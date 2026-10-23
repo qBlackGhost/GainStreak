@@ -84,6 +84,7 @@ public static class AppServices
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
+        sc.AddTransient<ProfileSetupViewModel>();
         sc.AddTransient<CaloriesViewModel>();
         sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
         sc.AddTransient<CityService>();

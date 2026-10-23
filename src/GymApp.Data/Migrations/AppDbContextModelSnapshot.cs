@@ -179,6 +179,24 @@ namespace GymApp.Data.Migrations
                         },
                         new
                         {
+                            Id = 66,
+                            MuscleGroup = "Chest",
+                            Name = "Machine Chest Press"
+                        },
+                        new
+                        {
+                            Id = 67,
+                            MuscleGroup = "Chest",
+                            Name = "Pec Deck"
+                        },
+                        new
+                        {
+                            Id = 68,
+                            MuscleGroup = "Chest",
+                            Name = "Dumbbell Fly"
+                        },
+                        new
+                        {
                             Id = 7,
                             MuscleGroup = "Back",
                             Name = "Pull-Up"
@@ -239,6 +257,30 @@ namespace GymApp.Data.Migrations
                         },
                         new
                         {
+                            Id = 69,
+                            MuscleGroup = "Back",
+                            Name = "Chest-Supported Row"
+                        },
+                        new
+                        {
+                            Id = 70,
+                            MuscleGroup = "Back",
+                            Name = "Chin-Up"
+                        },
+                        new
+                        {
+                            Id = 71,
+                            MuscleGroup = "Back",
+                            Name = "Close Grip Lat Pulldown"
+                        },
+                        new
+                        {
+                            Id = 72,
+                            MuscleGroup = "Back",
+                            Name = "Back Extension"
+                        },
+                        new
+                        {
                             Id = 13,
                             MuscleGroup = "Shoulders",
                             Name = "Overhead Press"
@@ -272,6 +314,24 @@ namespace GymApp.Data.Migrations
                             Id = 56,
                             MuscleGroup = "Shoulders",
                             Name = "Dumbbell Lateral Raise"
+                        },
+                        new
+                        {
+                            Id = 73,
+                            MuscleGroup = "Shoulders",
+                            Name = "Machine Shoulder Press"
+                        },
+                        new
+                        {
+                            Id = 74,
+                            MuscleGroup = "Shoulders",
+                            Name = "Arnold Press"
+                        },
+                        new
+                        {
+                            Id = 75,
+                            MuscleGroup = "Shoulders",
+                            Name = "Reverse Pec Deck"
                         },
                         new
                         {
@@ -311,6 +371,12 @@ namespace GymApp.Data.Migrations
                         },
                         new
                         {
+                            Id = 76,
+                            MuscleGroup = "Biceps",
+                            Name = "Cable Curl"
+                        },
+                        new
+                        {
                             Id = 22,
                             MuscleGroup = "Triceps",
                             Name = "Triceps Pushdown"
@@ -344,6 +410,18 @@ namespace GymApp.Data.Migrations
                             Id = 59,
                             MuscleGroup = "Triceps",
                             Name = "One Arm Cable Pushdown"
+                        },
+                        new
+                        {
+                            Id = 77,
+                            MuscleGroup = "Triceps",
+                            Name = "Rope Pushdown"
+                        },
+                        new
+                        {
+                            Id = 78,
+                            MuscleGroup = "Triceps",
+                            Name = "Overhead Cable Triceps Extension"
                         },
                         new
                         {
@@ -383,6 +461,12 @@ namespace GymApp.Data.Migrations
                         },
                         new
                         {
+                            Id = 79,
+                            MuscleGroup = "Quads",
+                            Name = "Goblet Squat"
+                        },
+                        new
+                        {
                             Id = 32,
                             MuscleGroup = "Hamstrings",
                             Name = "Romanian Deadlift"
@@ -407,6 +491,18 @@ namespace GymApp.Data.Migrations
                         },
                         new
                         {
+                            Id = 80,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Stiff-Leg Deadlift"
+                        },
+                        new
+                        {
+                            Id = 81,
+                            MuscleGroup = "Hamstrings",
+                            Name = "Dumbbell Romanian Deadlift"
+                        },
+                        new
+                        {
                             Id = 36,
                             MuscleGroup = "Glutes",
                             Name = "Hip Thrust"
@@ -428,6 +524,18 @@ namespace GymApp.Data.Migrations
                             Id = 39,
                             MuscleGroup = "Glutes",
                             Name = "Walking Lunge"
+                        },
+                        new
+                        {
+                            Id = 82,
+                            MuscleGroup = "Glutes",
+                            Name = "Hip Abduction"
+                        },
+                        new
+                        {
+                            Id = 83,
+                            MuscleGroup = "Glutes",
+                            Name = "Hip Adduction"
                         },
                         new
                         {
@@ -482,6 +590,12 @@ namespace GymApp.Data.Migrations
                             Id = 48,
                             MuscleGroup = "Core",
                             Name = "Decline Crunches"
+                        },
+                        new
+                        {
+                            Id = 84,
+                            MuscleGroup = "Core",
+                            Name = "Hanging Knee Raise"
                         },
                         new
                         {

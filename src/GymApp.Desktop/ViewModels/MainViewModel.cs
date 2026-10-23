@@ -65,9 +65,10 @@ public partial class MainViewModel : ViewModelBase
     private void Refresh()
     {
         IsFeedbackOpen = false;
-        Current = _session.IsLoggedIn
-            ? _sp.GetRequiredService<HomeViewModel>()
-            : _sp.GetRequiredService<LoginViewModel>();
+        // A brand-new account gets the profile setup first; it can be skipped to Home
+        Current = !_session.IsLoggedIn ? _sp.GetRequiredService<LoginViewModel>()
+            : _session.IsNewAccount ? _sp.GetRequiredService<ProfileSetupViewModel>()
+            : _sp.GetRequiredService<HomeViewModel>();
     }
 
     public void ShowRegister() => Current = _sp.GetRequiredService<RegisterViewModel>();

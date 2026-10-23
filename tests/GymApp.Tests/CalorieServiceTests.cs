@@ -36,7 +36,7 @@ public class CalorieServiceTests : IDisposable
         Assert.Equal(GoalType.Maintain, g.GoalType);
         Assert.Null(g.Goal);
         Assert.Null(g.Suggestion);
-        Assert.Contains("sex", g.SuggestionReason);
+        Assert.Contains("gender", g.SuggestionReason);
         Assert.False((await _svc.AcceptSuggestionAsync(_alice, Today)).Success);
     }
 

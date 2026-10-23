@@ -70,6 +70,7 @@ public sealed class AccountServiceTests : IDisposable
         Assert.Equal("token-1", _server.Tokens.Get());
         Assert.Equal(local.Id, _session.CurrentUser!.Id);
         Assert.False(_session.SignedInOffline);
+        Assert.True(_session.IsNewAccount);   // the app opens the profile setup
     }
 
     [Fact] public async Task Register_TakenUsername_IsAFieldError_AndCreatesNothing()
@@ -121,6 +122,7 @@ public sealed class AccountServiceTests : IDisposable
         Assert.Single(db.Users);
         Assert.Equal(id, db.WorkoutLogs.Single().UserId);
         Assert.True(db.UserProfiles.Single(p => p.UserId == id).ShareGymCheckIns);
+        Assert.False(_session.IsNewAccount);   // signing in goes straight to Home, even on a new computer
     }
 
     [Fact] public async Task SignIn_OnANewComputer_CreatesTheLocalUser()

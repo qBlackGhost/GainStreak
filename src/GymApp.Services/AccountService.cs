@@ -43,7 +43,7 @@ public class AccountService(
         var r = await api.RegisterAsync(new RegisterRequest(username, email, password, _device));
         if (!r.IsOk) return Failed(r);
         var user = await SaveLinkedAsync(r.Value!.User, password, localUserId: null, r.Value.Token);
-        return SignedIn(user, r.Value.Token);
+        return SignedIn(user, r.Value.Token, newAccount: true);
     }
 
     public async Task<AccountResult> SignInAsync(string login, string password)
@@ -212,10 +212,10 @@ public class AccountService(
 
     // --- Helpers ---
 
-    private AccountResult SignedIn(User user, string token)
+    private AccountResult SignedIn(User user, string token, bool newAccount = false)
     {
         tokens.Set(token);
-        session.SignIn(user);
+        session.SignIn(user, newAccount: newAccount);
         return AccountResult.Ok(user);
     }
 

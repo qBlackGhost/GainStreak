@@ -14,7 +14,7 @@ public class LocalAccountService(
     AuthService auth, RememberMeService remember, SessionService session, IDbContextFactory<AppDbContext> dbFactory) : IAccountService
 {
     public async Task<AccountResult> RegisterAsync(string username, string email, string password) =>
-        SignedIn(await auth.RegisterAsync(username, email, password));
+        SignedIn(await auth.RegisterAsync(username, email, password), newAccount: true);
 
     public async Task<AccountResult> SignInAsync(string login, string password) =>
         SignedIn(await auth.LoginAsync(login, password));
@@ -64,11 +64,11 @@ public class LocalAccountService(
         return new AccountResult(true);
     }
 
-    private AccountResult SignedIn(AuthResult r)
+    private AccountResult SignedIn(AuthResult r, bool newAccount = false)
     {
         if (!r.Success) return AccountResult.Fail(r.Error!, r.Field);
         remember.Remember(r.User!, true);   // before SignIn, which navigates
-        session.SignIn(r.User!);
+        session.SignIn(r.User!, newAccount: newAccount);
         return AccountResult.Ok(r.User!);
     }
 }

@@ -157,8 +157,8 @@
                                                IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
 
-                                <!-- Sex -->
-                                <TextBlock Grid.Row="1" Text="Sex" Classes="formLabel"/>
+                                <!-- Gender -->
+                                <TextBlock Grid.Row="1" Text="Gender" Classes="formLabel"/>
                                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
                                     <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
                                         <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">

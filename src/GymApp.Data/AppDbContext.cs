@@ -258,36 +258,46 @@ public class AppDbContext : DbContext
         E(3, "Dumbbell Bench Press", MuscleGroup.Chest), E(4, "Incline Dumbbell Press", MuscleGroup.Chest),
         E(5, "Cable Fly", MuscleGroup.Chest), E(6, "Push-Up", MuscleGroup.Chest),
         E(49, "Smith Press", MuscleGroup.Chest), E(50, "Incline Smith Press", MuscleGroup.Chest),
-        E(51, "Wide Grip Dips", MuscleGroup.Chest),
+        E(51, "Wide Grip Dips", MuscleGroup.Chest), E(66, "Machine Chest Press", MuscleGroup.Chest),
+        E(67, "Pec Deck", MuscleGroup.Chest), E(68, "Dumbbell Fly", MuscleGroup.Chest),
         // Back
         E(7, "Pull-Up", MuscleGroup.Back), E(8, "Lat Pulldown", MuscleGroup.Back),
         E(9, "Barbell Row", MuscleGroup.Back), E(10, "Seated Cable Row", MuscleGroup.Back),
         E(11, "One-Arm Dumbbell Row", MuscleGroup.Back), E(12, "Deadlift", MuscleGroup.Back),
         E(52, "T-Bar Row", MuscleGroup.Back), E(53, "Low Row", MuscleGroup.Back),
         E(54, "Close Grip Cable Row", MuscleGroup.Back), E(55, "Wide Grip Cable Row", MuscleGroup.Back),
+        E(69, "Chest-Supported Row", MuscleGroup.Back), E(70, "Chin-Up", MuscleGroup.Back),
+        E(71, "Close Grip Lat Pulldown", MuscleGroup.Back), E(72, "Back Extension", MuscleGroup.Back),
 
         // Shoulders
         E(13, "Overhead Press", MuscleGroup.Shoulders), E(14, "Dumbbell Shoulder Press", MuscleGroup.Shoulders),
         E(15, "Cable Lateral Raise", MuscleGroup.Shoulders), E(16, "Rear Delt Fly", MuscleGroup.Shoulders),
         E(17, "Face Pull", MuscleGroup.Shoulders), E(56, "Dumbbell Lateral Raise", MuscleGroup.Shoulders),
+        E(73, "Machine Shoulder Press", MuscleGroup.Shoulders), E(74, "Arnold Press", MuscleGroup.Shoulders),
+        E(75, "Reverse Pec Deck", MuscleGroup.Shoulders),
         // Biceps
         E(18, "Barbell Curl", MuscleGroup.Biceps), E(19, "Dumbbell Curl", MuscleGroup.Biceps),
         E(20, "Hammer Curl", MuscleGroup.Biceps), E(21, "Preacher Curl", MuscleGroup.Biceps),
         E(57, "Preacher Hammer Curl", MuscleGroup.Biceps), E(58, "Incline Dumbbell Curl", MuscleGroup.Biceps),
+        E(76, "Cable Curl", MuscleGroup.Biceps),
         // Triceps
         E(22, "Triceps Pushdown", MuscleGroup.Triceps), E(23, "Skull Crusher", MuscleGroup.Triceps),
         E(24, "Overhead Triceps Extension", MuscleGroup.Triceps), E(25, "JM Bench Press", MuscleGroup.Triceps),
         E(26, "Close Grip Dips", MuscleGroup.Triceps), E(59, "One Arm Cable Pushdown", MuscleGroup.Triceps),
+        E(77, "Rope Pushdown", MuscleGroup.Triceps), E(78, "Overhead Cable Triceps Extension", MuscleGroup.Triceps),
         // Quads
         E(27, "Squat", MuscleGroup.Quads), E(28, "Leg Press", MuscleGroup.Quads),
         E(29, "Leg Extension", MuscleGroup.Quads), E(30, "Bulgarian Split Squat", MuscleGroup.Quads),
         E(31, "Front Squat", MuscleGroup.Quads), E(60, "Hack Squat", MuscleGroup.Quads),
+        E(79, "Goblet Squat", MuscleGroup.Quads),
         // Hamstrings
         E(32, "Romanian Deadlift", MuscleGroup.Hamstrings), E(33, "Lying Leg Curl", MuscleGroup.Hamstrings),
         E(34, "Seated Leg Curl", MuscleGroup.Hamstrings), E(35, "Good Morning", MuscleGroup.Hamstrings),
+        E(80, "Stiff-Leg Deadlift", MuscleGroup.Hamstrings), E(81, "Dumbbell Romanian Deadlift", MuscleGroup.Hamstrings),
         // Glutes
         E(36, "Hip Thrust", MuscleGroup.Glutes), E(37, "Glute Bridge", MuscleGroup.Glutes),
         E(38, "Cable Kickback", MuscleGroup.Glutes), E(39, "Walking Lunge", MuscleGroup.Glutes),
+        E(82, "Hip Abduction", MuscleGroup.Glutes), E(83, "Hip Adduction", MuscleGroup.Glutes),
         // Calves
         E(40, "Standing Calf Raise", MuscleGroup.Calves), E(41, "Seated Calf Raise", MuscleGroup.Calves),
         E(42, "Leg Press Calf Raise", MuscleGroup.Calves),
@@ -295,6 +305,7 @@ public class AppDbContext : DbContext
         E(43, "Plank", MuscleGroup.Core), E(44, "Hanging Leg Raise", MuscleGroup.Core),
         E(45, "Cable Crunch", MuscleGroup.Core), E(46, "Ab Wheel Rollout", MuscleGroup.Core),
         E(47, "Russian Twist", MuscleGroup.Core), E(48, "Decline Crunches", MuscleGroup.Core),
+        E(84, "Hanging Knee Raise", MuscleGroup.Core),
         //Forearm
         E(61, "Forearm Cable Curl", MuscleGroup.Forearms), E(62, "Forearm Cable Extension", MuscleGroup.Forearms),
         E(63, "Reverse Curls", MuscleGroup.Forearms),  E(64, "Wrist Curls", MuscleGroup.Forearms),

@@ -2,6 +2,13 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.15.6
+
+- **Profile setup:** right after creating an account, a new screen asks for gender (Male, Female or Prefer not to say), birth date, height, current weight, activity and home city before Home. Everything is optional: **Skip for now** saves nothing, and **Save and continue** saves only what was filled in (the weight as today's weigh-in). A box shows how many of the five body answers are in and, once all are, the maintenance estimate. After saving, a summary lists each answer or "Not set" and offers to use the estimate as the daily calorie goal. Signing in, even on a new device, still goes straight to Home.
+- **Gender:** the Profile screen's "Sex" field is now labelled "Gender", and the maintenance hint asks for your gender. The stored value is unchanged.
+- **Exercises:** 19 new built-in exercises: Machine Chest Press, Pec Deck, Dumbbell Fly, Chest-Supported Row, Chin-Up, Close Grip Lat Pulldown, Back Extension, Machine Shoulder Press, Arnold Press, Reverse Pec Deck, Cable Curl, Rope Pushdown, Overhead Cable Triceps Extension, Goblet Squat, Stiff-Leg Deadlift, Dumbbell Romanian Deadlift, Hip Abduction, Hip Adduction (both under Glutes) and Hanging Knee Raise.
+- **Migration:** `MoreExercises` in the app's SQLite (new rows in `Exercises`). The server is unchanged.
+
 ## 0.15.5
 
 - **Inbox:** a new Inbox screen, in the sidebar above Friends, holds friend requests and the splits and workouts friends share. An All / Requests / Workouts pill filters it; new items have a dot until **Mark all read**, and the sidebar's red badge (now on every screen) counts them. Accept and Decline work right there; what was done from the inbox is listed under Earlier. Friends now only lists the requests you sent, and the dashboard's Friends card has no badge of its own.

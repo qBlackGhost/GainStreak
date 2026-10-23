@@ -32,7 +32,7 @@ public class ProfileServiceTests : IDisposable
         Assert.Null(s.Profile.Sex);
         Assert.Null(s.CurrentWeight);
         Assert.Null(s.Maintenance.Kcal);
-        Assert.Contains("sex", s.Maintenance.Reason);
+        Assert.Contains("gender", s.Maintenance.Reason);
     }
 
     [Fact] public async Task Save_ThenGet_RoundTrips()

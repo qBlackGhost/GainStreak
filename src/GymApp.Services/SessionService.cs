@@ -15,12 +15,16 @@ public class SessionService
     /// login screen. Cleared by the next sign-in.</summary>
     public string? SignOutNotice { get; private set; }
 
+    /// <summary>Signed in straight after creating the account, so the app opens the profile setup instead of Home.</summary>
+    public bool IsNewAccount { get; private set; }
+
     public event Action? Changed;
 
-    public void SignIn(User user, bool offline = false)
+    public void SignIn(User user, bool offline = false, bool newAccount = false)
     {
         CurrentUser = user;
         SignedInOffline = offline;
+        IsNewAccount = newAccount;
         SignOutNotice = null;
         Changed?.Invoke();
     }
@@ -29,6 +33,7 @@ public class SessionService
     {
         CurrentUser = null;
         SignedInOffline = false;
+        IsNewAccount = false;
         SignOutNotice = notice;
         Changed?.Invoke();
     }

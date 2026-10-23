@@ -245,7 +245,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
     public static MaintenanceEstimate Estimate(UserProfile profile, double? weightKg, DateOnly today)
     {
         var missing = new List<string>();
-        if (profile.Sex is null) missing.Add("sex");
+        if (profile.Sex is null) missing.Add("gender");
         if (profile.BirthDate is null) missing.Add("birth date");
         if (profile.HeightCm is null) missing.Add("height");
         if (weightKg is null) missing.Add("weight");

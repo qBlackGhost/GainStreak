@@ -31,6 +31,7 @@ public sealed class LocalAccountServiceTests : IDisposable
         var r = await _accounts.RegisterAsync("alice", "alice@example.com", Pw);
         Assert.True(r.Success, r.Error);
         Assert.Null(r.User!.ServerUserId);
+        Assert.True(_session.IsNewAccount);
 
         Assert.Equal(FormField.Password, (await _accounts.ChangePasswordAsync("wrong password", "brand new pass")).Field);
         Assert.Equal(FormField.NewPassword, (await _accounts.ChangePasswordAsync(Pw, "short")).Field);

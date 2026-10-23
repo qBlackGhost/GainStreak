@@ -14,7 +14,7 @@ using GymApp.Services;
 namespace GymApp.Desktop.ViewModels;
 
 /// <summary>One option of the activity selector: "Less active", "under 7,500 steps".</summary>
-public partial class ActivityOption(ActivityLevel level, ProfileViewModel? owner = null) : ObservableObject
+public partial class ActivityOption(ActivityLevel level, Action<ActivityOption>? pick = null) : ObservableObject
 {
     public ActivityLevel Level { get; } = level;
     public string Name => ActivityLevels.DisplayName(Level);
@@ -23,7 +23,7 @@ public partial class ActivityOption(ActivityLevel level, ProfileViewModel? owner
 
     [ObservableProperty] public partial bool IsSelected { get; set; }
 
-    [RelayCommand] private void Pick() { if (owner is not null) owner.SelectedActivity = this; }
+    [RelayCommand] private void Pick() => pick?.Invoke(this);
 }
 
 /// <summary>A month in the birth date picker.</summary>
@@ -63,7 +63,7 @@ public partial class ProfileViewModel : ViewModelBase
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
-        ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, this)).ToList();
+        ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
         ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
         _ = ReloadAsync();
     }
