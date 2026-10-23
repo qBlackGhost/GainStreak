@@ -344,37 +344,31 @@ public partial class HomeViewModel : ViewModelBase
         if (_session.CurrentUser is { } user) await RefreshFriendsAsync(user.Id);
     }
 
-    /// <summary>The four first-time steps: a split and exercises for its day (these unlock check-in), a calorie goal,
-    /// and a home city. Each one reads what the user already has, so the card fills itself in as they go.</summary>
+    /// <summary>The four first-time steps: a split, exercises for every day of it (the split and today's exercises
+    /// unlock check-in), body data and then a calorie goal, and a home city. Each one reads what the user already has,
+    /// so the card fills itself in as they go.</summary>
     private async Task RefreshSetupAsync(int userId)
     {
         var checkIn = await _workouts.GetCheckInAsync(userId);
         var menu = checkIn.HasSplit ? await _menu.GetAsync(userId) : null;
         var calories = await _calories.GetAsync(userId);
+        var profile = await _profiles.GetAsync(userId);
         var city = await _profiles.GetHomeCityAsync(userId);
 
-        var day = checkIn.Day;
-        var dayName = day?.Name ?? "your workout";
         var splitResult = menu is null ? null
             : checkIn.PlannedDay is { } planned ? $"{menu.SplitName} · today: {planned.Name}" : $"{menu.SplitName} · rest today";
-        var exerciseCount = checkIn.Exercises.Count;
-        var goal = calories?.Goal is { Goal: { } kcal } g ? $"{CalorieGoals.DisplayName(g.GoalType)} · {CalorieGoals.K(kcal)} kcal" : null;
+        var (exercises, openDay) = SetupPlan.Exercises(menu, checkIn.Day);
+        var (body, opensProfile) = SetupPlan.Calories(calories?.Goal, profile);
 
         var steps = new List<SetupStepViewModel>
         {
             new(1, "Pick your split",
                 "Choose a weekly plan, its variant and the day your first workout falls on. PPL and Upper / Lower are good starts.",
                 "Choose a split", splitResult, isLocked: false, () => _shell().ShowSplits()),
-            new(2, $"Add exercises to {dayName}",
-                checkIn.PlannedDay is not null
-                    ? $"Today is {dayName}. Pick a few exercises and planned sets so you can check in with today's sets."
-                    : "Pick a few exercises and planned sets for your workout days, so you can check in with your sets.",
-                day is null ? "Open Workouts" : $"Open {dayName}",
-                exerciseCount > 0 ? $"{exerciseCount} exercise{(exerciseCount == 1 ? "" : "s")} added" : null,
-                isLocked: !checkIn.HasSplit, () => OpenSetupDay(menu, day)),
-            new(3, "Set your calorie goal",
-                "Enter your body data and choose lose, maintain or gain to get a suggested daily target.",
-                "Open Calories", goal, isLocked: false, () => _shell().ShowCalories()),
+            new(2, exercises.Title, exercises.Text, exercises.Cta, exercises.Result,
+                isLocked: !checkIn.HasSplit, () => OpenSetupDay(menu, openDay)),
+            new(3, body.Title, body.Text, body.Cta, body.Result, isLocked: false,
+                opensProfile ? () => _shell().ShowProfile() : () => _shell().ShowCalories()),
             new(4, "Choose your home city",
                 "Loads the gyms near you, so you can log where you trained after checking in.",
                 "Choose city", city?.Name, isLocked: false, () => _shell().ShowGyms(chooseCity: true)),
@@ -388,9 +382,9 @@ public partial class HomeViewModel : ViewModelBase
         ShowSetup = done < steps.Count;
     }
 
-    private void OpenSetupDay(WorkoutMenu? menu, CheckInDay? day)
+    private void OpenSetupDay(WorkoutMenu? menu, MenuDay? day)
     {
-        if (menu?.Days.FirstOrDefault(d => d.SplitDayId == day?.SplitDayId) is { } menuDay) _shell().ShowDay(menuDay, menu.SplitName);
+        if (menu is not null && day is not null) _shell().ShowDay(day, menu.SplitName);
         else _shell().ShowWorkouts();
     }
 

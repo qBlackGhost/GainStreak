@@ -285,13 +285,13 @@
                 </Grid>
             </Border>
 
-            <!-- ===== Get set up: until the four first-time steps are done (steps 1 and 2 unlock check-in) ===== -->
+            <!-- ===== Get set up: until the four first-time steps are done (a split and exercises for today unlock check-in) ===== -->
             <Border Classes="card" Padding="28,26" IsVisible="{Binding ShowSetup}">
                 <StackPanel Spacing="18">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="4">
                             <TextBlock Text="Get set up" Classes="h2"/>
-                            <TextBlock Text="Steps 1 and 2 unlock your first check-in." FontSize="13" Classes="muted"/>
+                            <TextBlock Text="A split and exercises for today's workout unlock your first check-in." FontSize="13" Classes="muted"/>
                         </StackPanel>
                         <TextBlock Grid.Column="1" Text="{Binding SetupDoneText}" Classes="mono soft" FontSize="14"
                                    VerticalAlignment="Center"/>

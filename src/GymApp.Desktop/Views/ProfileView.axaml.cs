@@ -9,7 +9,7 @@ namespace GymApp.Desktop.Views;
 
 public partial class ProfileView : UserControl
 {
-    /// <summary>Below this content width the weight and appearance cards go under body data.</summary>
+    /// <summary>Below this content width the right column (home city, account, appearance) goes under the left.</summary>
     private const double TwoColumnMinWidth = 880;
 
     /// <summary>True when the bound index equals the parameter: marks a segmented option as the selected one.</summary>

@@ -4,7 +4,7 @@
              xmlns:v="using:GymApp.Desktop.Views"
              x:Class="GymApp.Desktop.Views.ProfileView"
              x:DataType="vm:ProfileViewModel">
-    <!-- After the "Gym App" design canvas (Profile artboard): body data and home city on the left, weight and
+    <!-- After the "Gym App" design canvas (Profile artboard): body data and weight on the left, home city, account and
          appearance on the right. Below 880 px of content the right column goes under the left (ProfileView.axaml.cs). -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
@@ -273,7 +273,84 @@
                             </Border>
                         </StackPanel>
                     </Border>
+                    <!-- ===== Weight ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="18">
+                            <TextBlock Text="Weight" Classes="h2"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock>
+                                        <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
+                                             Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
+                                             Foreground="{DynamicResource Soft}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="pill" Padding="12,5" VerticalAlignment="Bottom" IsVisible="{Binding HasHistory}">
+                                    <TextBlock Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
+                                </Border>
+                            </Grid>
+                            <!-- Trend: the last weigh-ins, oldest to newest -->
+                            <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
+                                <Viewbox Stretch="Fill" Height="96">
+                                    <Canvas Width="320" Height="96">
+                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{DynamicResource Line}" StrokeThickness="1"/>
+                                        <Polyline Points="{Binding TrendPoints}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.5"
+                                                  StrokeLineCap="Round" StrokeJoin="Round"/>
+                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent}" Stroke="{DynamicResource Surface}"
+                                                 StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
+                                                 Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
+                                    </Canvas>
+                                </Viewbox>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
+                                </Grid>
+                            </StackPanel>
 
+                            <StackPanel Spacing="6">
+                                <TextBlock FontSize="12" Classes="muted">
+                                    <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
+                                </TextBlock>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                             PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
+                                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
+                                            Command="{Binding LogWeightCommand}"/>
+                                </Grid>
+                                <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                                           IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="One weigh-in per day. Logging again today replaces today's entry." FontSize="12"
+                                           Classes="muted"/>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding HasHistory}">
+                                <TextBlock Text="RECENT WEIGH-INS" Classes="caps" FontWeight="Bold" LetterSpacing="1.4" Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding History}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WeightEntryViewModel">
+                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
+                                                               FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
+                                                            Padding="0" BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}"
+                                                            Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
+                                                            AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
+                                                        <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="RightColumn" Spacing="24">
                     <!-- ===== Home city ===== -->
                     <Border Classes="card" Padding="28">
                         <StackPanel Spacing="16">
@@ -354,9 +431,7 @@
                             </Border>
                         </StackPanel>
                     </Border>
-                </StackPanel>
 
-                <StackPanel x:Name="RightColumn" Spacing="24">
                     <!-- ===== Account: the email you sign in with ===== -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">
@@ -471,82 +546,6 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- ===== Weight ===== -->
-                    <Border Classes="card">
-                        <StackPanel Spacing="18">
-                            <TextBlock Text="Weight" Classes="h2"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <StackPanel Spacing="4">
-                                    <TextBlock>
-                                        <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
-                                             Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
-                                             Foreground="{DynamicResource Soft}"/>
-                                    </TextBlock>
-                                    <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
-                                </StackPanel>
-                                <Border Grid.Column="1" Classes="pill" Padding="12,5" VerticalAlignment="Bottom" IsVisible="{Binding HasHistory}">
-                                    <TextBlock Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
-                                </Border>
-                            </Grid>
-                            <!-- Trend: the last weigh-ins, oldest to newest -->
-                            <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
-                                <Viewbox Stretch="Fill" Height="96">
-                                    <Canvas Width="320" Height="96">
-                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{DynamicResource Line}" StrokeThickness="1"/>
-                                        <Polyline Points="{Binding TrendPoints}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.5"
-                                                  StrokeLineCap="Round" StrokeJoin="Round"/>
-                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent}" Stroke="{DynamicResource Surface}"
-                                                 StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
-                                                 Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
-                                    </Canvas>
-                                </Viewbox>
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock FontSize="12" Classes="muted">
-                                    <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
-                                </TextBlock>
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                    <TextBox x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
-                                             PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
-                                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
-                                            Command="{Binding LogWeightCommand}"/>
-                                </Grid>
-                                <TextBlock Classes="fieldError" Text="{Binding WeightError}"
-                                           IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                <TextBlock Text="One weigh-in per day. Logging again today replaces today's entry." FontSize="12"
-                                           Classes="muted"/>
-                            </StackPanel>
-
-                            <StackPanel IsVisible="{Binding HasHistory}">
-                                <TextBlock Text="RECENT WEIGH-INS" Classes="caps" FontWeight="Bold" LetterSpacing="1.4" Margin="0,0,0,6"/>
-                                <ItemsControl ItemsSource="{Binding History}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:WeightEntryViewModel">
-                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
-                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
-                                                               FontWeight="Bold" VerticalAlignment="Center"/>
-                                                    <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
-                                                            Padding="0" BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}"
-                                                            Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
-                                                            AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
-                                                        <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
-                                                    </Button>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
                         </StackPanel>
                     </Border>
 
