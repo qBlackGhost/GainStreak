@@ -67,6 +67,23 @@ A throwaway proof, in a `spike/` folder that is deleted at the end of 16a. It do
 
 **Stop and report:** what worked, the numbers, and any EF Core warnings or failures on iOS. **Go** if all four steps work on both platforms and cold start is under 3 seconds on a mid-range Android phone or emulator. **No-go** means stopping here and revisiting the framework choice with what was learned.
 
+### Result (2026-10-27): go
+
+| | Android (Pixel 7 emulator, Android 16, Release) | iOS (iPhone 18 Pro Simulator, iOS 27.1, Release, AOT + interpreter) |
+|---|---|---|
+| Migrate, fresh install | 24 migrations, 4.46 s | 24 migrations, 3.49 s |
+| Splits, workout, streak, points | 2.37 s | 1.71 s |
+| Map, `/health` | pass | pass |
+| Cold start to first frame | 1.3–1.8 s settled (6.0 s first launch after install) | 2.3–4.6 s from `simctl launch` (upper bound); 0.24–0.63 s of it .NET |
+| Size | ~24 MB download, 89 MB installed | ~51 MB compressed, 139 MB installed |
+
+What it changes for the sub-phases below:
+- **iOS full AOT can't build EF Core's model.** With the TestFlight defaults, `Migrate()` throws "Model building is not supported when publishing with NativeAOT. Use a compiled model." The spike passed only with the interpreter on (`MtouchInterpreter=-all`, plus `MtouchLink=SdkOnly` to keep build times near 7 minutes). 16c replaces that with a compiled model.
+- **EF Core costs 1.6–3 s on every launch** even with nothing to migrate, mostly building its model. The compiled model removes most of that on every head.
+- **Avalonia 12 starts Android differently:** `IActivityApplicationLifetime.MainViewFactory`, next to iOS's `ISingleViewApplicationLifetime` and desktop's classic lifetime. 16b handles all three.
+- **Data folder on iOS:** `LocalApplicationData` maps to `Documents/GymApp`, the folder meant for user documents, which the Files app can show. 16c moves it to `Library/Application Support/GymApp`.
+- Not checked: a real iPhone (cold start). Pinch-zoom on the Android emulator (⌘-drag) zooms but feels odd; the emulator's two mirrored fingers can't show whether real pinches feel right, so 16f checks it on a real phone.
+
 ---
 
 ## 16b. GymApp.App: the shared UI library
@@ -82,7 +99,7 @@ Move the shared UI out of GymApp.Desktop so the mobile heads can use it. Nothing
   - `CanShowLogFolder` and `ShowLogFolder()` (desktop: today's `Process.Start`; mobile: false, and Feedback hides "Show log file")
   - `CanRestartForUpdate` with the Velopack hook, and `OpenStorePage()` for the 426 banner
   - `ServerUrl` (desktop: `BuildSettings.ServerUrl`)
-- `App.OnFrameworkInitializationCompleted` handles both lifetimes: `IClassicDesktopStyleApplicationLifetime` gets `MainWindow`, `ISingleViewApplicationLifetime` gets `MainView`. The startup error window becomes a startup error view, shown either way.
+- `App.OnFrameworkInitializationCompleted` handles three lifetimes: `IClassicDesktopStyleApplicationLifetime` gets `MainWindow`, `ISingleViewApplicationLifetime` (iOS) gets `MainView`, and `IActivityApplicationLifetime` (Android) gets it through `MainViewFactory` (found in 16a). The startup error window becomes a startup error view, shown either way.
 - `ProfileViewModel` loses its `using Avalonia`; whatever it uses (likely the theme switch) goes through `AppTheme`.
 - `AppDbContext` gets its data folder from `IPlatform` (through the options or a static set once at startup) instead of reading `Environment` itself.
 
@@ -97,6 +114,8 @@ The app starts on both phones, with the desktop layout squeezed onto the screen.
 - **GymApp.Android:** `MainActivity` (Avalonia's `AvaloniaMainActivity`), application id and label, minimum API 26 (Android 8), the launcher icon and splash in the flame-arrow and lime of the desktop icon. Permissions: `INTERNET` only (16g adds notifications).
 - **GymApp.iOS:** `AppDelegate`, bundle id, display name, minimum iOS 16, the app icon set and launch screen. `ITSAppUsesNonExemptEncryption = false` (HTTPS only).
 - **Startup must not block the UI thread.** Today the migration, the points backfill and the session restore run with `GetAwaiter().GetResult()` before the window opens. iOS kills an app that doesn't draw its first frame in time. On mobile: show a splash view at once (logo on the page colour), run the three steps off the UI thread, then switch to login or Home. Desktop may keep its current order.
+- **Compiled EF Core model** (16a: full AOT on iOS can't build the model at runtime, and building it costs 1.6–3 s per launch everywhere). Generate it with `dotnet ef dbcontext optimize --project src/GymApp.Data --startup-project src/GymApp.Desktop --output-dir CompiledModels` and use it in `AppDbContext.OnConfiguring` (`UseModel`). It must be regenerated after every model change: add the command to CLAUDE.md next to the migration commands, and a test that fails when the compiled model and the live model differ. iOS then builds with the TestFlight defaults (no interpreter); if anything still needs it, report it rather than turning the interpreter back on silently. Measure the launch time again on both phones.
+- **Data folder:** iOS uses `Library/Application Support/GymApp`. It's still in the phone's backup, which is good for workouts, but the Files app doesn't show it the way it can show Documents. The session token stays out of backups because it's in the Keychain; Android keeps the app's private `files/GymApp`. Both come from `IPlatform.DataDirectory`.
 - **Token storage:** `KeychainTokenStore` (iOS, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, so it isn't in backups or moved to another phone) and `KeystoreTokenStore` (Android, a file encrypted with a Keystore key in the app's private folder). Both implement `ITokenStore`.
 - **Lifecycle:** resume → `SocialSync.RequestSync()`; going to the background stops the 15-minute timer and resume starts it again. The SQLite connection survives backgrounding (check that a check-in written just before the app is suspended is there after it's killed and restarted).
 - **Server address:** release builds get `GymAppServerUrl` from `Directory.Build.props`, as desktop does. Debug builds can't use `localhost` on a phone: the Android emulator reaches the Mac at `10.0.2.2`, and the iOS Simulator at `localhost`. Use those defaults in Debug, overridable at build time with `-p:GymAppServerUrl=...`.
@@ -142,11 +161,26 @@ Check each one at 360 × 740 (a small Android), 393 × 852 (iPhone 15/16) and 43
 
 ## 16f. Platform touches
 
-- **Map:** Mapsui pans and pinch-zooms by touch. Tiles still come from the public OSM servers with the identifying User-Agent (now naming the platform). Replacing them stays a pre-1.0 task (see Later).
+- **Map:** Mapsui pans and pinch-zooms by touch (see the map checks below). Tiles still come from the public OSM servers with the identifying User-Agent (now naming the platform). Replacing them stays a pre-1.0 task (see Later).
 - **Feedback:** "Show log file" is hidden where `CanShowLogFolder` is false. "Copy instead" uses the clipboard as now. "See what's sent" works unchanged.
 - **The 426 banner:** "Update" opens the store page (`OpenStorePage()`) on mobile. "Restart now" stays desktop-only.
 - **Theme:** System follows the phone's light or dark setting live, as it follows macOS and Windows now. The status bar text colour follows the theme.
 - **Haptics:** none in this phase.
+
+**Map checks,** by hand on a real Android phone and a real iPhone. The emulator and Simulator don't count: in 16a the emulator's ⌘-drag pinch zoomed but felt odd, and its mirrored fake fingers can't show how a real pinch feels. Each check passes on both phones:
+
+1. **Pinch out zooms in, pinch in zooms out,** never the other way.
+2. **Zoom follows the fingers:** the map grows or shrinks at the speed the fingers move, without lagging behind or overshooting.
+3. **Zoom centres between the fingers:** the point under the middle of the pinch stays under it. The map doesn't zoom around the screen centre or a corner.
+4. **No jump when a finger lifts:** lifting one finger mid-pinch and carrying on with the other turns into a smooth pan.
+5. **One-finger drag pans** without zooming, and a fling coasts to a stop.
+6. **Double-tap zooms in one step** around the tapped point.
+7. **The map keeps its gestures:** a pinch or drag on the map never also scrolls the page or the gym list around it, and swiping on the list never moves the map.
+8. **Pins stay tappable** at every zoom level, and tapping a pin doesn't also pan the map.
+9. **Zoom limits hold:** it stops at a sensible city-level minimum and street-level maximum, without going blank.
+10. **No stutter:** pinching and panning stay smooth while tiles load, on a mid-range Android phone too.
+
+Fix what fails through Mapsui's settings (gesture and zoom-limit options), a newer Mapsui, or the layout around the map (for 7). Write any check that can't be fixed in this phase into the report, with what happens. 16f isn't done until all ten pass or the failures are reported.
 
 ---
 

@@ -97,15 +97,53 @@ yes | JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home s
 JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home sdkmanager --sdk_root=$HOME/Library/Android/sdk "platform-tools" "platforms;android-36" "build-tools;36.0.0" "emulator" "system-images;android-36;google_apis;arm64-v8a"
 ```
 
+Homebrew's `avdmanager` looks for the SDK next to itself and can't see these system images, so create the emulator with the copy inside the SDK:
+
 ```bash
-JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home avdmanager create avd -n Pixel -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_7
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home sdkmanager --sdk_root=$HOME/Library/Android/sdk "cmdline-tools;latest"
 ```
 
-Android builds find the SDK and JDK through `AndroidSdkDirectory` and `JavaSdkDirectory` (or `ANDROID_HOME` and `JAVA_HOME`).
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager create avd -n Pixel -k "system-images;android-36;google_apis;arm64-v8a" -d pixel_7
+```
 
-**iOS Release builds and EF Core:** a Release build for the Simulator (`-r iossimulator-arm64`) is compiled ahead of time like a TestFlight build (full AOT, no JIT), so test EF Core changes there; a Debug build JITs and hides problems. With the default settings EF Core can't build its model at runtime ("Model building is not supported when publishing with NativeAOT"). Either the interpreter is turned on for code generated at runtime (`-p:MtouchInterpreter=-all`; much slower to build, since nothing is trimmed) or GymApp.Data ships a compiled model and precompiled queries. Which one the iOS head uses is still being decided (Phase 16a).
+```bash
+~/Library/Android/sdk/emulator/emulator -avd Pixel
+```
 
-The Android SDK steps above are the planned ones; the system image and emulator have not been set up on a machine yet.
+On Apple silicon the Android 16 (API 36) image draws on the CPU: its log says "API level 36 requires GLES 3.1, forcing software rendering for GLES". Scrolling, map redraws and gestures are then slower and choppier than on a phone, so for UI work add a second emulator on Android 15 (API 35), which can draw on the Mac's GPU. The heads still build against API 36; this only changes the emulator. It needs about 2 GB more:
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home sdkmanager --sdk_root=$HOME/Library/Android/sdk "system-images;android-35;google_apis;arm64-v8a"
+```
+
+```bash
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager create avd -n Pixel35 -k "system-images;android-35;google_apis;arm64-v8a" -d pixel_7
+```
+
+```bash
+~/Library/Android/sdk/emulator/emulator -avd Pixel35 -gpu host
+```
+
+Its log should no longer say "forcing software rendering". If it does, the GPU isn't being used and the emulator is no better than `Pixel`. Keep `Pixel` for checking Android 16 behaviour. Neither emulator replaces a real phone for judging how gestures feel.
+
+The heads (`src/GymApp.Android`, `src/GymApp.iOS`) arrive in Phase 16c. Android builds find the SDK and JDK through `AndroidSdkDirectory` and `JavaSdkDirectory` (or `ANDROID_HOME` and `JAVA_HOME`):
+
+```bash
+dotnet build src/GymApp.Android -c Release -p:AndroidSdkDirectory=$HOME/Library/Android/sdk -p:JavaSdkDirectory=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+```
+
+**iOS Release builds and EF Core:** a Release build for the Simulator (`-r iossimulator-arm64`) is compiled ahead of time like a TestFlight build, so test EF Core changes there; a Debug build JITs and hides problems. With the default settings (no JIT and no interpreter) EF Core can't build its model at runtime and `Migrate()` throws "Model building is not supported when publishing with NativeAOT". Until the compiled EF Core model arrives (Phase 16c), the iOS head turns on the interpreter for code generated at runtime, and keeps the SDK trimmed as a device build does:
+
+```bash
+dotnet build src/GymApp.iOS -c Release -r iossimulator-arm64 -p:MtouchInterpreter=-all -p:MtouchLink=SdkOnly
+```
+
+```bash
+xcrun simctl install booted src/GymApp.iOS/bin/Release/net10.0-ios/iossimulator-arm64/GymApp.iOS.app
+```
+
+Without `MtouchLink=SdkOnly` a Simulator build with the interpreter trims nothing and takes over 30 minutes; with it, about 7.
 
 ## TestBench (testing version)
 

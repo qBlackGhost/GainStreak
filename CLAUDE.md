@@ -59,7 +59,7 @@ The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.
 
 ## Phase specs
 
-`docs/PHASE_*.md` are specs written for Claude Code; follow the current one when working on its phase. Phase 16 (`docs/PHASE_16_MOBILE_APP.md`, the iOS and Android heads, with a shared `GymApp.App` library) is in progress; `spike/` holds its throwaway spike. Its ground rules include:
+`docs/PHASE_*.md` are specs written for Claude Code; follow the current one when working on its phase. Phase 16 (`docs/PHASE_16_MOBILE_APP.md`, the iOS and Android heads, with a shared `GymApp.App` library) is in progress; the 16a spike is done (its results are in the spec). Its ground rules include:
 - Do not commit or push.
 - Run `dotnet build` and `dotnet test` after each sub-phase.
 - The desktop app must look and behave exactly as in 0.15.x.
