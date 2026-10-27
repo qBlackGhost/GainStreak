@@ -225,6 +225,16 @@ Check each one at 360 × 740 (a small Android), 393 × 852 (iPhone 15/16) and 43
 
 Fix what fails through Mapsui's settings (gesture and zoom-limit options), a newer Mapsui, or the layout around the map (for 7). Write any check that can't be fixed in this phase into the report, with what happens. 16f isn't done until all ten pass or the failures are reported.
 
+**As built (2026-10-28):**
+- **User-Agent:** `OsmHttp.UserAgent` is set at startup to `GainStreak/<version> (<platform>; student project)` (Android, iOS, macOS, Windows, Linux), for Nominatim, Overpass and the tiles alike, the desktop's too.
+- **426 banner:** an "Update" button where the head can open its store (`CanOpenStorePage`), in "Restart now"'s place (they never show together). Android opens the Play Store app at `com.gainstreak.app`, or the web page without one. iOS needs the app's App Store id (`GymAppAppStoreId`, written into `BuiltSettings`) and hides the button until the listing exists (16h).
+- **Feedback:** nothing to change; "Show log file" was already hidden on phones (16b).
+- **Theme:** System already followed the phone live; checked both ways on the Android emulator (`cmd uimode night`) and the iOS Simulator (`simctl ui appearance`), status bar included.
+- **Map, phones only:** a drag or pinch on the map no longer scrolls the page (`PreventGestureRecognition` on the way down; marking the events handled didn't stop Avalonia's scroll gesture). Zoom stops at street level in and a whole city out (`OverrideZoomBounds` 0.3 to 305 m per pixel), set once the map has zoomed to the city: set before the map had a size, it hung the app. The desktop keeps its free zoom. The map's gym card and Home's two toasts were a fixed 420 px wide and ran off a phone; they now shrink (the same 420 on desktop).
+- **The iOS "typewriter" numbers (16e) are Menlo**, the system's monospace font, not a fallback: the shared list reaches it as meant. Matching the canvas's JetBrains Mono would mean bundling that font; not done.
+- **Map checks:** none of the ten can be passed on the emulator or Simulator (see above). On the emulator: one-finger drag pans the map and not the page, the page still scrolls from outside the map, and tapping a gym opens its card. Double-tap couldn't be checked (the tool's taps are too far apart). The ten checks on a real Android phone and a real iPhone are still to do, by hand.
+- **Not checked:** the "Update" button on a phone (it needs a 426 from the server) and the Play Store page opening.
+
 ---
 
 ## 16g. Reminders: local notifications

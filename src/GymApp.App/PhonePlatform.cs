@@ -22,10 +22,10 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public void ShowLogFolder() => throw new NotSupportedException("Phones have no folder to open; Feedback attaches the log.");
 
-    // The "Update" button that opens the store page comes in 16f
-    public virtual bool CanOpenStorePage => false;
+    /// <summary>The 426 banner's "Update" button (16f): the head opens its store listing.</summary>
+    public abstract bool CanOpenStorePage { get; }
 
-    public virtual void OpenStorePage() { }
+    public abstract void OpenStorePage();
 
     public virtual void OnFrameworkReady() { }
 

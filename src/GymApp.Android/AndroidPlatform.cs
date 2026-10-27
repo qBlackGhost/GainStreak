@@ -1,4 +1,5 @@
 using Android.Content;
+using Uri = Android.Net.Uri;
 using GymApp.App;
 using GymApp.Client;
 
@@ -10,4 +11,17 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
     public override string DataDirectory { get; } = Path.Combine(context.FilesDir!.AbsolutePath, "GymApp");
 
     public override ITokenStore CreateTokenStore() => new KeystoreTokenStore(Path.Combine(DataDirectory, "session.token"));
+
+    public override bool CanOpenStorePage => true;
+
+    /// <summary>The Play Store app at this app's page; the web page where there's no store app (an emulator).</summary>
+    public override void OpenStorePage()
+    {
+        var id = context.PackageName;
+        try { Open($"market://details?id={id}"); }
+        catch (ActivityNotFoundException) { Open($"https://play.google.com/store/apps/details?id={id}"); }
+    }
+
+    private void Open(string url) =>
+        context.StartActivity(new Intent(Intent.ActionView, Uri.Parse(url)).AddFlags(ActivityFlags.NewTask));
 }

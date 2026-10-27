@@ -335,7 +335,7 @@
                                 </Border>
 
                                 <!-- Gym card -->
-                                <Border Padding="14" CornerRadius="14" Width="420" Margin="16,0,16,32" HorizontalAlignment="Center"
+                                <Border Padding="14" CornerRadius="14" MaxWidth="420" Margin="16,0,16,32" HorizontalAlignment="Stretch"
                                         VerticalAlignment="Bottom" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                                         BoxShadow="0 12 40 0 #99000000" IsVisible="{Binding HasSelection}">
                                     <StackPanel Spacing="10">

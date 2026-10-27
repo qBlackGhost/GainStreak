@@ -27,8 +27,11 @@
                 Padding="12,8" IsVisible="{Binding HasUpdateNotice}">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <TextBlock Text="{Binding UpdateNotice}" TextWrapping="Wrap" VerticalAlignment="Center"/>
-                <Button Grid.Column="1" Content="Restart now" Command="{Binding RestartNowCommand}"
-                        IsVisible="{Binding CanRestartForUpdate}"/>
+                <Panel Grid.Column="1">
+                    <Button Content="Restart now" Command="{Binding RestartNowCommand}" IsVisible="{Binding CanRestartForUpdate}"/>
+                    <!-- Phones: the store page (never with "Restart now") -->
+                    <Button Content="Update" Command="{Binding OpenStoreCommand}" IsVisible="{Binding CanOpenStore}"/>
+                </Panel>
                 <Button Grid.Column="2" Content="Dismiss" Command="{Binding DismissUpdateNoticeCommand}"/>
             </Grid>
         </Border>

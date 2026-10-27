@@ -1,4 +1,5 @@
 using Foundation;
+using UIKit;
 using GymApp.App;
 using GymApp.Client;
 
@@ -13,4 +14,11 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
         "GymApp");
 
     public override ITokenStore CreateTokenStore() => new KeychainTokenStore();
+
+    /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>
+    public override bool CanOpenStorePage => BuiltSettings.AppStoreId.Length > 0;
+
+    public override void OpenStorePage() =>
+        UIApplication.SharedApplication.OpenUrl(new NSUrl($"itms-apps://apps.apple.com/app/id{BuiltSettings.AppStoreId}"),
+            new UIApplicationOpenUrlOptions(), null);
 }

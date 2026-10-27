@@ -20,6 +20,7 @@ public static class AppServices
     {
         var sc = new ServiceCollection();
         sc.AddSingleton(platform);
+        OsmHttp.UserAgent = OsmHttp.ForPlatform(AppVersion.Current, AppVersion.PlatformName);
         sc.AddDbContextFactory<AppDbContext>();
         sc.AddSingleton(_ => new ErrorLog(platform.DataDirectory, appInfo: platform.AppVersionDescription));
         sc.AddSingleton<SessionService>();

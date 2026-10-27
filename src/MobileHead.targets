@@ -6,16 +6,19 @@
          the Mac at 10.0.2.2, the iOS Simulator at localhost. Override with -p:GymAppDebugServerUrl=http://<Mac's IP>:5080
          for a real phone on the same Wi-Fi -->
     <GymAppDebugServerUrl Condition="'$(GymAppDebugServerUrl)' == ''">$(DefaultDebugServerUrl)</GymAppDebugServerUrl>
+    <!-- The app's numeric App Store id (16f), for the 426 banner's "Update" button on iOS. Empty until the App Store
+         listing exists (16h); the button stays hidden until then. Android needs none: its listing is the package name -->
+    <GymAppAppStoreId Condition="'$(GymAppAppStoreId)' == ''"></GymAppAppStoreId>
   </PropertyGroup>
 
-  <!-- The server addresses as constants (BuiltSettings): desktop reads them back from assembly metadata, but the iOS
+  <!-- The server addresses (and the App Store id) as constants (BuiltSettings): desktop reads them back from assembly metadata, but the iOS
        trimmer removes AssemblyMetadataAttribute (found in 16a) -->
   <Target Name="WriteBuiltSettings" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <BuiltSettingsFile>$(IntermediateOutputPath)BuiltSettings.g.cs</BuiltSettingsFile>
     </PropertyGroup>
     <WriteLinesToFile File="$(BuiltSettingsFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
-                      Lines="namespace $(RootNamespace)%3B internal static class BuiltSettings { public const string ServerUrl = &quot;$(GymAppServerUrl)&quot;%3B public const string DebugServerUrl = &quot;$(GymAppDebugServerUrl)&quot;%3B }" />
+                      Lines="namespace $(RootNamespace)%3B internal static class BuiltSettings { public const string ServerUrl = &quot;$(GymAppServerUrl)&quot;%3B public const string DebugServerUrl = &quot;$(GymAppDebugServerUrl)&quot;%3B public const string AppStoreId = &quot;$(GymAppAppStoreId)&quot;%3B }" />
     <ItemGroup>
       <Compile Include="$(BuiltSettingsFile)" />
       <FileWrites Include="$(BuiltSettingsFile)" />

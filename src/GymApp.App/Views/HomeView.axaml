@@ -911,7 +911,7 @@
 
     <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
     <Border Classes="toast" Classes.show="{Binding ShowGymPrompt}" IsVisible="{Binding ShowGymPrompt}"
-            VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,24,16,0" Width="420"
+            VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="16,24,16,0" MaxWidth="420"
             CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
         <DockPanel>
@@ -948,7 +948,7 @@
     </Border>
     <!-- Asked once, after the first check-in with a gym (FRIENDS_GYM_MAP.md 4f) -->
     <Border Classes="toast" Classes.show="{Binding ShowShareQuestion}" IsVisible="{Binding ShowShareQuestion}"
-            VerticalAlignment="Top" HorizontalAlignment="Center" Margin="16,24,16,0" Width="420"
+            VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="16,24,16,0" MaxWidth="420"
             CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
         <DockPanel>

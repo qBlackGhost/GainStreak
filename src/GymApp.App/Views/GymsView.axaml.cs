@@ -65,6 +65,14 @@ public partial class GymsView : UserControl
 
         // The map zooms on the wheel; stop the event there so the page doesn't scroll too (small windows)
         FriendMap.AddHandler(PointerWheelChangedEvent, (_, e) => e.Handled = true, RoutingStrategies.Bubble, handledEventsToo: true);
+        // Phones (16f, map check 7): a drag or pinch on the map is the map's; the page around it mustn't scroll too
+        // (on the way down, so the page's scroll gesture never sees them; Mapsui still gets them)
+        if (GymApplication.Platform is PhonePlatform)
+        {
+            FriendMap.AddHandler(PointerPressedEvent, (_, e) => e.PreventGestureRecognition(), RoutingStrategies.Tunnel);
+            FriendMap.AddHandler(PointerMovedEvent, (_, e) => e.PreventGestureRecognition(), RoutingStrategies.Tunnel);
+            FriendMap.AddHandler(PointerReleasedEvent, (_, e) => e.PreventGestureRecognition(), RoutingStrategies.Tunnel);
+        }
 
         DataContextChanged += (_, _) => Attach(DataContext as GymsViewModel);
     }
@@ -228,6 +236,11 @@ public partial class GymsView : UserControl
         var (maxX, maxY) = SphericalMercator.FromLonLat(b.East, b.North);
         FriendMap.Map.Navigator.ZoomToBox(new MRect(minX, minY, maxX, maxY), MBoxFit.Fit);
         _zoomedTo = b;
+        // Phones (16f, map check 9): zoom stops at a whole city out and street level in, so a pinch can't lose the map.
+        // Resolutions are map metres per screen pixel (zoom levels 9 to 19). Set once the map has its city: set in the
+        // constructor, before the map had a size, it hung the app. The desktop keeps its free zoom
+        if (GymApplication.Platform is PhonePlatform)
+            FriendMap.Map.Navigator.OverrideZoomBounds = new MMinMax(0.3, 305);
     }
 
     private void CenterOn(int gymId)

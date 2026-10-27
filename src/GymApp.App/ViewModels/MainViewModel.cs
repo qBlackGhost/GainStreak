@@ -31,7 +31,7 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>The server's "please update" for a build it no longer accepts, or that an update is ready, or null.
     /// Workouts keep working; the server's comes back with the next refused call if dismissed.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasUpdateNotice))]
+    [NotifyPropertyChangedFor(nameof(HasUpdateNotice), nameof(CanOpenStore))]
     public partial string? UpdateNotice { get; set; }
 
     public bool HasUpdateNotice => UpdateNotice is not null;
@@ -40,12 +40,18 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>Restarts into an update that has finished downloading (see AppUpdater), or null when none is waiting.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanRestartForUpdate))]
+    [NotifyPropertyChangedFor(nameof(CanRestartForUpdate), nameof(CanOpenStore))]
     public partial Action? RestartForUpdate { get; set; }
 
     public bool CanRestartForUpdate => RestartForUpdate is not null;
 
     [RelayCommand] private void RestartNow() => RestartForUpdate?.Invoke();
+
+    /// <summary>The phones' "Update" on the server's "please update" (16f): the store installs updates there. Not while
+    /// an update is waiting to restart into (the desktop's Velopack).</summary>
+    public bool CanOpenStore => HasUpdateNotice && !CanRestartForUpdate && _sp.GetRequiredService<IPlatform>().CanOpenStorePage;
+
+    [RelayCommand] private void OpenStore() => _sp.GetRequiredService<IPlatform>().OpenStorePage();
 
     /// <summary>The feedback popup, over whatever screen is showing (the sidebar's Support section opens it).</summary>
     public FeedbackViewModel Feedback => _sp.GetRequiredService<FeedbackViewModel>();

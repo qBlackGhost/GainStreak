@@ -6,10 +6,16 @@ using System.Threading.Tasks;
 
 namespace GymApp.Services;
 
-/// <summary>Shared setup for the OpenStreetMap APIs (Nominatim, Overpass): they ask for an identifying User-Agent.</summary>
+/// <summary>Shared setup for the OpenStreetMap APIs (Nominatim, Overpass) and tiles: they ask for an identifying
+/// User-Agent.</summary>
 public static class OsmHttp
 {
-    public const string UserAgent = "GainStreak/1.0 (student project)";
+    /// <summary>"GainStreak/0.15.6 (Android; student project)": the app sets it at startup (<see cref="ForPlatform"/>),
+    /// before any client is made.</summary>
+    public static string UserAgent { get; set; } = "GainStreak/1.0 (student project)";
+
+    /// <summary>The User-Agent naming the app's version and the platform it runs on (16f).</summary>
+    public static string ForPlatform(string version, string platform) => $"GainStreak/{version} ({platform}; student project)";
 
     public static HttpClient CreateClient(TimeSpan timeout, HttpMessageHandler? handler = null)
     {

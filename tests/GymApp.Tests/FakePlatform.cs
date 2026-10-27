@@ -26,8 +26,9 @@ public sealed class FakePlatform : IPlatform
         LogFolderShown++;
     }
 
-    public bool CanOpenStorePage => false;
-    public void OpenStorePage() { }
+    public bool CanOpenStorePage { get; set; }
+    public int StorePageOpened { get; private set; }
+    public void OpenStorePage() => StorePageOpened++;
     public void OnFrameworkReady() { }
     public Window CreateWindow(Control content, bool isStartupError) => throw new NotSupportedException();
     public void OnShellReady(MainViewModel shell, ErrorLog log) { }
