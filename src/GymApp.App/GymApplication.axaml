@@ -1,0 +1,35 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GymApp.App.GymApplication"
+             Name="GainStreak"
+             xmlns:local="using:GymApp.App"
+             xmlns:v="using:GymApp.App.Views"
+             RequestedThemeVariant="Default">
+             <!-- Default follows the system until someone signs in; then their Theme setting decides (ThemeService) -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="/Views/IronlogResources.axaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <FluentTheme />
+        <!-- The sliding pill is the selected surface: white on dark, ink on light (12e) -->
+        <Style Selector="v|SegmentedPill">
+            <Setter Property="PillBrush" Value="{DynamicResource Inverse}"/>
+        </Style>
+        <!-- A validation message under the field it's about (12d) -->
+        <Style Selector="TextBlock.fieldError">
+            <Setter Property="Foreground" Value="IndianRed"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </Application.Styles>
+</Application>

@@ -1,0 +1,578 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+    <!-- After the "Gym App" design canvas (Profile artboard): body data and weight on the left, home city, account and
+         appearance on the right. Below 880 px of content the right column goes under the left (ProfileView.axaml.cs). -->
+    <UserControl.Styles>
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.formLabel">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox.mono">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+        </Style>
+        <Style Selector="ComboBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.unitTag">
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+
+        <!-- The calories link sits right of the name, or under it when narrow -->
+        <Style Selector="Button#CaloriesLink">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack Button#CaloriesLink">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+
+        <!-- Two columns by default; stacked when narrow -->
+        <Style Selector="StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#LeftColumn">
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+    </UserControl.Styles>
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
+        <v:Sidebar Current="Profile"/>
+
+        <ScrollViewer>
+        <StackPanel Classes="page" Spacing="24">
+            <!-- Header: who you are, your split, streak and level -->
+            <Grid x:Name="Header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
+                <StackPanel Orientation="Horizontal" Spacing="20">
+                    <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="26" FontWeight="ExtraBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Username}" FontSize="34" FontWeight="ExtraBold"/>
+                        <WrapPanel ItemSpacing="8" LineSpacing="8">
+                            <Button Classes="link" Foreground="{DynamicResource Ink}" FontSize="13" Command="{Binding ShowSplitsCommand}">
+                                <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="12,5">
+                                    <TextBlock Text="{Binding SplitText}" FontSize="13" FontWeight="SemiBold"/>
+                                </Border>
+                            </Button>
+                            <Border Classes="pill" BorderBrush="{DynamicResource OrangeTintLine}" Padding="12,5" TextElement.Foreground="{DynamicResource FlameText}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Path Data="{StaticResource IcFlame}" Fill="{DynamicResource FlameText}" Width="13" Height="13" Stretch="Uniform"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
+                                        <Run Text="{Binding CurrentStreak}" FontFamily="{StaticResource Mono}"/><Run Text=" day streak · best "/><Run
+                                             Text="{Binding BestStreak}" FontFamily="{StaticResource Mono}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <Border Classes="pill" Padding="12,5">
+                                <TextBlock Text="{Binding LevelText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                </StackPanel>
+                <Button x:Name="CaloriesLink" Classes="btn outline" Padding="16,0" VerticalAlignment="Center"
+                        Command="{Binding ShowCaloriesCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="Calorie goal and maintenance" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcArrowRight}" StrokeThickness="2.2" Width="16" Height="16"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Saved / done -->
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
+                    IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            <TextBlock Text="{Binding Error}" Classes="error"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
+                <StackPanel x:Name="LeftColumn" Spacing="24">
+
+                    <!-- ===== Body data ===== -->
+                    <Border Classes="card" Padding="28">
+                        <StackPanel Spacing="22">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="Body data" Classes="h2"/>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="14" Height="14"/>
+                                    <TextBlock Text="Stored only on this computer" FontSize="12" Classes="muted"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18">
+                                <!-- Units -->
+                                <TextBlock Text="Units" Classes="formLabel"/>
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                        <v:SegmentedPill SelectedIndex="{Binding UnitsIndex}" PillInset="0">
+                                            <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="40" FontSize="14"
+                                                    Content="Metric · kg, cm" Command="{Binding SelectMetricCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding IsImperial}" MinHeight="40" FontSize="14"
+                                                    Content="Imperial · lb, ft" Command="{Binding SelectImperialCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <TextBlock Classes="fieldError" Text="{Binding UnitsError}"
+                                               IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Gender -->
+                                <TextBlock Grid.Row="1" Text="Gender" Classes="formLabel"/>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                        <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
+                                            <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
+                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Male" Command="{Binding SelectMaleCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
+                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Female" Command="{Binding SelectFemaleCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <TextBlock Classes="fieldError" Text="{Binding SexError}"
+                                               IsVisible="{Binding SexError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Birth date: day, month, year -->
+                                <TextBlock Grid.Row="2" Text="Birth date" Classes="formLabel"/>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
+                                    <WrapPanel ItemSpacing="8" LineSpacing="8">
+                                        <TextBox Classes="field mono" Width="72" TextAlignment="Center" PlaceholderText="Day"
+                                                 Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
+                                        <ComboBox Classes="field" MinWidth="150" ItemsSource="{Binding Months}"
+                                                  SelectedItem="{Binding BirthMonth}" PlaceholderText="Month"
+                                                  AutomationProperties.Name="Month">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:MonthOption">
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Classes="field mono" Width="96" TextAlignment="Center" PlaceholderText="Year"
+                                                 Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
+                                        <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="11,5" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding AgeText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
+                                        </Border>
+                                    </WrapPanel>
+                                    <TextBlock Classes="fieldError" Text="{Binding BirthDateError}"
+                                               IsVisible="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Height -->
+                                <TextBlock Grid.Row="3" Text="Height" Classes="formLabel"/>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6">
+                                    <Panel MaxWidth="200" HorizontalAlignment="Left" IsVisible="{Binding IsMetric}">
+                                        <TextBox Classes="field mono" Width="200" Padding="14,0,48,0" Text="{Binding HeightCmText}"
+                                                 AutomationProperties.Name="Height in centimetres"/>
+                                        <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
+                                    </Panel>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
+                                        <Panel>
+                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightFtText}"
+                                                     AutomationProperties.Name="Feet"/>
+                                            <Border Classes="unitTag"><TextBlock Text="ft" FontSize="13" Classes="muted"/></Border>
+                                        </Panel>
+                                        <Panel>
+                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightInText}"
+                                                     AutomationProperties.Name="Inches"/>
+                                            <Border Classes="unitTag"><TextBlock Text="in" FontSize="13" Classes="muted"/></Border>
+                                        </Panel>
+                                    </StackPanel>
+                                    <TextBlock Classes="fieldError" Text="{Binding HeightError}"
+                                               IsVisible="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <!-- Activity -->
+                                <TextBlock Grid.Row="4" Text="Activity" Classes="formLabel" VerticalAlignment="Top" Margin="0,18,0,0"/>
+                                <StackPanel Grid.Row="4" Grid.Column="1" Spacing="8">
+                                    <Border Classes="track">
+                                        <ItemsControl ItemsSource="{Binding ActivityOptions}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <v:SegmentedPill SelectedIndex="{Binding ActivityIndex}" PillInset="0"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ActivityOption">
+                                                    <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="58" Padding="6,0"
+                                                            Command="{Binding PickCommand}">
+                                                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Bold"
+                                                                       HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                            <TextBlock Text="{Binding Steps}" FontSize="12" Opacity="0.75"
+                                                                       HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                    <TextBlock Text="Pick the one that matches your usual daily steps outside the gym." FontSize="12"
+                                               Classes="muted"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
+                                               IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Maintenance and save -->
+                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Maintenance (estimate)" FontSize="12" Classes="muted"/>
+                                        <TextBlock>
+                                            <Run Text="{Binding MaintenanceText}" FontFamily="{StaticResource Mono}" FontSize="20"
+                                                 FontWeight="Bold"/><Run Text=" kcal / day" FontSize="15" Foreground="{DynamicResource Soft}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Foreground="{DynamicResource FlameText}"
+                                                   IsVisible="{Binding MaintenanceNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="1" Text="Unsaved changes" FontSize="13" Classes="soft" VerticalAlignment="Center"
+                                               IsVisible="{Binding IsDirty}"/>
+                                    <Button Grid.Column="2" Classes="btn primary" Padding="22,0" Content="Save profile"
+                                            Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                    <!-- ===== Weight ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="18">
+                            <TextBlock Text="Weight" Classes="h2"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock>
+                                        <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
+                                             Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
+                                             Foreground="{DynamicResource Soft}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
+                                </StackPanel>
+                                <Border Grid.Column="1" Classes="pill" Padding="12,5" VerticalAlignment="Bottom" IsVisible="{Binding HasHistory}">
+                                    <TextBlock Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
+                                </Border>
+                            </Grid>
+                            <!-- Trend: the last weigh-ins, oldest to newest -->
+                            <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
+                                <Viewbox Stretch="Fill" Height="96">
+                                    <Canvas Width="320" Height="96">
+                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{DynamicResource Line}" StrokeThickness="1"/>
+                                        <Polyline Points="{Binding TrendPoints}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.5"
+                                                  StrokeLineCap="Round" StrokeJoin="Round"/>
+                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent}" Stroke="{DynamicResource Surface}"
+                                                 StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
+                                                 Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
+                                    </Canvas>
+                                </Viewbox>
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <StackPanel Spacing="6">
+                                <TextBlock FontSize="12" Classes="muted">
+                                    <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
+                                </TextBlock>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                             PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
+                                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
+                                            Command="{Binding LogWeightCommand}"/>
+                                </Grid>
+                                <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                                           IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <TextBlock Text="One weigh-in per day. Logging again today replaces today's entry." FontSize="12"
+                                           Classes="muted"/>
+                            </StackPanel>
+
+                            <StackPanel IsVisible="{Binding HasHistory}">
+                                <TextBlock Text="RECENT WEIGH-INS" Classes="caps" FontWeight="Bold" LetterSpacing="1.4" Margin="0,0,0,6"/>
+                                <ItemsControl ItemsSource="{Binding History}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WeightEntryViewModel">
+                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
+                                                               FontWeight="Bold" VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
+                                                            Padding="0" BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}"
+                                                            Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
+                                                            AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
+                                                        <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
+                                                    </Button>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <StackPanel x:Name="RightColumn" Spacing="24">
+                    <!-- ===== Home city ===== -->
+                    <Border Classes="card" Padding="28">
+                        <StackPanel Spacing="16">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Home city" Classes="h2"/>
+                                <TextBlock Text="The gym map opens on this city. You can still pick gyms anywhere." FontSize="13" Classes="soft"/>
+                            </StackPanel>
+                            <Border Padding="16,14" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1"
+                                    IsVisible="{Binding HasHomeCity}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                    <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Accent}">
+                                        <v:Icon Data="{StaticResource IcPin}" Stroke="Black" StrokeThickness="2.2" Width="20" Height="20"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding HomeCityName}" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="{Binding HomeCityRegion}" FontSize="13" Classes="muted"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="Clear"
+                                            Command="{Binding ClearHomeCityCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Panel IsVisible="{Binding !HasHomeCity}">
+                                <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="14" RadiusY="14"/>
+                                <TextBlock Text="No home city yet. Search for one below." FontSize="14" Classes="soft" Margin="16,14"/>
+                            </Panel>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Panel>
+                                    <TextBox x:Name="CityBox" Classes="field" MinHeight="48" Padding="42,0,14,0"
+                                             PlaceholderText="Search for a city, e.g. Cluj-Napoca" Text="{Binding CitySearchText}"
+                                             AutomationProperties.Name="Search for a city"/>
+                                    <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2"
+                                            HorizontalAlignment="Left" Margin="14,0,0,0" IsHitTestVisible="False"/>
+                                </Panel>
+                                <Button Grid.Column="1" Classes="btn light" MinHeight="48" Padding="20,0" Content="Search"
+                                        Command="{Binding SearchCityCommand}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding CitySearchMessage}" FontSize="13" Classes="soft"
+                                       IsVisible="{Binding CitySearchMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <Button Classes="btn outline small" Content="Retry" HorizontalAlignment="Left"
+                                    Command="{Binding SearchCityCommand}" IsVisible="{Binding CanRetryCitySearch}"/>
+                            <Border CornerRadius="14" BorderBrush="{DynamicResource Line}" BorderThickness="1" ClipToBounds="True"
+                                    IsVisible="{Binding HasCityCandidates}">
+                                <ItemsControl ItemsSource="{Binding CityCandidates}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:CityCandidateViewModel">
+                                            <Button Classes="btn" MinHeight="52" Padding="16,8" CornerRadius="0" Background="{DynamicResource Surface2}"
+                                                    BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1"
+                                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" FontWeight="Normal"
+                                                    Foreground="{DynamicResource Ink}" Command="{Binding ChooseCommand}">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="12" Classes="muted"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Text="Set as home" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                            <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="{DynamicResource Faint}"/>
+
+                            <!-- Your gym and "Ask for gym" live on the Map; sharing can be changed here too -->
+                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Visible to friends" FontSize="14" Classes="light"/>
+                                        <TextBlock Text="Friends see the gym and day of your check-ins, never the time." FontSize="12" Classes="muted"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShareGymCheckIns}" OnContent="" OffContent=""
+                                                  VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Classes="link" Content="Your gym on the Map →"
+                                            Command="{Binding ShowGymSummaryCommand}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Account: the email you sign in with ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Account" Classes="h2"/>
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsEditingEmail}">
+                                <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill2}">
+                                    <v:Icon Data="{StaticResource IcMail}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="20" Height="20"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="Email" FontSize="12" Classes="muted"/>
+                                    <TextBlock Text="{Binding EmailText}" FontSize="15" FontWeight="SemiBold"
+                                               Classes.soft="{Binding !HasEmail}"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="{Binding EditEmailLabel}"
+                                        Command="{Binding EditEmailCommand}" VerticalAlignment="Center"/>
+                            </Grid>
+                            <StackPanel Spacing="10" IsVisible="{Binding IsEditingEmail}">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="New email" FontSize="12" Classes="muted"/>
+                                    <TextBox Classes="field" MaxLength="254" PlaceholderText="name@example.com"
+                                             Text="{Binding NewEmail}" AutomationProperties.Name="New email"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding EmailError}"
+                                               IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
+                                    <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                             Text="{Binding EmailPassword}" AutomationProperties.Name="Current password"/>
+                                    <TextBlock Classes="fieldError" Text="{Binding EmailPasswordError}"
+                                               IsVisible="{Binding EmailPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                    <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelEmailCommand}"/>
+                                    <Button Classes="btn primary" MinHeight="40" Padding="18,0" Content="Save email"
+                                            Command="{Binding SaveEmailCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Text="You can sign in with your username or this email." FontSize="12" Classes="muted"/>
+
+                            <!-- Password -->
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsChangingPassword}">
+                                        <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill2}">
+                                            <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="20" Height="20"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="Password" FontSize="12" Classes="muted"/>
+                                            <TextBlock Text="●●●●●●●●" FontSize="15" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="Change"
+                                                Command="{Binding ChangePasswordCommand}" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <StackPanel Spacing="10" IsVisible="{Binding IsChangingPassword}">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding CurrentPassword}" AutomationProperties.Name="Current password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding CurrentPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding CurrentPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="New password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding NewPassword}" AutomationProperties.Name="New password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding NewPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding NewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Confirm new password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding ConfirmNewPassword}" AutomationProperties.Name="Confirm new password"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding ConfirmNewPasswordError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding ConfirmNewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                            <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelPasswordCommand}"/>
+                                            <Button Classes="btn primary" MinHeight="40" Padding="18,0" Content="Save password"
+                                                    Command="{Binding SavePasswordCommand}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Delete account, behind a confirmation that asks for the password -->
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                                <StackPanel Spacing="10">
+                                    <Button Classes="btn outline small" MinHeight="40" Foreground="{DynamicResource ErrorText}" HorizontalAlignment="Left"
+                                            IsVisible="{Binding !IsConfirmingDelete}" Command="{Binding AskDeleteCommand}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <v:Icon Data="{StaticResource IcTrash}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16"/>
+                                            <TextBlock Text="Delete account" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <StackPanel Spacing="10" IsVisible="{Binding IsConfirmingDelete}">
+                                        <TextBlock Text="Delete your account?" FontSize="15" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding DeleteWarning}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Password" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                                     Text="{Binding DeletePassword}" AutomationProperties.Name="Password to delete the account"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding DeleteError}" TextWrapping="Wrap"
+                                                       IsVisible="{Binding DeleteError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                            <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelDeleteCommand}"/>
+                                            <Button Classes="btn outline small" MinHeight="40" Padding="18,0" Foreground="{DynamicResource ErrorText}"
+                                                    Content="Delete everything" Command="{Binding DeleteAccountCommand}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Appearance: the Theme setting, applied at once ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="Appearance" FontSize="20" FontWeight="Bold"/>
+                            <Border Classes="track">
+                                <v:SegmentedPill SelectedIndex="{Binding ThemeIndex}" PillInset="0">
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
+                                            MinHeight="40" FontSize="14" Content="System" Command="{Binding SelectThemeCommand}" CommandParameter="0"/>
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
+                                            MinHeight="40" FontSize="14" Content="Light" Command="{Binding SelectThemeCommand}" CommandParameter="1"/>
+                                    <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=2}"
+                                            MinHeight="40" FontSize="14" Content="Dark" Command="{Binding SelectThemeCommand}" CommandParameter="2"/>
+                                </v:SegmentedPill>
+                            </Border>
+                            <TextBlock Text="System follows your Windows or macOS setting." FontSize="12" Classes="muted"/>
+                            <TextBlock Text="{Binding ThemeError}" Classes="error" FontSize="12"
+                                       IsVisible="{Binding ThemeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center"/>
+        </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

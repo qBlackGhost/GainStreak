@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\gainstreak.ico</ApplicationIcon>
-    <!-- The executable's name, which the macOS Dock and the Windows taskbar show. Namespaces stay GymApp.Desktop -->
+    <!-- The executable's name, which the macOS Dock and the Windows taskbar show. Namespaces stay GymApp.Desktop and GymApp.App -->
     <AssemblyName>GainStreak</AssemblyName>
     <RootNamespace>GymApp.Desktop</RootNamespace>
   </PropertyGroup>
@@ -41,45 +41,16 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <!-- The startup project for "dotnet ef migrations" on the app's database -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
-    <!-- Map view in the gym picker. The Avalonia 12 build of Mapsui; only the map tiles need the network -->
-    <PackageReference Include="Mapsui.Avalonia12" Version="5.1.0" />
     <PackageReference Include="Velopack" Version="1.2.161" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\GymApp.Core\GymApp.Core.csproj" />
-    <ProjectReference Include="..\GymApp.Data\GymApp.Data.csproj" />
-    <ProjectReference Include="..\GymApp.Services\GymApp.Services.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Update="Views\SplitDetailView.axaml.cs">
-      <DependentUpon>SplitDetailView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\CustomExercisesView.axaml.cs">
-      <DependentUpon>CustomExercisesView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\ProfileView.axaml.cs">
-      <DependentUpon>ProfileView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\FriendsView.axaml.cs">
-      <DependentUpon>FriendsView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\CheckInView.axaml.cs">
-      <DependentUpon>CheckInView.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\Sidebar.axaml.cs">
-      <DependentUpon>Sidebar.axaml</DependentUpon>
-    </Compile>
-    <Compile Update="Views\CaloriesView.axaml.cs">
-      <DependentUpon>CaloriesView.axaml</DependentUpon>
-    </Compile>
+    <!-- The shared UI; Core, Data and Services come with it -->
+    <ProjectReference Include="..\GymApp.App\GymApp.App.csproj" />
   </ItemGroup>
 </Project>

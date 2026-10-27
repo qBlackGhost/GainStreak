@@ -1,6 +1,6 @@
 using GymApp.Contracts;
 using GymApp.Data.Models;
-using GymApp.Desktop.ViewModels;
+using GymApp.App.ViewModels;
 using GymApp.Services;
 using GymApp.Social;
 using Microsoft.EntityFrameworkCore;

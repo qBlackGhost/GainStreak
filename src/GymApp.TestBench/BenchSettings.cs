@@ -21,7 +21,7 @@ public sealed class BenchSettings
     private static string LocalData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     public static string Root => Path.Combine(LocalData, "GymApp-TestBench");
     public static string DataDir => Path.Combine(Root, "data");
-    /// <summary>The real app's folder (the default of AppDbContext.DataDirectory).</summary>
+    /// <summary>The real app's folder (AppDbContext.DefaultDataDirectory).</summary>
     public static string RealDataDir => Path.Combine(LocalData, "GymApp");
     private static string FilePath => Path.Combine(Root, "bench.json");
 

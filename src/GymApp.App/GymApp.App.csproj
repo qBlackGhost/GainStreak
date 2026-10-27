@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The UI every head shares (16b): the application class, the service wiring, every view model, view and style.
+       No platform APIs: what differs per head comes in through IPlatform -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <RootNamespace>GymApp.App</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <!-- Map view in the gym picker. The Avalonia 12 build of Mapsui; only the map tiles need the network -->
+    <PackageReference Include="Mapsui.Avalonia12" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GymApp.Core\GymApp.Core.csproj" />
+    <ProjectReference Include="..\GymApp.Data\GymApp.Data.csproj" />
+    <ProjectReference Include="..\GymApp.Services\GymApp.Services.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\SplitDetailView.axaml.cs">
+      <DependentUpon>SplitDetailView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\CustomExercisesView.axaml.cs">
+      <DependentUpon>CustomExercisesView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\ProfileView.axaml.cs">
+      <DependentUpon>ProfileView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\FriendsView.axaml.cs">
+      <DependentUpon>FriendsView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\CheckInView.axaml.cs">
+      <DependentUpon>CheckInView.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Sidebar.axaml.cs">
+      <DependentUpon>Sidebar.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\CaloriesView.axaml.cs">
+      <DependentUpon>CaloriesView.axaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

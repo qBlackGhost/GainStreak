@@ -1,4 +1,4 @@
-using GymApp.Desktop.ViewModels;
+using GymApp.App.ViewModels;
 
 namespace GymApp.Tests;
 

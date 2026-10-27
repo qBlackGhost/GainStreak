@@ -263,7 +263,8 @@ Outside Docker, the same is `dotnet GymApp.Server.dll migrate`.
 | `src/GymApp.Core` | Pure logic with no database or HTTP: streaks, points, levels, PRs, calorie goals, parsing. Unit-tested |
 | `src/GymApp.Data` | EF Core entities, `AppDbContext` and migrations (SQLite) |
 | `src/GymApp.Services` | Services over the database, the OpenStreetMap clients (Overpass, Nominatim), and the app's side of the social server: accounts, the remote friend, leaderboard and check-in services with their offline cache, and the upload sync |
-| `src/GymApp.Desktop` | Avalonia views and view models (CommunityToolkit.Mvvm) |
+| `src/GymApp.App` | The UI the desktop and phone heads share: Avalonia views and view models (CommunityToolkit.Mvvm), the service wiring, and `IPlatform` for what differs per head |
+| `src/GymApp.Desktop` | The desktop head: startup, the main window, the data folder and token file, and Velopack updates |
 | `src/GymApp.Social` | The friend and leaderboard rules, the `ISocialStore` interface (shared by the TestBench's local mode and the server), and the `IFriendService` / `ILeaderboardService` / `IFriendCheckInSource` interfaces the view models use |
 | `src/GymApp.Contracts` | Request and response records for the server's HTTP API |
 | `src/GymApp.Client` | The typed HTTP client for the server (`SocialApiClient`, with Ok / Refused / Offline results), the token store and the server address rule. No database or UI, so a mobile app can reuse it |

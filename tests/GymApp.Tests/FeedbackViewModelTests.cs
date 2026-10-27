@@ -1,5 +1,5 @@
 using GymApp.Contracts;
-using GymApp.Desktop.ViewModels;
+using GymApp.App.ViewModels;
 using GymApp.Services;
 
 namespace GymApp.Tests;
@@ -23,18 +23,43 @@ public class FeedbackViewModelTests : IDisposable
     private readonly ErrorLog _log;
     private readonly FeedbackViewModel _vm;
     private readonly FakeFeedbackService _service = new();
+    private readonly FakePlatform _platform = new();
     private int _closed;
 
     public FeedbackViewModelTests()
     {
         _log = new ErrorLog(_dir, appInfo: "GainStreak 0.15.0 on Darwin (Arm64)");
-        _vm = new FeedbackViewModel(_log, _service);
+        _vm = new FeedbackViewModel(_log, _service, _platform);
         _vm.Open(() => _closed++);
     }
 
     public void Dispose()
     {
         if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
+    }
+
+    // --- Show log file (through the head) ---
+
+    [Fact] public void ShowLogFile_AsksThePlatform()
+    {
+        Assert.True(_vm.CanShowLogFolder);
+        _vm.ShowLogFileCommand.Execute(null);
+        Assert.Equal(1, _platform.LogFolderShown);
+        Assert.Null(_vm.Error);
+    }
+
+    [Fact] public void ShowLogFile_WhenTheFolderCantOpen_SaysWhereTheLogIs()
+    {
+        _platform.FailToShowLogFolder = true;
+        _vm.ShowLogFileCommand.Execute(null);
+        Assert.Contains(ErrorLog.FileName, _vm.Error);
+        Assert.Contains(_platform.DataDirectory, _vm.Error);
+    }
+
+    [Fact] public void ShowLogFile_IsHidden_WhereThePlatformCantOpenFolders()
+    {
+        _platform.CanShowLogFolder = false;   // the phones
+        Assert.False(_vm.CanShowLogFolder);
     }
 
     // --- Send ---

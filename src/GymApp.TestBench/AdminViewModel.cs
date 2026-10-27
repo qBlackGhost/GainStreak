@@ -11,8 +11,8 @@ using CommunityToolkit.Mvvm.Input;
 using GymApp.Core;
 using GymApp.Data;
 using GymApp.Data.Models;
-using GymApp.Desktop;
-using GymApp.Desktop.ViewModels;
+using GymApp.App;
+using GymApp.App.ViewModels;
 using GymApp.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -41,7 +41,7 @@ public partial class AdminViewModel : ObservableObject
     public AdminViewModel(BenchSettings settings)
     {
         _settings = settings;
-        var sp = App.Services;
+        var sp = GymApplication.Services;
         _session = sp.GetRequiredService<SessionService>();
         _main = sp.GetRequiredService<MainViewModel>();
         _dbFactory = sp.GetRequiredService<IDbContextFactory<AppDbContext>>();
@@ -117,7 +117,7 @@ public partial class AdminViewModel : ObservableObject
     private Task SignOut() => RunAsync(async () =>
     {
         // Through the account service, so Server mode also forgets the token and the cached friends
-        await App.Services.GetRequiredService<IAccountService>().LogOutAsync();
+        await GymApplication.Services.GetRequiredService<IAccountService>().LogOutAsync();
         return "Signed out.";
     }, reloadHome: false);
 

@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             x:Class="GymApp.App.Views.SplitEditorView"
+             x:DataType="vm:SplitEditorViewModel">
+    <ScrollViewer>
+        <StackPanel Spacing="16" Margin="24" MaxWidth="900" HorizontalAlignment="Center">
+            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
+            <StackPanel Spacing="4">
+                <TextBox PlaceholderText="Split name" MaxLength="40" Text="{Binding Name}"/>
+                <TextBlock Classes="fieldError" Text="{Binding NameError}"
+                           IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+
+            <TextBlock Text="Pick your training days and name each one" FontWeight="SemiBold"/>
+            <ItemsControl ItemsSource="{Binding Days}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DayCellViewModel">
+                        <StackPanel Spacing="6" Margin="3">
+                            <ToggleButton Content="{Binding Label}" IsChecked="{Binding IsSelected}"
+                                          Height="56" HorizontalAlignment="Stretch"
+                                          HorizontalContentAlignment="Center"/>
+                            <TextBox PlaceholderText="e.g. Push" MaxLength="20"
+                                     Text="{Binding Name}" IsEnabled="{Binding IsSelected}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding DaysSummary}" Opacity="0.7"/>
+            <TextBlock Classes="fieldError" Text="{Binding DaysError}"
+                       IsVisible="{Binding DaysError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Save" Command="{Binding SaveCommand}" IsDefault="True"/>
+                <Button Content="Cancel" Command="{Binding CancelCommand}"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

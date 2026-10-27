@@ -1,0 +1,215 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.PointsHistoryView"
+             x:DataType="vm:PointsHistoryViewModel">
+    <!-- The points history popup over the dashboard, after the "Gym App" design canvas (Points history artboard):
+         a centred card, max 560 × 720, over a dimmed page; the ledger scrolls inside it. Escape, the close button or a
+         click outside the card closes it. -->
+    <UserControl.Styles>
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="ProgressBar.lvl">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="MinHeight" Value="8"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style Selector="TextBlock.weekHead">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="LetterSpacing" Value="0.7"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="Border.row">
+            <Setter Property="MinHeight" Value="56"/>
+            <Setter Property="Padding" Value="0,8"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+        <!-- Icon tiles: a workout is neutral, a full week orange, a calorie target lime -->
+        <Style Selector="Border.tile">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill2}"/>
+        </Style>
+        <Style Selector="Border.tile v|Icon">
+            <Setter Property="Stroke" Value="{DynamicResource Ink}"/>
+            <Setter Property="StrokeThickness" Value="2.2"/>
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="18"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tile.week">
+            <Setter Property="Background" Value="{DynamicResource OrangeTint}"/>
+        </Style>
+        <Style Selector="Border.tile.week v|Icon">
+            <Setter Property="Stroke" Value="{DynamicResource FlameText}"/>
+        </Style>
+        <Style Selector="Border.tile.calories">
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+        </Style>
+        <Style Selector="Border.tile.calories v|Icon">
+            <Setter Property="Stroke" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <Style Selector="TextBlock.amount">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <Style Selector="TextBlock.amount.week">
+            <Setter Property="Foreground" Value="{DynamicResource FlameText}"/>
+        </Style>
+        <Style Selector="TextBlock.amount.negative">
+            <Setter Property="Foreground" Value="{DynamicResource MissRed}"/>
+        </Style>
+        <Style Selector="Run.rule">
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <!-- The dimmed page; a click on it closes the popup -->
+        <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
+
+        <Border Width="560" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <DockPanel>
+                <!-- Header: level, total, progress, filter -->
+                <Border DockPanel.Dock="Top" Padding="24,24,24,20" BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1">
+                    <StackPanel Spacing="20">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource Accent}">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="LVL" Foreground="Black" FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding LevelNumber}" Foreground="Black" FontSize="22" FontWeight="Black"
+                                               HorizontalAlignment="Center" Margin="0,-4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Text="Points history" FontSize="24" FontWeight="ExtraBold"/>
+                                <TextBlock Text="{Binding LevelText}" FontSize="13" Classes="muted"/>
+                            </StackPanel>
+                            <Button x:Name="CloseButton" Grid.Column="2" Classes="btn outline" Width="44" Height="44" MinHeight="44"
+                                    Padding="0" Foreground="{DynamicResource Light}" VerticalAlignment="Center"
+                                    Command="{Binding CloseCommand}" ToolTip.Tip="Close"
+                                    AutomationProperties.Name="Close points history">
+                                <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="16" Height="16"/>
+                            </Button>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <TextBlock VerticalAlignment="Bottom">
+                                <Run Text="{Binding TotalText}" FontSize="48" FontWeight="ExtraBold"/><Run Text=" points" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Soft}"/>
+                            </TextBlock>
+                            <TextBlock Grid.Column="1" FontSize="13" Foreground="{DynamicResource Muted}" VerticalAlignment="Bottom"
+                                       Margin="0,0,0,6">
+                                <Run Text="{Binding ToNextAmount}" FontFamily="{StaticResource Mono}" Foreground="{DynamicResource Ink}"/><Run Text="{Binding ToNextText}"/>
+                            </TextBlock>
+                        </Grid>
+                        <ProgressBar Classes="lvl" Minimum="0" Maximum="1" Value="{Binding LevelProgress}"
+                                     AutomationProperties.Name="Progress to the next level"/>
+
+                        <Border Classes="track">
+                            <v:SegmentedPill SelectedIndex="{Binding FilterIndex}" PillInset="0">
+                                <Button Classes="seg" Classes.on="{Binding IsAll}" MinHeight="40" FontSize="14"
+                                        Content="All" Command="{Binding ShowAllCommand}"/>
+                                <Button Classes="seg" Classes.on="{Binding IsWorkouts}" MinHeight="40" FontSize="14"
+                                        Content="Workouts" Command="{Binding ShowWorkoutsCommand}"/>
+                                <Button Classes="seg" Classes.on="{Binding IsWeeks}" MinHeight="40" FontSize="14"
+                                        Content="Weeks" Command="{Binding ShowWeeksCommand}"/>
+                                <Button Classes="seg" Classes.on="{Binding IsCalories}" MinHeight="40" FontSize="14"
+                                        Content="Calories" Command="{Binding ShowCaloriesCommand}"/>
+                            </v:SegmentedPill>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Footer: how points are earned -->
+                <Border DockPanel.Dock="Bottom" Padding="24,14" Background="{DynamicResource SurfaceSunken}"
+                        BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0">
+                    <WrapPanel ItemSpacing="16" LineSpacing="6">
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
+                            <Run Text="Workout "/><Run Classes="rule" Text="{Binding WorkoutPoints}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
+                            <Run Text="Cardio "/><Run Classes="rule" Text="{Binding CardioPoints}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
+                            <Run Text="Full week "/><Run Classes="rule" Text="{Binding WeekPoints}"/><Run Text=" (with a grace day "/><Run Classes="rule" Text="{Binding WeekGracePoints}"/><Run Text=")"/>
+                        </TextBlock>
+                        <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
+                            <Run Text="Calorie target "/><Run Classes="rule" Text="{Binding CaloriePoints}"/>
+                        </TextBlock>
+                    </WrapPanel>
+                </Border>
+
+                <!-- The ledger, by week -->
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="24,8,24,16">
+                        <TextBlock Text="{Binding Error}" Classes="error" FontSize="13" Margin="0,12,0,0" TextWrapping="Wrap"
+                                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                        <ItemsControl ItemsSource="{Binding Weeks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PointsWeek">
+                                    <StackPanel>
+                                        <Grid ColumnDefinitions="*,Auto" Margin="0,14,0,6">
+                                            <TextBlock Classes="weekHead" Text="{Binding Label, Converter={x:Static v:PointsHistoryView.Upper}}"/>
+                                            <TextBlock Grid.Column="1" Classes="weekHead" FontFamily="{StaticResource Mono}"
+                                                       LetterSpacing="0" Text="{Binding SumText}"/>
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:PointsRow">
+                                                    <Border Classes="row">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                                                            <Border Classes="tile" Classes.week="{Binding IsWeek}"
+                                                                    Classes.calories="{Binding IsCalories}" VerticalAlignment="Center">
+                                                                <Panel>
+                                                                    <v:Icon Data="{StaticResource IcDumbbell}" IsVisible="{Binding IsWorkout}"/>
+                                                                    <v:Icon Data="{StaticResource IcCalendarCheck}" IsVisible="{Binding IsWeek}"/>
+                                                                    <v:Icon Data="{StaticResource IcFlame}" IsVisible="{Binding IsCalories}"/>
+                                                                    <v:Icon Data="{StaticResource IcPencil}" IsVisible="{Binding IsAdjustment}"/>
+                                                                </Panel>
+                                                            </Border>
+                                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding ReasonText}" FontSize="15" FontWeight="SemiBold"/>
+                                                                <TextBlock Text="{Binding DateText}" FontSize="13" Classes="muted"/>
+                                                            </StackPanel>
+                                                            <TextBlock Grid.Column="2" Classes="amount" Classes.week="{Binding IsWeek}"
+                                                                       Classes.negative="{Binding IsNegative}" Text="{Binding AmountText}"/>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <StackPanel Spacing="8" Margin="12,40" HorizontalAlignment="Center" IsVisible="{Binding IsEmpty}">
+                            <TextBlock Text="Nothing here yet" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding EmptyText}" FontSize="13" Classes="muted" MaxWidth="320"
+                                       TextWrapping="Wrap" TextAlignment="Center"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Panel>
+</UserControl>

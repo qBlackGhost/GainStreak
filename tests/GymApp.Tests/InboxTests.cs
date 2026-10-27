@@ -1,4 +1,4 @@
-using GymApp.Desktop.ViewModels;
+using GymApp.App.ViewModels;
 using GymApp.Services;
 using GymApp.Social;
 

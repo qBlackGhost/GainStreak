@@ -1,0 +1,482 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ExerciseView"
+             x:DataType="vm:ExerciseViewModel">
+    <!-- After the "Gym App" design canvas (Exercise artboard): today's sets on the left, the PR, last time and the
+         top set per session on the right. Below 880 px of content the right column goes under the left. -->
+    <UserControl.Styles>
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBlock.colHead">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="1.1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
+        </Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <!-- A working set that sets a new PR -->
+        <Style Selector="TextBox.field.pr">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <Style Selector="TextBlock.prompt">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="TextBlock.prompt.newpr">
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <Style Selector="TextBlock.prompt.tie">
+            <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+        </Style>
+        <!-- − / + steppers -->
+        <Style Selector="Button.step">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.step:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <!-- The PR card glows right after a save sets a new PR -->
+        <Style Selector="Border.prCard.fresh">
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="BoxShadow" Value="0 0 24 0 #2EC6F432"/>
+        </Style>
+        <Style Selector="Border.prCard">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.6"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.6"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector="Border.topBar">
+            <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
+            <Setter Property="CornerRadius" Value="6,6,2,2"/>
+            <Setter Property="MaxWidth" Value="40"/>
+        </Style>
+        <Style Selector="Border.topBar.pr">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        </Style>
+
+        <!-- Two columns by default; stacked when narrow -->
+        <Style Selector="StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector="Grid.stack Border#SetsCard">
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+        <Style Selector="Grid.stack StackPanel#RightColumn">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+    </UserControl.Styles>
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
+        <v:Sidebar Current="Workouts"/>
+
+        <ScrollViewer>
+        <StackPanel Classes="page" Spacing="24">
+            <!-- Header -->
+            <StackPanel Spacing="14">
+                <Button Classes="btn outline" MinHeight="40" Padding="10,0,14,0" FontSize="14" HorizontalAlignment="Left"
+                        Command="{Binding BackCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <v:Icon Data="{StaticResource IcBack}" StrokeThickness="2.2" Width="16" Height="16"/>
+                        <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="{Binding Title}" FontSize="40" FontWeight="ExtraBold"/>
+                        <WrapPanel ItemSpacing="8" LineSpacing="8">
+                            <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}" Padding="11,4">
+                                <TextBlock Text="{Binding MuscleText}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                            </Border>
+                            <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}" Padding="11,4">
+                                <TextBlock Text="{Binding DayText}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                            </Border>
+                            <Border Classes="pill" Padding="11,4"
+                                    IsVisible="{Binding PositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding PositionText}" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"
+                               VerticalAlignment="Bottom"/>
+                </Grid>
+            </StackPanel>
+
+            <!-- Saved -->
+            <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
+                    Classes.pr="{Binding IsPrFresh}"
+                    IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Border.Styles>
+                    <Style Selector="Border.pr">
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+                        <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+                    </Style>
+                </Border.Styles>
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
+
+                <!-- ===== Today's sets ===== -->
+                <Border x:Name="SetsCard" Classes="card" Padding="28" VerticalAlignment="Top">
+                    <StackPanel Spacing="20">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Today's sets" Classes="h2"/>
+                                <TextBlock Text="Weight in kg. Warm-up sets never count toward your PR." FontSize="13" Classes="muted"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="btn outline small" MinHeight="40" VerticalAlignment="Top"
+                                    Command="{Binding PrefillCommand}" IsVisible="{Binding HasLast}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <v:Icon Data="{StaticResource IcMadeUp}" StrokeThickness="2.2" Width="15" Height="15"/>
+                                    <TextBlock Text="Fill from last time" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Planned sets -->
+                        <Border Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}">
+                            <WrapPanel ItemSpacing="20" LineSpacing="10">
+                                <TextBlock Text="PLANNED" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"
+                                           VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="Warm-up" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                    <Border BorderBrush="{DynamicResource Control}" BorderThickness="1" CornerRadius="10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Classes="step" Content="−" Command="{Binding FewerWarmupCommand}"
+                                                    AutomationProperties.Name="Fewer warm-up sets"/>
+                                            <TextBlock Text="{Binding WarmupSets}" Classes="mono" FontWeight="Bold" MinWidth="24"
+                                                       TextAlignment="Center" VerticalAlignment="Center"/>
+                                            <Button Classes="step" Content="+" Command="{Binding MoreWarmupCommand}"
+                                                    AutomationProperties.Name="More warm-up sets"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Text="Working" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                    <Border BorderBrush="{DynamicResource Control}" BorderThickness="1" CornerRadius="10">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Classes="step" Content="−" Command="{Binding FewerWorkingCommand}"
+                                                    AutomationProperties.Name="Fewer working sets"/>
+                                            <TextBlock Text="{Binding WorkingSets}" Classes="mono" FontWeight="Bold" MinWidth="24"
+                                                       TextAlignment="Center" VerticalAlignment="Center"/>
+                                            <Button Classes="step" Content="+" Command="{Binding MoreWorkingCommand}"
+                                                    AutomationProperties.Name="More working sets"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                                <TextBlock Text="Sets the rows you start with each time." FontSize="12" Foreground="{DynamicResource Faint}"
+                                           VerticalAlignment="Center"/>
+                            </WrapPanel>
+                        </Border>
+
+                        <!-- Bar exercises: type the total, or what goes on each side plus the bar -->
+                        <Border Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}" IsVisible="{Binding UsesBar}">
+                            <StackPanel Spacing="8">
+                                <WrapPanel ItemSpacing="20" LineSpacing="10">
+                                    <TextBlock Text="WEIGHT" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"
+                                               VerticalAlignment="Center"/>
+                                    <Border Width="200" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
+                                        <v:SegmentedPill SelectedIndex="{Binding WeightModeIndex}" PillInset="0" PillCornerRadius="8">
+                                            <Button Classes="seg" Classes.on="{Binding IsTotalMode}" MinHeight="34" Padding="0"
+                                                    CornerRadius="8" Content="Total" Command="{Binding SetTotalModeCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding IsPerSide}" MinHeight="34" Padding="0"
+                                                    CornerRadius="8" Content="Per side" Command="{Binding SetPerSideModeCommand}"/>
+                                        </v:SegmentedPill>
+                                    </Border>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsPerSide}">
+                                        <TextBlock Text="Bar" FontSize="14" Classes="light" VerticalAlignment="Center"/>
+                                        <TextBox Classes="field" Width="84" MinHeight="40" PlaceholderText="kg" Text="{Binding BarText}"
+                                                 AutomationProperties.Name="Bar weight in kg"/>
+                                        <TextBlock Text="optional" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="{Binding BarError}" Classes="error" FontSize="13"
+                                           IsVisible="{Binding BarError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- The sets -->
+                        <StackPanel Spacing="4" Grid.IsSharedSizeScope="True">
+                            <Grid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4">
+                                <TextBlock Text="SET" Classes="colHead"/>
+                                <TextBlock Grid.Column="1" Text="TYPE" Classes="colHead"/>
+                                <TextBlock Grid.Column="2" Text="{Binding WeightHeader}" Classes="colHead"/>
+                                <TextBlock Grid.Column="3" Text="REPS" Classes="colHead"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding Rows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SetRowViewModel">
+                                        <Border BorderBrush="{DynamicResource Fill}" BorderThickness="0,1,0,0" Padding="0,8">
+                                            <StackPanel Spacing="6">
+                                                <Grid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10">
+                                                    <TextBlock Text="{Binding Number}" Classes="mono soft" FontSize="14" FontWeight="Bold"
+                                                               VerticalAlignment="Center"/>
+                                                    <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
+                                                        <v:SegmentedPill SelectedIndex="{Binding KindIndex}" PillInset="0" PillCornerRadius="8">
+                                                            <Button Classes="seg" Classes.on="{Binding IsWarmup}" MinHeight="36" Padding="0"
+                                                                    CornerRadius="8" Content="Warm-up" Command="{Binding SetWarmupCommand}"/>
+                                                            <Button Classes="seg" Classes.on="{Binding IsWorking}" MinHeight="36" Padding="0"
+                                                                    CornerRadius="8" Content="Working" Command="{Binding SetWorkingCommand}"/>
+                                                        </v:SegmentedPill>
+                                                    </Border>
+                                                    <TextBox Grid.Column="2" Classes="field" Classes.pr="{Binding IsNewPr}"
+                                                             PlaceholderText="{Binding WeightPlaceholder}" Text="{Binding WeightText}"
+                                                             AutomationProperties.Name="{Binding Number, StringFormat='Set {0} weight in kg'}"/>
+                                                    <TextBox Grid.Column="3" Classes="field" Classes.pr="{Binding IsNewPr}"
+                                                             PlaceholderText="{Binding RepsPlaceholder}" Text="{Binding RepsText}"
+                                                             AutomationProperties.Name="{Binding Number, StringFormat='Set {0} reps'}"/>
+                                                    <Button Grid.Column="4" Classes="btn outline" Width="40" Height="40" MinHeight="40" Padding="0"
+                                                            BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}" Command="{Binding RemoveCommand}"
+                                                            ToolTip.Tip="Remove set" VerticalAlignment="Center"
+                                                            AutomationProperties.Name="{Binding Number, StringFormat='Remove set {0}'}">
+                                                        <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="14" Height="14"/>
+                                                    </Button>
+                                                </Grid>
+                                                <!-- Per side: what the row adds up to, under the weight -->
+                                                <TextBlock FontSize="12" Classes="muted" Margin="242,0,0,0" IsVisible="{Binding HasTotalHint}">
+                                                    <Run Text="="/>
+                                                    <Run Text="{Binding TotalHint}" FontFamily="{StaticResource Mono}" FontWeight="Bold"
+                                                         Foreground="{DynamicResource AccentInk}"/>
+                                                    <Run Text="total"/>
+                                                    <Run Text="{Binding TotalDetail}" Foreground="{DynamicResource Faint}"/>
+                                                </TextBlock>
+                                                <TextBlock Classes="prompt" Classes.newpr="{Binding IsNewPr}" Classes.tie="{Binding IsTie}"
+                                                           Text="{Binding Prompt}" Margin="42,0,0,0" IsVisible="{Binding HasPrompt}"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Panel>
+                                <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="10" RadiusY="10"/>
+                                <Button Classes="btn" Background="Transparent" Foreground="{DynamicResource Ink}" FontWeight="SemiBold" Padding="16,0"
+                                        Command="{Binding AddRowCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.6" Width="15" Height="15"/>
+                                        <TextBlock Text="Add set" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Panel>
+                            <Button Grid.Column="2" Classes="btn primary" MinHeight="48" Padding="26,0" FontSize="15"
+                                    Content="Save sets" Command="{Binding SaveCommand}"/>
+                        </Grid>
+                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource Muted}" Width="16" Height="16"
+                                        VerticalAlignment="Top" Margin="0,1,0,0"/>
+                                <TextBlock Grid.Column="1" FontSize="12" Classes="muted" LineHeight="18"
+                                           Text="Saving sets does not count as going to the gym. Use “I went today” on the Dashboard for that."/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel x:Name="RightColumn" Spacing="24">
+                    <!-- ===== Personal record ===== -->
+                    <Border Classes="card prCard" Classes.fresh="{Binding IsPrFresh}">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="PERSONAL RECORD" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"/>
+                                <TextBlock Grid.Column="1" Text="{Binding PrDateText}" FontSize="12" Classes="muted" IsVisible="{Binding HasPr}"/>
+                            </Grid>
+                            <StackPanel Spacing="6" IsVisible="{Binding HasPr}">
+                                <TextBlock>
+                                    <Run Text="{Binding PrWeight}" FontSize="48" FontWeight="ExtraBold"/><Run Text=" kg" FontSize="20"
+                                         FontWeight="ExtraBold" Foreground="{DynamicResource Soft}"/><Run Text=" × " FontSize="28"
+                                         FontWeight="ExtraBold" Foreground="{DynamicResource Faint}"/><Run Text="{Binding PrReps}" FontSize="48" FontWeight="ExtraBold"/>
+                                </TextBlock>
+                                <TextBlock FontSize="13" Classes="muted">
+                                    <Run Text="Estimated 1RM ≈ "/><Run Text="{Binding PrOneRm}" FontFamily="{StaticResource Mono}"
+                                         Foreground="{DynamicResource Light}"/>
+                                </TextBlock>
+                            </StackPanel>
+                            <StackPanel Spacing="6" IsVisible="{Binding !HasPr}">
+                                <TextBlock Text="No PR yet" FontSize="40" FontWeight="ExtraBold"/>
+                                <TextBlock Text="Your first working set sets it." FontSize="13" Classes="muted"/>
+                            </StackPanel>
+
+                            <!-- Edit the PR -->
+                            <Border Padding="14" CornerRadius="12" Background="{DynamicResource Surface2}" IsVisible="{Binding IsEditingPr}">
+                                <StackPanel Spacing="10">
+                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="Weight (kg)" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" Text="{Binding PrWeightText}"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding PrWeightError}"
+                                                       IsVisible="{Binding PrWeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="6">
+                                            <TextBlock Text="Reps" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" Text="{Binding PrRepsText}"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding PrRepsError}"
+                                                       IsVisible="{Binding PrRepsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="6">
+                                            <TextBlock Text="1RM (optional)" FontSize="12" Classes="muted"/>
+                                            <TextBox Classes="field" PlaceholderText="auto" Text="{Binding PrOneRmInput}"/>
+                                            <TextBlock Classes="fieldError" Text="{Binding PrOneRmError}"
+                                                       IsVisible="{Binding PrOneRmError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock FontSize="12" Classes="muted" LineHeight="18"
+                                               Text="Use this if a PR was logged wrong or set before you used GainStreak. It applies from today. Leave the 1RM empty to estimate it."/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Classes="btn light small" MinHeight="40" Content="Save PR" Command="{Binding SavePrCommand}"/>
+                                        <Button Classes="btn outline small" MinHeight="40" Content="Cancel" Command="{Binding CancelEditPrCommand}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <Button Classes="btn outline small" MinHeight="40" HorizontalAlignment="Left"
+                                    Command="{Binding StartEditPrCommand}" IsVisible="{Binding !IsEditingPr}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <v:Icon Data="{StaticResource IcPencil}" StrokeThickness="2.2" Width="14" Height="14"/>
+                                    <TextBlock Text="Edit PR" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+
+                            <!-- PR history, so a manual edit can be undone -->
+                            <StackPanel IsVisible="{Binding HasPrEntries}">
+                                <TextBlock Text="HISTORY" FontSize="11" FontWeight="Bold" LetterSpacing="1.1" Foreground="{DynamicResource Faint}"
+                                           Margin="0,0,0,4"/>
+                                <ItemsControl ItemsSource="{Binding PrEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:PrRowViewModel">
+                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="40" Padding="0,6">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="13" Classes="soft" VerticalAlignment="Center">
+                                                        <Run Text="{Binding DateText}"/><Run Text=" · "/><Run Text="{Binding KindText}"/>
+                                                    </TextBlock>
+                                                    <TextBlock Grid.Column="1" Text="{Binding BestText}" Classes="mono" FontSize="13" FontWeight="Bold"
+                                                               VerticalAlignment="Center"/>
+                                                    <Button Grid.Column="2" Classes="link" FontSize="12" Content="Undo" Command="{Binding UndoCommand}"
+                                                            IsVisible="{Binding IsManual}" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Last time ===== -->
+                    <Border Classes="card" IsVisible="{Binding HasLast}">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="Last time" FontSize="20" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="1" Text="{Binding LastDateText}" FontSize="13" Classes="muted" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding LastSets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LastSetRow">
+                                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="40">
+                                            <Grid ColumnDefinitions="20,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Number}" Classes="mono" FontSize="14" Foreground="{DynamicResource Faint}"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding Kind}" FontSize="14" Foreground="{DynamicResource Ink}"
+                                                           Classes.warm="{Binding IsWarmup}">
+                                                    <TextBlock.Styles>
+                                                        <Style Selector="TextBlock.warm"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
+                                                    </TextBlock.Styles>
+                                                </TextBlock>
+                                                <TextBlock Grid.Column="2" Text="{Binding Set}" Classes="mono" FontSize="14" FontWeight="Bold"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ===== Top set per session ===== -->
+                    <Border Classes="card" IsVisible="{Binding HasTopSets}">
+                        <StackPanel Spacing="14">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="Top set per session" FontSize="20" FontWeight="Bold"/>
+                                <TextBlock Grid.Column="1" Text="kg" FontSize="12" Classes="muted" VerticalAlignment="Bottom"/>
+                            </Grid>
+                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+                                <ItemsControl ItemsSource="{Binding TopSets}" Height="124">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:TopSetBar">
+                                            <StackPanel Spacing="4" VerticalAlignment="Bottom" Margin="5,0">
+                                                <TextBlock Text="{Binding Weight}" Classes="mono soft" FontSize="11" HorizontalAlignment="Center"/>
+                                                <Border Classes="topBar" Classes.pr="{Binding IsPr}" Height="{Binding Height}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Border>
+                            <ItemsControl ItemsSource="{Binding TopSets}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TopSetBar">
+                                        <TextBlock Text="{Binding Date}" FontSize="11" Classes="muted" HorizontalAlignment="Center"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Width="10" Height="10" CornerRadius="3" Background="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                                <TextBlock Text="PR session" FontSize="12" Classes="muted"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- First time -->
+                    <Panel IsVisible="{Binding !HasLast}">
+                        <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="20" RadiusY="20"/>
+                        <StackPanel Spacing="6" Margin="24">
+                            <TextBlock Text="First time doing this one" FontSize="15" FontWeight="Bold"/>
+                            <TextBlock FontSize="13" Classes="muted" LineHeight="20"
+                                       Text="After you save today's sets, they show here next time as placeholders, and “Fill from last time” copies them."/>
+                        </StackPanel>
+                    </Panel>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

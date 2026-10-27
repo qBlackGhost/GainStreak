@@ -31,9 +31,19 @@ public class AppDbContext : DbContext
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    /// <summary>Where the database and remember-me file live. GYMAPP_DATA_DIR overrides it, so a test run
-    /// can use a copy of the data instead of the real one.</summary>
-    public static string DataDirectory =>
+    private static string? _dataDirectory;
+
+    /// <summary>Where the database and remember-me file live. The app sets it once at startup from its platform
+    /// (IPlatform.DataDirectory); until then (design-time tools, tests) it's <see cref="DefaultDataDirectory"/>.</summary>
+    public static string DataDirectory
+    {
+        get => _dataDirectory ?? DefaultDataDirectory;
+        set => _dataDirectory = value;
+    }
+
+    /// <summary>The desktop's data folder. GYMAPP_DATA_DIR overrides it, so a test run can use a copy of the data
+    /// instead of the real one.</summary>
+    public static string DefaultDataDirectory =>
         Environment.GetEnvironmentVariable("GYMAPP_DATA_DIR") is { Length: > 0 } custom
             ? custom
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "GymApp");

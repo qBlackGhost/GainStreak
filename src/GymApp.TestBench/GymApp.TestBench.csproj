@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The desktop head (DesktopPlatform, MainWindow), and through it the shared UI -->
     <ProjectReference Include="..\GymApp.Desktop\GymApp.Desktop.csproj" />
   </ItemGroup>
 </Project>

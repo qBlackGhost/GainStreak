@@ -2,7 +2,7 @@ using System.Net;
 using System.Text;
 using GymApp.Core;
 using GymApp.Data.Models;
-using GymApp.Desktop.ViewModels;
+using GymApp.App.ViewModels;
 using GymApp.Services;
 
 namespace GymApp.Tests;

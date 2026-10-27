@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using Avalonia;
+using GymApp.App;
 using GymApp.Core;
 using GymApp.Desktop;
 
@@ -24,15 +25,16 @@ sealed class Program
         Environment.SetEnvironmentVariable("GYMAPP_DATA_DIR", BenchSettings.DataDir);
         AppClock.Offset = TimeSpan.FromDays(settings.DayOffset);
         // Local accounts and friends by default: the server refuses a clock more than 2 days off
-        App.LocalSocial = !settings.ServerSocial;
+        GymApplication.LocalSocial = !settings.ServerSocial;
+        GymApplication.Platform = new DesktopPlatform();
 
-        App.MainWindowCreated = main =>
+        GymApplication.MainWindowCreated = main =>
         {
             main.Title = "GainStreak (TestBench)";
             main.Opened += (_, _) => new AdminWindow { DataContext = new AdminViewModel(settings) }.Show(main);
         };
 
-        AppBuilder.Configure<App>()
+        AppBuilder.Configure<GymApplication>()
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace()

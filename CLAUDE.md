@@ -32,15 +32,16 @@ The production server never migrates on start: `docker run ... gymapp-server mig
 
 **Local-first app, social-only server.** Workouts, sets, PRs, body data and calories live only on the device in SQLite (`GymApp.Data`, `AppDbContext`, created and migrated on first start). The server (`GymApp.Server`, ASP.NET Core minimal API on Postgres, `ServerDbContext`) holds accounts, friendships, uploaded stats (username, points, level, streak), shared gym check-ins, shares (splits and workouts sent to friends) and feedback. Accounts are owned by the server; the app keeps a session token in `session.token` in its data folder.
 
-**Layering.** Dependencies point downward. Only `GymApp.Desktop` and `GymApp.TestBench` reference Avalonia; keep it that way so mobile heads can reuse the rest.
+**Layering.** Dependencies point downward. Only `GymApp.App`, the heads (`GymApp.Desktop`, later `GymApp.Android` and `GymApp.iOS`) and `GymApp.TestBench` reference Avalonia; keep it that way so every head can reuse the rest.
 - `GymApp.Core`: pure rules (streaks, points, levels, PRs, calorie goals) and `AppClock`.
 - `GymApp.Social`: friend and leaderboard rules plus the interfaces the view models use (`IFriendService`, `ILeaderboardService`, `IFriendCheckInSource`, `ISocialStore`). The same rules back both the TestBench's local mode and the server.
 - `GymApp.Contracts`: request/response records shared by server and client. A change here is a wire change.
 - `GymApp.Client`: `SocialApiClient`, which returns Ok / Refused / Offline results; a 10-second timeout counts as offline.
 - `GymApp.Services`: services over `AppDbContext`, the OpenStreetMap clients, and the app's side of the server: `Remote*Service` implementations with an offline cache (`SocialCacheStore`), and `SocialSync`, which uploads stats and check-ins. Services report changes through `ISocialSyncHooks`; uploads wait while offline.
-- `GymApp.Desktop`: views and view models (CommunityToolkit.Mvvm).
+- `GymApp.App`: the UI every head shares: `GymApplication` (the Avalonia application), `AppServices`, views and view models (CommunityToolkit.Mvvm). What differs per head comes in through `IPlatform` (data folder, token store, server address, log folder, windows, updates); never ask the system directly from here.
+- `GymApp.Desktop`: the desktop head: `Program`, `MainWindow` (hosts the shared `MainView`), `DesktopPlatform`, Velopack updates and the macOS Dock icon.
 
-**Two wirings of the same app.** `AppServices.Create(localSocial)` in `GymApp.Desktop` registers either the server-backed `Remote*` services or the `Local*` ones (accounts and friends on this computer, used by the TestBench's "Local" social mode). A new social feature usually needs both a `Remote*` and a `Local*` implementation of its interface, registered in both branches.
+**Two wirings of the same app.** `AppServices.Create(localSocial, platform)` in `GymApp.App` registers either the server-backed `Remote*` services or the `Local*` ones (accounts and friends on this computer, used by the TestBench's "Local" social mode). A new social feature usually needs both a `Remote*` and a `Local*` implementation of its interface, registered in both branches.
 
 **Time.** Use `AppClock.Now`/`AppClock.Today` (or an injected `TimeProvider`), never `DateTime.Now`, so the TestBench can shift the clock. The server rejects client dates more than 2 days from today (`ClientDates`).
 

@@ -4,6 +4,7 @@
     <Project Path="src/GymApp.Client/GymApp.Client.csproj" />
     <Project Path="src/GymApp.Contracts/GymApp.Contracts.csproj" />
     <Project Path="src/GymApp.Data/GymApp.Data.csproj" />
+    <Project Path="src/GymApp.App/GymApp.App.csproj" />
     <Project Path="src/GymApp.Desktop/GymApp.Desktop.csproj" />
     <Project Path="src/GymApp.Server/GymApp.Server.csproj" />
     <Project Path="src/GymApp.Services/GymApp.Services.csproj" />

@@ -1,6 +1,6 @@
 using GymApp.Core;
 using GymApp.Data;
-using GymApp.Desktop;
+using GymApp.App;
 using GymApp.Services;
 using GymApp.Social;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +14,7 @@ namespace GymApp.Tests;
 public sealed class AppServicesTests
 {
     private static ServiceProvider Build(bool localSocial) =>
-        AppServices.Create(localSocial).BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        AppServices.Create(localSocial, new FakePlatform()).BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
     [Theory]
     [InlineData(true)]
@@ -27,11 +27,12 @@ public sealed class AppServicesTests
 
     [Fact] public void ServerMode_UsesTheServer_AndRegistersNoLocalSocialServices()
     {
-        var sc = AppServices.Create(localSocial: false);
+        var sc = AppServices.Create(localSocial: false, new FakePlatform());
         Assert.DoesNotContain(sc, d => d.ServiceType == typeof(ISocialStore));
         Assert.DoesNotContain(sc, d => d.ServiceType == typeof(AuthService));
         Assert.DoesNotContain(sc, d => d.ServiceType == typeof(RememberMeService));
         Assert.Contains(sc, d => d.ServiceType == typeof(ISocialSyncHooks));
+        Assert.Contains(sc, d => d.ServiceType == typeof(IPlatform));
 
         using var sp = Build(false);
         Assert.IsType<RemoteFriendService>(sp.GetRequiredService<IFriendService>());

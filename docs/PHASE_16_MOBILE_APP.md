@@ -100,8 +100,9 @@ Move the shared UI out of GymApp.Desktop so the mobile heads can use it. Nothing
   - `CanRestartForUpdate` with the Velopack hook, and `OpenStorePage()` for the 426 banner
   - `ServerUrl` (desktop: `BuildSettings.ServerUrl`)
 - `App.OnFrameworkInitializationCompleted` handles three lifetimes: `IClassicDesktopStyleApplicationLifetime` gets `MainWindow`, `ISingleViewApplicationLifetime` (iOS) gets `MainView`, and `IActivityApplicationLifetime` (Android) gets it through `MainViewFactory` (found in 16a). The startup error window becomes a startup error view, shown either way.
-- `ProfileViewModel` loses its `using Avalonia`; whatever it uses (likely the theme switch) goes through `AppTheme`.
+- `ProfileViewModel` keeps its `using Avalonia`: it's for `Avalonia.Point` in the weight trend chart, which is fine in GymApp.App (an Avalonia library). It's not a platform API.
 - `AppDbContext` gets its data folder from `IPlatform` (through the options or a static set once at startup) instead of reading `Environment` itself.
+- **As built:** the application class is `GymApplication`, not `App`, because a head's namespace (`GymApp.Desktop`, `GymApp.TestBench`) would read `App` as the namespace `GymApp.App`. `AppDbContext.DataDirectory` is set once at startup from `IPlatform`; `AppDbContext.DefaultDataDirectory` (GYMAPP_DATA_DIR or LocalApplicationData) stays as the desktop's folder and the fallback for `dotnet ef` and tests. `IPlatform` also has `OnFrameworkReady` (the macOS Dock icon), `CreateWindow` (desktop only) and `OnShellReady` (starts the Velopack download).
 
 **Tests:** `AppServicesTests` builds the services with a fake `IPlatform` in both modes. All existing view model tests pass with only namespace changes. Start the desktop app and the TestBench and check that every screen still works.
 
