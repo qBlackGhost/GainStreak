@@ -74,22 +74,32 @@
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
+        <!-- Phones: the rows' narrower padding (PhoneGrid narrows their columns) -->
+        <Style Selector=".phone Border.boardRow"><Setter Property="Padding" Value="10,0"/></Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Friends"/>
+        <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
+        <Border DockPanel.Dock="Top" Classes="friendsSwitch phoneOnly">
+            <v:SegmentedPill SelectedIndex="0" PillInset="0">
+                <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Leaderboard"/>
+                <Button Classes="seg" MinHeight="40" FontSize="14" Content="Map" Command="{Binding OpenMapCommand}"/>
+            </v:SegmentedPill>
+        </Border>
 
         <ScrollViewer>
         <StackPanel Classes="page" Spacing="24">
             <!-- Header -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Friends" FontSize="34" FontWeight="ExtraBold"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
-                        <TextBlock Text="Friends see your username, level, points and streak. Nothing else." FontSize="14" Classes="soft"/>
-                    </StackPanel>
+                    <TextBlock Classes="pageTitle" Text="Friends" FontWeight="ExtraBold"/>
+                    <!-- A grid, so the sentence wraps on a phone -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                        <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Soft}" Width="16" Height="16" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                        <TextBlock Grid.Column="1" Text="Friends see your username, level, points and streak. Nothing else." FontSize="14" Classes="soft"/>
+                    </Grid>
                 </StackPanel>
-                <TextBlock Grid.Column="1" Text="{Binding FriendCountText}" Classes="mono muted" FontSize="13" VerticalAlignment="Bottom"/>
+                <TextBlock Classes="headerActions mono muted" Text="{Binding FriendCountText}" FontSize="13" VerticalAlignment="Bottom"/>
             </Grid>
 
             <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
@@ -105,12 +115,12 @@
                     <!-- Leaderboard -->
                     <Border Classes="card">
                         <StackPanel Spacing="16">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Leaderboard" Classes="h2"/>
                                     <TextBlock Text="{Binding PeriodText}" FontSize="13" Classes="muted"/>
                                 </StackPanel>
-                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" VerticalAlignment="Center">
+                                <Border Classes="headerActions" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" VerticalAlignment="Center">
                                     <v:SegmentedPill SelectedIndex="{Binding IsAllTime, Converter={x:Static v:SegmentedPill.BoolToIndex}}"
                                                      PillCornerRadius="8" PillInset="0">
                                         <Button Classes="seg" Classes.on="{Binding IsThisWeek}" CornerRadius="8" Content="This week"
@@ -127,7 +137,8 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FriendsBoardRowViewModel">
                                         <Border Classes="boardRow" Classes.you="{Binding IsYou}">
-                                            <Grid ColumnDefinitions="40,Auto,*,Auto,76" ColumnSpacing="14" VerticalAlignment="Center">
+                                            <v:PhoneGrid ColumnDefinitions="40,Auto,*,Auto,76" ColumnSpacing="14" VerticalAlignment="Center"
+                                                         PhoneColumns="34,Auto,*,Auto,Auto" PhoneColumnSpacing="10">
                                                 <TextBlock Text="{Binding RankText}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
                                                            Classes="rank" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
                                                 <Border Grid.Column="1" Classes="avatar" Classes.you="{Binding IsYou}">
@@ -147,7 +158,7 @@
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="4" Text="{Binding PointsText}" Classes="mono" FontSize="15" FontWeight="Bold"
                                                            TextAlignment="Right" VerticalAlignment="Center"/>
-                                            </Grid>
+                                            </v:PhoneGrid>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

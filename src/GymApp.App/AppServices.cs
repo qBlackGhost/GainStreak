@@ -66,7 +66,6 @@ public static class AppServices
         sc.AddTransient<LoginViewModel>();
         sc.AddTransient<RegisterViewModel>();
         sc.AddTransient<HomeViewModel>();
-        sc.AddTransient<MoreViewModel>();
         sc.AddTransient<SplitService>();
         sc.AddTransient<SplitsViewModel>();
         sc.AddTransient<SplitEditorViewModel>();

@@ -147,9 +147,37 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <!-- Phones (MainView sets "phone" under 700 px): popups become full-screen sheets (Sheet.cs) -->
+        <!-- Phones (MainView sets "phone" under 700 px): "phoneOnly" shows only there, "wideOnly" everywhere else -->
+        <Style Selector=":is(Control).phoneOnly">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <Style Selector=".phone :is(Control).phoneOnly">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
+        <Style Selector=".phone :is(Control).wideOnly">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
+        <!-- A text link next to text: the 44 pt touch minimum (PhoneTouch) mustn't push its words off the line -->
+        <Style Selector=".phone Button.link">
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <!-- The phones' Leaderboard / Map switch at the top of the Friends tab -->
+        <Style Selector="Border.friendsSwitch">
+            <Setter Property="Margin" Value="16,14,16,0"/>
+            <Setter Property="Padding" Value="3"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+
+        <!-- Phones: grids with other columns (PhoneGrid.cs) -->
+        <Style Selector=".phone v|PhoneGrid">
+            <Setter Property="IsPhone" Value="True"/>
+        </Style>
+
+
+        <!-- Phones: popups become sheets from the bottom (Sheet.cs) -->
         <Style Selector=".phone v|Sheet">
-            <Setter Property="IsFullScreen" Value="True"/>
+            <Setter Property="IsBottomSheet" Value="True"/>
         </Style>
 
         <!-- Sidebar -->
@@ -248,7 +276,38 @@
             <Setter Property="Margin" Value="40,32,40,48"/>
             <Setter Property="MaxWidth" Value="1200"/>
         </Style>
+        <!-- A page's header: the title, and its buttons on the right; on phones the buttons go under the title, and the
+             title is smaller (the canvas sets it at 28) -->
+        <Style Selector="TextBlock.pageTitle">
+            <Setter Property="FontSize" Value="34"/>
+        </Style>
+        <Style Selector="Grid.pageHeader > :is(Control).headerActions">
+            <Setter Property="Grid.Column" Value="1"/>
+        </Style>
+        <Style Selector=".phone TextBlock.pageTitle">
+            <Setter Property="FontSize" Value="28"/>
+        </Style>
+        <Style Selector=".phone Grid.pageHeader">
+            <Setter Property="RowSpacing" Value="12"/>
+        </Style>
+        <Style Selector=".phone Grid.pageHeader > :is(Control).headerActions">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+
         <Style Selector="DockPanel.narrow StackPanel.page">
             <Setter Property="Margin" Value="16,24,16,32"/>
+        </Style>
+        <!-- Phones (the GainStreak Mobile canvas): 16 px sides under the app bar, tighter cards -->
+        <Style Selector=".phone StackPanel.page">
+            <Setter Property="Margin" Value="16,14,16,32"/>
+        </Style>
+        <Style Selector=".phone TextBlock.h2">
+            <Setter Property="FontSize" Value="18"/>
+        </Style>
+        <Style Selector=".phone Border.card">
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="CornerRadius" Value="18"/>
         </Style>
 </Styles>

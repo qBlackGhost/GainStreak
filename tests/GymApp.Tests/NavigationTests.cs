@@ -39,17 +39,16 @@ public sealed class NavigationTests : IAsyncLifetime
 
     [Fact] public async Task Push_ThenBack_GoesThroughTheScreensInReverse()
     {
-        _shell.ShowMore();
         _shell.ShowSplits();
         _shell.ShowSplitDetail(await APresetAsync());
-        Assert.IsType<SplitDetailViewModel>(_shell.Current);
+        _shell.ShowSplitEditor(await APresetAsync());
+        Assert.IsType<SplitEditorViewModel>(_shell.Current);
         Assert.True(_shell.CanGoBack);
-        Assert.Equal("Split", _shell.Title);
 
         Assert.True(_shell.GoBack());
-        Assert.IsType<SplitsViewModel>(_shell.Current);
+        Assert.IsType<SplitDetailViewModel>(_shell.Current);
         Assert.True(_shell.GoBack());
-        Assert.IsType<MoreViewModel>(_shell.Current);
+        Assert.IsType<SplitsViewModel>(_shell.Current);
         Assert.False(_shell.CanGoBack);
     }
 
@@ -120,7 +119,7 @@ public sealed class NavigationTests : IAsyncLifetime
 
     [Fact] public void ATab_ClosesFeedback()
     {
-        _shell.ShowMore();
+        _shell.ShowProfile();
         _shell.ShowFeedback();
 
         _shell.ShowCalories();   // the tab bar stays tappable under the feedback popup on phones
@@ -141,14 +140,25 @@ public sealed class NavigationTests : IAsyncLifetime
         Assert.False(_shell.GoBack());
     }
 
-    [Fact] public void APushedScreen_StaysUnderItsRootsTab()
+    [Fact] public void AScreen_LightsItsOwnTab()
     {
         _shell.ShowDay(_menu.Days[0], _menu.SplitName);   // Home's "today's workout"
+        Assert.Equal(AppTab.Workouts, _shell.SelectedTab);
+        Assert.True(_shell.GoBack());
         Assert.Equal(AppTab.Home, _shell.SelectedTab);
 
-        _shell.ShowMore();
-        _shell.ShowInbox();
-        Assert.Equal(AppTab.More, _shell.SelectedTab);
+        _shell.ShowInbox();   // the app bar's: no tab lit, the bars still show
+        Assert.Null(_shell.SelectedTab);
+        Assert.True(_shell.IsSignedInScreen);
+    }
+
+    [Fact] public void TheFriendsTab_SwitchesBetweenLeaderboardAndMap()
+    {
+        _shell.ShowFriends();
+        _shell.ShowGyms();
+        Assert.Equal(AppTab.Friends, _shell.SelectedTab);
+        Assert.True(_shell.GoBack());
+        Assert.IsType<FriendsViewModel>(_shell.Current);
     }
 
     public static TheoryData<string, AppTab?> Screens => new()
@@ -156,20 +166,19 @@ public sealed class NavigationTests : IAsyncLifetime
         { nameof(LoginViewModel), null },
         { nameof(RegisterViewModel), null },
         { nameof(ProfileSetupViewModel), null },
-        { nameof(HomeViewModel), AppTab.Home },
+        { nameof(SplitsViewModel), AppTab.Splits },
+        { nameof(SplitDetailViewModel), AppTab.Splits },
+        { nameof(SplitEditorViewModel), AppTab.Splits },
         { nameof(WorkoutsViewModel), AppTab.Workouts },
         { nameof(DayViewModel), AppTab.Workouts },
         { nameof(ExerciseViewModel), AppTab.Workouts },
         { nameof(CustomExercisesViewModel), AppTab.Workouts },
+        { nameof(HomeViewModel), AppTab.Home },
         { nameof(CaloriesViewModel), AppTab.Calories },
         { nameof(FriendsViewModel), AppTab.Friends },
-        { nameof(MoreViewModel), AppTab.More },
-        { nameof(ProfileViewModel), AppTab.More },
-        { nameof(SplitsViewModel), AppTab.More },
-        { nameof(SplitDetailViewModel), AppTab.More },
-        { nameof(SplitEditorViewModel), AppTab.More },
-        { nameof(GymsViewModel), AppTab.More },
-        { nameof(InboxViewModel), AppTab.More },
+        { nameof(GymsViewModel), AppTab.Friends },
+        { nameof(ProfileViewModel), null },
+        { nameof(InboxViewModel), null },
     };
 
     [Theory, MemberData(nameof(Screens))]
@@ -187,18 +196,17 @@ public sealed class NavigationTests : IAsyncLifetime
         foreach (var name in shown) Assert.Contains($"{name}ViewModel", table);
     }
 
-    [Fact] public void TheTabBar_ShowsOnPhones_AfterSignIn()
+    [Fact] public void TheBars_ShowOnPhones_AfterSignIn()
     {
-        Assert.False(_shell.ShowsTabBar);   // not a phone yet
+        Assert.False(_shell.ShowsBars);   // not a phone yet
         _shell.IsPhone = true;
-        Assert.True(_shell.ShowsTabBar);
-        Assert.False(_shell.ShowsTopBar);
+        Assert.True(_shell.ShowsBars);
 
         _shell.ShowProfile();
-        Assert.True(_shell.ShowsTopBar);
+        Assert.True(_shell.ShowsBars);
 
         _shell.ShowLogin();
         Assert.Null(_shell.SelectedTab);
-        Assert.False(_shell.ShowsTabBar);
+        Assert.False(_shell.ShowsBars);
     }
 }

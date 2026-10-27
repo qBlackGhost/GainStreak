@@ -2,9 +2,33 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.App.ViewModels"
              x:Class="GymApp.App.Views.SplitEditorView"
+             xmlns:v="using:GymApp.App.Views"
              x:DataType="vm:SplitEditorViewModel">
+    <UserControl.Styles>
+        <!-- Seven days side by side; on phones (16e) one row each: the day, then its name -->
+        <Style Selector="ItemsControl#DayCells UniformGrid"><Setter Property="Rows" Value="1"/></Style>
+        <Style Selector="v|PhoneGrid.dayCell"><Setter Property="RowSpacing" Value="6"/></Style>
+        <Style Selector="TextBox.dayName"><Setter Property="Grid.Row" Value="1"/></Style>
+        <Style Selector="ToggleButton.dayToggle"><Setter Property="Height" Value="56"/></Style>
+        <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
+        <Style Selector=".phone StackPanel#Form">
+            <Setter Property="Margin" Value="16,14,16,32"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector=".phone ItemsControl#DayCells UniformGrid">
+            <Setter Property="Rows" Value="0"/>
+            <Setter Property="Columns" Value="1"/>
+        </Style>
+        <Style Selector=".phone v|PhoneGrid.dayCell"><Setter Property="RowSpacing" Value="0"/></Style>
+        <Style Selector=".phone ToggleButton.dayToggle"><Setter Property="Height" Value="48"/></Style>
+        <Style Selector=".phone TextBox.dayName">
+            <Setter Property="Grid.Row" Value="0"/>
+            <Setter Property="Grid.Column" Value="1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Styles>
     <ScrollViewer>
-        <StackPanel Spacing="16" Margin="24" MaxWidth="900" HorizontalAlignment="Center">
+        <StackPanel x:Name="Form" Spacing="16" MaxWidth="900" HorizontalAlignment="Center">
             <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
             <StackPanel Spacing="4">
                 <TextBox PlaceholderText="Split name" MaxLength="40" Text="{Binding Name}"/>
@@ -13,19 +37,19 @@
             </StackPanel>
 
             <TextBlock Text="Pick your training days and name each one" FontWeight="SemiBold"/>
-            <ItemsControl ItemsSource="{Binding Days}">
+            <ItemsControl x:Name="DayCells" ItemsSource="{Binding Days}">
                 <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                    <ItemsPanelTemplate><UniformGrid/></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:DayCellViewModel">
-                        <StackPanel Spacing="6" Margin="3">
-                            <ToggleButton Content="{Binding Label}" IsChecked="{Binding IsSelected}"
-                                          Height="56" HorizontalAlignment="Stretch"
-                                          HorizontalContentAlignment="Center"/>
-                            <TextBox PlaceholderText="e.g. Push" MaxLength="20"
+                        <v:PhoneGrid Classes="dayCell" ColumnDefinitions="*" RowDefinitions="Auto,Auto" Margin="3"
+                                     PhoneColumns="88,*" PhoneColumnSpacing="8">
+                            <ToggleButton Classes="dayToggle" Content="{Binding Label}" IsChecked="{Binding IsSelected}"
+                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                            <TextBox Classes="dayName" PlaceholderText="e.g. Push" MaxLength="20"
                                      Text="{Binding Name}" IsEnabled="{Binding IsSelected}"/>
-                        </StackPanel>
+                        </v:PhoneGrid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

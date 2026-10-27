@@ -296,4 +296,7 @@ public partial class FriendsViewModel : ViewModelBase
 
     [RelayCommand]
     private void Back() => _shell().ShowHome();
+
+    /// <summary>The phones' Leaderboard / Map switch.</summary>
+    [RelayCommand] private void OpenMap() => _shell().ShowGyms();
 }

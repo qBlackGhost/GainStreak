@@ -204,11 +204,11 @@
                                                         <Border Classes="chip" Classes.warm="{Binding IsWarmup}" Classes.done="{Binding IsComplete}">
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Classes="chipText chipTag" Text="{Binding Tag}"/>
-                                                                <TextBox TextInputOptions.ContentType="Number" Classes="chipBox" Width="44" Text="{Binding WeightText}"
+                                                                <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Number" Classes="chipBox" Width="44" Text="{Binding WeightText}"
                                                                          PlaceholderText="{Binding WeightHint}"
                                                                          AutomationProperties.Name="{Binding Label, StringFormat='{}{0} kg'}"/>
                                                                 <TextBlock Classes="chipText" Text=" kg ×"/>
-                                                                <TextBox TextInputOptions.ContentType="Digits" Classes="chipBox" Width="34" Text="{Binding RepsText}"
+                                                                <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Digits" Classes="chipBox" Width="34" Text="{Binding RepsText}"
                                                                          PlaceholderText="{Binding RepsHint}"
                                                                          AutomationProperties.Name="{Binding Label, StringFormat='{}{0} reps'}"/>
                                                             </StackPanel>

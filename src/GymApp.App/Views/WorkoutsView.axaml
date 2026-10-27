@@ -51,6 +51,17 @@
             <Setter Property="TextElement.Foreground" Value="{DynamicResource Light}"/>
         </Style>
 
+        <Style Selector="ItemsControl#WeekTiles"><Setter Property="Margin" Value="-4"/></Style>
+        <Style Selector="TextBlock.tileName"><Setter Property="FontSize" Value="13"/></Style>
+        <!-- Phones (the canvas): seven narrow tiles, the words centred -->
+        <Style Selector=".phone ItemsControl#WeekTiles"><Setter Property="Margin" Value="-2.5"/></Style>
+        <Style Selector=".phone Border.wkTile">
+            <Setter Property="Padding" Value="2,8"/>
+            <Setter Property="Margin" Value="2.5"/>
+        </Style>
+        <Style Selector=".phone Border.wkTile TextBlock"><Setter Property="HorizontalAlignment" Value="Center"/></Style>
+        <Style Selector=".phone TextBlock.tileName"><Setter Property="FontSize" Value="11"/></Style>
+
         <!-- Day cards -->
         <Style Selector="Border.dayCard">
             <Setter Property="Background" Value="{DynamicResource Surface}"/>
@@ -64,6 +75,9 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="Padding" Value="21"/>
         </Style>
+        <!-- Phones: the cards' tighter padding -->
+        <Style Selector=".phone Border.dayCard"><Setter Property="Padding" Value="16"/></Style>
+        <Style Selector=".phone Border.dayCard.today"><Setter Property="Padding" Value="15"/></Style>
     </UserControl.Styles>
     <Grid>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
@@ -72,16 +86,16 @@
         <ScrollViewer>
         <StackPanel Classes="page" Spacing="24">
             <!-- Header -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6" VerticalAlignment="Bottom">
                     <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
-                    <TextBlock Text="Workouts" FontSize="34" FontWeight="ExtraBold"/>
+                    <TextBlock Classes="pageTitle" Text="Workouts" FontWeight="ExtraBold"/>
                     <TextBlock FontSize="15" Classes="soft" IsVisible="{Binding HasSplit}">
                         <Run Text="{Binding SplitName}"/><Run Text=" · "/><Run Text="{Binding TodayNote}" Classes="todayNote"
                              Classes.rest="{Binding IsRestToday}"/>
                     </TextBlock>
                 </StackPanel>
-                <WrapPanel Grid.Column="1" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom" IsVisible="{Binding HasSplit}">
+                <WrapPanel Classes="headerActions" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom" IsVisible="{Binding HasSplit}">
                     <Button Classes="btn primary" Padding="16,0" Command="{Binding OpenShareCommand}" ToolTip.Tip="Share a workout with friends">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <v:Icon Data="{StaticResource IcShare}" Width="16" Height="16"/>
@@ -109,7 +123,7 @@
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
             <!-- This week's schedule -->
-            <ItemsControl ItemsSource="{Binding Week}" Margin="-4" IsVisible="{Binding HasSplit}">
+            <ItemsControl x:Name="WeekTiles" ItemsSource="{Binding Week}" IsVisible="{Binding HasSplit}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
@@ -119,7 +133,7 @@
                                 Classes.todayRest="{Binding IsTodayRest}">
                             <StackPanel Spacing="4" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding Day}" FontSize="11" FontWeight="SemiBold" Opacity="0.75"/>
-                                <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold"
+                                <TextBlock Classes="tileName" Text="{Binding Name}" FontWeight="Bold"
                                            TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                             </StackPanel>
                         </Border>

@@ -189,6 +189,13 @@
     <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
         <v:Sidebar Current="Map"/>
+        <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
+        <Border DockPanel.Dock="Top" Classes="friendsSwitch phoneOnly">
+            <v:SegmentedPill SelectedIndex="1" PillInset="0">
+                <Button Classes="seg" MinHeight="40" FontSize="14" Content="Leaderboard" Command="{Binding OpenLeaderboardCommand}"/>
+                <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Map"/>
+            </v:SegmentedPill>
+        </Border>
 
         <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Disabled">
         <Grid x:Name="Page" RowDefinitions="Auto,Auto,*" RowSpacing="16">

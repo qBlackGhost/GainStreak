@@ -106,6 +106,39 @@
             <Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/>
         </Style>
 
+        <!-- Sizes the phones change (the GainStreak Mobile canvas), here so the ".phone" styles can override them -->
+        <Style Selector="ItemsControl#WeekCells"><Setter Property="Margin" Value="-4"/></Style>
+        <Style Selector="TextBlock.cellTitle"><Setter Property="FontSize" Value="17"/></Style>
+        <Style Selector="Panel#UsageDonut">
+            <Setter Property="Width" Value="232"/>
+            <Setter Property="Height" Value="232"/>
+        </Style>
+        <Style Selector="ItemsControl#UsageLegend"><Setter Property="Grid.Column" Value="1"/></Style>
+        <Style Selector=".phone ItemsControl#WeekCells"><Setter Property="Margin" Value="-2.5"/></Style>
+        <Style Selector=".phone Panel.wk">
+            <Setter Property="MinHeight" Value="72"/>
+            <Setter Property="Margin" Value="2.5"/>
+        </Style>
+        <Style Selector=".phone Border.wkTile"><Setter Property="Padding" Value="2,8"/></Style>
+        <Style Selector=".phone TextBlock.cellTitle">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <!-- Who uses it: the donut above its legend -->
+        <Style Selector=".phone Grid#Usage"><Setter Property="RowSpacing" Value="16"/></Style>
+        <Style Selector=".phone Panel#UsageDonut">
+            <Setter Property="Width" Value="200"/>
+            <Setter Property="Height" Value="200"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=".phone ItemsControl#UsageLegend">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+
         <!-- Two columns by default; stacked when narrow -->
         <Style Selector="StackPanel#RightColumn">
             <Setter Property="Grid.Column" Value="1"/>
@@ -258,7 +291,7 @@
                                          Foreground="{DynamicResource Ink}"/><Run Text=" rest"/>
                                 </TextBlock>
                             </Grid>
-                            <ItemsControl ItemsSource="{Binding Cells}" Margin="-4">
+                            <ItemsControl x:Name="WeekCells" ItemsSource="{Binding Cells}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
@@ -273,7 +306,7 @@
                                                 <StackPanel Spacing="4" HorizontalAlignment="Center" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Label}" FontSize="12" FontWeight="Bold" Opacity="0.8"
                                                                HorizontalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="ExtraBold" TextAlignment="Center"
+                                                    <TextBlock Classes="cellTitle" Text="{Binding Title}" FontWeight="ExtraBold" TextAlignment="Center"
                                                                HorizontalAlignment="Center"/>
                                                     <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center"
                                                                 IsVisible="{Binding IsStart}">
@@ -317,8 +350,8 @@
                     <StackPanel Spacing="12">
                         <TextBlock Text="Who uses it" FontSize="20" FontWeight="Bold"/>
                         <TextBlock Text="{Binding UsageHeadline}" FontSize="14" Classes="light" LineHeight="22"/>
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="40">
-                            <Panel Width="232" Height="232" VerticalAlignment="Center">
+                        <Grid x:Name="Usage" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="40">
+                            <Panel x:Name="UsageDonut" VerticalAlignment="Center">
                                 <v:Donut Slices="{Binding UsageSlices}"/>
                                 <StackPanel Spacing="2" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding MinePercent}" FontFamily="{StaticResource Mono}" FontSize="40" FontWeight="Bold"
@@ -326,7 +359,7 @@
                                     <TextBlock Text="of lifters" FontSize="13" Classes="muted" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Panel>
-                            <ItemsControl Grid.Column="1" ItemsSource="{Binding UsageSlices}" VerticalAlignment="Center">
+                            <ItemsControl x:Name="UsageLegend" ItemsSource="{Binding UsageSlices}" VerticalAlignment="Center">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SplitUsageSlice">
                                         <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48" Padding="0,6">

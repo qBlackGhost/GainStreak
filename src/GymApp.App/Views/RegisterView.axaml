@@ -8,15 +8,29 @@
     <UserControl.Styles>
         <StyleInclude Source="/Views/AuthStyles.axaml"/>
     </UserControl.Styles>
-    <ScrollViewer Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
-        <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Panel Background="{DynamicResource PageBg}">
+    <!-- Phones: a soft lime glow behind the brand (the GainStreak Mobile canvas) -->
+    <Ellipse Classes="authGlow phoneOnly"/>
+    <ScrollViewer TextElement.Foreground="{DynamicResource Ink}">
+        <StackPanel Classes="authColumn" Spacing="20">
+            <!-- Phones: the brand large and centred, then Log in / Create account -->
+            <StackPanel Classes="phoneOnly" Spacing="12" HorizontalAlignment="Center">
+                <Image Source="{StaticResource GainStreakLogo}" Width="72" Height="72" HorizontalAlignment="Center"/>
+                <TextBlock FontSize="26" FontWeight="ExtraBold" LetterSpacing="1" HorizontalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
+            </StackPanel>
+            <Border Classes="authSwitch phoneOnly">
+                <v:SegmentedPill SelectedIndex="1" PillInset="0">
+                    <Button Classes="seg" MinHeight="40" FontSize="14" Content="Log in" Command="{Binding GoToLoginCommand}"/>
+                    <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Create account"/>
+                </v:SegmentedPill>
+            </Border>
             <!-- Brand -->
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <StackPanel Classes="wideOnly" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                 <Image Source="{StaticResource GainStreakLogo}" Width="40" Height="40"/>
                 <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
             </StackPanel>
 
-            <Border Classes="card" Padding="32">
+            <Border Classes="card authCard">
                 <StackPanel Spacing="18">
                     <StackPanel Spacing="6">
                         <TextBlock Text="Create your account" FontSize="30" FontWeight="ExtraBold"/>
@@ -89,8 +103,10 @@
 
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
-                <TextBlock Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" Classes="muted" TextWrapping="Wrap" MaxWidth="380"/>
+                <TextBlock Classes="muted wideOnly" Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="380"/>
+                <TextBlock Classes="muted phoneOnly" Text="Your workouts stay on this phone. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="300"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>
+    </Panel>
 </UserControl>

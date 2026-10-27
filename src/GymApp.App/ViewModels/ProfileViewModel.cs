@@ -218,6 +218,10 @@ public partial class ProfileViewModel : ViewModelBase
     /// <summary>"GainStreak 0.14.1", from the assembly version (Directory.Build.props).</summary>
     public string VersionText { get; } = $"GainStreak {AppVersion.Current}";
 
+    // The phones have no sidebar, so Profile holds these there
+    [RelayCommand] private void SendFeedback() => _shell().ShowFeedback();
+    [RelayCommand] private Task LogOut() => _accounts.LogOutAsync();
+
     [ObservableProperty] public partial string? Error { get; set; }
 
     // Messages shown under the field they're about

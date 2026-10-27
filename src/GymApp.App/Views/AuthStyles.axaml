@@ -48,6 +48,78 @@
         <Setter Property="FontSize" Value="15"/>
     </Style>
 
+    <!-- The column: a centred card on wide screens; on phones (the GainStreak Mobile canvas) the page itself -->
+    <Style Selector="StackPanel.authColumn">
+        <Setter Property="Width" Value="420"/>
+        <Setter Property="Margin" Value="16,40"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector=".phone StackPanel.authColumn">
+        <Setter Property="Width" Value="NaN"/>
+        <Setter Property="Margin" Value="20,64,20,28"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Spacing" Value="22"/>
+    </Style>
+    <Style Selector="Border.authCard">
+        <Setter Property="Padding" Value="32"/>
+    </Style>
+    <Style Selector=".phone Border.authCard">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+    <Style Selector=".phone TextBox.field">
+        <Setter Property="MinHeight" Value="50"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Background" Value="{DynamicResource Surface}"/>
+    </Style>
+    <Style Selector=".phone Button.btn.block">
+        <Setter Property="MinHeight" Value="52"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="CornerRadius" Value="14"/>
+    </Style>
+    <Style Selector="Border.authSwitch">
+        <Setter Property="Padding" Value="3"/>
+        <Setter Property="CornerRadius" Value="12"/>
+        <Setter Property="Background" Value="{DynamicResource Fill}"/>
+    </Style>
+    <!-- The glow: lime fading out from behind the brand -->
+    <Style Selector="Ellipse.authGlow">
+        <Setter Property="Height" Value="520"/>
+        <Setter Property="Margin" Value="-120,-260,-120,0"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="Fill" Value="{DynamicResource AccentInk}"/>
+        <Setter Property="Opacity" Value="0.13"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="OpacityMask">
+            <RadialGradientBrush>
+                <GradientStop Color="White" Offset="0"/>
+                <GradientStop Color="Transparent" Offset="1"/>
+            </RadialGradientBrush>
+        </Setter>
+    </Style>
+    <!-- Show the password: inside the right of the field -->
+    <Style Selector="Button.reveal">
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Width" Value="44"/>
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="Margin" Value="0,0,3,0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="CornerRadius" Value="10"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector=".phone TextBox#PasswordBox">
+        <Setter Property="Padding" Value="44,0,52,0"/>
+    </Style>
+
     <!-- A whole-form message (wrong password, could not connect) -->
     <Style Selector="Border.formError">
         <Setter Property="Padding" Value="14,12"/>

@@ -107,13 +107,20 @@ public partial class CopySourceItemViewModel : ObservableObject
 
 public partial class DayViewModel : ViewModelBase, IClosesOnBack
 {
-    /// <summary>Back closes "Copy from another day" first.</summary>
+    /// <summary>Back closes "Copy from another day" or the phones' add-exercises sheet first.</summary>
     public bool CloseOnBack()
     {
-        if (!IsCopyOpen) return false;
-        IsCopyOpen = false;
-        return true;
+        if (IsCopyOpen) { IsCopyOpen = false; return true; }
+        if (IsAddOpen) { IsAddOpen = false; return true; }
+        return false;
     }
+
+    /// <summary>The phones' add-exercises sheet (the GainStreak Mobile canvas); wider screens show the picker beside
+    /// the list all the time.</summary>
+    [ObservableProperty] public partial bool IsAddOpen { get; set; }
+
+    [RelayCommand] private void OpenAdd() => IsAddOpen = true;
+    [RelayCommand] private void CloseAdd() => IsAddOpen = false;
 
     private readonly DayExerciseService _days;
     private readonly ExerciseService _exercises;

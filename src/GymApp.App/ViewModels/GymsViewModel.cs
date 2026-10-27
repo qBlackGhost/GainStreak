@@ -78,6 +78,9 @@ public record MapMonthRow(string Name, int Visits, double Share)
 /// </summary>
 public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>The phones' Leaderboard / Map switch.</summary>
+    [RelayCommand] private void OpenLeaderboard() => _shell().ShowFriends();
+
     /// <summary>Back closes the picker's add-a-gym form, then the picker.</summary>
     public bool CloseOnBack()
     {

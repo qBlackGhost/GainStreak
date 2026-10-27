@@ -4,68 +4,103 @@
              xmlns:v="using:GymApp.App.Views"
              x:Class="GymApp.App.Views.TabBar"
              x:DataType="vm:MainViewModel">
-    <!-- The phones' navigation (16d): five tabs along the bottom, under 700 px wide, in place of the sidebar. The
-         selected tab is lime. MainView pads the bottom for the home indicator; the background reaches behind it. -->
+    <!-- The phones' tabs (the GainStreak Mobile canvas): Splits, Workouts, Home raised in a circle in the middle,
+         Calories, Friends. The current tab's icon sits on a lime pill (Home: the circle turns lime). MainView pads
+         the bottom for the home indicator; the background reaches behind it. -->
     <UserControl.Styles>
         <Style Selector="Button.tab">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="MinHeight" Value="56"/>
-            <Setter Property="Padding" Value="0,6"/>
+            <Setter Property="VerticalContentAlignment" Value="Bottom"/>
+            <Setter Property="MinHeight" Value="58"/>
+            <Setter Property="Padding" Value="0,6,0,0"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="CornerRadius" Value="0"/>
             <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
             <Setter Property="FontSize" Value="11"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontWeight" Value="Medium"/>
         </Style>
         <Style Selector="Button.tab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Button.tab:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+            <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Button.tab.current">
             <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
         </Style>
         <Style Selector="Button.tab.current:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
         </Style>
+        <!-- The icon's pill: lime under the current tab -->
+        <Style Selector="Button.tab Border.pill">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="CornerRadius" Value="15"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.tab.current Border.pill">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style Selector="Button.tab.current Border.pill v|Icon">
+            <Setter Property="Stroke" Value="Black"/>
+        </Style>
         <Style Selector="Button.tab v|Icon">
             <Setter Property="Width" Value="22"/>
             <Setter Property="Height" Value="22"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <!-- Home: a 64 px circle that rises above the bar -->
+        <Style Selector="Button.tab Border.home">
+            <Setter Property="Width" Value="64"/>
+            <Setter Property="Height" Value="64"/>
+            <Setter Property="CornerRadius" Value="32"/>
+            <Setter Property="Margin" Value="0,-28,0,0"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="BorderThickness" Value="4"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource PageBg}"/>
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="BoxShadow" Value="0 6 18 0 #59000000"/>
+        </Style>
+        <Style Selector="Button.tab Border.home v|Icon">
+            <Setter Property="Width" Value="28"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Stroke" Value="{DynamicResource OnInverse}"/>
+        </Style>
+        <Style Selector="Button.tab.current Border.home">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style Selector="Button.tab.current Border.home v|Icon">
+            <Setter Property="Stroke" Value="Black"/>
         </Style>
     </UserControl.Styles>
 
-    <Border Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
-        <UniformGrid Rows="1">
-            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Home}}"
-                    Click="OnHome" AutomationProperties.Name="Home">
-                <StackPanel Spacing="4"><v:Icon Data="{StaticResource IcGrid}" HorizontalAlignment="Center"/><TextBlock Text="Home" HorizontalAlignment="Center"/></StackPanel>
+    <Border Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="8,0">
+        <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="2">
+            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Splits}}"
+                    Click="OnSplits" AutomationProperties.Name="Splits">
+                <StackPanel Spacing="3"><Border Classes="pill"><v:Icon Data="{StaticResource IcCalendar}"/></Border><TextBlock Text="Splits" HorizontalAlignment="Center"/></StackPanel>
             </Button>
-            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Workouts}}"
+            <Button Grid.Column="1" Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Workouts}}"
                     Click="OnWorkouts" AutomationProperties.Name="Workouts">
-                <StackPanel Spacing="4"><v:Icon Data="{StaticResource IcDumbbell}" HorizontalAlignment="Center"/><TextBlock Text="Workouts" HorizontalAlignment="Center"/></StackPanel>
+                <StackPanel Spacing="3"><Border Classes="pill"><v:Icon Data="{StaticResource IcDumbbell}"/></Border><TextBlock Text="Workouts" HorizontalAlignment="Center"/></StackPanel>
             </Button>
-            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Calories}}"
+            <Button Grid.Column="2" Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Home}}"
+                    Click="OnHome" AutomationProperties.Name="Home">
+                <StackPanel Spacing="3"><Border Classes="home"><v:Icon Data="{StaticResource IcHome}"/></Border><TextBlock Text="Home" HorizontalAlignment="Center"/></StackPanel>
+            </Button>
+            <Button Grid.Column="3" Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Calories}}"
                     Click="OnCalories" AutomationProperties.Name="Calories">
-                <StackPanel Spacing="4"><v:Icon Data="{StaticResource IcFlame}" HorizontalAlignment="Center"/><TextBlock Text="Calories" HorizontalAlignment="Center"/></StackPanel>
+                <StackPanel Spacing="3"><Border Classes="pill"><v:Icon Data="{StaticResource IcFlame}"/></Border><TextBlock Text="Calories" HorizontalAlignment="Center"/></StackPanel>
             </Button>
-            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Friends}}"
+            <Button Grid.Column="4" Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.Friends}}"
                     Click="OnFriends" AutomationProperties.Name="Friends">
-                <StackPanel Spacing="4"><v:Icon Data="{StaticResource IcFriends}" HorizontalAlignment="Center"/><TextBlock Text="Friends" HorizontalAlignment="Center"/></StackPanel>
+                <StackPanel Spacing="3"><Border Classes="pill"><v:Icon Data="{StaticResource IcFriends}"/></Border><TextBlock Text="Friends" HorizontalAlignment="Center"/></StackPanel>
             </Button>
-            <Button Classes="tab" Classes.current="{Binding SelectedTab, Converter={x:Static v:TabBar.Is}, ConverterParameter={x:Static vm:AppTab.More}}"
-                    Click="OnMore" AutomationProperties.Name="More">
-                <Panel>
-                    <StackPanel Spacing="4"><v:Icon Data="{StaticResource IcMenu}" HorizontalAlignment="Center"/><TextBlock Text="More" HorizontalAlignment="Center"/></StackPanel>
-                    <!-- New in the inbox, which is under More -->
-                    <Border x:Name="InboxBadge" Background="#FF6B5B" CornerRadius="5" Width="10" Height="10" IsVisible="False"
-                            HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,0,-4,0"/>
-                </Panel>
-            </Button>
-        </UniformGrid>
+        </Grid>
     </Border>
 </UserControl>

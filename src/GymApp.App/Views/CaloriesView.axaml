@@ -76,6 +76,41 @@
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
+        <!-- Sizes the phones change (the GainStreak Mobile canvas), here so the ".phone" styles can override them -->
+        <Style Selector="Border.todayCard"><Setter Property="Padding" Value="28"/></Style>
+        <Style Selector="Grid#Ring">
+            <Setter Property="Width" Value="200"/>
+            <Setter Property="Height" Value="200"/>
+        </Style>
+        <Style Selector="TextBlock.ringCenter"><Setter Property="FontSize" Value="32"/></Style>
+        <Style Selector="Border.eatenTile"><Setter Property="Grid.Column" Value="1"/></Style>
+        <Style Selector="TextBlock.tileLabel">
+            <Setter Property="DockPanel.Dock" Value="Top"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+        <Style Selector="TextBlock.tileValue"><Setter Property="FontSize" Value="20"/></Style>
+        <!-- Phones: a smaller ring, Goal and Eaten as rows with the number on the right -->
+        <Style Selector=".phone Border.todayCard"><Setter Property="Padding" Value="16"/></Style>
+        <Style Selector=".phone Border.todayCard Border.tile"><Setter Property="Padding" Value="12,10"/></Style>
+        <Style Selector=".phone Grid#Ring">
+            <Setter Property="Width" Value="140"/>
+            <Setter Property="Height" Value="140"/>
+        </Style>
+        <Style Selector=".phone TextBlock.ringCenter"><Setter Property="FontSize" Value="24"/></Style>
+        <Style Selector=".phone v|PhoneGrid.goalEaten"><Setter Property="RowSpacing" Value="8"/></Style>
+        <Style Selector=".phone Border.eatenTile">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+        </Style>
+        <Style Selector=".phone TextBlock.tileLabel">
+            <Setter Property="DockPanel.Dock" Value="Left"/>
+            <Setter Property="Margin" Value="0,0,8,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=".phone TextBlock.tileValue">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="HorizontalAlignment" Value="Right"/>
+        </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Calories"/>
@@ -83,13 +118,13 @@
         <ScrollViewer>
         <StackPanel Classes="page" Spacing="24">
             <!-- Header -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
-                    <TextBlock Text="Calories" FontSize="34" FontWeight="ExtraBold"/>
+                    <TextBlock Classes="pageTitle" Text="Calories" FontWeight="ExtraBold"/>
                     <TextBlock Text="Log what you ate once, at the end of the day." FontSize="15" Classes="soft"/>
                 </StackPanel>
-                <Border Grid.Column="1" Classes="pill" Padding="14,8" VerticalAlignment="Bottom">
+                <Border Classes="pill headerActions" Padding="14,8" VerticalAlignment="Bottom">
                     <TextBlock Text="{Binding HeaderPill}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
                 </Border>
             </Grid>
@@ -103,7 +138,7 @@
                 <StackPanel x:Name="LeftColumn" Spacing="24">
 
                     <!-- Today -->
-                    <Border Classes="card" Padding="28">
+                    <Border Classes="card todayCard">
                         <StackPanel Spacing="22">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="Today" Classes="h2" VerticalAlignment="Center"/>
@@ -112,41 +147,44 @@
                                     <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="Bold"/>
                                 </Border>
                             </Grid>
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="32">
-                                <Grid Width="200" Height="200">
+                            <v:PhoneGrid ColumnDefinitions="Auto,*" ColumnSpacing="32" PhoneColumns="Auto,*" PhoneColumnSpacing="16">
+                                <Grid x:Name="Ring">
                                     <Ellipse Stroke="{DynamicResource Line}" StrokeThickness="16"/>
                                     <Arc Classes="ring" Classes.over="{Binding IsOver}" Classes.hit="{Binding IsHit}"
                                          StartAngle="-90" SweepAngle="{Binding RingSweep}" StrokeThickness="16"/>
                                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
-                                        <TextBlock Text="{Binding RingCenter}" Classes="mono" FontSize="32" FontWeight="Bold"
+                                        <TextBlock Classes="mono ringCenter" Text="{Binding RingCenter}" FontWeight="Bold"
                                                    HorizontalAlignment="Center"/>
                                         <TextBlock Text="{Binding RingCenterSub}" FontSize="13" Classes="soft" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Grid>
                                 <StackPanel Grid.Column="1" Spacing="14" VerticalAlignment="Center">
-                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <v:PhoneGrid Classes="goalEaten" ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12"
+                                                 PhoneColumns="*">
                                         <Border Classes="tile">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Text="Goal" FontSize="12" Classes="muted"/>
-                                                <TextBlock Text="{Binding GoalKcal}" Classes="mono" FontSize="20" FontWeight="Bold"/>
-                                            </StackPanel>
+                                            <DockPanel>
+                                                <TextBlock Classes="muted tileLabel" Text="Goal" FontSize="12"/>
+                                                <TextBlock Classes="mono tileValue" Text="{Binding GoalKcal}" FontWeight="Bold"/>
+                                            </DockPanel>
                                         </Border>
-                                        <Border Grid.Column="1" Classes="tile">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Text="Eaten" FontSize="12" Classes="muted"/>
-                                                <TextBlock Text="{Binding EatenKcal}" Classes="mono" FontSize="20" FontWeight="Bold"/>
-                                            </StackPanel>
+                                        <Border Classes="tile eatenTile">
+                                            <DockPanel>
+                                                <TextBlock Classes="muted tileLabel" Text="Eaten" FontSize="12"/>
+                                                <TextBlock Classes="mono tileValue" Text="{Binding EatenKcal}" FontWeight="Bold"/>
+                                            </DockPanel>
                                         </Border>
-                                    </Grid>
+                                    </v:PhoneGrid>
                                     <TextBlock FontSize="13" Classes="soft" LineHeight="20" IsVisible="{Binding HasGoal}">
                                         <Run Text="On target between "/><Run Text="{Binding RangeText}" FontFamily="{StaticResource Mono}"
                                              Foreground="{DynamicResource Ink}"/><Run Text=" kcal. Hitting it gives "/><Run Text="+10 pts" FontWeight="Bold"
                                              Foreground="{DynamicResource Ink}"/><Run Text="."/>
                                     </TextBlock>
-                                    <TextBlock Text="No calorie goal yet. Set one on the right." FontSize="13" Classes="soft"
-                                               IsVisible="{Binding !HasGoal}"/>
+                                    <Panel IsVisible="{Binding !HasGoal}">
+                                        <TextBlock Classes="soft wideOnly" Text="No calorie goal yet. Set one on the right." FontSize="13"/>
+                                        <TextBlock Classes="soft phoneOnly" Text="No calorie goal yet. Set one below." FontSize="13"/>
+                                    </Panel>
                                 </StackPanel>
-                            </Grid>
+                            </v:PhoneGrid>
 
                             <StackPanel Spacing="6" IsVisible="{Binding ShowLogForm}">
                                 <TextBlock Text="Eaten today (kcal)" FontSize="12" Classes="muted"/>

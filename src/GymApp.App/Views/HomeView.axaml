@@ -157,6 +157,75 @@
             <Setter Property="TextElement.Foreground" Value="Black"/>
         </Style>
 
+        <!-- Sizes the phones change (the GainStreak Mobile canvas's Home): here rather than on the elements, so the
+             ".phone" styles below can override them -->
+        <Style Selector="StackPanel#Main"><Setter Property="Spacing" Value="24"/></Style>
+        <Style Selector="WrapPanel#Cards">
+            <Setter Property="ItemSpacing" Value="24"/>
+            <Setter Property="LineSpacing" Value="24"/>
+        </Style>
+        <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="34"/></Style>
+        <Style Selector="Border.setupCard"><Setter Property="Padding" Value="28,26"/></Style>
+        <Style Selector="TextBlock#StreakNumber">
+            <Setter Property="FontSize" Value="100"/>
+            <Setter Property="LetterSpacing" Value="-4"/>
+            <Setter Property="Margin" Value="0,-11,0,-14"/>
+        </Style>
+        <Style Selector="Border.weekCard"><Setter Property="Padding" Value="24,22"/></Style>
+        <Style Selector="TextBlock.weekTitle"><Setter Property="FontSize" Value="20"/></Style>
+        <Style Selector="WrapPanel#WeekLegend"><Setter Property="Grid.Column" Value="1"/></Style>
+        <Style Selector="ItemsControl#WeekTiles"><Setter Property="Margin" Value="-4"/></Style>
+        <Style Selector="TextBlock.tileName"><Setter Property="FontSize" Value="13"/></Style>
+
+        <Style Selector=".phone StackPanel#Main"><Setter Property="Spacing" Value="14"/></Style>
+        <Style Selector="Button.goalChip">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="10,3"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=".phone WrapPanel#Cards">
+            <Setter Property="ItemSpacing" Value="14"/>
+            <Setter Property="LineSpacing" Value="14"/>
+        </Style>
+        <Style Selector=".phone TextBlock.greeting"><Setter Property="FontSize" Value="26"/></Style>
+        <Style Selector=".phone Border.setupCard"><Setter Property="Padding" Value="16"/></Style>
+        <Style Selector=".phone TextBlock#StreakNumber">
+            <Setter Property="FontSize" Value="88"/>
+            <Setter Property="LetterSpacing" Value="-3.5"/>
+            <Setter Property="Margin" Value="0,-10,0,-12"/>
+        </Style>
+        <!-- This week: no card, seven narrow tiles, the legend under them -->
+        <Style Selector=".phone Border.weekCard">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector=".phone TextBlock.weekTitle"><Setter Property="FontSize" Value="18"/></Style>
+        <Style Selector=".phone WrapPanel#WeekLegend">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="2"/>
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
+            <Setter Property="Margin" Value="0,-4,0,0"/>
+        </Style>
+        <Style Selector=".phone ItemsControl#WeekTiles"><Setter Property="Margin" Value="-2.5"/></Style>
+        <Style Selector=".phone ItemsControl#WeekTiles Border.tile">
+            <Setter Property="Padding" Value="2,8"/>
+            <Setter Property="Margin" Value="2.5"/>
+            <Setter Property="MinHeight" Value="66"/>
+        </Style>
+        <Style Selector=".phone ItemsControl#WeekTiles Border.tile TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=".phone TextBlock.tileName"><Setter Property="FontSize" Value="11"/></Style>
+
         <!-- Missed-day options -->
         <Style Selector="Button.option">
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -224,13 +293,13 @@
 
         <!-- ===== Main ===== -->
         <ScrollViewer x:Name="MainScroll">
-        <StackPanel x:Name="Main" Classes="page" Spacing="24">
+        <StackPanel x:Name="Main" Classes="page">
 
             <!-- Header: date, greeting, headline, and the level pill -->
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
                 <StackPanel Spacing="6" VerticalAlignment="Bottom">
                     <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
-                    <TextBlock Text="{Binding Greeting}" FontSize="34" FontWeight="ExtraBold"/>
+                    <TextBlock Classes="greeting" Text="{Binding Greeting}" FontWeight="ExtraBold"/>
                     <TextBlock Text="{Binding StreakNote}" FontSize="15" Classes="soft"/>
                     <TextBlock Text="{Binding StreakEndedNotice}" FontSize="13" Classes="muted"
                                IsVisible="{Binding StreakEndedNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -286,7 +355,7 @@
             </Border>
 
             <!-- ===== Get set up: until the four first-time steps are done (a split and exercises for today unlock check-in) ===== -->
-            <Border Classes="card" Padding="28,26" IsVisible="{Binding ShowSetup}">
+            <Border Classes="card setupCard" IsVisible="{Binding ShowSetup}">
                 <StackPanel Spacing="18">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="4">
@@ -352,7 +421,7 @@
             </Border>
 
             <!-- ===== Streak hero ===== -->
-            <Border Classes="card" Padding="24">
+            <Border Classes="card">
                 <Grid x:Name="Hero" ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="32" RowSpacing="24">
                     <Panel x:Name="HeroLeft" VerticalAlignment="Center">
                         <StackPanel Spacing="18">
@@ -362,7 +431,7 @@
                                 <TextBlock Text="GYM STREAK" Classes="label" VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                <TextBlock Text="{Binding StreakCurrent}" FontSize="100" FontWeight="Black" LetterSpacing="-4" Margin="0,-11,0,-14"
+                                <TextBlock x:Name="StreakNumber" Text="{Binding StreakCurrent}" FontWeight="Black"
                                            Foreground="{DynamicResource AccentInk}" TextWrapping="NoWrap"
                                            Classes.zero="{Binding !StreakCurrent}">
                                     <TextBlock.Styles>
@@ -534,11 +603,11 @@
             </Border>
 
             <!-- ===== This week ===== -->
-            <Border Classes="card" Padding="24,22" DataContext="{Binding Week}">
-                <StackPanel Spacing="14" x:DataType="vm:WeekCardViewModel">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <TextBlock Text="This week" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <WrapPanel Grid.Column="1" ItemSpacing="14" LineSpacing="4" VerticalAlignment="Center">
+            <Border Classes="card weekCard" DataContext="{Binding Week}">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="14"
+                      x:DataType="vm:WeekCardViewModel">
+                        <TextBlock Classes="weekTitle" Text="This week" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <WrapPanel x:Name="WeekLegend" ItemSpacing="14" LineSpacing="4" VerticalAlignment="Center">
                             <WrapPanel.Styles>
                                 <Style Selector="TextBlock"><Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
                             </WrapPanel.Styles>
@@ -563,8 +632,7 @@
                                 <TextBlock Text="Upcoming"/>
                             </StackPanel>
                         </WrapPanel>
-                    </Grid>
-                    <ItemsControl ItemsSource="{Binding Chips}" Margin="-4">
+                    <ItemsControl x:Name="WeekTiles" Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Chips}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
@@ -574,7 +642,8 @@
                                         Classes.upcoming="{Binding IsUpcoming}" Classes.todayOpen="{Binding IsTodayOpen}"
                                         Classes.todayDone="{Binding IsTodayDone}" ToolTip.Tip="{Binding Tip}">
                                     <StackPanel Spacing="6" VerticalAlignment="Center">
-                                        <Grid ColumnDefinitions="*,Auto" MinHeight="16">
+                                        <!-- Phones: the day over its mark, so a 360 px row of seven fits -->
+                                        <v:PhoneGrid ColumnDefinitions="*,Auto" MinHeight="16" PhoneStack="True" PhoneStackSpacing="2">
                                             <TextBlock Text="{Binding Day}" FontSize="11" FontWeight="SemiBold" Opacity="0.75"
                                                        VerticalAlignment="Center"/>
                                             <Panel Grid.Column="1">
@@ -585,19 +654,19 @@
                                                 <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource MissRed}" StrokeThickness="3"
                                                         Width="14" Height="14" IsVisible="{Binding IsMissed}"/>
                                             </Panel>
-                                        </Grid>
-                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Bold"
+                                        </v:PhoneGrid>
+                                        <TextBlock Classes="tileName" Text="{Binding Name}" FontWeight="Bold"
                                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                     </StackPanel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <!-- ===== Cards: two columns, one when narrow (HomeView.axaml.cs sets ItemWidth) ===== -->
-            <WrapPanel x:Name="Cards" ItemSpacing="24" LineSpacing="24">
+            <WrapPanel x:Name="Cards">
 
                 <!-- Today's workout: the same plan as the check-in -->
                 <Border Classes="card" DataContext="{Binding TodayWorkout}">
@@ -662,12 +731,18 @@
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <TextBlock Text="Calories today" Classes="h2" VerticalAlignment="Center"/>
-                                <Border Classes="pill" IsVisible="{Binding CalorieGoalType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <TextBlock Text="{Binding CalorieGoalType}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
-                                </Border>
+                                <Panel Classes="wideOnly">
+                                    <Border Classes="pill" IsVisible="{Binding CalorieGoalType, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <TextBlock Text="{Binding CalorieGoalType}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
+                                    </Border>
+                                </Panel>
                             </StackPanel>
-                            <Button Grid.Column="1" Classes="link" FontSize="14" Content="Goal &amp; history" VerticalAlignment="Center"
+                            <Button Grid.Column="1" Classes="link wideOnly" FontSize="14" Content="Goal &amp; history" VerticalAlignment="Center"
                                     Command="{Binding ShowCaloriesCommand}"/>
+                            <!-- Phones (the canvas): the goal chip on the right opens Calories -->
+                            <Button Grid.Column="1" Classes="goalChip phoneOnly" Command="{Binding ShowCaloriesCommand}"
+                                    Content="{Binding CalorieGoalType, TargetNullValue='Set a goal'}"
+                                    AutomationProperties.Name="Calorie goal and history"/>
                         </Grid>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="22">
                             <Grid Width="126" Height="126" ToolTip.Tip="{Binding CaloriesTitle}">

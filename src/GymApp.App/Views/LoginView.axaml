@@ -4,19 +4,34 @@
              xmlns:v="using:GymApp.App.Views"
              x:Class="GymApp.App.Views.LoginView"
              x:DataType="vm:LoginViewModel">
-    <!-- In the GainStreak look of the Gym App design canvas: one card on black, brand on top -->
+    <!-- In the GainStreak look of the Gym App design canvas: one card on black, brand on top. Phones follow the
+         GainStreak Mobile canvas instead (AuthStyles): no card, the brand large over a glow, a Log in / Create account switch -->
     <UserControl.Styles>
         <StyleInclude Source="/Views/AuthStyles.axaml"/>
     </UserControl.Styles>
-    <ScrollViewer Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
-        <StackPanel Spacing="20" Width="420" Margin="16,40" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Panel Background="{DynamicResource PageBg}">
+    <!-- Phones: a soft lime glow behind the brand (the GainStreak Mobile canvas) -->
+    <Ellipse Classes="authGlow phoneOnly"/>
+    <ScrollViewer TextElement.Foreground="{DynamicResource Ink}">
+        <StackPanel Classes="authColumn" Spacing="20">
+            <!-- Phones: the brand large and centred, then Log in / Create account -->
+            <StackPanel Classes="phoneOnly" Spacing="12" HorizontalAlignment="Center">
+                <Image Source="{StaticResource GainStreakLogo}" Width="72" Height="72" HorizontalAlignment="Center"/>
+                <TextBlock FontSize="26" FontWeight="ExtraBold" LetterSpacing="1" HorizontalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
+            </StackPanel>
+            <Border Classes="authSwitch phoneOnly">
+                <v:SegmentedPill SelectedIndex="0" PillInset="0">
+                    <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Log in"/>
+                    <Button Classes="seg" MinHeight="40" FontSize="14" Content="Create account" Command="{Binding GoToRegisterCommand}"/>
+                </v:SegmentedPill>
+            </Border>
             <!-- Brand -->
-            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <StackPanel Classes="wideOnly" Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                 <Image Source="{StaticResource GainStreakLogo}" Width="40" Height="40"/>
                 <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.4" VerticalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
             </StackPanel>
 
-            <Border Classes="card" Padding="32">
+            <Border Classes="card authCard">
                 <StackPanel Spacing="20">
                     <StackPanel Spacing="6" IsVisible="{Binding IsSigningIn}">
                         <TextBlock Text="Welcome back" FontSize="30" FontWeight="ExtraBold"/>
@@ -54,9 +69,13 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="Password" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox TextInputOptions.ContentType="Password" Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                <TextBox x:Name="PasswordBox" TextInputOptions.ContentType="Password" Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
                                          AutomationProperties.Name="Password"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                                <!-- Phones: show the password while typing it -->
+                                <Button x:Name="RevealButton" Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
+                                    <v:Icon x:Name="RevealIcon" Data="{StaticResource IcEye}"/>
+                                </Button>
                             </Panel>
                         </StackPanel>
 
@@ -105,8 +124,10 @@
 
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
-                <TextBlock Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" Classes="muted" TextWrapping="Wrap" MaxWidth="380"/>
+                <TextBlock Classes="muted wideOnly" Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="380"/>
+                <TextBlock Classes="muted phoneOnly" Text="Your workouts stay on this phone. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="300"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>
+    </Panel>
 </UserControl>

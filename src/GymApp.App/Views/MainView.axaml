@@ -9,7 +9,7 @@
              x:DataType="vm:MainViewModel">
     <!-- The whole app below the window (or the phone's screen): banners, the current screen and the feedback popup.
          The desktop's MainWindow hosts it; the phones show it directly. Under 700 px wide it gets the "phone" class
-         (MainView.axaml.cs): the screens hide their sidebar, the tab bar and the back bar show, popups become sheets.
+         (MainView.axaml.cs): the screens hide their sidebar, the app bar and the tab bar show, popups become sheets.
          On phones the code behind also keeps it clear of the notch, the home indicator and the keyboard. -->
 
     <DockPanel>
@@ -32,22 +32,11 @@
                 <Button Grid.Column="2" Content="Dismiss" Command="{Binding DismissUpdateNoticeCommand}"/>
             </Grid>
         </Border>
-        <!-- Phones, on a screen opened from a tab: back and the screen's name -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}"
-                BorderThickness="0,0,0,1" Padding="4,0,16,0" MinHeight="52" IsVisible="{Binding ShowsTopBar}">
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="4">
-                <Button Width="48" Height="48" Padding="0" Background="Transparent" BorderThickness="0"
-                        Foreground="{DynamicResource Ink}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                        Command="{Binding BackCommand}" AutomationProperties.Name="Back">
-                    <v:Icon Data="{StaticResource IcChevronLeft}" Width="24" Height="24" StrokeThickness="2.4"/>
-                </Button>
-                <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="17" FontWeight="Bold" VerticalAlignment="Center"
-                           Foreground="{DynamicResource Ink}" TextTrimming="CharacterEllipsis"/>
-            </Grid>
-        </Border>
+        <!-- Phones, after sign-in: the logo and streak, the brand, the inbox and profile -->
+        <v:AppBar DockPanel.Dock="Top" IsVisible="{Binding ShowsBars}"/>
         <!-- Phones: the tabs. Hidden while the keyboard is up -->
         <Panel x:Name="TabHost" DockPanel.Dock="Bottom">
-            <v:TabBar x:Name="Tabs" IsVisible="{Binding ShowsTabBar}"/>
+            <v:TabBar x:Name="Tabs" IsVisible="{Binding ShowsBars}"/>
         </Panel>
         <Panel x:Name="Body">
             <ContentControl Content="{Binding Current}" />

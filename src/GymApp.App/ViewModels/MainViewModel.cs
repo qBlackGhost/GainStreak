@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using GymApp.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GymApp.Contracts;
@@ -72,12 +74,12 @@ public partial class MainViewModel : ViewModelBase
         else ShowHome();
     }
 
-    // ===== Navigation (16d) =====
-    // Tab roots (Home, Workouts, Calories, Friends, More) clear the back stack; every other screen is pushed on it.
-    // Opening a screen already in the stack goes back to it instead, so a screen's own back button (Day's "Back"
+    // ===== Navigation (16d, after the GainStreak Mobile canvas in 16e) =====
+    // The tabs (Splits, Workouts, Home, Calories, Friends) clear the back stack; every other screen is pushed on it.
+    // Opening a screen already in the stack goes back to it instead, so a screen's own back button (Day's "Workouts"
     // calls ShowWorkouts, Exercise's ShowDay) never leaves a loop behind. Going back opens the screen again rather
     // than reusing it, so it shows what changed in the meantime, as those buttons always have. The desktop shows
-    // none of this; the phones show the tab bar and a back button (MainView).
+    // none of this; the phones show the app bar and the tab bar (MainView), and the system back button uses it.
 
     /// <summary>A screen in the back stack: its type, and how to open it again.</summary>
     private sealed record Entry(Type Type, Func<ViewModelBase> Open);
@@ -85,59 +87,47 @@ public partial class MainViewModel : ViewModelBase
     private readonly List<Entry> _back = [];
     private Entry? _current;
 
-    /// <summary>The tab of the screen at the bottom of the stack (a screen pushed from Home stays under Home), or null
-    /// on the screens before sign-in is done (login, register, profile setup).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsTabBar))]
-    public partial AppTab? SelectedTab { get; private set; }
+    /// <summary>The lit tab: the one the current screen belongs to, or null on a screen of no tab (Profile, Inbox)
+    /// and on the screens before sign-in is done.</summary>
+    [ObservableProperty] public partial AppTab? SelectedTab { get; private set; }
 
     /// <summary>Whether there's a screen to go back to.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsTopBar))]
-    public partial bool CanGoBack { get; private set; }
+    [ObservableProperty] public partial bool CanGoBack { get; private set; }
 
-    /// <summary>Under 700 px wide (MainView sets it): the tab bar and top bar instead of the sidebar.</summary>
+    /// <summary>A screen after sign-in (not login, register or the profile setup): it gets the app bar and tabs.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowsTabBar), nameof(ShowsTopBar))]
+    [NotifyPropertyChangedFor(nameof(ShowsBars))]
+    public partial bool IsSignedInScreen { get; private set; }
+
+    /// <summary>Under 700 px wide (MainView sets it): the app bar and the tab bar instead of the sidebar.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowsBars))]
     public partial bool IsPhone { get; set; }
 
-    /// <summary>The tab bar, on phones, on every screen after sign-in.</summary>
-    public bool ShowsTabBar => IsPhone && SelectedTab is not null;
+    /// <summary>The app bar and the tab bar, on phones, on every screen after sign-in.</summary>
+    public bool ShowsBars => IsPhone && IsSignedInScreen;
 
-    /// <summary>The top bar with the back button and the title, on phones, on a pushed screen.</summary>
-    public bool ShowsTopBar => IsPhone && CanGoBack;
+    /// <summary>The app bar's streak, refreshed whenever the screen changes.</summary>
+    [ObservableProperty] public partial int Streak { get; private set; }
 
-    /// <summary>The top bar's title on a pushed screen.</summary>
-    [ObservableProperty] public partial string Title { get; private set; } = "";
+    /// <summary>The app bar's avatar.</summary>
+    public string Initials => _session.CurrentUser?.Username is { Length: > 0 } name
+        ? name[..Math.Min(2, name.Length)].ToUpperInvariant() : "?";
 
-    /// <summary>The tab a screen belongs to when it's the root of the stack.</summary>
+    /// <summary>The tab a screen belongs to: null for the screens before sign-in and those the app bar opens.</summary>
     public static AppTab? TabOf(Type screen) => screen.Name switch
     {
-        nameof(LoginViewModel) or nameof(RegisterViewModel) or nameof(ProfileSetupViewModel) => null,
-        nameof(HomeViewModel) => AppTab.Home,
+        nameof(SplitsViewModel) or nameof(SplitDetailViewModel) or nameof(SplitEditorViewModel) => AppTab.Splits,
         nameof(WorkoutsViewModel) or nameof(DayViewModel) or nameof(ExerciseViewModel)
             or nameof(CustomExercisesViewModel) => AppTab.Workouts,
+        nameof(HomeViewModel) => AppTab.Home,
         nameof(CaloriesViewModel) => AppTab.Calories,
-        nameof(FriendsViewModel) => AppTab.Friends,
-        _ => AppTab.More,   // More and what it lists: Profile, Splits (and its screens), Map, Inbox
+        nameof(FriendsViewModel) or nameof(GymsViewModel) => AppTab.Friends,   // the Leaderboard / Map toggle
+        _ => null,   // Login, Register, ProfileSetup; Profile and Inbox (the app bar)
     };
 
-    private static string TitleOf(Type screen) => screen.Name switch
-    {
-        nameof(DayViewModel) => "Workout",
-        nameof(ExerciseViewModel) => "Exercise",
-        nameof(CustomExercisesViewModel) => "Custom exercises",
-        nameof(SplitsViewModel) => "Splits",
-        nameof(SplitDetailViewModel) => "Split",
-        nameof(SplitEditorViewModel) => "Edit split",
-        nameof(GymsViewModel) => "Map",
-        nameof(InboxViewModel) => "Inbox",
-        nameof(ProfileViewModel) => "Profile",
-        nameof(WorkoutsViewModel) => "Workouts",
-        nameof(CaloriesViewModel) => "Calories",
-        nameof(FriendsViewModel) => "Friends",
-        _ => "",
-    };
+    private static bool IsBeforeSignIn(Type screen) =>
+        screen == typeof(LoginViewModel) || screen == typeof(RegisterViewModel) || screen == typeof(ProfileSetupViewModel);
 
     /// <summary>Shows a screen. <paramref name="open"/> creates and loads it; it runs again when going back to it.</summary>
     private void Open(Func<ViewModelBase> open, bool root)
@@ -161,9 +151,18 @@ public partial class MainViewModel : ViewModelBase
     {
         _current = entry;
         Current = vm;
-        SelectedTab = TabOf(_back.Count > 0 ? _back[0].Type : entry.Type);
+        SelectedTab = TabOf(entry.Type);
         CanGoBack = _back.Count > 0;
-        Title = TitleOf(entry.Type);
+        IsSignedInScreen = !IsBeforeSignIn(entry.Type);
+        OnPropertyChanged(nameof(Initials));
+        if (IsSignedInScreen) _ = RefreshStreakAsync();
+    }
+
+    private async Task RefreshStreakAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        try { Streak = (await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today)).Current; }
+        catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "App bar streak"); }
     }
 
     /// <summary>Back (the phones' back button, Android's system back): closes an open popup first, then goes to the
@@ -179,7 +178,6 @@ public partial class MainViewModel : ViewModelBase
         return true;
     }
 
-    [RelayCommand] private void Back() => GoBack();
 
     public void ShowRegister() => Open(_sp.GetRequiredService<RegisterViewModel>, root: true);
     public void ShowLogin() => Open(_sp.GetRequiredService<LoginViewModel>, root: true);
@@ -188,10 +186,8 @@ public partial class MainViewModel : ViewModelBase
     public void ShowCalories() => Open(_sp.GetRequiredService<CaloriesViewModel>, root: true);
     /// <summary>Friends, with the leaderboard on the same screen.</summary>
     public void ShowFriends() => Open(_sp.GetRequiredService<FriendsViewModel>, root: true);
-    /// <summary>The phones' More tab: profile, splits, map, inbox, feedback.</summary>
-    public void ShowMore() => Open(_sp.GetRequiredService<MoreViewModel>, root: true);
+    public void ShowSplits() => Open(_sp.GetRequiredService<SplitsViewModel>, root: true);
 
-    public void ShowSplits() => Open(_sp.GetRequiredService<SplitsViewModel>, root: false);
     public void ShowProfile() => Open(_sp.GetRequiredService<ProfileViewModel>, root: false);
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
@@ -253,8 +249,8 @@ public partial class MainViewModel : ViewModelBase
     }, root: false);
 }
 
-/// <summary>The phones' tabs (TabBar), in their order.</summary>
-public enum AppTab { Home, Workouts, Calories, Friends, More }
+/// <summary>The phones' tabs (TabBar), in their order; Home is the raised one in the middle.</summary>
+public enum AppTab { Splits, Workouts, Home, Calories, Friends }
 
 /// <summary>A screen with popups of its own (a confirmation, a picker, a sheet) that back should close first.</summary>
 public interface IClosesOnBack

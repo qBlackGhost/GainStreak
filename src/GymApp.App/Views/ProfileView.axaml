@@ -70,6 +70,19 @@
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
+        <!-- Sizes the phones change (the GainStreak Mobile canvas), here so the ".phone" styles can override them -->
+        <Style Selector="Border.roomy"><Setter Property="Padding" Value="28"/></Style>
+        <Style Selector="Border#Avatar">
+            <Setter Property="Width" Value="72"/>
+            <Setter Property="Height" Value="72"/>
+        </Style>
+        <Style Selector="Button.wideSeg"><Setter Property="MinWidth" Value="170"/></Style>
+        <Style Selector=".phone Border.roomy"><Setter Property="Padding" Value="16"/></Style>
+        <Style Selector=".phone Border#Avatar">
+            <Setter Property="Width" Value="56"/>
+            <Setter Property="Height" Value="56"/>
+        </Style>
+        <Style Selector=".phone Button.wideSeg"><Setter Property="MinWidth" Value="0"/></Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Profile"/>
@@ -78,13 +91,14 @@
         <StackPanel Classes="page" Spacing="24">
             <!-- Header: who you are, your split, streak and level -->
             <Grid x:Name="Header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
-                <StackPanel Orientation="Horizontal" Spacing="20">
-                    <Border Width="72" Height="72" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
+                <!-- A grid, so the chips wrap on a phone -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
+                    <Border x:Name="Avatar" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="26" FontWeight="ExtraBold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <StackPanel Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Username}" FontSize="34" FontWeight="ExtraBold"/>
+                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Classes="pageTitle" Text="{Binding Username}" FontWeight="ExtraBold"/>
                         <WrapPanel ItemSpacing="8" LineSpacing="8">
                             <Button Classes="link" Foreground="{DynamicResource Ink}" FontSize="13" Command="{Binding ShowSplitsCommand}">
                                 <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="12,5">
@@ -106,7 +120,7 @@
                             </Border>
                         </WrapPanel>
                     </StackPanel>
-                </StackPanel>
+                </Grid>
                 <Button x:Name="CaloriesLink" Classes="btn outline" Padding="16,0" VerticalAlignment="Center"
                         Command="{Binding ShowCaloriesCommand}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
@@ -131,17 +145,20 @@
                 <StackPanel x:Name="LeftColumn" Spacing="24">
 
                     <!-- ===== Body data ===== -->
-                    <Border Classes="card" Padding="28">
+                    <Border Classes="card roomy">
                         <StackPanel Spacing="22">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="Body data" Classes="h2"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="14" Height="14"/>
-                                    <TextBlock Text="Stored only on this computer" FontSize="12" Classes="muted"/>
+                                    <TextBlock Classes="muted wideOnly" Text="Stored only on this computer" FontSize="12"/>
+                                    <TextBlock Classes="muted phoneOnly" Text="Only on this phone" FontSize="12"/>
                                 </StackPanel>
                             </Grid>
 
-                            <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18">
+                            <!-- Phones: each label above its field -->
+                            <v:PhoneGrid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18"
+                                         PhoneStack="True">
                                 <!-- Units -->
                                 <TextBlock Text="Units" Classes="formLabel"/>
                                 <StackPanel Grid.Column="1" Spacing="6">
@@ -163,9 +180,9 @@
                                     <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
                                         <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
                                             <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
-                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Male" Command="{Binding SelectMaleCommand}"/>
+                                                    MinHeight="40" FontSize="14" Classes.wideSeg="True" Content="Male" Command="{Binding SelectMaleCommand}"/>
                                             <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
-                                                    MinHeight="40" MinWidth="170" FontSize="14" Content="Female" Command="{Binding SelectFemaleCommand}"/>
+                                                    MinHeight="40" FontSize="14" Classes.wideSeg="True" Content="Female" Command="{Binding SelectFemaleCommand}"/>
                                         </v:SegmentedPill>
                                     </Border>
                                     <TextBlock Classes="fieldError" Text="{Binding SexError}"
@@ -251,7 +268,7 @@
                                     <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
                                                IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
-                            </Grid>
+                            </v:PhoneGrid>
 
                             <!-- Maintenance and save -->
                             <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
@@ -352,7 +369,7 @@
 
                 <StackPanel x:Name="RightColumn" Spacing="24">
                     <!-- ===== Home city ===== -->
-                    <Border Classes="card" Padding="28">
+                    <Border Classes="card roomy">
                         <StackPanel Spacing="16">
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Home city" Classes="h2"/>
@@ -563,13 +580,29 @@
                                             MinHeight="40" FontSize="14" Content="Dark" Command="{Binding SelectThemeCommand}" CommandParameter="2"/>
                                 </v:SegmentedPill>
                             </Border>
-                            <TextBlock Text="System follows your Windows or macOS setting." FontSize="12" Classes="muted"/>
+                            <TextBlock Classes="muted wideOnly" Text="System follows your Windows or macOS setting." FontSize="12"/>
+                            <TextBlock Classes="muted phoneOnly" Text="System follows your phone's light or dark setting." FontSize="12"/>
                             <TextBlock Text="{Binding ThemeError}" Classes="error" FontSize="12"
                                        IsVisible="{Binding ThemeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
             </Grid>
+
+            <!-- Phones: what the sidebar holds on wider screens (the GainStreak Mobile canvas) -->
+            <StackPanel Classes="phoneOnly" Spacing="10">
+                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Command="{Binding SendFeedbackCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <v:Icon Data="{StaticResource IcChat}" VerticalAlignment="Center"/><TextBlock Text="Send feedback" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Foreground="{DynamicResource ErrorText}"
+                        Command="{Binding LogOutCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <v:Icon Data="{StaticResource IcLogout}" VerticalAlignment="Center"/><TextBlock Text="Log out" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
 
             <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center"/>
         </StackPanel>

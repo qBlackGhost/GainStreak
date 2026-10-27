@@ -24,6 +24,7 @@ public partial class DayView : UserControl
     {
         InitializeComponent();
         Columns.SizeChanged += (_, e) => LayOut(e.NewSize.Width);
+        SizeChanged += (_, e) => AddSheetBody.Height = System.Math.Floor(e.NewSize.Height * 0.86);
 
         ChosenList.AddHandler(PointerPressedEvent, OnPressed, RoutingStrategies.Tunnel);
         ChosenList.AddHandler(PointerMovedEvent, OnMoved, RoutingStrategies.Tunnel);
@@ -38,11 +39,35 @@ public partial class DayView : UserControl
     /// Narrow: the cards stack and the page scrolls; the lists are capped (see the styles).</summary>
     private void LayOut(double width)
     {
+        PlacePicker(MainView.IsPhoneLayout(this));
         var stack = width < TwoColumnMinWidth;
         Columns.Classes.Set("stack", stack);
         Columns.RowDefinitions[0].Height = stack ? GridLength.Auto : new GridLength(1, GridUnitType.Star);   // stacked: no stretching
         PageScroll.VerticalScrollBarVisibility = stack ? Avalonia.Controls.Primitives.ScrollBarVisibility.Auto
                                                        : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+    }
+
+    /// <summary>Phones (the GainStreak Mobile canvas): the picker card lives in the bottom sheet, opened by "Add
+    /// exercises". Wider: back beside (or under) the day's list.</summary>
+    private void PlacePicker(bool phone)
+    {
+        if (phone && AddCard.Parent == Columns)
+        {
+            Columns.Children.Remove(AddCard);
+            AddSheetBody.Child = AddCard;
+        }
+        else if (!phone && AddCard.Parent == AddSheetBody)
+        {
+            AddSheetBody.Child = null;
+            Columns.Children.Add(AddCard);
+            if (Vm is { } vm) vm.IsAddOpen = false;
+        }
+    }
+
+    private void OnAddScrimPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (Vm is { } vm) vm.IsAddOpen = false;
+        e.Handled = true;
     }
 
     // ===== Drag to reorder (by the handle) =====

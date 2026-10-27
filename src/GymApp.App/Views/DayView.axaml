@@ -135,6 +135,14 @@
         <Style Selector="Grid.stack ScrollViewer.list">
             <Setter Property="MaxHeight" Value="480"/>
         </Style>
+        <!-- In the phones' sheet: the card fills it and its list takes the rest of the height -->
+        <Style Selector="Border#AddSheetBody Border#AddCard">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border#AddSheetBody ScrollViewer.list">
+            <Setter Property="MaxHeight" Value="Infinity"/>
+        </Style>
     </UserControl.Styles>
     <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
@@ -180,7 +188,7 @@
                                 <TextBlock Text="Exercises" Classes="h2"/>
                                 <TextBlock Text="{Binding SetsLabel}" FontSize="13" Classes="muted"/>
                             </StackPanel>
-                            <Button Grid.Column="1" Classes="btn outline small" MinHeight="40" VerticalAlignment="Top"
+                            <Button Grid.Column="1" Classes="btn outline small wideOnly" MinHeight="40" VerticalAlignment="Top"
                                     Command="{Binding ToggleCopyCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <v:Icon Data="{StaticResource IcCopy}" StrokeThickness="2.2" Width="15" Height="15"/>
@@ -188,8 +196,25 @@
                                 </StackPanel>
                             </Button>
                         </Grid>
-                        <TextBlock DockPanel.Dock="Bottom" Margin="0,16,0,0" FontSize="12" Foreground="{DynamicResource Faint}"
+                        <TextBlock DockPanel.Dock="Bottom" Classes="wideOnly" Margin="0,16,0,0" FontSize="12" Foreground="{DynamicResource Faint}"
                                    Text="Drag the handle to reorder (or use the arrow keys on it). Removing an exercise keeps its logged sets and PR."/>
+                        <TextBlock DockPanel.Dock="Bottom" Classes="phoneOnly" Margin="0,12,0,0" FontSize="12" Foreground="{DynamicResource Faint}"
+                                   Text="Hold the handle to reorder. Removing an exercise keeps its logged sets and PR."/>
+                        <!-- Phones (the canvas): the picker opens as a sheet; copy is down here instead of up top -->
+                        <Grid DockPanel.Dock="Bottom" Classes="phoneOnly" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,14,0,0">
+                            <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="48" Command="{Binding OpenAddCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.6" Width="16" Height="16"/>
+                                    <TextBlock Text="Add exercises" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="1" Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Command="{Binding ToggleCopyCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <v:Icon Data="{StaticResource IcCopy}" StrokeThickness="2.2" Width="16" Height="16"/>
+                                    <TextBlock Text="Copy a day" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
 
                         <Panel>
                             <Panel IsVisible="{Binding IsEmpty}" MinHeight="200" VerticalAlignment="Top">
@@ -198,8 +223,10 @@
                                     <v:Icon Data="{StaticResource IcDumbbell}" Stroke="{DynamicResource Faint}" StrokeThickness="1.8" Width="30" Height="30"
                                             HorizontalAlignment="Center"/>
                                     <TextBlock Text="No exercises yet" FontSize="15" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Pick from the list on the right, or copy another day's exercises." FontSize="13"
-                                               Classes="muted" TextAlignment="Center" LineHeight="19"/>
+                                    <TextBlock Classes="muted wideOnly" Text="Pick from the list on the right, or copy another day's exercises." FontSize="13"
+                                               TextAlignment="Center" LineHeight="19"/>
+                                    <TextBlock Classes="muted phoneOnly" Text="Add from the list, or copy another day's exercises." FontSize="13"
+                                               TextAlignment="Center" LineHeight="19"/>
                                 </StackPanel>
                             </Panel>
                             <ScrollViewer Classes="list" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !IsEmpty}">
@@ -212,7 +239,8 @@
                                             <Grid RowDefinitions="Auto,Auto,Auto">
                                                 <Border Classes="dropLine" Margin="0,-6,0,3" IsVisible="{Binding IsDropAbove}"/>
                                                 <Border Grid.Row="1" Classes="exRow" Classes.dragging="{Binding IsDragging}">
-                                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
+                                                    <v:PhoneGrid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12"
+                                                                 PhoneColumns="Auto,Auto,*,Auto" PhoneColumnSpacing="8">
                                                         <!-- Drag handle; also focusable, so the arrow keys move the row -->
                                                         <Border x:Name="Handle" Width="28" Height="44" CornerRadius="8" Focusable="True"
                                                                 ToolTip.Tip="Drag to reorder" Tag="{Binding}"
@@ -220,19 +248,21 @@
                                                             <Path Data="{StaticResource IcGrip}" Fill="{DynamicResource Faint}" Width="16" Height="20"
                                                                   Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
-                                                        <Border Grid.Column="1" Width="28" Height="28" CornerRadius="8" Background="{DynamicResource Fill3}"
+                                                        <!-- The number: not on phones, where the name needs the room -->
+                                                        <Border Grid.Column="1" Classes="wideOnly" Width="28" Height="28" CornerRadius="8" Background="{DynamicResource Fill3}"
                                                                 VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Number}" Classes="mono light" FontSize="13" FontWeight="Bold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
                                                         <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold"/>
-                                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <!-- Wraps, so the planned sets go under the group on a phone -->
+                                                            <WrapPanel ItemSpacing="8" LineSpacing="3">
                                                                 <Border Background="{DynamicResource Fill3}" CornerRadius="5" Padding="7,1">
                                                                     <TextBlock Text="{Binding Group}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
                                                                 </Border>
                                                                 <TextBlock Text="{Binding Planned}" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
-                                                            </StackPanel>
+                                                            </WrapPanel>
                                                         </StackPanel>
                                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                             <Button Classes="btn light small" Content="Open" Command="{Binding OpenCommand}"/>
@@ -242,7 +272,7 @@
                                                                 <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="15" Height="15"/>
                                                             </Button>
                                                         </StackPanel>
-                                                    </Grid>
+                                                    </v:PhoneGrid>
                                                 </Border>
                                                 <Border Grid.Row="2" Classes="dropLine" Margin="0,3,0,-6" IsVisible="{Binding IsDropBelow}"/>
                                             </Grid>
@@ -260,7 +290,8 @@
                         <StackPanel DockPanel.Dock="Top" Spacing="16" Margin="0,0,0,16">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="Add exercises" Classes="h2" VerticalAlignment="Center"/>
-                                <Panel Grid.Column="1">
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <Panel>
                                     <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="10" RadiusY="10"/>
                                     <Button Classes="btn small" MinHeight="40" Background="Transparent" Foreground="{DynamicResource Ink}"
                                             Command="{Binding NewExerciseCommand}" ToolTip.Tip="Create or manage your own exercises">
@@ -270,6 +301,9 @@
                                         </StackPanel>
                                     </Button>
                                 </Panel>
+                                <!-- Phones: closes the sheet -->
+                                <Button Classes="btn primary small phoneOnly" MinHeight="40" Content="Done" Command="{Binding CloseAddCommand}"/>
+                                </StackPanel>
                             </Grid>
                             <Panel>
                                 <TextBox Classes="field" PlaceholderText="Search exercises" Text="{Binding Search}"
@@ -334,6 +368,14 @@
         </DockPanel>
         </ScrollViewer>
     </DockPanel>
+
+    <!-- Phones: the picker card (AddCard) moves in here, a sheet from the bottom over most of the screen
+         (DayView.axaml.cs moves it) -->
+    <Panel x:Name="AddSheet" IsVisible="{Binding IsAddOpen}">
+        <Border Background="{DynamicResource Scrim}" PointerPressed="OnAddScrimPressed"/>
+        <Border x:Name="AddSheetBody" VerticalAlignment="Bottom" Background="{DynamicResource PageBg}"
+                CornerRadius="22,22,0,0" ClipToBounds="True"/>
+    </Panel>
 
     <!-- Copy from another day -->
     <Border Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="{Binding IsCopyOpen}" Padding="24">

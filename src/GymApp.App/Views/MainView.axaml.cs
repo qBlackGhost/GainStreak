@@ -7,6 +7,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using GymApp.App.ViewModels;
 
 namespace GymApp.App.Views;
@@ -50,6 +51,10 @@ public partial class MainView : UserControl
 
     private static bool OnPhone => GymApplication.Platform is PhonePlatform;
 
+    /// <summary>Whether <paramref name="view"/> is laid out for a phone: under a MainView with the "phone" class. For
+    /// the few screens that move a part around in code rather than with styles.</summary>
+    public static bool IsPhoneLayout(Visual view) => view.FindAncestorOfType<MainView>()?.Classes.Contains("phone") == true;
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -91,7 +96,7 @@ public partial class MainView : UserControl
 
     private void OnShellChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.ShowsTabBar)) ApplyInsets();
+        if (e.PropertyName == nameof(MainViewModel.ShowsBars)) ApplyInsets();
     }
 
     // The page colour behind the status bar and the home indicator too, so the status bar's icons are dark on the
@@ -118,7 +123,7 @@ public partial class MainView : UserControl
         if (_top is null) return;
         var safe = _insets?.SafeAreaPadding ?? default;
         var keyboard = KeyboardOverlap();
-        var tabs = _vm?.ShowsTabBar == true;
+        var tabs = _vm?.ShowsBars == true;
         TabHost.IsVisible = keyboard == 0;
         Tabs.Padding = new Thickness(0, 0, 0, safe.Bottom);
         Padding = new Thickness(safe.Left, safe.Top, safe.Right, keyboard > 0 ? keyboard : tabs ? 0 : safe.Bottom);

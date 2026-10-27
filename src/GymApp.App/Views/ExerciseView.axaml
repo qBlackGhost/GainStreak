@@ -36,6 +36,18 @@
             <Setter Property="FontWeight" Value="Medium"/>
             <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
         </Style>
+        <Style Selector="TextBlock.prompt"><Setter Property="Margin" Value="42,0,0,0"/></Style>
+        <Style Selector="TextBlock.totalHint"><Setter Property="Margin" Value="242,0,0,0"/></Style>
+        <Style Selector="TextBlock.exTitle"><Setter Property="FontSize" Value="40"/></Style>
+        <Style Selector="Border#SetsCard"><Setter Property="Padding" Value="28"/></Style>
+        <!-- Phones (the canvas): the rows' narrower columns (PhoneGrid) move these under the weight -->
+        <Style Selector=".phone TextBlock.prompt"><Setter Property="Margin" Value="22,0,0,0"/></Style>
+        <Style Selector=".phone TextBlock.totalHint"><Setter Property="Margin" Value="146,0,0,0"/></Style>
+        <Style Selector=".phone Border#SetsCard"><Setter Property="Padding" Value="16"/></Style>
+        <Style Selector=".phone TextBlock.exTitle"><Setter Property="FontSize" Value="30"/></Style>
+        <!-- In the narrow set rows: no 64 px floor on the boxes, and the type switch's words fit -->
+        <Style Selector=".phone v|PhoneGrid TextBox"><Setter Property="MinWidth" Value="0"/></Style>
+        <Style Selector=".phone v|PhoneGrid Button.seg"><Setter Property="FontSize" Value="12"/></Style>
         <Style Selector="TextBlock.prompt.newpr">
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
@@ -112,7 +124,7 @@
                 </Button>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="10">
-                        <TextBlock Text="{Binding Title}" FontSize="40" FontWeight="ExtraBold"/>
+                        <TextBlock Classes="exTitle" Text="{Binding Title}" FontWeight="ExtraBold"/>
                         <WrapPanel ItemSpacing="8" LineSpacing="8">
                             <Border Classes="pill" BorderThickness="0" Background="{DynamicResource Fill2}" Padding="11,4">
                                 <TextBlock Text="{Binding MuscleText}" FontSize="12" FontWeight="SemiBold" Classes="light"/>
@@ -124,9 +136,10 @@
                                     IsVisible="{Binding PositionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                 <TextBlock Text="{Binding PositionText}" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
                             </Border>
+                            <TextBlock Classes="muted phoneOnly" Text="{Binding DateText}" FontSize="13" VerticalAlignment="Center"/>
                         </WrapPanel>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"
+                    <TextBlock Grid.Column="1" Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted wideOnly"
                                VerticalAlignment="Bottom"/>
                 </Grid>
             </StackPanel>
@@ -150,7 +163,7 @@
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
 
                 <!-- ===== Today's sets ===== -->
-                <Border x:Name="SetsCard" Classes="card" Padding="28" VerticalAlignment="Top">
+                <Border x:Name="SetsCard" Classes="card" VerticalAlignment="Top">
                     <StackPanel Spacing="20">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
@@ -230,18 +243,19 @@
 
                         <!-- The sets -->
                         <StackPanel Spacing="4" Grid.IsSharedSizeScope="True">
-                            <Grid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4">
-                                <TextBlock Text="SET" Classes="colHead"/>
+                            <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4" PhoneColumns="14,116,*,0.8*,44" PhoneColumnSpacing="8">
+                                <TextBlock Text="SET" Classes="colHead wideOnly"/>
+                                <TextBlock Text="#" Classes="colHead phoneOnly"/>
                                 <TextBlock Grid.Column="1" Text="TYPE" Classes="colHead"/>
                                 <TextBlock Grid.Column="2" Text="{Binding WeightHeader}" Classes="colHead"/>
                                 <TextBlock Grid.Column="3" Text="REPS" Classes="colHead"/>
-                            </Grid>
+                            </v:PhoneGrid>
                             <ItemsControl ItemsSource="{Binding Rows}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:SetRowViewModel">
                                         <Border BorderBrush="{DynamicResource Fill}" BorderThickness="0,1,0,0" Padding="0,8">
                                             <StackPanel Spacing="6">
-                                                <Grid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10">
+                                                <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" PhoneColumns="14,116,*,0.8*,44" PhoneColumnSpacing="8">
                                                     <TextBlock Text="{Binding Number}" Classes="mono soft" FontSize="14" FontWeight="Bold"
                                                                VerticalAlignment="Center"/>
                                                     <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
@@ -264,9 +278,9 @@
                                                             AutomationProperties.Name="{Binding Number, StringFormat='Remove set {0}'}">
                                                         <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="14" Height="14"/>
                                                     </Button>
-                                                </Grid>
+                                                </v:PhoneGrid>
                                                 <!-- Per side: what the row adds up to, under the weight -->
-                                                <TextBlock FontSize="12" Classes="muted" Margin="242,0,0,0" IsVisible="{Binding HasTotalHint}">
+                                                <TextBlock FontSize="12" Classes="muted totalHint" IsVisible="{Binding HasTotalHint}">
                                                     <Run Text="="/>
                                                     <Run Text="{Binding TotalHint}" FontFamily="{StaticResource Mono}" FontWeight="Bold"
                                                          Foreground="{DynamicResource AccentInk}"/>
@@ -274,7 +288,7 @@
                                                     <Run Text="{Binding TotalDetail}" Foreground="{DynamicResource Faint}"/>
                                                 </TextBlock>
                                                 <TextBlock Classes="prompt" Classes.newpr="{Binding IsNewPr}" Classes.tie="{Binding IsTie}"
-                                                           Text="{Binding Prompt}" Margin="42,0,0,0" IsVisible="{Binding HasPrompt}"/>
+                                                           Text="{Binding Prompt}" IsVisible="{Binding HasPrompt}"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>

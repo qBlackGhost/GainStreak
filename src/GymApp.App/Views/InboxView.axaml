@@ -37,6 +37,9 @@
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
+        <!-- Left on wide screens; the phones' page is the full width -->
+        <Style Selector="StackPanel#Page"><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+        <Style Selector=".phone StackPanel#Page"><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
         <!-- The unread dot: always there so rows line up, filled only while new -->
         <Style Selector="Ellipse.dot">
             <Setter Property="Width" Value="8"/>
@@ -53,14 +56,14 @@
         <v:Sidebar Current="Inbox"/>
 
         <ScrollViewer>
-        <StackPanel Classes="page" Spacing="24" MaxWidth="880" HorizontalAlignment="Left">
+        <StackPanel x:Name="Page" Classes="page" Spacing="24" MaxWidth="880">
             <!-- Header -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6">
-                    <TextBlock Text="Inbox" FontSize="34" FontWeight="ExtraBold"/>
+                    <TextBlock Classes="pageTitle" Text="Inbox" FontWeight="ExtraBold"/>
                     <TextBlock Text="{Binding Subtitle}" FontSize="14" Classes="soft"/>
                 </StackPanel>
-                <Button Grid.Column="1" Classes="btn outline small" VerticalAlignment="Bottom" Content="Mark all read"
+                <Button Classes="btn outline small headerActions" VerticalAlignment="Bottom" Content="Mark all read"
                         Command="{Binding MarkAllReadCommand}"/>
             </Grid>
 

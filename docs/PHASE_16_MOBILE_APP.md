@@ -180,6 +180,26 @@ Check each one at 360 × 740 (a small Android), 393 × 852 (iPhone 15/16) and 43
 
 **Tests:** the existing view model tests cover behaviour. Add none per layout; report the checks above with a screenshot per screen per theme at 393 × 852.
 
+**As built, first review stop (2026-10-28):** the layouts follow the **GainStreak Mobile** design canvas (claude.ai artifact "GainStreak Mobile"; the Log in / Create account artboard was added for 16e). It changes the 16d shell, as decided with the user:
+- **Shell:** tabs Splits, Workouts, Home (a raised circle in the middle, lime when current), Calories, Friends; no More tab. Every screen after sign-in gets the **app bar**: the logo (Home) and the streak, the brand, the inbox bell with its badge, the profile avatar. No back bar: pushed screens keep their own back button (Day's "Workouts"), and Android's back uses the stack. The lit tab is the current screen's own (Day lights Workouts even from Home); Profile and Inbox light none. The Friends tab holds the leaderboard and the map, with a Leaderboard / Map switch at the top of both. Profile ends with Send feedback and Log out on phones.
+- **Sheets** come up from the bottom, as tall as their content up to 88% of the screen, rounded on top (the canvas), not full-screen.
+- **Phone-only and wide-only parts:** the classes `phoneOnly` and `wideOnly` (IronlogStyles). They can't hide an element that binds its own `IsVisible`; wrap it. Sizes the phones change move from the elements into named styles with the same desktop values, since a style can't beat a local value.
+- **Login and Register:** no card; the brand large and centred over a lime glow, a Log in / Create account switch, a show-password button, "on this phone" in the privacy line.
+- **Home:** already in the canvas's order; the phones get its sizes (16 px page, 26 px greeting, 88 px streak), This week without a card and the legend under the tiles, and the calorie goal as a chip that opens Calories.
+- **Day:** the picker moves into a bottom sheet (86% high) behind "Add exercises", with "Copy a day" beside it and a Done button in the sheet. As on desktop, adding an exercise opens it; the canvas's sheet stays open and marks it "Added" instead (a behaviour change, so not made).
+- **Check-in:** the keyboard's Next key goes weight → reps → the next set (phones only).
+- **Checked:** Android emulator (Pixel 7, API 36), light: app bar, tab bar, Profile's log out, Log in and Create account, Home with a split chosen, Day and its add sheet, the check-in sheet and Next. iOS Simulator: the shell and Home start. Not yet: dark theme, 360 and 430 px widths, the largest text size, screenshots per screen. Found for 16f: iOS has no monospace font the app names ("0 / 4 done" falls back to a typewriter face).
+
+**As built, screens 4 to 9 (2026-10-28):**
+- **Tools for the rest:** `PhoneGrid` (a Grid whose columns change on phones, or whose children stack one under another, label above field). The shared page header (`Grid.pageHeader`, `TextBlock.pageTitle`, `.headerActions`): the title at 34 px on desktop and 28 on phones, the header's buttons beside it on desktop and under it on phones. On phones, cards have 16 px padding, card titles (`h2`) are 18 px, and the page has 16 px margins.
+- **Exercise:** the set rows take the canvas's columns (#, type 116, kg, reps, delete 44 for the touch minimum) and drop the text boxes' 64 px minimum width; the date goes under the title. **Custom exercises:** unchanged (one column already).
+- **Workouts:** the header's buttons under the title (they had squeezed the title out); the week tiles as on Home. **Splits:** no "Dashboard" back button on phones (a tab). **Split detail:** the week tiles fit; "Who uses it" puts the donut above its legend. **Split editor:** a row per day (the day, then its name) instead of seven columns.
+- **Calories:** a 140 px ring, Goal and Eaten as rows with the number on the right. **Friends:** the privacy line wraps; leaderboard rows narrower, and the This week / All time switch under the title. **Map:** already fits; unchanged. **Inbox:** the full width.
+- **Profile:** Body data puts each label above its field; the header's chips wrap; Male / Female lose their 170 px minimum; "Only on this phone" and "follows your phone's light or dark setting". **Points history:** the filter's words fit. **Feedback:** the bottom sheet as is.
+- **Day:** the row number is gone on phones and the planned sets wrap under the group, so names fit at 360 px. **Home:** at 360 px the week tile's mark goes under the day.
+- **Checked (2026-10-28):** Android emulator, light at 393 px wide: every screen above. Dark at 393: Profile, the Feedback sheet. Dark at 360: Home, Workouts, Day, Exercise's set rows, Calories, Friends. Not checked: 430 px, the largest text size, iOS for these screens, the desktop app by hand, and screenshots per screen per theme as files (they were looked at, not kept).
+- **Left as they were:** Points history's row icons are taller than the canvas's, because Home's week-tile style reaches into the popup (on desktop too). The Map is a card in the page rather than filling the screen above the list.
+
 ---
 
 ## 16f. Platform touches

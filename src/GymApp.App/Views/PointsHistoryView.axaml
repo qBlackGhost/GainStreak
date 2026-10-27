@@ -78,6 +78,12 @@
             <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
             <Setter Property="Foreground" Value="{DynamicResource Light}"/>
         </Style>
+        <!-- The filter's words; smaller on phones so "Workouts" fits a quarter of the width -->
+        <Style Selector="Button.filter"><Setter Property="FontSize" Value="14"/></Style>
+        <Style Selector=".phone Button.filter">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
     </UserControl.Styles>
     <Panel TextElement.Foreground="{DynamicResource Ink}">
         <!-- The dimmed page; a click on it closes the popup -->
@@ -125,13 +131,13 @@
 
                         <Border Classes="track">
                             <v:SegmentedPill SelectedIndex="{Binding FilterIndex}" PillInset="0">
-                                <Button Classes="seg" Classes.on="{Binding IsAll}" MinHeight="40" FontSize="14"
+                                <Button Classes="seg" Classes.on="{Binding IsAll}" MinHeight="40" Classes.filter="True"
                                         Content="All" Command="{Binding ShowAllCommand}"/>
-                                <Button Classes="seg" Classes.on="{Binding IsWorkouts}" MinHeight="40" FontSize="14"
+                                <Button Classes="seg" Classes.on="{Binding IsWorkouts}" MinHeight="40" Classes.filter="True"
                                         Content="Workouts" Command="{Binding ShowWorkoutsCommand}"/>
-                                <Button Classes="seg" Classes.on="{Binding IsWeeks}" MinHeight="40" FontSize="14"
+                                <Button Classes="seg" Classes.on="{Binding IsWeeks}" MinHeight="40" Classes.filter="True"
                                         Content="Weeks" Command="{Binding ShowWeeksCommand}"/>
-                                <Button Classes="seg" Classes.on="{Binding IsCalories}" MinHeight="40" FontSize="14"
+                                <Button Classes="seg" Classes.on="{Binding IsCalories}" MinHeight="40" Classes.filter="True"
                                         Content="Calories" Command="{Binding ShowCaloriesCommand}"/>
                             </v:SegmentedPill>
                         </Border>

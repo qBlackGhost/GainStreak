@@ -1,0 +1,75 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.AppBar"
+             x:DataType="vm:MainViewModel">
+    <!-- The phones' bar along the top of every screen after sign-in (the GainStreak Mobile canvas): the logo (Home)
+         and the streak on the left, the brand in the middle, the inbox and the profile on the right -->
+    <UserControl.Styles>
+        <Style Selector="Button.bare">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Border Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1"
+            MinHeight="64" Padding="14,8">
+        <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <Button Classes="bare" Click="OnHome" AutomationProperties.Name="GainStreak home">
+                    <Image Source="{StaticResource GainStreakLogo}" Width="36" Height="36"/>
+                </Button>
+                <Border Height="26" Padding="8,0" CornerRadius="13" Background="{DynamicResource Fill}" VerticalAlignment="Center"
+                        AutomationProperties.Name="{Binding Streak, StringFormat='{}{0} day streak'}">
+                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                        <Path Data="{StaticResource IcFlame}" Fill="#FF8A2A" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Streak}" Classes="mono" FontSize="13" FontWeight="Bold" Foreground="#FF8A2A"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Grid.Column="1" FontSize="19" FontWeight="ExtraBold" LetterSpacing="0.6" VerticalAlignment="Center"
+                       Foreground="{DynamicResource Ink}"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Button x:Name="InboxButton" Classes="bare" Click="OnInbox" AutomationProperties.Name="Inbox">
+                    <Panel>
+                        <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Fill}">
+                            <v:Icon Data="{StaticResource IcBell}" Width="19" Height="19" Stroke="{DynamicResource Ink}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <!-- New in the inbox -->
+                        <Border x:Name="InboxBadge" IsVisible="False" MinWidth="18" Height="18" Padding="5,0" CornerRadius="9"
+                                Background="{DynamicResource Accent}" BorderBrush="{DynamicResource PageBg}" BorderThickness="2"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-2,-2,0">
+                            <TextBlock x:Name="InboxText" Foreground="Black" FontSize="10" FontWeight="ExtraBold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Panel>
+                </Button>
+                <Button Classes="bare" Click="OnProfile" AutomationProperties.Name="Profile">
+                    <Border Width="40" Height="40" CornerRadius="20" Padding="2" BorderThickness="2"
+                            BorderBrush="{DynamicResource AccentInk}">
+                        <Border CornerRadius="16" Background="{DynamicResource Inverse}">
+                            <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="12" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Border>
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>
