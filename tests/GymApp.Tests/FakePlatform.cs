@@ -29,6 +29,10 @@ public sealed class FakePlatform : IPlatform
     public bool CanOpenStorePage { get; set; }
     public int StorePageOpened { get; private set; }
     public void OpenStorePage() => StorePageOpened++;
+
+    /// <summary>The reminders' scheduler; none unless a test sets one.</summary>
+    public INotificationScheduler Notifications { get; set; } = NoNotificationScheduler.Instance;
+    public INotificationScheduler CreateNotificationScheduler() => Notifications;
     public void OnFrameworkReady() { }
     public Window CreateWindow(Control content, bool isStartupError) => throw new NotSupportedException();
     public void OnShellReady(MainViewModel shell, ErrorLog log) { }

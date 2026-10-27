@@ -1173,6 +1173,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int>("LongestStreak")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("MissedDayReminderEnabled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1185,6 +1188,9 @@ namespace GymApp.Data.Migrations
 
                     b.Property<string>("RememberTokenHash")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("RemindersEnabled")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("SelectedCity")
                         .HasColumnType("TEXT");
@@ -1203,6 +1209,12 @@ namespace GymApp.Data.Migrations
 
                     b.Property<string>("ThemePreference")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("TrainingReminderEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<TimeOnly>("TrainingReminderTime")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Username")

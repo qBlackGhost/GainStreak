@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 19,
+                propertyCount: 23,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -87,6 +87,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(User).GetField("<LongestStreak>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0);
 
+            var missedDayReminderEnabled = runtimeEntityType.AddProperty(
+                "MissedDayReminderEnabled",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("MissedDayReminderEnabled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<MissedDayReminderEnabled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
             var passwordHash = runtimeEntityType.AddProperty(
                 "PasswordHash",
                 typeof(string),
@@ -113,6 +120,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(User).GetProperty("RememberTokenHash", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(User).GetField("<RememberTokenHash>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
+
+            var remindersEnabled = runtimeEntityType.AddProperty(
+                "RemindersEnabled",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("RemindersEnabled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<RemindersEnabled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var selectedCity = runtimeEntityType.AddProperty(
                 "SelectedCity",
@@ -156,6 +170,20 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(User).GetField("<ThemePreference>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 providerPropertyType: typeof(string));
             themePreference.SetSentinelFromProviderValue("System");
+
+            var trainingReminderEnabled = runtimeEntityType.AddProperty(
+                "TrainingReminderEnabled",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("TrainingReminderEnabled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<TrainingReminderEnabled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var trainingReminderTime = runtimeEntityType.AddProperty(
+                "TrainingReminderTime",
+                typeof(TimeOnly),
+                propertyInfo: typeof(User).GetProperty("TrainingReminderTime", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<TrainingReminderTime>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: new TimeOnly(0, 0, 0));
 
             var username = runtimeEntityType.AddProperty(
                 "Username",

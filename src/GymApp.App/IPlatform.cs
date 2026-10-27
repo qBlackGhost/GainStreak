@@ -45,4 +45,7 @@ public interface IPlatform
     /// <summary>Called once the shell exists. Desktop: starts the update download, which offers "Restart now"
     /// through <see cref="MainViewModel.RestartForUpdate"/>.</summary>
     void OnShellReady(MainViewModel shell, ErrorLog log);
+
+    /// <summary>The reminders' local notifications (16g); the desktop's does nothing.</summary>
+    INotificationScheduler CreateNotificationScheduler();
 }

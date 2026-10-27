@@ -200,6 +200,11 @@ public static class StreakCalculator
         if (outcomes is not null) outcomes[day] = outcome;
     }
 
+    /// <summary>Whether <paramref name="day"/> is a training day under the schedule in force on it (every day, with no
+    /// schedule). The reminders (16g) plan with it.</summary>
+    public static bool IsTrainingDay(IReadOnlyList<ScheduleChange> schedule, DateOnly day) =>
+        IsTraining(schedule.OrderBy(s => s.EffectiveFrom).ToList(), day);
+
     private static bool IsTraining(List<ScheduleChange> ordered, DateOnly d)
     {
         if (ordered.Count == 0) return true;

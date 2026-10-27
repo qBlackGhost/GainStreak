@@ -60,8 +60,14 @@ public static class AppServices
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<SessionService>(),
                 sp.GetRequiredService<StatsProjectionService>()));
-            sc.AddSingleton<ISocialSyncHooks>(sp => sp.GetRequiredService<SocialSync>());
+            // The reminders replan on the same changes (16g)
+            sc.AddSingleton<ISocialSyncHooks>(sp => new ReminderHooks(sp.GetRequiredService<SocialSync>(),
+                sp.GetRequiredService<ReminderSync>()));
         }
+        // Reminders (16g): planned here, scheduled by the head
+        sc.AddSingleton(_ => platform.CreateNotificationScheduler());
+        sc.AddTransient(sp => new ReminderService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
+        sc.AddSingleton<ReminderSync>();
         sc.AddSingleton<MainViewModel>();
         sc.AddSingleton<Func<MainViewModel>>(sp => () => sp.GetRequiredService<MainViewModel>());
         sc.AddTransient<LoginViewModel>();

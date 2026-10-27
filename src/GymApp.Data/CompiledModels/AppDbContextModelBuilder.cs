@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("8283a001-7ed3-4b0d-9138-3e9360e3023a"), entityTypeCount: 21)
+            : base(skipDetectChanges: false, modelId: new Guid("52eef600-3fe0-43d3-ba64-36e3666888a4"), entityTypeCount: 21)
         {
         }
 

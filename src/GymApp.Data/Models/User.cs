@@ -34,6 +34,12 @@ public class User
 
     public ThemePreference ThemePreference { get; set; } = ThemePreference.System;   // applied at sign-in (12e)
 
+    // Reminders on the phones (16g): off until the user turns them on in Profile
+    public bool RemindersEnabled { get; set; }
+    public bool TrainingReminderEnabled { get; set; } = true;
+    public TimeOnly TrainingReminderTime { get; set; } = new(18, 0);
+    public bool MissedDayReminderEnabled { get; set; } = true;
+
     public List<WorkoutLog> WorkoutLogs { get; set; } = new();
     public List<CalorieLog> CalorieLogs { get; set; } = new();
 }

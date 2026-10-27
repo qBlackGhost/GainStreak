@@ -105,7 +105,7 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
         return StreakCalculator.LastBreak(dates, schedule, choices, today);
     }
 
-    private static async Task<(List<DateOnly> Dates, List<ScheduleChange> Schedule, Dictionary<DateOnly, MissChoice> Choices)>
+    internal static async Task<(List<DateOnly> Dates, List<ScheduleChange> Schedule, Dictionary<DateOnly, MissChoice> Choices)>
         LoadAsync(AppDbContext db, int userId)
     {
         var dates = await db.WorkoutLogs.Where(w => w.UserId == userId).Select(w => w.Date).ToListAsync();

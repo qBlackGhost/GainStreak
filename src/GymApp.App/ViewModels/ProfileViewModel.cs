@@ -59,16 +59,22 @@ public partial class ProfileViewModel : ViewModelBase
     private readonly Func<MainViewModel> _shell;
 
     public ProfileViewModel(ProfileService profiles, IAccountService accounts, GeocodingService geocoding,
-        CityService cities, SessionService session, Func<MainViewModel> shell)
+        CityService cities, SessionService session, Func<MainViewModel> shell,
+        ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync)
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
+        Reminders = new RemindersViewModel(reminders, notifications, reminderSync, () => session.CurrentUser?.Id);
+        _ = Reminders.LoadAsync();
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
         ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
         _ = ReloadAsync();
     }
 
     private int UserId => _session.CurrentUser!.Id;
+
+    /// <summary>Reminders (16g): the phones only.</summary>
+    public RemindersViewModel Reminders { get; }
     private static DateOnly Today => AppClock.Today;
 
     public IReadOnlyList<Sex> Sexes { get; } = Enum.GetValues<Sex>();

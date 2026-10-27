@@ -566,6 +566,43 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- ===== Reminders (16g): the phones only; off until turned on, which asks to notify ===== -->
+                    <Border Classes="card" IsVisible="{Binding Reminders.IsSupported}">
+                        <StackPanel Spacing="14" DataContext="{Binding Reminders}" x:DataType="vm:RemindersViewModel">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Reminders" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="A nudge on training days, and the morning after a missed one." FontSize="12" Classes="muted"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn}" OnContent="" OffContent=""
+                                              VerticalAlignment="Center" AutomationProperties.Name="Reminders"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Note}" Classes="error" FontSize="13" TextWrapping="Wrap"
+                                       IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <StackPanel Spacing="14" IsVisible="{Binding IsOn}">
+                                <Border Height="1" Background="{DynamicResource Divider}"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Training days" FontSize="14" Classes="light"/>
+                                        <TextBlock Text="If you haven't checked in by then." FontSize="12" Classes="muted"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrainingOn}" OnContent="" OffContent=""
+                                                  VerticalAlignment="Center" AutomationProperties.Name="Training day reminder"/>
+                                </Grid>
+                                <TimePicker SelectedTime="{Binding TrainingTime}" ClockIdentifier="24HourClock" MinuteIncrement="5"
+                                            IsVisible="{Binding TrainingOn}" AutomationProperties.Name="Training day reminder time"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Missed days" FontSize="14" Classes="light"/>
+                                        <TextBlock Text="At 9:00 the next morning, while your streak can still be saved." FontSize="12" Classes="muted"/>
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding MissedOn}" OnContent="" OffContent=""
+                                                  VerticalAlignment="Center" AutomationProperties.Name="Missed day reminder"/>
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ===== Appearance: the Theme setting, applied at once ===== -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">

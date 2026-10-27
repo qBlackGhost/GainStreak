@@ -162,6 +162,7 @@ public partial class MainViewModel : ViewModelBase
         IsSignedInScreen = !IsBeforeSignIn(entry.Type);
         OnPropertyChanged(nameof(Initials));
         if (IsSignedInScreen) _ = RefreshStreakAsync();
+        _sp.GetService<ReminderSync>()?.RequestRefresh();   // a screen change may follow a choice or a new split (16g)
     }
 
     private async Task RefreshStreakAsync()

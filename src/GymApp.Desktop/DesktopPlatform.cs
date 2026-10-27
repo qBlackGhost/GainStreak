@@ -36,6 +36,9 @@ public sealed class DesktopPlatform : IPlatform
 
     public void OpenStorePage() { }
 
+    // No reminders on the desktop (16g): Profile hides them
+    public INotificationScheduler CreateNotificationScheduler() => NoNotificationScheduler.Instance;
+
     public void OnFrameworkReady() => MacDockIcon.Apply();
 
     public Window CreateWindow(Control content, bool isStartupError) => isStartupError

@@ -86,6 +86,7 @@ public partial class GymApplication : Application
                 if (t.Exception is { } e) Services.GetRequiredService<ErrorLog>().Write(e, "Startup");
                 host.Content = error is not null ? StartupErrorView(error) : CreateShellView();
                 if (error is null) Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
+                if (error is null) Services.GetRequiredService<ReminderSync>().RequestRefresh();
             }));
         }
 
@@ -123,12 +124,20 @@ public partial class GymApplication : Application
             if (e.Kind != ActivationKind.Background) return;
             sync.StartTimer();
             sync.RequestSync();
+            Services.GetRequiredService<ReminderSync>().RequestRefresh();   // a day may have passed (16g)
         };
         lifetime.Deactivated += (_, e) =>
         {
             if (e.Kind == ActivationKind.Background) sync.StopTimer();
         };
     }
+
+    /// <summary>A reminder was tapped (16g): Home, where the check-in and the missed-day card are. Called by the heads
+    /// from any thread; does nothing before the shell exists (the app is starting on Home anyway).</summary>
+    public static void OpenFromReminder() => Dispatcher.UIThread.Post(() =>
+    {
+        if (Current is GymApplication { _shell: { IsSignedInScreen: true } shell }) shell.ShowHome();
+    });
 
     /// <summary>The shell, once <see cref="AppStartup"/> has run. On the UI thread.</summary>
     private MainView CreateShellView()
