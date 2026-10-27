@@ -33,7 +33,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Username" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox Classes="field" MaxLength="32" PlaceholderText="Letters, digits, _ . -" Text="{Binding Username}"
+                            <TextBox TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" MaxLength="32" PlaceholderText="Letters, digits, _ . -" Text="{Binding Username}"
                                      AutomationProperties.Name="Username"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                         </Panel>
@@ -44,7 +44,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Email" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox Classes="field" MaxLength="254" PlaceholderText="you@example.com" Text="{Binding Email}"
+                            <TextBox TextInputOptions.ContentType="Email" Classes="field" MaxLength="254" PlaceholderText="you@example.com" Text="{Binding Email}"
                                      AutomationProperties.Name="Email"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcMail}"/>
                         </Panel>
@@ -55,7 +55,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Password" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
+                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
                                      Text="{Binding Password}" AutomationProperties.Name="Password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
                         </Panel>
@@ -66,7 +66,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Confirm password" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
+                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
                                      Text="{Binding ConfirmPassword}" AutomationProperties.Name="Confirm password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
                         </Panel>

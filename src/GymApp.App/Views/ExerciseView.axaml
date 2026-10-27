@@ -218,7 +218,7 @@
                                     </Border>
                                     <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsPerSide}">
                                         <TextBlock Text="Bar" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                        <TextBox Classes="field" Width="84" MinHeight="40" PlaceholderText="kg" Text="{Binding BarText}"
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field" Width="84" MinHeight="40" PlaceholderText="kg" Text="{Binding BarText}"
                                                  AutomationProperties.Name="Bar weight in kg"/>
                                         <TextBlock Text="optional" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
                                     </StackPanel>
@@ -252,10 +252,10 @@
                                                                     CornerRadius="8" Content="Working" Command="{Binding SetWorkingCommand}"/>
                                                         </v:SegmentedPill>
                                                     </Border>
-                                                    <TextBox Grid.Column="2" Classes="field" Classes.pr="{Binding IsNewPr}"
+                                                    <TextBox TextInputOptions.ContentType="Number" Grid.Column="2" Classes="field" Classes.pr="{Binding IsNewPr}"
                                                              PlaceholderText="{Binding WeightPlaceholder}" Text="{Binding WeightText}"
                                                              AutomationProperties.Name="{Binding Number, StringFormat='Set {0} weight in kg'}"/>
-                                                    <TextBox Grid.Column="3" Classes="field" Classes.pr="{Binding IsNewPr}"
+                                                    <TextBox TextInputOptions.ContentType="Digits" Grid.Column="3" Classes="field" Classes.pr="{Binding IsNewPr}"
                                                              PlaceholderText="{Binding RepsPlaceholder}" Text="{Binding RepsText}"
                                                              AutomationProperties.Name="{Binding Number, StringFormat='Set {0} reps'}"/>
                                                     <Button Grid.Column="4" Classes="btn outline" Width="40" Height="40" MinHeight="40" Padding="0"
@@ -340,19 +340,19 @@
                                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="Weight (kg)" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" Text="{Binding PrWeightText}"/>
+                                            <TextBox TextInputOptions.ContentType="Number" Classes="field" Text="{Binding PrWeightText}"/>
                                             <TextBlock Classes="fieldError" Text="{Binding PrWeightError}"
                                                        IsVisible="{Binding PrWeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="6">
                                             <TextBlock Text="Reps" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" Text="{Binding PrRepsText}"/>
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field" Text="{Binding PrRepsText}"/>
                                             <TextBlock Classes="fieldError" Text="{Binding PrRepsError}"
                                                        IsVisible="{Binding PrRepsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Spacing="6">
                                             <TextBlock Text="1RM (optional)" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" PlaceholderText="auto" Text="{Binding PrOneRmInput}"/>
+                                            <TextBox TextInputOptions.ContentType="Number" Classes="field" PlaceholderText="auto" Text="{Binding PrOneRmInput}"/>
                                             <TextBlock Classes="fieldError" Text="{Binding PrOneRmError}"
                                                        IsVisible="{Binding PrOneRmError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>

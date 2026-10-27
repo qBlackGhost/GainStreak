@@ -296,8 +296,8 @@
     </DockPanel>
 
     <!-- Add a shared split: day 1's weekday, and replace mine or a new custom split -->
-    <Border Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding SplitAdd.IsOpen}">
-        <Border MaxWidth="540" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding SplitAdd.IsOpen}">
+        <v:Sheet MaxWidth="540" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <StackPanel Spacing="16">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -353,12 +353,12 @@
                     <Button Classes="btn primary" Content="Start this split" Command="{Binding SplitAdd.ConfirmCommand}"/>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:Sheet>
     </Border>
 
     <!-- Add a shared workout to a day of the current split -->
-    <Border Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding WorkoutAdd.IsOpen}">
-        <Border MaxWidth="500" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding WorkoutAdd.IsOpen}">
+        <v:Sheet MaxWidth="500" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <StackPanel Spacing="16">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -415,7 +415,7 @@
                             IsVisible="{Binding WorkoutAdd.HasSplit}"/>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:Sheet>
     </Border>
     </Grid>
 </UserControl>

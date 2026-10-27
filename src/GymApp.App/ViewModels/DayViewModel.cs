@@ -105,8 +105,16 @@ public partial class CopySourceItemViewModel : ObservableObject
     [RelayCommand] private void Choose() => _owner.ChooseCopy(this);
 }
 
-public partial class DayViewModel : ViewModelBase
+public partial class DayViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes "Copy from another day" first.</summary>
+    public bool CloseOnBack()
+    {
+        if (!IsCopyOpen) return false;
+        IsCopyOpen = false;
+        return true;
+    }
+
     private readonly DayExerciseService _days;
     private readonly ExerciseService _exercises;
     private readonly SessionService _session;

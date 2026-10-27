@@ -176,7 +176,7 @@
                                 <TextBlock Grid.Row="2" Text="Birth date" Classes="formLabel"/>
                                 <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
                                     <WrapPanel ItemSpacing="8" LineSpacing="8">
-                                        <TextBox Classes="field mono" Width="72" TextAlignment="Center" PlaceholderText="Day"
+                                        <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="72" TextAlignment="Center" PlaceholderText="Day"
                                                  Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
                                         <ComboBox Classes="field" MinWidth="150" ItemsSource="{Binding Months}"
                                                   SelectedItem="{Binding BirthMonth}" PlaceholderText="Month"
@@ -187,7 +187,7 @@
                                                 </DataTemplate>
                                             </ComboBox.ItemTemplate>
                                         </ComboBox>
-                                        <TextBox Classes="field mono" Width="96" TextAlignment="Center" PlaceholderText="Year"
+                                        <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="96" TextAlignment="Center" PlaceholderText="Year"
                                                  Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
                                         <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="11,5" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding AgeText}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
@@ -201,18 +201,18 @@
                                 <TextBlock Grid.Row="3" Text="Height" Classes="formLabel"/>
                                 <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6">
                                     <Panel MaxWidth="200" HorizontalAlignment="Left" IsVisible="{Binding IsMetric}">
-                                        <TextBox Classes="field mono" Width="200" Padding="14,0,48,0" Text="{Binding HeightCmText}"
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Width="200" Padding="14,0,48,0" Text="{Binding HeightCmText}"
                                                  AutomationProperties.Name="Height in centimetres"/>
                                         <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
                                     </Panel>
                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
                                         <Panel>
-                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightFtText}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightFtText}"
                                                      AutomationProperties.Name="Feet"/>
                                             <Border Classes="unitTag"><TextBlock Text="ft" FontSize="13" Classes="muted"/></Border>
                                         </Panel>
                                         <Panel>
-                                            <TextBox Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightInText}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightInText}"
                                                      AutomationProperties.Name="Inches"/>
                                             <Border Classes="unitTag"><TextBlock Text="in" FontSize="13" Classes="muted"/></Border>
                                         </Panel>
@@ -313,7 +313,7 @@
                                     <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
                                 </TextBlock>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                    <TextBox x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                    <TextBox TextInputOptions.ContentType="Number" x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
                                              PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
                                     <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
                                             Command="{Binding LogWeightCommand}"/>
@@ -452,14 +452,14 @@
                             <StackPanel Spacing="10" IsVisible="{Binding IsEditingEmail}">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="New email" FontSize="12" Classes="muted"/>
-                                    <TextBox Classes="field" MaxLength="254" PlaceholderText="name@example.com"
+                                    <TextBox TextInputOptions.ContentType="Email" Classes="field" MaxLength="254" PlaceholderText="name@example.com"
                                              Text="{Binding NewEmail}" AutomationProperties.Name="New email"/>
                                     <TextBlock Classes="fieldError" Text="{Binding EmailError}"
                                                IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
-                                    <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                    <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
                                              Text="{Binding EmailPassword}" AutomationProperties.Name="Current password"/>
                                     <TextBlock Classes="fieldError" Text="{Binding EmailPasswordError}"
                                                IsVisible="{Binding EmailPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -490,21 +490,21 @@
                                     <StackPanel Spacing="10" IsVisible="{Binding IsChangingPassword}">
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
                                                      Text="{Binding CurrentPassword}" AutomationProperties.Name="Current password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding CurrentPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding CurrentPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="New password" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
                                                      Text="{Binding NewPassword}" AutomationProperties.Name="New password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding NewPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding NewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="Confirm new password" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
                                                      Text="{Binding ConfirmNewPassword}" AutomationProperties.Name="Confirm new password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding ConfirmNewPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding ConfirmNewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -533,7 +533,7 @@
                                         <TextBlock Text="{Binding DeleteWarning}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="Password" FontSize="12" Classes="muted"/>
-                                            <TextBox Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
                                                      Text="{Binding DeletePassword}" AutomationProperties.Name="Password to delete the account"/>
                                             <TextBlock Classes="fieldError" Text="{Binding DeleteError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding DeleteError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

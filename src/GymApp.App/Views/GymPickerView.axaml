@@ -35,8 +35,8 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </UserControl.Styles>
-    <Border Background="{DynamicResource Scrim}" Padding="24" TextElement.Foreground="{DynamicResource Ink}">
-        <Border Width="520" MaxHeight="680" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20"
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" TextElement.Foreground="{DynamicResource Ink}">
+        <v:Sheet Width="520" MaxHeight="680" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20"
                 CornerRadius="18" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                 BoxShadow="0 24 80 0 #B3000000">
             <DockPanel>
@@ -289,6 +289,6 @@
                     </Border>
                 </DockPanel>
             </DockPanel>
-        </Border>
+        </v:Sheet>
     </Border>
 </UserControl>

@@ -76,8 +76,17 @@ public record MapMonthRow(string Name, int Visits, double Share)
 /// your monthly check-ins, the "Visible to friends" and "Ask for gym" settings, and the gym picker dialog.
 /// Friends only ever see the gym and the day, never a time; custom gyms are never pins.
 /// </summary>
-public partial class GymsViewModel : ViewModelBase
+public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the picker's add-a-gym form, then the picker.</summary>
+    public bool CloseOnBack()
+    {
+        if (!IsPickerOpen) return false;
+        if (Picker.IsGymFormOpen) Picker.IsGymFormOpen = false;
+        else IsPickerOpen = false;
+        return true;
+    }
+
     private readonly GymService _gyms;
     private readonly ProfileService _profiles;
     private readonly FriendMapService _friendMap;

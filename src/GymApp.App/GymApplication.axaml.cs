@@ -74,7 +74,10 @@ public partial class GymApplication : Application
         else
         {
             // The phones: a first frame at once (iOS ends an app that takes too long to draw one), then the app
+            PhoneTouch.Install();
             var host = new ContentControl { Content = new SplashView() };
+            // MainView keeps clear of the notch and home indicator itself, so the tab bar can reach behind the latter
+            TopLevel.SetAutoSafeAreaPadding(host, false);
             Show(host);
             WireForeground();
             _ = Task.Run(() => AppStartup.PrepareAsync(Services, LocalSocial)).ContinueWith(t => Dispatcher.UIThread.Post(() =>

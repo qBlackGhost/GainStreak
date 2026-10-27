@@ -151,7 +151,7 @@
                             <StackPanel Spacing="6" IsVisible="{Binding ShowLogForm}">
                                 <TextBlock Text="Eaten today (kcal)" FontSize="12" Classes="muted"/>
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                                    <TextBox x:Name="TodayBox" Classes="field" MinHeight="48" FontSize="16" PlaceholderText="e.g. 1900"
+                                    <TextBox TextInputOptions.ContentType="Digits" x:Name="TodayBox" Classes="field" MinHeight="48" FontSize="16" PlaceholderText="e.g. 1900"
                                              Text="{Binding TodayInput}"/>
                                     <Button Grid.Column="1" Classes="btn outline" MinHeight="48" Content="Cancel"
                                             Command="{Binding CancelEditCommand}" IsVisible="{Binding IsEditing}"/>
@@ -291,7 +291,7 @@
                             <StackPanel Spacing="6">
                                 <TextBlock Text="Your own goal (kcal)" FontSize="12" Classes="muted"/>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                    <TextBox x:Name="GoalBox" Classes="field" PlaceholderText="e.g. 2000" Text="{Binding CustomGoalInput}"/>
+                                    <TextBox TextInputOptions.ContentType="Digits" x:Name="GoalBox" Classes="field" PlaceholderText="e.g. 2000" Text="{Binding CustomGoalInput}"/>
                                     <Button Grid.Column="1" Classes="btn outline strong" Padding="16,0" Content="Set my own goal"
                                             Command="{Binding SetCustomGoalCommand}"/>
                                 </Grid>

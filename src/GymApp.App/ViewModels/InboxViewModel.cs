@@ -55,8 +55,16 @@ public record InboxHistoryRowViewModel(InboxHistoryEntry Entry, DateTime NowLoca
 /// <summary>The inbox: friend requests, and the splits and workouts friends share, filtered by the pill (All / Requests /
 /// Workouts). Accept and Decline go straight to the friend service; adding a share opens its popup (<see cref="SplitAdd"/>,
 /// <see cref="WorkoutAdd"/>), applies it on this phone and then removes it from the server.</summary>
-public partial class InboxViewModel : ViewModelBase
+public partial class InboxViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the add-a-shared-split or add-a-shared-workout popup first.</summary>
+    public bool CloseOnBack()
+    {
+        if (SplitAdd.IsOpen) { SplitAdd.IsOpen = false; return true; }
+        if (WorkoutAdd.IsOpen) { WorkoutAdd.IsOpen = false; return true; }
+        return false;
+    }
+
     public const int AllFilter = 0, RequestsFilter = 1, WorkoutsFilter = 2;
 
     private readonly InboxService _inbox;

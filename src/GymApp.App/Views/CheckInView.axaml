@@ -113,7 +113,7 @@
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
         </Style>
     </UserControl.Styles>
-    <Border MaxWidth="560" MaxHeight="760" HorizontalAlignment="Stretch" VerticalAlignment="Center"
+    <v:Sheet MaxWidth="560" MaxHeight="760" HorizontalAlignment="Stretch" VerticalAlignment="Center"
             Padding="24" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
             BoxShadow="0 24 80 0 #B3000000" TextElement.Foreground="{DynamicResource Ink}">
         <DockPanel>
@@ -204,11 +204,11 @@
                                                         <Border Classes="chip" Classes.warm="{Binding IsWarmup}" Classes.done="{Binding IsComplete}">
                                                             <StackPanel Orientation="Horizontal">
                                                                 <TextBlock Classes="chipText chipTag" Text="{Binding Tag}"/>
-                                                                <TextBox Classes="chipBox" Width="44" Text="{Binding WeightText}"
+                                                                <TextBox TextInputOptions.ContentType="Number" Classes="chipBox" Width="44" Text="{Binding WeightText}"
                                                                          PlaceholderText="{Binding WeightHint}"
                                                                          AutomationProperties.Name="{Binding Label, StringFormat='{}{0} kg'}"/>
                                                                 <TextBlock Classes="chipText" Text=" kg ×"/>
-                                                                <TextBox Classes="chipBox" Width="34" Text="{Binding RepsText}"
+                                                                <TextBox TextInputOptions.ContentType="Digits" Classes="chipBox" Width="34" Text="{Binding RepsText}"
                                                                          PlaceholderText="{Binding RepsHint}"
                                                                          AutomationProperties.Name="{Binding Label, StringFormat='{}{0} reps'}"/>
                                                             </StackPanel>
@@ -241,7 +241,7 @@
                             </StackPanel>
                             <Border Grid.Column="1" Classes="chip" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox Classes="chipBox" Width="44" MaxLength="3" Text="{Binding CardioText}"
+                                    <TextBox TextInputOptions.ContentType="Digits" Classes="chipBox" Width="44" MaxLength="3" Text="{Binding CardioText}"
                                              PlaceholderText="0" AutomationProperties.Name="Cardio minutes"/>
                                     <TextBlock Classes="chipText" Text=" min"/>
                                 </StackPanel>
@@ -251,5 +251,5 @@
                 </StackPanel>
             </ScrollViewer>
         </DockPanel>
-    </Border>
+    </v:Sheet>
 </UserControl>

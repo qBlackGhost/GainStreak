@@ -39,7 +39,7 @@
         <!-- The dimmed page; a click on it closes the popup -->
         <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
 
-        <Border Width="560" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+        <v:Sheet Width="560" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
             <DockPanel>
@@ -144,6 +144,6 @@
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>
-        </Border>
+        </v:Sheet>
     </Panel>
 </UserControl>

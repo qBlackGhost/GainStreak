@@ -182,7 +182,7 @@
                             <StackPanel Spacing="8">
                                 <TextBlock Text="Birth date" Classes="formLabel"/>
                                 <WrapPanel ItemSpacing="8" LineSpacing="8">
-                                    <TextBox Classes="field mono" Classes.bad="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Classes.bad="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                              Width="72" TextAlignment="Center" PlaceholderText="DD"
                                              Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
                                     <ComboBox Classes="field" Classes.bad="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
@@ -194,7 +194,7 @@
                                             </DataTemplate>
                                         </ComboBox.ItemTemplate>
                                     </ComboBox>
-                                    <TextBox Classes="field mono" Classes.bad="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Classes.bad="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                              Width="96" TextAlignment="Center" PlaceholderText="YYYY"
                                              Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
                                     <Border Background="{DynamicResource Fill2}" CornerRadius="999" Padding="11,5" VerticalAlignment="Center"
@@ -217,20 +217,20 @@
                                 <StackPanel x:Name="HeightField" Spacing="8">
                                     <TextBlock Text="Height" Classes="formLabel"/>
                                     <Panel IsVisible="{Binding IsMetric}">
-                                        <TextBox Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                  Padding="14,0,48,0" PlaceholderText="e.g. 178" Text="{Binding HeightCmText}"
                                                  AutomationProperties.Name="Height in centimetres"/>
                                         <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
                                     </Panel>
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding IsImperial}">
                                         <Panel>
-                                            <TextBox Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                      Padding="14,0,36,0" PlaceholderText="5" Text="{Binding HeightFtText}"
                                                      AutomationProperties.Name="Height, feet"/>
                                             <Border Classes="unitTag"><TextBlock Text="ft" FontSize="13" Classes="muted"/></Border>
                                         </Panel>
                                         <Panel Grid.Column="1">
-                                            <TextBox Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Classes.bad="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                      Padding="14,0,36,0" PlaceholderText="10" Text="{Binding HeightInText}"
                                                      AutomationProperties.Name="Height, inches"/>
                                             <Border Classes="unitTag"><TextBlock Text="in" FontSize="13" Classes="muted"/></Border>
@@ -243,7 +243,7 @@
                                 <StackPanel x:Name="WeightField" Spacing="8">
                                     <TextBlock Text="Current weight" Classes="formLabel"/>
                                     <Panel>
-                                        <TextBox Classes="field mono" Classes.bad="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Classes.bad="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
                                                  Padding="14,0,48,0" PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightText}"
                                                  AutomationProperties.Name="Current weight"/>
                                         <Border Classes="unitTag"><TextBlock Text="{Binding WeightUnit}" FontSize="13" Classes="muted"/></Border>

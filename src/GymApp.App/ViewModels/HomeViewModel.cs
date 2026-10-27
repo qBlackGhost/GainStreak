@@ -11,8 +11,17 @@ using GymApp.Social;
 
 namespace GymApp.App.ViewModels;
 
-public partial class HomeViewModel : ViewModelBase
+public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the check-in, the undo question or the points history first.</summary>
+    public bool CloseOnBack()
+    {
+        if (IsCheckingIn) { CheckIn = null; return true; }
+        if (IsConfirmingUndo) { IsConfirmingUndo = false; return true; }
+        if (IsPointsHistoryOpen) { IsPointsHistoryOpen = false; return true; }
+        return false;
+    }
+
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
     private readonly WorkoutService _workouts;

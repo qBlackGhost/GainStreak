@@ -68,8 +68,16 @@ public partial class DayCardViewModel : ObservableObject
     [RelayCommand] private void Open() => _owner.Open(this);
 }
 
-public partial class WorkoutsViewModel : ViewModelBase
+public partial class WorkoutsViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the share popup first.</summary>
+    public bool CloseOnBack()
+    {
+        if (!Share.IsOpen) return false;
+        Share.IsOpen = false;
+        return true;
+    }
+
     private readonly WorkoutMenuService _menu;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;

@@ -45,7 +45,7 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="Username or email" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
+                                <TextBox TextInputOptions.ContentType="Email" TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
                                          AutomationProperties.Name="Username or email"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                             </Panel>
@@ -54,7 +54,7 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="Password" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                <TextBox TextInputOptions.ContentType="Password" Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
                                          AutomationProperties.Name="Password"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
                             </Panel>
@@ -69,7 +69,7 @@
                         <StackPanel Spacing="8" IsVisible="{Binding ShowMoveEmail}">
                             <TextBlock Text="Email" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox Classes="field" PlaceholderText="you@example.com" Text="{Binding MoveEmail}"
+                                <TextBox TextInputOptions.ContentType="Email" Classes="field" PlaceholderText="you@example.com" Text="{Binding MoveEmail}"
                                          AutomationProperties.Name="Email"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                             </Panel>
@@ -80,7 +80,7 @@
                         <StackPanel Spacing="8" IsVisible="{Binding ShowMoveUsername}">
                             <TextBlock Text="Pick another username" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox Classes="field" Text="{Binding MoveUsername}" AutomationProperties.Name="Username"/>
+                                <TextBox TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" Text="{Binding MoveUsername}" AutomationProperties.Name="Username"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                             </Panel>
                             <TextBlock Text="{Binding MoveUsernameError}" Classes="fieldError" TextWrapping="Wrap"

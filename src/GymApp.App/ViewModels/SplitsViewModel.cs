@@ -8,8 +8,16 @@ using GymApp.Services;
 
 namespace GymApp.App.ViewModels;
 
-public partial class SplitsViewModel : ViewModelBase
+public partial class SplitsViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the share popup first.</summary>
+    public bool CloseOnBack()
+    {
+        if (!Share.IsOpen) return false;
+        Share.IsOpen = false;
+        return true;
+    }
+
     private readonly SplitService _splits;
     private readonly SessionService _session;
     private readonly ISplitUsageService _usage;

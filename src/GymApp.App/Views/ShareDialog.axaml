@@ -21,8 +21,8 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </UserControl.Styles>
-    <Border Background="{DynamicResource Scrim}" Padding="24">
-        <Border MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="520" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <StackPanel Spacing="16">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -99,6 +99,6 @@
                     </Button>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:Sheet>
     </Border>
 </UserControl>

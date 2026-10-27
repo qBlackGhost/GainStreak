@@ -695,7 +695,7 @@
                         <StackPanel Spacing="8" IsVisible="{Binding ShowCaloriesForm}">
                             <TextBlock Text="Eaten today (kcal)" FontSize="12" Classes="muted"/>
                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
-                                <TextBox Classes="kcal" PlaceholderText="e.g. 1900" Text="{Binding CaloriesInput}"/>
+                                <TextBox TextInputOptions.ContentType="Digits" Classes="kcal" PlaceholderText="e.g. 1900" Text="{Binding CaloriesInput}"/>
                                 <Button Grid.Column="1" Classes="btn outline" Content="Cancel" Command="{Binding CancelEditCaloriesCommand}"
                                         IsVisible="{Binding IsEditingCalories}"/>
                                 <Button Grid.Column="2" Classes="btn light" Content="{Binding LogCaloriesLabel}"
@@ -814,13 +814,13 @@
     </DockPanel>
 
     <!-- Check-in popup over Home -->
-    <Border Background="{DynamicResource Scrim}" IsVisible="{Binding IsCheckingIn}">
-        <ContentControl Content="{Binding CheckIn}" Margin="16"/>
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="{Binding IsCheckingIn}" Padding="16">
+        <ContentControl Content="{Binding CheckIn}"/>
     </Border>
 
     <!-- Undo today's check-in -->
-    <Border Background="{DynamicResource Scrim}" IsVisible="{Binding IsConfirmingUndo}" Padding="24">
-        <Border Width="400" HorizontalAlignment="Center" VerticalAlignment="Center"
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="{Binding IsConfirmingUndo}" Padding="24">
+        <v:Sheet Width="400" HorizontalAlignment="Center" VerticalAlignment="Center"
                 Padding="24" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <StackPanel Spacing="14">
                 <TextBlock Text="Undo today's check-in?" FontSize="22" FontWeight="ExtraBold"/>
@@ -831,7 +831,7 @@
                     <Button Classes="btn light" Content="Undo check-in" Command="{Binding ConfirmUndoCommand}"/>
                 </StackPanel>
             </StackPanel>
-        </Border>
+        </v:Sheet>
     </Border>
 
     <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
