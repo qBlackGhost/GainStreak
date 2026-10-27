@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Android head (16c): starts the shared GymApp.App on Android 8 (API 26) and later -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>GymApp.Android</RootNamespace>
+    <ApplicationId>com.gainstreak.app</ApplicationId>
+    <ApplicationTitle>GainStreak</ApplicationTitle>
+    <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
+    <!-- Only goes up; the release script will set it per build (16h) -->
+    <ApplicationVersion>1</ApplicationVersion>
+    <!-- An APK installs straight onto an emulator or phone; store builds switch to aab in 16h -->
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <DefaultDebugServerUrl>http://10.0.2.2:5080</DefaultDebugServerUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GymApp.App\GymApp.App.csproj" />
+  </ItemGroup>
+
+  <Import Project="..\MobileHead.targets" />
+</Project>

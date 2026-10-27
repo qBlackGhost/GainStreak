@@ -26,6 +26,12 @@ dotnet ef migrations add <Name> --project src/GymApp.Data --startup-project src/
 dotnet ef migrations add <Name> --project src/GymApp.Server --output-dir Data/Migrations            # server Postgres
 ```
 
+After any change to the app's entities or `OnModelCreating`, regenerate the compiled model the app runs on (iOS can't build the model at runtime). `CompiledModelTests` fails until you do:
+
+```bash
+dotnet ef dbcontext optimize --project src/GymApp.Data --startup-project src/GymApp.Desktop --output-dir CompiledModels
+```
+
 The production server never migrates on start: `docker run ... gymapp-server migrate` (or `dotnet GymApp.Server.dll migrate`) must run before deploying a schema change. Desktop releases: `build/release.sh` then `build/upload-github.sh` (see README "Releases for testers").
 
 ## Architecture

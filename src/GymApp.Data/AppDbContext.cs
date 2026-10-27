@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using GymApp.Data.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace GymApp.Data;
 
@@ -50,6 +51,18 @@ public class AppDbContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
+        // The compiled model (CompiledModels, from "dotnet ef dbcontext optimize"): iOS's ahead-of-time build can't
+        // build the model at runtime, and building it costs every head 1.6-3 s per launch. Named here as well as in
+        // the generated assembly attribute, which the iOS trimmer may remove. Never at design time: "dotnet ef" must
+        // see the live model. CompiledModelTests fails when it's out of date.
+        if (!EF.IsDesignTime)
+        {
+            options.UseModel(CompiledModels.AppDbContextModel.Instance);
+            // Migrate() would otherwise build the full design-time model to look for changes without a migration:
+            // iOS refuses ("Design-time DbContext operations are not supported"), and it costs every head the time
+            // the compiled model saves. CompiledModelTests.EveryModelChange_HasAMigration checks it instead.
+            options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+        }
         if (options.IsConfigured) return;
         var dir = DataDirectory;
         Directory.CreateDirectory(dir);

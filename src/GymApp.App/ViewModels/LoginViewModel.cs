@@ -12,11 +12,12 @@ public partial class LoginViewModel : ViewModelBase
 {
     private readonly IAccountService _accounts;
     private readonly Func<MainViewModel> _shell;
+    private readonly ErrorLog _log;
     private MoveOnlineOffer? _offer;
 
-    public LoginViewModel(IAccountService accounts, SessionService session, Func<MainViewModel> shell)
+    public LoginViewModel(IAccountService accounts, SessionService session, Func<MainViewModel> shell, ErrorLog log)
     {
-        _accounts = accounts; _shell = shell;
+        _accounts = accounts; _shell = shell; _log = log;
         Notice = session.SignOutNotice;
     }
 
@@ -60,8 +61,9 @@ public partial class LoginViewModel : ViewModelBase
             if (result.MoveOnline is { } offer) { StartMoveOnline(offer); return; }
             Error = result.Error;
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            _log.Write(e, "Sign in");   // the message can't say what went wrong; Feedback's report can
             Error = "Could not sign in. Try again.";
         }
         finally
@@ -102,8 +104,9 @@ public partial class LoginViewModel : ViewModelBase
                 default: Error = result.Error; break;
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            _log.Write(e, "Move online");
             Error = "Could not move your account online. Try again.";
         }
         finally

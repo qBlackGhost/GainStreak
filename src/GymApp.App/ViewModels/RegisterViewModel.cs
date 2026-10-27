@@ -10,10 +10,11 @@ public partial class RegisterViewModel : ViewModelBase
 {
     private readonly IAccountService _accounts;
     private readonly Func<MainViewModel> _shell;
+    private readonly ErrorLog _log;
 
-    public RegisterViewModel(IAccountService accounts, Func<MainViewModel> shell)
+    public RegisterViewModel(IAccountService accounts, Func<MainViewModel> shell, ErrorLog log)
     {
-        _accounts = accounts; _shell = shell;
+        _accounts = accounts; _shell = shell; _log = log;
     }
 
     /// <summary>The server is being asked; the button waits.</summary>
@@ -52,8 +53,9 @@ public partial class RegisterViewModel : ViewModelBase
                 default: Error = result.Error; break;
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            _log.Write(e, "Register");   // the message can't say what went wrong; Feedback's report can
             Error = "Could not create your account. Try again.";
         }
         finally

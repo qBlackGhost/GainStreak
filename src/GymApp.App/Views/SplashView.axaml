@@ -1,0 +1,9 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GymApp.App.Views.SplashView"
+             Background="{DynamicResource PageBg}">
+    <!-- The phones' first frame (16c): shown at once while the database opens and the session restores off the UI
+         thread, then replaced by the app -->
+    <Image Source="{StaticResource GainStreakLogo}" Width="96" Height="96"
+           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+</UserControl>

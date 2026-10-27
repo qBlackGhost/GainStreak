@@ -65,18 +65,46 @@ public sealed class SocialSync(
         if (session.CurrentUser is { ServerUserId: not null } user) Background(() => SyncAsync(user.Id));
     }
 
-    /// <summary>Starts the every-15-minutes sync. Stops on <see cref="Dispose"/>.</summary>
+    private readonly Lock _timerLock = new();
+    private CancellationTokenSource? _timerStop;
+
+    /// <summary>Starts the every-15-minutes sync, unless it's already running. Stops on <see cref="StopTimer"/> (a
+    /// phone app going to the background) or <see cref="Dispose"/>.</summary>
     public void StartTimer()
     {
+        CancellationToken token;
+        lock (_timerLock)
+        {
+            if (_timerStop is not null) return;
+            _timerStop = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+            token = _timerStop.Token;
+        }
         _ = Task.Run(async () =>
         {
             using var timer = new PeriodicTimer(Interval, clock ?? TimeProvider.System);
             try
             {
-                while (await timer.WaitForNextTickAsync(_stop.Token)) RequestSync();
+                while (await timer.WaitForNextTickAsync(token)) RequestSync();
             }
-            catch (OperationCanceledException) { /* shutting down */ }
+            catch (OperationCanceledException) { /* stopped or shutting down */ }
         });
+    }
+
+    /// <summary>Stops the timer until the next <see cref="StartTimer"/>.</summary>
+    public void StopTimer()
+    {
+        lock (_timerLock)
+        {
+            _timerStop?.Cancel();
+            _timerStop?.Dispose();
+            _timerStop = null;
+        }
+    }
+
+    /// <summary>Whether the 15-minute timer is running.</summary>
+    public bool IsTimerRunning
+    {
+        get { lock (_timerLock) return _timerStop is not null; }
     }
 
     /// <summary>Waits for every background mark and sync started so far: for tests, and a clean shutdown.</summary>

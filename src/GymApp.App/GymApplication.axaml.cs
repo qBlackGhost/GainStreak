@@ -12,7 +12,6 @@ using GymApp.Services;
 using GymApp.Social;
 using GymApp.App.ViewModels;
 using GymApp.App.Views;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace GymApp.App;
@@ -23,10 +22,6 @@ namespace GymApp.App;
 /// </summary>
 public partial class GymApplication : Application
 {
-    private static string DataErrorText =>
-        "GainStreak couldn't open its data, so it can't start. The details were saved to errors.log in " +
-        $"{AppDbContext.DataDirectory}. Close any other copy of GainStreak and try again.";
-
     private static Control StartupErrorView(string text) => new TextBlock
     {
         Margin = new Thickness(24),
@@ -47,6 +42,10 @@ public partial class GymApplication : Application
     /// always uses the server.</summary>
     public static bool LocalSocial { get; set; }
 
+    // The server's "please update" (426), kept until the shell exists to show it
+    private MainViewModel? _shell;
+    private string? _updateNotice;
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
@@ -54,103 +53,88 @@ public partial class GymApplication : Application
         Platform.OnFrameworkReady();
         AppDbContext.DataDirectory = Platform.DataDirectory;
         Services = AppServices.Create(LocalSocial, Platform).BuildServiceProvider();
+        WireUiEvents();
 
-        var log = Services.GetRequiredService<ErrorLog>();
-        // The server's "please update" (426), kept until the main view exists to show it
-        MainViewModel? shell = null;
-        string? updateNotice = null;
-
-        try
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            using (var db = Services.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext())
-                db.Database.Migrate();
-
-            // One-time points rebuild for users from before the ledger existed. Off the UI thread so the
-            // async EF calls can't deadlock on the dispatcher.
-            var pointsService = Services.GetRequiredService<PointsService>();
-            Task.Run(() => pointsService.BackfillAllAsync()).GetAwaiter().GetResult();
-        }
-        catch (Exception e)
-        {
-            // The data can't be opened (locked, corrupt, read-only...): say so instead of crashing with nothing on screen
-            log.Write(e, "Startup");
-            ShowStartupError(DataErrorText);
-            return;
-        }
-
-        try
-        {
-            if (!LocalSocial)
+            // The desktop opens its window once everything is ready, as it always has. Off the UI thread so the
+            // async EF calls can't deadlock on the dispatcher
+            var error = Task.Run(() => AppStartup.PrepareAsync(Services, LocalSocial)).GetAwaiter().GetResult();
+            if (error is not null)
+                desktop.MainWindow = Platform.CreateWindow(StartupErrorView(error), isStartupError: true);
+            else
             {
-                // A token the server stopped accepting signs out to the login screen. The event can come from any
-                // thread (a background upload), and signing out navigates, so it goes through the UI thread
-                var accounts = Services.GetRequiredService<AccountService>();
-                var api = Services.GetRequiredService<SocialApiClient>();
-                api.SessionExpired += (_, _) => Dispatcher.UIThread.Post(() => _ = accounts.EndSessionAsync());
-                api.UpdateRequired += (_, message) => Dispatcher.UIThread.Post(() =>
-                {
-                    updateNotice = message;
-                    if (shell is not null) shell.UpdateNotice = message;
-                });
-
-                // Upload what's waiting at sign-in and restore, when a request gets through after being offline,
-                // and every 15 minutes (the window coming to the front is wired below)
-                var sync = Services.GetRequiredService<SocialSync>();
-                var session = Services.GetRequiredService<SessionService>();
-                session.Changed += () => { if (session.IsLoggedIn) sync.RequestSync(); };
-                api.BackOnline += (_, _) => sync.RequestSync();
-                sync.StartTimer();
-            }
-            // The Theme setting: the signed-in user's; the system's on the login screens
-            var themeSession = Services.GetRequiredService<SessionService>();
-            themeSession.Changed += () => AppTheme.Apply(themeSession.CurrentUser?.ThemePreference);
-
-            // Stays signed in until logging out. Off the UI thread, like the backfill; offline it uses the cached account
-            var restore = Services.GetRequiredService<IAccountService>();
-            Task.Run(restore.RestoreAsync).GetAwaiter().GetResult();
-            AppTheme.Apply(themeSession.CurrentUser?.ThemePreference);   // now, before the window shows, not after
-        }
-        catch (InvalidOperationException e) when (e.Message.Contains(ServerAddress.EnvironmentVariable))
-        {
-            // A release build with no (or no https) server address
-            log.Write(e, "Startup");
-            ShowStartupError($"GainStreak can't reach its server: {e.Message}");
-            return;
-        }
-
-        var main = shell = Services.GetRequiredService<MainViewModel>();
-        main.UpdateNotice ??= updateNotice;
-        ErrorHandling.Install(log, message => main.GlobalError = message);
-        var view = new MainView { DataContext = main };
-        switch (ApplicationLifetime)
-        {
-            case IClassicDesktopStyleApplicationLifetime desktop:
-                var window = Platform.CreateWindow(view, isStartupError: false);
+                var window = Platform.CreateWindow(CreateShellView(), isStartupError: false);
                 desktop.MainWindow = window;
-                if (!LocalSocial)
-                {
-                    var sync = Services.GetRequiredService<SocialSync>();
-                    window.Activated += (_, _) => sync.RequestSync();
-                }
+                if (!LocalSocial) window.Activated += (_, _) => Services.GetRequiredService<SocialSync>().RequestSync();
                 MainWindowCreated?.Invoke(window);
-                break;
-            default:
-                Show(view);
-                break;
+                Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
+            }
+        }
+        else
+        {
+            // The phones: a first frame at once (iOS ends an app that takes too long to draw one), then the app
+            var host = new ContentControl { Content = new SplashView() };
+            Show(host);
+            WireForeground();
+            _ = Task.Run(() => AppStartup.PrepareAsync(Services, LocalSocial)).ContinueWith(t => Dispatcher.UIThread.Post(() =>
+            {
+                var error = t.IsFaulted ? "GainStreak couldn't start. The details were saved to errors.log." : t.Result;
+                if (t.Exception is { } e) Services.GetRequiredService<ErrorLog>().Write(e, "Startup");
+                host.Content = error is not null ? StartupErrorView(error) : CreateShellView();
+                if (error is null) Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
+            }));
         }
 
-        Platform.OnShellReady(main, log);
         base.OnFrameworkInitializationCompleted();
     }
 
-    private void ShowStartupError(string text)
+    /// <summary>Server events that change the screen go through the UI thread: they can come from any thread (a
+    /// background upload).</summary>
+    private void WireUiEvents()
     {
-        var view = StartupErrorView(text);
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = Platform.CreateWindow(view, isStartupError: true);
-        else
-            Show(view);
-        base.OnFrameworkInitializationCompleted();
+        // The Theme setting: the signed-in user's; the system's on the login screens
+        var session = Services.GetRequiredService<SessionService>();
+        session.Changed += () => AppTheme.Apply(session.CurrentUser?.ThemePreference);
+        if (LocalSocial) return;
+
+        // A token the server stopped accepting signs out to the login screen
+        var accounts = Services.GetRequiredService<AccountService>();
+        var api = Services.GetRequiredService<SocialApiClient>();
+        api.SessionExpired += (_, _) => Dispatcher.UIThread.Post(() => _ = accounts.EndSessionAsync());
+        api.UpdateRequired += (_, message) => Dispatcher.UIThread.Post(() =>
+        {
+            _updateNotice = message;
+            if (_shell is not null) _shell.UpdateNotice = message;
+        });
+    }
+
+    /// <summary>The phones: coming back to the front syncs and restarts the 15-minute timer; going to the background
+    /// stops it.</summary>
+    private void WireForeground()
+    {
+        if (LocalSocial || TryGetFeature(typeof(IActivatableLifetime)) is not IActivatableLifetime lifetime) return;
+        var sync = Services.GetRequiredService<SocialSync>();
+        lifetime.Activated += (_, e) =>
+        {
+            if (e.Kind != ActivationKind.Background) return;
+            sync.StartTimer();
+            sync.RequestSync();
+        };
+        lifetime.Deactivated += (_, e) =>
+        {
+            if (e.Kind == ActivationKind.Background) sync.StopTimer();
+        };
+    }
+
+    /// <summary>The shell, once <see cref="AppStartup"/> has run. On the UI thread.</summary>
+    private MainView CreateShellView()
+    {
+        AppTheme.Apply(Services.GetRequiredService<SessionService>().CurrentUser?.ThemePreference);
+        var main = _shell = Services.GetRequiredService<MainViewModel>();
+        main.UpdateNotice ??= _updateNotice;
+        ErrorHandling.Install(Services.GetRequiredService<ErrorLog>(), message => main.GlobalError = message);
+        return new MainView { DataContext = main };
     }
 
     /// <summary>The phones' lifetimes: iOS shows one view, Android hands it to its activity through a factory.</summary>

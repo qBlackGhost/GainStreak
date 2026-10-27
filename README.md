@@ -127,23 +127,39 @@ JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home ~/Libra
 
 Its log should no longer say "forcing software rendering". If it does, the GPU isn't being used and the emulator is no better than `Pixel`. Keep `Pixel` for checking Android 16 behaviour. Neither emulator replaces a real phone for judging how gestures feel.
 
-The heads (`src/GymApp.Android`, `src/GymApp.iOS`) arrive in Phase 16c. Android builds find the SDK and JDK through `AndroidSdkDirectory` and `JavaSdkDirectory` (or `ANDROID_HOME` and `JAVA_HOME`):
+The phone heads are `src/GymApp.Android` and `src/GymApp.iOS`. They aren't in `GymApp.slnx`, so `dotnet build` and `dotnet test` at the root don't need the mobile tools. Debug builds talk to the server on this Mac: start it as under "Running the app against a local server" (the Android emulator reaches it at `10.0.2.2:5080`, the iOS Simulator at `localhost:5080`). Release builds use `GymAppServerUrl`.
+
+**Android:** builds find the SDK and JDK through `AndroidSdkDirectory` and `JavaSdkDirectory` (or `ANDROID_HOME` and `JAVA_HOME`). A Debug build deploys its assemblies separately from the APK, so install it with the build's `Install` target, not `adb install`:
+
+```bash
+dotnet build src/GymApp.Android -t:Install -p:AndroidSdkDirectory=$HOME/Library/Android/sdk -p:JavaSdkDirectory=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
+```
+
+A Release APK (about 49 MB, both CPU types) installs with `adb install`:
 
 ```bash
 dotnet build src/GymApp.Android -c Release -p:AndroidSdkDirectory=$HOME/Library/Android/sdk -p:JavaSdkDirectory=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
 ```
 
-**iOS Release builds and EF Core:** a Release build for the Simulator (`-r iossimulator-arm64`) is compiled ahead of time like a TestFlight build, so test EF Core changes there; a Debug build JITs and hides problems. With the default settings (no JIT and no interpreter) EF Core can't build its model at runtime and `Migrate()` throws "Model building is not supported when publishing with NativeAOT". Until the compiled EF Core model arrives (Phase 16c), the iOS head turns on the interpreter for code generated at runtime, and keeps the SDK trimmed as a device build does:
+```bash
+~/Library/Android/sdk/platform-tools/adb install -r src/GymApp.Android/bin/Release/net10.0-android/com.gainstreak.app-Signed.apk
+```
+
+**iOS:** build for the Simulator, then install and launch it:
 
 ```bash
-dotnet build src/GymApp.iOS -c Release -r iossimulator-arm64 -p:MtouchInterpreter=-all -p:MtouchLink=SdkOnly
+dotnet build src/GymApp.iOS -c Release -r iossimulator-arm64
 ```
 
 ```bash
 xcrun simctl install booted src/GymApp.iOS/bin/Release/net10.0-ios/iossimulator-arm64/GymApp.iOS.app
 ```
 
-Without `MtouchLink=SdkOnly` a Simulator build with the interpreter trims nothing and takes over 30 minutes; with it, about 7.
+```bash
+xcrun simctl launch --console-pty booted com.gainstreak.app
+```
+
+The iOS head turns on the interpreter for code generated at runtime only (`MtouchInterpreter=-all` in its project): everything is still compiled ahead of time, but EF Core turns every query into code while the app runs, and iOS can't run that otherwise. It also keeps the SDK trimmed (`MtouchLink=SdkOnly`), or a Simulator build would take over 30 minutes. A Release build for the Simulator takes about 7 minutes. If an iOS build ever crashes at startup with "Failed to load AOT module", delete `src/GymApp.iOS/obj` and `bin` and build again: it's left over from a build with different settings.
 
 ## TestBench (testing version)
 
@@ -265,6 +281,7 @@ Outside Docker, the same is `dotnet GymApp.Server.dll migrate`.
 | `src/GymApp.Services` | Services over the database, the OpenStreetMap clients (Overpass, Nominatim), and the app's side of the social server: accounts, the remote friend, leaderboard and check-in services with their offline cache, and the upload sync |
 | `src/GymApp.App` | The UI the desktop and phone heads share: Avalonia views and view models (CommunityToolkit.Mvvm), the service wiring, and `IPlatform` for what differs per head |
 | `src/GymApp.Desktop` | The desktop head: startup, the main window, the data folder and token file, and Velopack updates |
+| `src/GymApp.Android`, `src/GymApp.iOS` | The phone heads: startup, icons and splash, the data folder, and the Keystore or Keychain token store. Not in `GymApp.slnx`; see "Building the mobile app" |
 | `src/GymApp.Social` | The friend and leaderboard rules, the `ISocialStore` interface (shared by the TestBench's local mode and the server), and the `IFriendService` / `ILeaderboardService` / `IFriendCheckInSource` interfaces the view models use |
 | `src/GymApp.Contracts` | Request and response records for the server's HTTP API |
 | `src/GymApp.Client` | The typed HTTP client for the server (`SocialApiClient`, with Ok / Refused / Offline results), the token store and the server address rule. No database or UI, so a mobile app can reuse it |

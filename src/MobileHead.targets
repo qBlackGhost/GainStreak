@@ -1,0 +1,37 @@
+<Project>
+  <!-- Shared by the Android and iOS heads (16c). Imported from their project files -->
+
+  <PropertyGroup>
+    <!-- Debug builds talk to the server on this Mac. A phone can't reach it as "localhost": the Android emulator sees
+         the Mac at 10.0.2.2, the iOS Simulator at localhost. Override with -p:GymAppDebugServerUrl=http://<Mac's IP>:5080
+         for a real phone on the same Wi-Fi -->
+    <GymAppDebugServerUrl Condition="'$(GymAppDebugServerUrl)' == ''">$(DefaultDebugServerUrl)</GymAppDebugServerUrl>
+  </PropertyGroup>
+
+  <!-- The server addresses as constants (BuiltSettings): desktop reads them back from assembly metadata, but the iOS
+       trimmer removes AssemblyMetadataAttribute (found in 16a) -->
+  <Target Name="WriteBuiltSettings" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <BuiltSettingsFile>$(IntermediateOutputPath)BuiltSettings.g.cs</BuiltSettingsFile>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(BuiltSettingsFile)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="namespace $(RootNamespace)%3B internal static class BuiltSettings { public const string ServerUrl = &quot;$(GymAppServerUrl)&quot;%3B public const string DebugServerUrl = &quot;$(GymAppDebugServerUrl)&quot;%3B }" />
+    <ItemGroup>
+      <Compile Include="$(BuiltSettingsFile)" />
+      <FileWrites Include="$(BuiltSettingsFile)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- The compiled EF Core model builds itself on a second thread inside its static constructor and waits for it. On
+       Mono (both phones) that thread blocks on the same static constructor, so startup hangs on the splash (found in
+       16c). This EF switch builds it inline instead; our model is small enough for the normal stack -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="Microsoft.EntityFrameworkCore.Issue31751" Value="true" />
+  </ItemGroup>
+
+  <!-- A release built without a server address would only show "can't reach its server" -->
+  <Target Name="RequireServerUrl" BeforeTargets="CoreCompile"
+          Condition="'$(Configuration)' == 'Release' and '$(GymAppServerUrl)' == ''">
+    <Error Text="Set GymAppServerUrl (in Directory.Build.props or with -p:GymAppServerUrl=https://...) before building a release." />
+  </Target>
+</Project>

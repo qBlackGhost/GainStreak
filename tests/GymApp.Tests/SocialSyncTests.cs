@@ -154,6 +154,23 @@ public sealed class SocialSyncTests : IDisposable
         _db.Dispose();
     }
 
+    // --- The 15-minute timer: phones stop it in the background and start it again on resume (16c) ---
+
+    [Fact] public void Timer_StartsOnce_StopsAndStartsAgain()
+    {
+        Assert.False(_sync.IsTimerRunning);
+        _sync.StartTimer();
+        _sync.StartTimer();   // resume while already running: still one timer
+        Assert.True(_sync.IsTimerRunning);
+
+        _sync.StopTimer();
+        Assert.False(_sync.IsTimerRunning);
+        _sync.StopTimer();   // stopping twice is harmless
+
+        _sync.StartTimer();
+        Assert.True(_sync.IsTimerRunning);
+    }
+
     private void Share(bool? share)
     {
         using var db = _db.CreateDbContext();
