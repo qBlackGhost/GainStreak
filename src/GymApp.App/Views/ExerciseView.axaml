@@ -55,6 +55,12 @@
         <Style Selector="TextBlock.prompt.tie">
             <Setter Property="Foreground" Value="{DynamicResource Light}"/>
         </Style>
+        <!-- The phones' planned-set pills -->
+        <Style Selector="Border.planPill">
+            <Setter Property="Padding" Value="12,2,4,2"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
         <!-- − / + steppers -->
         <Style Selector="Button.step">
             <Setter Property="Width" Value="36"/>
@@ -154,10 +160,10 @@
                         <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
                     </Style>
                 </Border.Styles>
-                <StackPanel Orientation="Horizontal" Spacing="10">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
-                </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Info}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
             </Border>
 
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
@@ -166,21 +172,48 @@
                 <Border x:Name="SetsCard" Classes="card" VerticalAlignment="Top">
                     <StackPanel Spacing="20">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <StackPanel Spacing="4">
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
                                 <TextBlock Text="Today's sets" Classes="h2"/>
-                                <TextBlock Text="Weight in kg. Warm-up sets never count toward your PR." FontSize="13" Classes="muted"/>
+                                <TextBlock Classes="muted wideOnly" Text="Weight in kg. Warm-up sets never count toward your PR." FontSize="13"/>
                             </StackPanel>
                             <Button Grid.Column="1" Classes="btn outline small" MinHeight="40" VerticalAlignment="Top"
                                     Command="{Binding PrefillCommand}" IsVisible="{Binding HasLast}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <v:Icon Data="{StaticResource IcMadeUp}" StrokeThickness="2.2" Width="15" Height="15"/>
-                                    <TextBlock Text="Fill from last time" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="wideOnly" Text="Fill from last time" VerticalAlignment="Center"/>
+                                    <TextBlock Classes="phoneOnly" Text="Fill last" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
                         </Grid>
 
+                        <!-- Phones (the canvas): the planned sets as two pills side by side -->
+                        <Grid Classes="phoneOnly" ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Border Classes="planPill">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                    <TextBlock Text="Warm-up" FontSize="12" FontWeight="SemiBold" Classes="soft" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="step" Content="−" Command="{Binding FewerWarmupCommand}"
+                                            AutomationProperties.Name="Fewer warm-up sets"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding WarmupSets}" Classes="mono" FontWeight="Bold" MinWidth="16"
+                                               TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Classes="step" Content="+" Command="{Binding MoreWarmupCommand}"
+                                            AutomationProperties.Name="More warm-up sets"/>
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="1" Classes="planPill">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                    <TextBlock Text="Working" FontSize="12" FontWeight="SemiBold" Classes="soft" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Classes="step" Content="−" Command="{Binding FewerWorkingCommand}"
+                                            AutomationProperties.Name="Fewer working sets"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding WorkingSets}" Classes="mono" FontWeight="Bold" MinWidth="16"
+                                               TextAlignment="Center" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="3" Classes="step" Content="+" Command="{Binding MoreWorkingCommand}"
+                                            AutomationProperties.Name="More working sets"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
                         <!-- Planned sets -->
-                        <Border Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}">
+                        <Border Classes="wideOnly" Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}">
                             <WrapPanel ItemSpacing="20" LineSpacing="10">
                                 <TextBlock Text="PLANNED" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"
                                            VerticalAlignment="Center"/>
@@ -332,6 +365,28 @@
                                 <TextBlock Text="PERSONAL RECORD" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"/>
                                 <TextBlock Grid.Column="1" Text="{Binding PrDateText}" FontSize="12" Classes="muted" IsVisible="{Binding HasPr}"/>
                             </Grid>
+                            <!-- Phones (the canvas): the weight big in lime, kg over × reps beside it, the 1RM in a chip -->
+                            <Panel Classes="phoneOnly">
+                            <StackPanel Spacing="10" HorizontalAlignment="Center" IsVisible="{Binding HasPr}">
+                                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                    <TextBlock Text="{Binding PrWeight}" FontSize="76" FontWeight="Black" LetterSpacing="-3"
+                                               Foreground="{DynamicResource AccentInk}" Margin="0,-10,0,-12" VerticalAlignment="Center"/>
+                                    <StackPanel VerticalAlignment="Center" Spacing="0">
+                                        <TextBlock Text="kg" FontSize="22" FontWeight="ExtraBold"/>
+                                        <TextBlock><Run Text="× " FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource Faint}"/><Run
+                                                   Text="{Binding PrReps}" FontSize="24" FontWeight="ExtraBold"/><Run Text=" reps" FontSize="13"
+                                                   Foreground="{DynamicResource Muted}"/></TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                                <Border HorizontalAlignment="Center" Padding="12,5" CornerRadius="999" Background="{DynamicResource Fill}">
+                                    <TextBlock FontSize="13" Classes="soft">
+                                        <Run Text="Estimated 1RM ≈ "/><Run Text="{Binding PrOneRm}" FontFamily="{StaticResource Mono}" FontWeight="Bold"
+                                             Foreground="{DynamicResource Ink}"/>
+                                    </TextBlock>
+                                </Border>
+                            </StackPanel>
+                            </Panel>
+                            <Panel Classes="wideOnly">
                             <StackPanel Spacing="6" IsVisible="{Binding HasPr}">
                                 <TextBlock>
                                     <Run Text="{Binding PrWeight}" FontSize="48" FontWeight="ExtraBold"/><Run Text=" kg" FontSize="20"
@@ -343,6 +398,7 @@
                                          Foreground="{DynamicResource Light}"/>
                                 </TextBlock>
                             </StackPanel>
+                            </Panel>
                             <StackPanel Spacing="6" IsVisible="{Binding !HasPr}">
                                 <TextBlock Text="No PR yet" FontSize="40" FontWeight="ExtraBold"/>
                                 <TextBlock Text="Your first working set sets it." FontSize="13" Classes="muted"/>

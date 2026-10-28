@@ -416,12 +416,13 @@
                                         Content="Use as my daily goal" Command="{Binding UseAsGoalCommand}" IsVisible="{Binding !IsGoalSet}"/>
                                 <Border Padding="14,12" CornerRadius="12" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1"
                                         Background="{DynamicResource LimeTint}" IsVisible="{Binding IsGoalSet}">
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                    <!-- A grid, so the sentence wraps on a phone -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                                         <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
-                                        <TextBlock FontSize="14" VerticalAlignment="Center">
+                                        <TextBlock Grid.Column="1" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap">
                                             <Run Text="Goal set to "/><Run Text="{Binding SavedEstimateText}"/><Run Text=" kcal. Change it any time in Calories."/>
                                         </TextBlock>
-                                    </StackPanel>
+                                    </Grid>
                                 </Border>
                             </StackPanel>
                             <TextBlock Text="{Binding SavedEstimateMessage}" FontSize="14" Classes="soft" IsVisible="{Binding !HasSavedEstimate}"/>

@@ -4,6 +4,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Platform;
 using Avalonia.Input;
+using Avalonia.Animation;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -30,6 +31,8 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        Tabs.SizeChanged += (_, _) => FitBodyAboveTabs();
+        Tabs.PropertyChanged += (_, e) => { if (e.Property == IsVisibleProperty) FitBodyAboveTabs(); };
         SizeChanged += (_, e) =>
         {
             var phone = e.NewSize.Width < PhoneBelow;
@@ -46,6 +49,7 @@ public partial class MainView : UserControl
             if (_vm is null) return;
             _vm.IsPhone = Classes.Contains("phone");
             _vm.PropertyChanged += OnShellChanged;
+            ShowScreen(_vm.Current);
         };
     }
 
@@ -92,10 +96,34 @@ public partial class MainView : UserControl
         if (_vm?.GoBack() == true) e.Handled = true;
     }
 
+    /// <summary>Screens that are one place on the phones, switched by a pill at the top (the GainStreak Mobile
+    /// canvas): Log in and Create account, the Friends tab's Leaderboard and Map. Between the two the screen fades.</summary>
+    private static readonly Type[][] Pairs =
+    [
+        [typeof(LoginViewModel), typeof(RegisterViewModel)],
+        [typeof(FriendsViewModel), typeof(GymsViewModel)],
+    ];
+
+    private static readonly IPageTransition Fade = new FadeIn(TimeSpan.FromMilliseconds(220));
+
+    // Every other change is a cut (a fade of no length), which keeps both of the control's presenters opaque
+    private static readonly IPageTransition Cut = new FadeIn(TimeSpan.Zero);
+
+    private void ShowScreen(ViewModelBase? screen)
+    {
+        var from = Screen.Content?.GetType();
+        var to = screen?.GetType();
+        var paired = Classes.Contains("phone") && from is not null && to is not null && from != to
+                     && Array.Exists(Pairs, p => Array.IndexOf(p, from) >= 0 && Array.IndexOf(p, to) >= 0);
+        Screen.PageTransition = paired ? Fade : Cut;
+        Screen.Content = screen;
+    }
+
     private void OnSafeAreaChanged(object? sender, SafeAreaChangedArgs e) => ApplyInsets();
 
     private void OnShellChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.Current)) ShowScreen(_vm?.Current);
         if (e.PropertyName == nameof(MainViewModel.ShowsBars)) ApplyInsets();
     }
 
@@ -127,6 +155,15 @@ public partial class MainView : UserControl
         TabHost.IsVisible = keyboard == 0;
         Tabs.Padding = new Thickness(0, 0, 0, safe.Bottom);
         Padding = new Thickness(safe.Left, safe.Top, safe.Right, keyboard > 0 ? keyboard : tabs ? 0 : safe.Bottom);
+        FitBodyAboveTabs();
+    }
+
+    /// <summary>The tab bar lies over the bottom of the screen (so the raised Home circle overlaps it); the screen
+    /// itself stops at the bar's top edge.</summary>
+    private void FitBodyAboveTabs()
+    {
+        var bar = TabHost.IsVisible && Tabs.IsVisible ? Math.Max(0, Tabs.Bounds.Height - TabBar.RiseHeight) : 0;
+        Body.Margin = new Thickness(0, 0, 0, bar);
     }
 
     /// <summary>How much of this view the on-screen keyboard covers. Zero when the system has already made the

@@ -41,6 +41,10 @@ internal static class Initials
 public record FriendsBoardRowViewModel(LeaderboardRow Row)
 {
     public string RankText => $"#{Row.Rank}";
+    /// <summary>Phones (the canvas): the rank without "#", the name with a YOU tag, the points over "pts".</summary>
+    public string RankNumber => Row.Rank.ToString(CultureInfo.InvariantCulture);
+    public string Name => Row.Username;
+    public string PointsNumber => Row.Points.ToString("N0", CultureInfo.InvariantCulture);
     public bool IsFirst => Row.Rank == 1;
     public string Username => Row.IsYou ? $"{Row.Username} (you)" : Row.Username;
     public string Initials => ViewModels.Initials.Of(Row.Username);
@@ -142,6 +146,8 @@ public partial class FriendsViewModel : ViewModelBase
     [ObservableProperty] public partial string PeriodText { get; set; } = "";
     [ObservableProperty] public partial string FriendCountText { get; set; } = "";
     [ObservableProperty] public partial string SentCountText { get; set; } = "";
+    /// <summary>Phones: "1 / 20 sent", beside the card's title.</summary>
+    [ObservableProperty] public partial string SentShortText { get; set; } = "";
 
     [RelayCommand]
     private async Task ShowThisWeekAsync()
@@ -220,6 +226,7 @@ public partial class FriendsViewModel : ViewModelBase
             HasOutgoing = Outgoing.Count > 0;
             StaleNotice = StaleText.For(friends as ICachedResult) ?? StaleText.For(requests) ?? BoardStale;
             SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
+            SentShortText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} sent";
         }
         catch (Exception)
         {

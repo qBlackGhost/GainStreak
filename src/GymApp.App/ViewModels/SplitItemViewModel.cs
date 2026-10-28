@@ -40,11 +40,7 @@ public partial class SplitItemViewModel : ObservableObject
     /// <summary>"18% of lifters", once the server's counts are in; presets only.</summary>
     [ObservableProperty] public partial string? UsageText { get; set; }
 
-    /// <summary>Choosing a split happens on its detail page (variant and start day), so "Set active" opens it.</summary>
-    public string ActivateLabel => IsSelected ? "Current split" : "Set active";
-
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ActivateLabel))]
     public partial bool IsSelected { get; set; }
 
     [ObservableProperty]

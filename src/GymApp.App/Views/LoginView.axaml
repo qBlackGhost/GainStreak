@@ -20,7 +20,7 @@
                 <TextBlock FontSize="26" FontWeight="ExtraBold" LetterSpacing="1" HorizontalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
             </StackPanel>
             <Border Classes="authSwitch phoneOnly">
-                <v:SegmentedPill SelectedIndex="0" PillInset="0">
+                <v:SegmentedPill SlideGroup="auth" SelectedIndex="0" PillInset="0">
                     <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Log in"/>
                     <Button Classes="seg" MinHeight="40" FontSize="14" Content="Create account" Command="{Binding GoToRegisterCommand}"/>
                 </v:SegmentedPill>
@@ -43,17 +43,17 @@
                     </StackPanel>
 
                     <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                             <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                        </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </Grid>
                     </Border>
 
-                    <StackPanel Orientation="Horizontal" Spacing="10"
-                                IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10"
+                          IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                         <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource Soft}" Width="16" Height="16" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Notice}" FontSize="13" Classes="soft" VerticalAlignment="Center" TextWrapping="Wrap"/>
-                    </StackPanel>
+                        <TextBlock Grid.Column="1" Text="{Binding Notice}" FontSize="13" Classes="soft" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </Grid>
 
                     <!-- Sign in -->
                     <StackPanel Spacing="20" IsVisible="{Binding IsSigningIn}">
@@ -69,12 +69,12 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="Password" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox x:Name="PasswordBox" TextInputOptions.ContentType="Password" Classes="field" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
                                          AutomationProperties.Name="Password"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
                                 <!-- Phones: show the password while typing it -->
-                                <Button x:Name="RevealButton" Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
-                                    <v:Icon x:Name="RevealIcon" Data="{StaticResource IcEye}"/>
+                                <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
+                                    <v:Icon Data="{StaticResource IcEye}"/>
                                 </Button>
                             </Panel>
                         </StackPanel>

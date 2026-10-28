@@ -111,6 +111,13 @@
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
+        <!-- The phones' maintenance formula chips -->
+        <Style Selector="Border.calcChip">
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="TextElement.FontSize" Value="13"/>
+        </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Calories"/>
@@ -122,9 +129,10 @@
                 <StackPanel Spacing="6">
                     <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
                     <TextBlock Classes="pageTitle" Text="Calories" FontWeight="ExtraBold"/>
-                    <TextBlock Text="Log what you ate once, at the end of the day." FontSize="15" Classes="soft"/>
+                    <TextBlock Classes="soft wideOnly" Text="Log what you ate once, at the end of the day." FontSize="15"/>
                 </StackPanel>
-                <Border Classes="pill headerActions" Padding="14,8" VerticalAlignment="Bottom">
+                <!-- Stays beside the title on phones too (the canvas), unlike other screens' header buttons -->
+                <Border Grid.Column="1" Classes="pill" Padding="12,6" VerticalAlignment="Bottom">
                     <TextBlock Text="{Binding HeaderPill}" FontSize="13" FontWeight="SemiBold" Classes="light"/>
                 </Border>
             </Grid>
@@ -187,7 +195,8 @@
                             </v:PhoneGrid>
 
                             <StackPanel Spacing="6" IsVisible="{Binding ShowLogForm}">
-                                <TextBlock Text="Eaten today (kcal)" FontSize="12" Classes="muted"/>
+                                <TextBlock Classes="muted wideOnly" Text="Eaten today (kcal)" FontSize="12"/>
+                    <TextBlock Classes="muted phoneOnly" Text="Eaten today (kcal) · log once, at the end of the day" FontSize="12"/>
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                                     <TextBox TextInputOptions.ContentType="Digits" x:Name="TodayBox" Classes="field" MinHeight="48" FontSize="16" PlaceholderText="e.g. 1900"
                                              Text="{Binding TodayInput}"/>
@@ -284,7 +293,14 @@
                     <!-- Calorie goal -->
                     <Border Classes="card">
                         <StackPanel Spacing="18">
-                            <TextBlock Text="Calorie goal" Classes="h2"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <TextBlock Text="Calorie goal" Classes="h2" VerticalAlignment="Center"/>
+                                <!-- Phones (the canvas): the goal sits in the title row -->
+                                <TextBlock Grid.Column="1" Classes="phoneOnly" VerticalAlignment="Center">
+                                    <Run Text="{Binding GoalText}" FontSize="24" FontWeight="ExtraBold"/><Run Text=" kcal / day" FontSize="12"
+                                         FontWeight="SemiBold" Foreground="{DynamicResource Soft}"/>
+                                </TextBlock>
+                            </Grid>
                             <Border Padding="4" CornerRadius="12" Background="{DynamicResource Fill}">
                                 <ItemsControl ItemsSource="{Binding GoalTypes}">
                                     <ItemsControl.ItemsPanel>
@@ -301,7 +317,7 @@
                                 </ItemsControl>
                             </Border>
                             <StackPanel Spacing="4">
-                                <TextBlock>
+                                <TextBlock Classes="wideOnly">
                                     <Run Text="{Binding GoalText}" FontSize="40" FontWeight="ExtraBold"/><Run Text=" kcal / day" FontSize="18"
                                          FontWeight="Bold" Foreground="{DynamicResource Soft}"/>
                                 </TextBlock>
@@ -311,12 +327,17 @@
                             <Border Padding="16" CornerRadius="14" BorderBrush="{DynamicResource AccentInk}" BorderThickness="1"
                                     Background="{DynamicResource LimeTint}" IsVisible="{Binding ShowSuggestion}">
                                 <StackPanel Spacing="10">
-                                    <StackPanel Spacing="2">
-                                        <TextBlock Text="{Binding SuggestionTitle}" FontSize="15" FontWeight="Bold"/>
-                                        <TextBlock Text="{Binding SuggestionNote}" FontSize="12" Classes="soft"/>
-                                    </StackPanel>
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="{Binding SuggestionTitle}" FontSize="15" FontWeight="Bold"/>
+                                            <TextBlock Text="{Binding SuggestionNote}" FontSize="12" Classes="soft"/>
+                                        </StackPanel>
+                                        <!-- Phones (the canvas): Use beside the suggestion -->
+                                        <Button Grid.Column="1" Classes="btn primary small phoneOnly" MinHeight="40" Padding="14,0"
+                                                Content="Use" Command="{Binding UseSuggestionCommand}" VerticalAlignment="Center"/>
+                                    </Grid>
                                     <WrapPanel ItemSpacing="8" LineSpacing="8">
-                                        <Button Classes="btn primary small" MinHeight="40" Padding="16,0" Content="{Binding UseSuggestionLabel}"
+                                        <Button Classes="btn primary small wideOnly" MinHeight="40" Padding="16,0" Content="{Binding UseSuggestionLabel}"
                                                 Command="{Binding UseSuggestionCommand}"/>
                                         <Button Classes="btn outline small" MinHeight="40" Content="{Binding KeepGoalLabel}"
                                                 Command="{Binding KeepGoalCommand}" IsVisible="{Binding CanKeepGoal}"/>
@@ -327,10 +348,12 @@
                                        IsVisible="{Binding SuggestionReason, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
                             <StackPanel Spacing="6">
-                                <TextBlock Text="Your own goal (kcal)" FontSize="12" Classes="muted"/>
+                                <TextBlock Classes="muted wideOnly" Text="Your own goal (kcal)" FontSize="12"/>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                    <TextBox TextInputOptions.ContentType="Digits" x:Name="GoalBox" Classes="field" PlaceholderText="e.g. 2000" Text="{Binding CustomGoalInput}"/>
-                                    <Button Grid.Column="1" Classes="btn outline strong" Padding="16,0" Content="Set my own goal"
+                                    <TextBox TextInputOptions.ContentType="Digits" x:Name="GoalBox" Classes="field" PlaceholderText="Your own goal, e.g. 2000" Text="{Binding CustomGoalInput}"/>
+                                    <Button Grid.Column="1" Classes="btn outline strong wideOnly" Padding="16,0" Content="Set my own goal"
+                                            Command="{Binding SetCustomGoalCommand}"/>
+                                    <Button Grid.Column="1" Classes="btn light phoneOnly" Padding="18,0" Content="Set"
                                             Command="{Binding SetCustomGoalCommand}"/>
                                 </Grid>
                                 <TextBlock Classes="fieldError" Text="{Binding GoalError}"
@@ -348,10 +371,38 @@
                     <!-- Maintenance calories -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Grid Classes="wideOnly" ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="Maintenance calories" FontSize="20" FontWeight="Bold"/>
                                 <TextBlock Grid.Column="1" Text="Estimate" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
                             </Grid>
+                            <!-- Phones (the canvas): the estimate in the title row, the formula as one row of chips -->
+                            <StackPanel Classes="phoneOnly" Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBlock VerticalAlignment="Center">
+                                        <Run Text="Maintenance" FontSize="18" FontWeight="Bold"/><Run Text=" estimate" FontSize="12"
+                                             Foreground="{DynamicResource Muted}"/>
+                                    </TextBlock>
+                                    <TextBlock Grid.Column="1" VerticalAlignment="Center" IsVisible="{Binding HasMaintenance}">
+                                        <Run Text="{Binding MaintenanceKcal}" FontSize="24" FontWeight="ExtraBold"/><Run Text=" kcal" FontSize="12"
+                                             FontWeight="SemiBold" Foreground="{DynamicResource Soft}"/>
+                                    </TextBlock>
+                                </Grid>
+                                <WrapPanel ItemSpacing="6" LineSpacing="6" IsVisible="{Binding HasMaintenance}">
+                                    <Border Classes="calcChip"><TextBlock><Run Text="BMR " Foreground="{DynamicResource Muted}"/><Run Text="{Binding BmrText}" FontFamily="{StaticResource Mono}" FontWeight="Bold"/></TextBlock></Border>
+                                    <TextBlock Text="×" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
+                                    <Border Classes="calcChip"><TextBlock><Run Text="Activity " Foreground="{DynamicResource Muted}"/><Run Text="{Binding ActivityFactorText}" FontFamily="{StaticResource Mono}" FontWeight="Bold"/></TextBlock></Border>
+                                    <TextBlock Text="=" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
+                                    <Border Classes="calcChip" Background="Transparent" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+                                        <TextBlock Text="TDEE" Foreground="{DynamicResource Soft}"/>
+                                    </Border>
+                                </WrapPanel>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Classes="muted" LineHeight="17"/>
+                                    <Button Grid.Column="1" Classes="link" FontSize="13" Content="Edit body data" Command="{Binding ShowProfileCommand}"
+                                            VerticalAlignment="Center"/>
+                                </Grid>
+                            </StackPanel>
+                            <Panel Classes="wideOnly">
                             <StackPanel Spacing="14" IsVisible="{Binding HasMaintenance}">
                                 <TextBlock>
                                     <Run Text="{Binding MaintenanceKcal}" FontSize="34" FontWeight="ExtraBold"/><Run Text=" kcal / day"
@@ -381,8 +432,9 @@
                                     </Border>
                                 </Grid>
                             </StackPanel>
-                            <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Classes="muted" LineHeight="18"/>
-                            <Button Classes="link" HorizontalAlignment="Left" Content="Edit body data in Profile"
+                            </Panel>
+                            <TextBlock Classes="muted wideOnly" Text="{Binding MaintenanceNote}" FontSize="12" LineHeight="18"/>
+                            <Button Classes="link wideOnly" HorizontalAlignment="Left" Content="Edit body data in Profile"
                                     Command="{Binding ShowProfileCommand}"/>
                         </StackPanel>
                     </Border>

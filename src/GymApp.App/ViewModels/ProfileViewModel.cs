@@ -94,6 +94,10 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string CurrentStreak { get; set; } = "0";
     [ObservableProperty] public partial string BestStreak { get; set; } = "0";
     [ObservableProperty] public partial string LevelText { get; set; } = "";
+    // The phones' header tiles
+    [ObservableProperty] public partial string LevelNumber { get; set; } = "";
+    [ObservableProperty] public partial string LevelName { get; set; } = "";
+    [ObservableProperty] public partial string Points { get; set; } = "0";
 
     // ===== Account =====
     [ObservableProperty] public partial string EmailText { get; set; } = "";
@@ -260,6 +264,9 @@ public partial class ProfileViewModel : ViewModelBase
             BestStreak = s.LongestStreak.ToString(CultureInfo.InvariantCulture);
             var level = LevelCalculator.For(_session.CurrentUser?.Points ?? 0);
             LevelText = $"Level {level.Number} · {level.Name}";
+            LevelNumber = level.Number.ToString(CultureInfo.InvariantCulture);
+            LevelName = level.Name;
+            Points = (_session.CurrentUser?.Points ?? 0).ToString("N0", CultureInfo.InvariantCulture);
             ApplyMaintenance(s.Maintenance);
 
             if (refillForm) FillForm(s.Profile);

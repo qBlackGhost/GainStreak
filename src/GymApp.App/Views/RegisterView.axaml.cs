@@ -1,6 +1,5 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+using Avalonia.Interactivity;
 
 namespace GymApp.App.Views;
 
@@ -10,4 +9,6 @@ public partial class RegisterView : UserControl
     {
         InitializeComponent();
     }
+
+    private void OnReveal(object? sender, RoutedEventArgs e) => PasswordReveal.OnClick(sender, e);
 }

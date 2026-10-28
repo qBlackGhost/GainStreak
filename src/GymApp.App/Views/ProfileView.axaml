@@ -83,14 +83,93 @@
             <Setter Property="Height" Value="56"/>
         </Style>
         <Style Selector=".phone Button.wideSeg"><Setter Property="MinWidth" Value="0"/></Style>
+        <!-- Units and Gender: 360 wide at most on desktop, the full width on phones (the canvas) -->
+        <Style Selector="Border.fieldTrack">
+            <Setter Property="MaxWidth" Value="360"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style Selector=".phone Border.fieldTrack">
+            <Setter Property="MaxWidth" Value="Infinity"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <!-- The phones' header card -->
+        <Style Selector="Border.statTile">
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Button.rowLink">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.rowLink:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Profile"/>
 
         <ScrollViewer>
         <StackPanel Classes="page" Spacing="24">
+            <!-- Phones (the canvas): a card with the avatar and name, streak / level / points tiles, then the split -->
+            <Border Classes="card phoneOnly">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                        <Border Width="64" Height="64" CornerRadius="32" Padding="3" BorderThickness="2" BorderBrush="{DynamicResource AccentInk}">
+                            <Border CornerRadius="28" Background="{DynamicResource Inverse}">
+                                <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="22" FontWeight="ExtraBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Border>
+                        <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Border Classes="statTile">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Streak" FontSize="12" Classes="muted"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Path Data="{StaticResource IcFlame}" Fill="{DynamicResource FlameText}" Width="15" Height="15" Stretch="Uniform"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CurrentStreak}" FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource FlameText}"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Classes="statTile">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Level" FontSize="12" Classes="muted"/>
+                                <TextBlock FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                                    <Run Text="{Binding LevelNumber}" FontSize="20" FontWeight="ExtraBold"/><Run Text=" "/><Run Text="{Binding LevelName}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Classes="statTile">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Points" FontSize="12" Classes="muted"/>
+                                <TextBlock Text="{Binding Points}" FontSize="20" FontWeight="ExtraBold"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                    <Border Height="1" Background="{DynamicResource Divider}"/>
+                    <Button Classes="rowLink" Command="{Binding ShowSplitsCommand}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="Split" FontSize="12" Classes="muted"/>
+                                <TextBlock Text="{Binding SplitText}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <v:Icon Grid.Column="1" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
+
             <!-- Header: who you are, your split, streak and level -->
-            <Grid x:Name="Header" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
+            <Grid x:Name="Header" Classes="wideOnly" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
                 <!-- A grid, so the chips wrap on a phone -->
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
                     <Border x:Name="Avatar" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
@@ -133,10 +212,10 @@
             <!-- Saved / done -->
             <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
                     IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <StackPanel Orientation="Horizontal" Spacing="10">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Info}" FontSize="14" VerticalAlignment="Center"/>
-                </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Info}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
             </Border>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -162,7 +241,7 @@
                                 <!-- Units -->
                                 <TextBlock Text="Units" Classes="formLabel"/>
                                 <StackPanel Grid.Column="1" Spacing="6">
-                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                    <Border Classes="track fieldTrack">
                                         <v:SegmentedPill SelectedIndex="{Binding UnitsIndex}" PillInset="0">
                                             <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="40" FontSize="14"
                                                     Content="Metric · kg, cm" Command="{Binding SelectMetricCommand}"/>
@@ -177,7 +256,7 @@
                                 <!-- Gender -->
                                 <TextBlock Grid.Row="1" Text="Gender" Classes="formLabel"/>
                                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
-                                    <Border Classes="track" MaxWidth="360" HorizontalAlignment="Left">
+                                    <Border Classes="track fieldTrack">
                                         <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
                                             <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
                                                     MinHeight="40" FontSize="14" Classes.wideSeg="True" Content="Male" Command="{Binding SelectMaleCommand}"/>

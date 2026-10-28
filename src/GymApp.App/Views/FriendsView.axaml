@@ -40,7 +40,10 @@
         </Style>
         <Style Selector="TextBlock.rank"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
         <Style Selector="TextBlock.rank.first"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
-        <Style Selector="StackPanel.streak"><Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/></Style>
+        <Style Selector="StackPanel.streak">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/>
+            <Setter Property="MinWidth" Value="52"/>
+        </Style>
         <Style Selector="StackPanel.streak.lit"><Setter Property="TextElement.Foreground" Value="{DynamicResource Flame}"/></Style>
         <Style Selector="Border.listRow">
             <Setter Property="MinHeight" Value="56"/>
@@ -76,14 +79,29 @@
         </Style>
         <!-- Phones: the rows' narrower padding (PhoneGrid narrows their columns) -->
         <Style Selector=".phone Border.boardRow"><Setter Property="Padding" Value="10,0"/></Style>
+        <!-- Phones (the canvas): the streak as a chip, a YOU tag, a search icon and a shorter hint in the search box -->
+        <Style Selector=".phone Border.streakChip">
+            <Setter Property="Background" Value="{DynamicResource Fill3}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="8,4"/>
+        </Style>
+        <Style Selector=".phone Border.streakChip StackPanel.streak"><Setter Property="MinWidth" Value="0"/></Style>
+        <Style Selector="Border.youTag">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="CornerRadius" Value="5"/>
+            <Setter Property="Padding" Value="5,1"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Username (at least 3 letters)"/></Style>
+        <Style Selector=".phone TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Add friend by username"/></Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Friends"/>
         <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
         <Border DockPanel.Dock="Top" Classes="friendsSwitch phoneOnly">
-            <v:SegmentedPill SelectedIndex="0" PillInset="0">
-                <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Leaderboard"/>
-                <Button Classes="seg" MinHeight="40" FontSize="14" Content="Map" Command="{Binding OpenMapCommand}"/>
+            <v:SegmentedPill SlideGroup="friendsTab" SelectedIndex="0" PillInset="0">
+                <Button Classes="seg on" MinHeight="40" FontSize="14" ><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcTrophy}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Leaderboard" VerticalAlignment="Center"/></StackPanel></Button>
+                <Button Classes="seg" MinHeight="40" FontSize="14"  Command="{Binding OpenMapCommand}"><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcMap}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Map" VerticalAlignment="Center"/></StackPanel></Button>
             </v:SegmentedPill>
         </Border>
 
@@ -99,7 +117,8 @@
                         <TextBlock Grid.Column="1" Text="Friends see your username, level, points and streak. Nothing else." FontSize="14" Classes="soft"/>
                     </Grid>
                 </StackPanel>
-                <TextBlock Classes="headerActions mono muted" Text="{Binding FriendCountText}" FontSize="13" VerticalAlignment="Bottom"/>
+                <!-- Beside the title on phones too (the canvas) -->
+                <TextBlock Grid.Column="1" Classes="mono muted" Text="{Binding FriendCountText}" FontSize="13" VerticalAlignment="Top" Margin="0,12,0,0"/>
             </Grid>
 
             <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
@@ -115,12 +134,12 @@
                     <!-- Leaderboard -->
                     <Border Classes="card">
                         <StackPanel Spacing="16">
-                            <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Leaderboard" Classes="h2"/>
                                     <TextBlock Text="{Binding PeriodText}" FontSize="13" Classes="muted"/>
                                 </StackPanel>
-                                <Border Classes="headerActions" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" VerticalAlignment="Center">
+                                <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}" VerticalAlignment="Center">
                                     <v:SegmentedPill SelectedIndex="{Binding IsAllTime, Converter={x:Static v:SegmentedPill.BoolToIndex}}"
                                                      PillCornerRadius="8" PillInset="0">
                                         <Button Classes="seg" Classes.on="{Binding IsThisWeek}" CornerRadius="8" Content="This week"
@@ -139,25 +158,43 @@
                                         <Border Classes="boardRow" Classes.you="{Binding IsYou}">
                                             <v:PhoneGrid ColumnDefinitions="40,Auto,*,Auto,76" ColumnSpacing="14" VerticalAlignment="Center"
                                                          PhoneColumns="34,Auto,*,Auto,Auto" PhoneColumnSpacing="10">
-                                                <TextBlock Text="{Binding RankText}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
-                                                           Classes="rank" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
+                                                <Panel>
+                                                    <TextBlock Text="{Binding RankText}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
+                                                               Classes="rank wideOnly" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
+                                                    <TextBlock Text="{Binding RankNumber}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
+                                                               HorizontalAlignment="Center" Classes="rank phoneOnly" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
+                                                </Panel>
                                                 <Border Grid.Column="1" Classes="avatar" Classes.you="{Binding IsYou}">
                                                     <TextBlock Text="{Binding Initials}" FontSize="13" FontWeight="Bold"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Username}" FontSize="15" FontWeight="Bold"
+                                                    <TextBlock Text="{Binding Username}" FontSize="15" FontWeight="Bold" Classes="wideOnly"
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                    <Grid Classes="phoneOnly" ColumnDefinitions="Auto,Auto" ColumnSpacing="6">
+                                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold"
+                                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        <Border Grid.Column="1" Classes="youTag" IsVisible="{Binding IsYou}">
+                                                            <TextBlock Text="YOU" FontSize="10" FontWeight="ExtraBold" Foreground="Black"/>
+                                                        </Border>
+                                                    </Grid>
                                                     <TextBlock Text="{Binding LevelText}" FontSize="12" Classes="muted"/>
                                                 </StackPanel>
-                                                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
-                                                            MinWidth="52" ToolTip.Tip="Current streak"
-                                                            Classes="streak" Classes.lit="{Binding HasStreak}">
-                                                    <v:Icon Data="{StaticResource IcFlame}" StrokeThickness="2.2" Width="15" Height="15"/>
-                                                    <TextBlock Text="{Binding StreakText}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="4" Text="{Binding PointsText}" Classes="mono" FontSize="15" FontWeight="Bold"
+                                                <Border Grid.Column="3" Classes="streakChip" Classes.lit="{Binding HasStreak}" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
+                                                                ToolTip.Tip="Current streak"
+                                                                Classes="streak" Classes.lit="{Binding HasStreak}">
+                                                        <v:Icon Data="{StaticResource IcFlame}" StrokeThickness="2.2" Width="15" Height="15"/>
+                                                        <TextBlock Text="{Binding StreakText}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <TextBlock Grid.Column="4" Text="{Binding PointsText}" Classes="mono wideOnly" FontSize="15" FontWeight="Bold"
                                                            TextAlignment="Right" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="4" Classes="phoneOnly" VerticalAlignment="Center" MinWidth="36">
+                                                    <TextBlock Text="{Binding PointsNumber}" Classes="mono" FontSize="17" FontWeight="Bold"
+                                                               HorizontalAlignment="Right" TextWrapping="NoWrap"/>
+                                                    <TextBlock Text="pts" FontSize="11" Classes="muted" HorizontalAlignment="Right"/>
+                                                </StackPanel>
                                             </v:PhoneGrid>
                                         </Border>
                                     </DataTemplate>
@@ -175,8 +212,8 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Your friends -->
-                    <Border Classes="card">
+                    <!-- Your friends (phones: moved under adding friends, FriendsView.axaml.cs) -->
+                    <Border x:Name="YourFriends" Classes="card">
                         <StackPanel Spacing="12">
                             <TextBlock Text="Your friends" Classes="h2"/>
                             <TextBlock Text="No friends yet." FontSize="14" Classes="muted" IsVisible="{Binding HasNoFriends}"/>
@@ -214,10 +251,18 @@
                     <!-- Add friend -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">
-                            <TextBlock Text="Add friend" Classes="h2"/>
+                            <TextBlock Text="Add friend" Classes="h2 wideOnly"/>
+                            <Grid Classes="phoneOnly" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="Add friends" Classes="h2"/>
+                                <TextBlock Grid.Column="1" Text="{Binding SentShortText}" Classes="mono muted" FontSize="12" VerticalAlignment="Center"/>
+                            </Grid>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <TextBox x:Name="SearchBox" Classes="field" PlaceholderText="Username (at least 3 letters)"
-                                         Text="{Binding Query}" AutomationProperties.Name="Username"/>
+                                <TextBox x:Name="SearchBox" Classes="field" Text="{Binding Query}" AutomationProperties.Name="Username">
+                                    <TextBox.InnerLeftContent>
+                                        <v:Icon Classes="phoneOnly" Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}"
+                                                Width="16" Height="16" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                    </TextBox.InnerLeftContent>
+                                </TextBox>
                                 <Button Grid.Column="1" Classes="btn light" Content="Search" Command="{Binding SearchCommand}"/>
                             </Grid>
                             <TextBlock Text="{Binding SearchHint}" FontSize="12" Classes="error"
@@ -240,7 +285,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="{Binding SentCountText}" FontSize="12" Foreground="{DynamicResource Faint}"/>
+                            <TextBlock Text="{Binding SentCountText}" FontSize="12" Foreground="{DynamicResource Faint}" Classes="wideOnly"/>
                         </StackPanel>
                     </Border>
 

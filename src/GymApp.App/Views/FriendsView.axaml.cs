@@ -12,7 +12,11 @@ public partial class FriendsView : UserControl
     public FriendsView()
     {
         InitializeComponent();
-        Columns.SizeChanged += (_, e) => Columns.Classes.Set("stack", e.NewSize.Width < TwoColumnMinWidth);
+        Columns.SizeChanged += (_, e) =>
+        {
+            Columns.Classes.Set("stack", e.NewSize.Width < TwoColumnMinWidth);
+            PlaceYourFriends(MainView.IsPhoneLayout(this));
+        };
 
         // Enter searches, like the button
         SearchBox.KeyDown += (_, e) =>
@@ -20,5 +24,21 @@ public partial class FriendsView : UserControl
             if (e.Key == Key.Enter && DataContext is FriendsViewModel vm && vm.SearchCommand.CanExecute(null))
                 vm.SearchCommand.Execute(null);
         };
+    }
+
+    /// <summary>Phones (the GainStreak Mobile canvas): the leaderboard, then adding friends, then your friends. Wider:
+    /// your friends under the leaderboard, adding friends beside them.</summary>
+    private void PlaceYourFriends(bool phone)
+    {
+        if (phone && YourFriends.Parent == LeftColumn)
+        {
+            LeftColumn.Children.Remove(YourFriends);
+            RightColumn.Children.Add(YourFriends);
+        }
+        else if (!phone && YourFriends.Parent == RightColumn)
+        {
+            RightColumn.Children.Remove(YourFriends);
+            LeftColumn.Children.Add(YourFriends);
+        }
     }
 }

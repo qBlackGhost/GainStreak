@@ -19,7 +19,7 @@
                 <TextBlock FontSize="26" FontWeight="ExtraBold" LetterSpacing="1" HorizontalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
             </StackPanel>
             <Border Classes="authSwitch phoneOnly">
-                <v:SegmentedPill SelectedIndex="1" PillInset="0">
+                <v:SegmentedPill SlideGroup="auth" SelectedIndex="1" PillInset="0">
                     <Button Classes="seg" MinHeight="40" FontSize="14" Content="Log in" Command="{Binding GoToLoginCommand}"/>
                     <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Create account"/>
                 </v:SegmentedPill>
@@ -38,10 +38,10 @@
                     </StackPanel>
 
                     <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                             <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center"/>
-                        </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </Grid>
                     </Border>
 
                     <StackPanel Spacing="8">
@@ -69,9 +69,13 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Password" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
+                            <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
                                      Text="{Binding Password}" AutomationProperties.Name="Password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                            <!-- Phones: show the password while typing it -->
+                            <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
+                                <v:Icon Data="{StaticResource IcEye}"/>
+                            </Button>
                         </Panel>
                         <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
                                    IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -80,9 +84,13 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Confirm password" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
+                            <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
                                      Text="{Binding ConfirmPassword}" AutomationProperties.Name="Confirm password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                            <!-- Phones: show the password while typing it -->
+                            <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
+                                <v:Icon Data="{StaticResource IcEye}"/>
+                            </Button>
                         </Panel>
                         <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
                                    IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

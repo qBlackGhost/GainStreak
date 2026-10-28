@@ -72,6 +72,20 @@
             <Setter Property="Background" Value="{DynamicResource Inverse}"/>
             <Setter Property="HorizontalAlignment" Value="Left"/>
         </Style>
+        <!-- The chip's body: icon, words, switch in a row; on phones (the map settings sheet) two tiles side by side,
+             the switch top right and the words under it -->
+        <Style Selector="Grid.chipBody > StackPanel"><Setter Property="Grid.Column" Value="1"/></Style>
+        <Style Selector=".phone Button.chip">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="Padding" Value="12,10"/>
+        </Style>
+        <Style Selector=".phone Grid.chipBody"><Setter Property="RowSpacing" Value="10"/></Style>
+        <Style Selector=".phone Grid.chipBody > StackPanel">
+            <Setter Property="Grid.Column" Value="0"/>
+            <Setter Property="Grid.Row" Value="1"/>
+            <Setter Property="Grid.ColumnSpan" Value="3"/>
+        </Style>
         <Style Selector="Button.chip.on Border.knob">
             <Setter Property="Background" Value="{DynamicResource PageBg}"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -185,16 +199,101 @@
         <Style Selector="DockPanel.narrow Grid#Page">
             <Setter Property="Margin" Value="16,20"/>
         </Style>
+        <!-- Phones: the controls floating on the map -->
+        <Style Selector="Button.mapControl">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Surface}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.mapControl.cityButton">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.mapControl.square">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.mapControl.on">
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+        </Style>
+        <Style Selector="Button.mapControl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Surface}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Border.mapCard.friendsCard"><Setter Property="Padding" Value="18,16,18,12"/></Style>
+        <!-- In the phones' sheet the sections are flat, divided by lines (the canvas) -->
+        <Style Selector="StackPanel#PhoneSheetBody Border.mapCard">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0,6"/>
+        </Style>
+        <!-- The pills on the map: full width, on the page colour -->
+        <Style Selector="Panel#PhonePills WrapPanel#MapPills > Border">
+            <Setter Property="Background" Value="{DynamicResource Surface}"/>
+        </Style>
+        <!-- The legend: hidden on phones until the info button shows it, under the controls -->
+        <Style Selector=".phone Panel#LegendWrap">
+            <Setter Property="IsVisible" Value="False"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style Selector=".phone Panel#LegendWrap.on">
+            <Setter Property="IsVisible" Value="True"/>
+        </Style>
     </UserControl.Styles>
     <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
         <v:Sidebar Current="Map"/>
         <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
         <Border DockPanel.Dock="Top" Classes="friendsSwitch phoneOnly">
-            <v:SegmentedPill SelectedIndex="1" PillInset="0">
-                <Button Classes="seg" MinHeight="40" FontSize="14" Content="Leaderboard" Command="{Binding OpenLeaderboardCommand}"/>
-                <Button Classes="seg on" MinHeight="40" FontSize="14" Content="Map"/>
+            <v:SegmentedPill SlideGroup="friendsTab" SelectedIndex="1" PillInset="0">
+                <Button Classes="seg" MinHeight="40" FontSize="14"  Command="{Binding OpenLeaderboardCommand}"><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcTrophy}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Leaderboard" VerticalAlignment="Center"/></StackPanel></Button>
+                <Button Classes="seg on" MinHeight="40" FontSize="14" ><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcMap}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Map" VerticalAlignment="Center"/></StackPanel></Button>
             </v:SegmentedPill>
+        </Border>
+
+        <Panel x:Name="PageArea">
+        <!-- Phones (the GainStreak Mobile canvas): the map fills the screen, the controls float on it, and the rest is a
+             sheet from the bottom. GymsView.axaml.cs moves the map, the pills, the chips and the right column in here -->
+        <Panel x:Name="PhoneMap" IsVisible="False"/>
+        <StackPanel x:Name="PhoneControls" IsVisible="False" Margin="16,10,16,0" Spacing="10" VerticalAlignment="Top">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                <Button Classes="mapControl cityButton" Command="{Binding ChangeCityCommand}" AutomationProperties.Name="Change city">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                        <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                            <Run Text="{Binding CityName}" FontWeight="Bold" FontSize="14"/><Run Text="  ·  " Foreground="{DynamicResource Muted}"/><Run
+                                 Text="{Binding FriendCountShort}" FontSize="12" Foreground="{DynamicResource Muted}"/>
+                        </TextBlock>
+                        <v:Icon Grid.Column="2" Data="{StaticResource IcChevronDown}" Stroke="{DynamicResource Muted}" Width="14" Height="14"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
+                <Button x:Name="LegendButton" Grid.Column="1" Classes="mapControl square" Click="OnLegend" AutomationProperties.Name="Map legend">
+                    <v:Icon Data="{StaticResource IcInfoCircle}" Width="18" Height="18"/>
+                </Button>
+                <Button Grid.Column="2" Classes="mapControl square" Click="OnSettings" AutomationProperties.Name="Map settings">
+                    <v:Icon Data="{StaticResource IcSliders}" Width="18" Height="18"/>
+                </Button>
+            </Grid>
+            <Panel x:Name="PhonePills"/>
+        </StackPanel>
+        <Border x:Name="PhoneSheet" IsVisible="False" VerticalAlignment="Bottom" CornerRadius="22,22,0,0" ClipToBounds="True"
+                Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+            <!-- No scrolling: dragging the sheet up shows the rest (GymsView.axaml.cs moves the body on the canvas) -->
+            <DockPanel>
+                <Border DockPanel.Dock="Top" Width="40" Height="5" CornerRadius="3" Margin="0,8,0,4" Background="{DynamicResource Control}"/>
+                <Canvas x:Name="SheetCanvas" ClipToBounds="True">
+                    <StackPanel x:Name="PhoneSheetBody" Canvas.Left="16" Canvas.Top="4"/>
+                </Canvas>
+            </DockPanel>
         </Border>
 
         <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Disabled">
@@ -215,26 +314,26 @@
                     <Button Classes="chip" Classes.on="{Binding ShareCheckIns}" Command="{Binding ToggleShareCommand}"
                             ToolTip.Tip="Friends see the gym and day of your check-ins from the last 30 days, never the time"
                             AutomationProperties.Name="Visible to friends">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Grid Classes="chipBody" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
                             <v:Icon Data="{StaticResource IcFriends}" Width="16" Height="16" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="Visible to friends" FontSize="13" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding ShareStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8"/>
+                                <TextBlock Text="{Binding ShareStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <Border Classes="track"><Border Classes="knob"/></Border>
-                        </StackPanel>
+                            <Border Grid.Column="2" Classes="track" VerticalAlignment="Center"><Border Classes="knob"/></Border>
+                        </Grid>
                     </Button>
                     <Button Classes="chip" Classes.on="{Binding AskForGym}" Command="{Binding ToggleAskCommand}"
                             ToolTip.Tip="Ask which gym after every check-in, with your gym preselected. Off: your gym is logged by itself."
                             AutomationProperties.Name="Ask for gym">
-                        <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Grid Classes="chipBody" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
                             <v:Icon Data="{StaticResource IcBell}" Width="16" Height="16" VerticalAlignment="Center"/>
                             <StackPanel>
                                 <TextBlock Text="Ask for gym" FontSize="13" FontWeight="Bold"/>
-                                <TextBlock Text="{Binding AskStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8"/>
+                                <TextBlock Text="{Binding AskStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <Border Classes="track"><Border Classes="knob"/></Border>
-                        </StackPanel>
+                            <Border Grid.Column="2" Classes="track" VerticalAlignment="Center"><Border Classes="knob"/></Border>
+                        </Grid>
                     </Button>
                 </WrapPanel>
             </Grid>
@@ -246,7 +345,7 @@
 
                 <!-- ===== Friends map ===== -->
                 <Border x:Name="MapCard" Classes="mapCard">
-                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Grid x:Name="MapCardGrid" RowDefinitions="Auto,*,Auto" RowSpacing="12">
                         <!-- Title and pills side by side; the code-behind puts the pills under the title when the card is narrow -->
                         <Grid x:Name="MapHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12">
                             <WrapPanel ItemSpacing="10" VerticalAlignment="Center">
@@ -275,12 +374,14 @@
                             </WrapPanel>
                         </Grid>
 
-                        <Border Grid.Row="1" CornerRadius="14" ClipToBounds="True" Background="{DynamicResource ColdTint}"
+                        <Border x:Name="MapFrame" Grid.Row="1" CornerRadius="14" ClipToBounds="True" Background="{DynamicResource ColdTint}"
                                 BorderBrush="{DynamicResource Line}" BorderThickness="1">
                             <Grid>
                                 <mapsui:MapControl x:Name="FriendMap"/>
 
-                                <!-- Legend, bottom left; hidden while the gym card is open so they never overlap -->
+                                <!-- Legend, bottom left; hidden while the gym card is open so they never overlap. Phones: under the
+                                     controls, while the info button is on -->
+                                <Panel x:Name="LegendWrap">
                                 <Border Classes="overlay" Padding="12,10" Margin="12" HorizontalAlignment="Left" VerticalAlignment="Bottom"
                                         IsHitTestVisible="False" IsVisible="{Binding !HasSelection}">
                                     <StackPanel Spacing="7">
@@ -309,9 +410,10 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
+                                </Panel>
 
                                 <!-- Today's gym changed -->
-                                <Border Padding="14,8,8,8" CornerRadius="12" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Top"
+                                <Border x:Name="ToastBox" Padding="14,8,8,8" CornerRadius="12" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Top"
                                         Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" BoxShadow="0 8 24 0 #80000000"
                                         IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                                     <StackPanel Orientation="Horizontal" Spacing="12">
@@ -328,14 +430,14 @@
                                 </Border>
 
                                 <!-- Nothing to pin: a small note in the corner, so the map stays usable -->
-                                <Border Classes="overlay" Padding="12,9" CornerRadius="10" MaxWidth="230" Margin="12"
+                                <Border x:Name="EmptyNote" Classes="overlay" Padding="12,9" CornerRadius="10" MaxWidth="230" Margin="12"
                                         HorizontalAlignment="Right" VerticalAlignment="Top" IsHitTestVisible="False"
                                         IsVisible="{Binding ShowMapNote}">
                                     <TextBlock Text="{Binding MapEmptyText}" FontSize="12" Classes="light" TextWrapping="Wrap" LineHeight="17"/>
                                 </Border>
 
                                 <!-- Gym card -->
-                                <Border Padding="14" CornerRadius="14" MaxWidth="420" Margin="16,0,16,32" HorizontalAlignment="Stretch"
+                                <Border x:Name="GymCard" Padding="14" CornerRadius="14" MaxWidth="420" Margin="16,0,16,32" HorizontalAlignment="Stretch"
                                         VerticalAlignment="Bottom" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1"
                                         BoxShadow="0 12 40 0 #99000000" IsVisible="{Binding HasSelection}">
                                     <StackPanel Spacing="10">
@@ -392,15 +494,15 @@
                 <!-- ===== Right: Your gym, Friends, Your check-ins ===== -->
                 <Grid x:Name="RightColumn" RowDefinitions="Auto,*,Auto" RowSpacing="16">
 
-                    <!-- Your gym -->
-                    <Border Classes="mapCard">
+                    <!-- Your gym (phones: all the closed sheet shows) -->
+                    <Border x:Name="YourGymCard" Classes="mapCard">
                         <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto">
+                            <Grid ColumnDefinitions="*,Auto" Classes="wideOnly">
                                 <TextBlock Text="Your gym" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <Button Grid.Column="1" Classes="btn outline small" MinHeight="34" Content="{Binding HomeGymButton}"
                                         Command="{Binding OpenHomeGymPickerCommand}"/>
                             </Grid>
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                 <Border x:Name="HomeIcon" Width="40" Height="40" CornerRadius="12" Classes.none="{Binding !HasHomeGym}">
                                     <Panel>
                                         <v:Icon Data="{StaticResource IcDumbbell}" Stroke="Black" StrokeThickness="2.4" Width="20" Height="20"
@@ -410,9 +512,13 @@
                                     </Panel>
                                 </Border>
                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                    <!-- Phones (the canvas): a "YOUR GYM" caption over the name, and Change beside them -->
+                                    <TextBlock Text="YOUR GYM" FontSize="11" FontWeight="Bold" LetterSpacing="1" Classes="muted phoneOnly"/>
                                     <TextBlock Text="{Binding HomeGymName}" FontSize="15" FontWeight="Bold"/>
                                     <TextBlock Text="{Binding HomeGymDetail}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                 </StackPanel>
+                                <Button Grid.Column="2" Classes="btn outline small phoneOnly" MinHeight="34" Content="{Binding HomeGymButton}"
+                                        Command="{Binding OpenHomeGymPickerCommand}" VerticalAlignment="Center"/>
                             </Grid>
                             <Border Padding="12,10" CornerRadius="12" Background="{DynamicResource Surface2}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
@@ -428,7 +534,7 @@
                     </Border>
 
                     <!-- Friends -->
-                    <Border Grid.Row="1" Classes="mapCard" Padding="18,16,18,12">
+                    <Border Grid.Row="1" Classes="mapCard friendsCard">
                         <Grid RowDefinitions="Auto,*" RowSpacing="10">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                 <StackPanel Spacing="2">
@@ -563,7 +669,23 @@
             </Grid>
         </Grid>
         </ScrollViewer>
+        </Panel>
     </DockPanel>
+
+    <!-- Phones: the map's settings (the two switches), a sheet from the settings button -->
+    <Border x:Name="SettingsSheet" Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="False" PointerPressed="OnSettingsScrim">
+        <v:Sheet Padding="16,12,16,24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" PointerPressed="OnSheetPressed">
+            <StackPanel Spacing="14">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="Map settings" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Classes="btn outline small" Content="Done" Click="OnSettingsDone"/>
+                </Grid>
+                <Panel x:Name="SettingsChips"/>
+                <TextBlock FontSize="12" Classes="muted" TextWrapping="Wrap"
+                           Text="Friends only see the gym and the day of a check-in, never the time. Custom gyms show by name only."/>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
 
     <!-- Gym picker dialog, over the whole page -->
     <ContentControl Content="{Binding Picker}" IsVisible="{Binding IsPickerOpen}"/>

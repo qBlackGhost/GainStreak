@@ -95,7 +95,10 @@
                              Classes.rest="{Binding IsRestToday}"/>
                     </TextBlock>
                 </StackPanel>
-                <WrapPanel Classes="headerActions" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom" IsVisible="{Binding HasSplit}">
+                <!-- Not on phones (the canvas): Share and Change split are on the Splits tab there, custom exercises on the day page -->
+                <Panel Classes="headerActions">
+                <Panel Classes="wideOnly">
+                <WrapPanel ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom" IsVisible="{Binding HasSplit}">
                     <Button Classes="btn primary" Padding="16,0" Command="{Binding OpenShareCommand}" ToolTip.Tip="Share a workout with friends">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <v:Icon Data="{StaticResource IcShare}" Width="16" Height="16"/>
@@ -115,6 +118,8 @@
                         </StackPanel>
                     </Button>
                 </WrapPanel>
+                </Panel>
+                </Panel>
             </Grid>
 
 <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
@@ -163,13 +168,13 @@
                     <DataTemplate x:DataType="vm:DayCardViewModel">
                         <Border Classes="dayCard" Classes.today="{Binding IsToday}">
                             <DockPanel>
-                                <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,16,0,0">
+                                <!-- Open, or for an empty day Add exercises and Copy side by side (copying lives on the day page) -->
+                                <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,14,0,0">
                                     <Button Classes="btn" Classes.primary="{Binding IsAccentOpen}" Classes.light="{Binding !IsAccentOpen}"
                                             HorizontalAlignment="Stretch" Content="{Binding OpenLabel}" Command="{Binding OpenCommand}"/>
-                                    <!-- Copying lives on the day page -->
-                                    <Button Classes="btn outline" HorizontalAlignment="Stretch" Content="Copy from another day"
+                                    <Button Grid.Column="1" Classes="btn outline" Content="Copy from a day"
                                             Command="{Binding OpenCommand}" IsVisible="{Binding IsEmpty}"/>
-                                </StackPanel>
+                                </Grid>
 
                                 <StackPanel Spacing="16">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -206,9 +211,9 @@
                                                 <DataTemplate x:DataType="vm:DayExerciseLine">
                                                     <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="40">
                                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="Medium"
+                                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
                                                                        TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                            <TextBlock Grid.Column="1" Text="{Binding Sets}" Classes="mono muted" FontSize="12"
+                                                            <TextBlock Grid.Column="1" Text="{Binding Sets}" Classes="muted" FontSize="12"
                                                                        VerticalAlignment="Center"/>
                                                         </Grid>
                                                     </Border>

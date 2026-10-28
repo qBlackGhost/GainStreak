@@ -216,6 +216,8 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     // ===== Friends card =====
     public ObservableCollection<MapFriendGroupViewModel> FriendGroups { get; } = new();
     [ObservableProperty] public partial string FriendCountText { get; set; } = "";
+    /// <summary>Phones: "3 friends" on the city button (the range is on the pills right under it).</summary>
+    [ObservableProperty] public partial string FriendCountShort { get; set; } = "";
 
     /// <summary>"You're offline. Last updated 14:05." when friends' check-ins came from the cache.</summary>
     [ObservableProperty] public partial string? FriendsStale { get; set; }
@@ -315,7 +317,8 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
         foreach (var g in groups) FriendGroups.Add(new MapFriendGroupViewModel(g, Today, Sort == FriendSort.ByGym));
         HasFriendRows = FriendGroups.Count > 0;
         var n = _latestPerFriend.Count;
-        FriendCountText = $"{n} {(n == 1 ? "friend" : "friends")} · {RangeTitle.ToLowerInvariant()}";
+        FriendCountShort = $"{n} {(n == 1 ? "friend" : "friends")}";
+        FriendCountText = $"{FriendCountShort} · {RangeTitle.ToLowerInvariant()}";
         MarkSelectedRows();
     }
 

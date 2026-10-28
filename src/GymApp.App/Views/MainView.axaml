@@ -37,14 +37,19 @@
         </Border>
         <!-- Phones, after sign-in: the logo and streak, the brand, the inbox and profile -->
         <v:AppBar DockPanel.Dock="Top" IsVisible="{Binding ShowsBars}"/>
-        <!-- Phones: the tabs. Hidden while the keyboard is up -->
-        <Panel x:Name="TabHost" DockPanel.Dock="Bottom">
-            <v:TabBar x:Name="Tabs" IsVisible="{Binding ShowsBars}"/>
-        </Panel>
-        <Panel x:Name="Body">
-            <ContentControl Content="{Binding Current}" />
-            <!-- The feedback popup covers the screen below the banners -->
-            <ContentControl Content="{Binding Feedback}" IsVisible="{Binding IsFeedbackOpen}"/>
+        <Panel>
+            <!-- The screen stops above the tab bar (MainView.axaml.cs sets its bottom margin to the bar's height) -->
+            <Panel x:Name="Body">
+                <!-- The current screen; MainView.axaml.cs sets it, cross-fading between the phones' paired screens -->
+                <TransitioningContentControl x:Name="Screen" PageTransition="{x:Null}"/>
+                <!-- The feedback popup covers the screen below the banners -->
+                <ContentControl Content="{Binding Feedback}" IsVisible="{Binding IsFeedbackOpen}"/>
+            </Panel>
+            <!-- Phones: the tabs, over the bottom of the screen so the raised Home circle sits over its content (the
+                 canvas). Hidden while the keyboard is up -->
+            <Panel x:Name="TabHost" VerticalAlignment="Bottom">
+                <v:TabBar x:Name="Tabs" IsVisible="{Binding ShowsBars}"/>
+            </Panel>
         </Panel>
     </DockPanel>
 

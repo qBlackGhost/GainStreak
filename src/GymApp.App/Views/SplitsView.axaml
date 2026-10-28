@@ -4,8 +4,8 @@
              xmlns:v="using:GymApp.App.Views"
              x:Class="GymApp.App.Views.SplitsView"
              x:DataType="vm:SplitsViewModel">
-    <!-- After the "Gym App" design canvas (Splits artboard). Choosing a split still happens on its detail page,
-         where the variant and start day are picked, so "Set active" opens it. -->
+    <!-- After the "Gym App" design canvas (Splits artboard). Choosing a split happens on its detail page, where the
+         variant and start day are picked, so each card has Open (and Edit for custom splits); no separate "Set active". -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
@@ -32,14 +32,11 @@
                 <DockPanel>
                     <!-- Buttons along the bottom, so cards in a row line up -->
                     <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,14,0,0">
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                            <Button Classes="btn outline" HorizontalAlignment="Stretch" Content="Open"
-                                    Command="{Binding OpenCommand}" IsVisible="{Binding !IsCustom}"/>
-                            <Button Classes="btn outline" HorizontalAlignment="Stretch" Content="Edit"
+                        <!-- Open: the detail page, where a split is chosen (variant and start day). Custom splits also Edit -->
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Button Classes="btn light" HorizontalAlignment="Stretch" Content="Open" Command="{Binding OpenCommand}"/>
+                            <Button Grid.Column="1" Classes="btn outline" MinWidth="120" Content="Edit"
                                     Command="{Binding EditCommand}" IsVisible="{Binding IsCustom}"/>
-                            <Button Grid.Column="1" Classes="btn light" Classes.outline="{Binding IsCustom}"
-                                    HorizontalAlignment="Stretch" Content="{Binding ActivateLabel}"
-                                    Command="{Binding OpenCommand}" IsEnabled="{Binding !IsSelected}"/>
                         </Grid>
                         <Button Classes="link" FontSize="12" Foreground="{DynamicResource Muted}" HorizontalAlignment="Left"
                                 Content="{Binding DeleteLabel}" Command="{Binding DeleteCommand}" IsVisible="{Binding IsCustom}"/>
@@ -121,7 +118,8 @@
                         <TextBlock Classes="pageTitle" Text="Workout splits" FontWeight="ExtraBold"/>
                         <TextBlock Text="Pick a preset or build your own weekly plan." FontSize="15" Classes="muted"/>
                     </StackPanel>
-                    <WrapPanel Classes="headerActions" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom">
+                    <Panel Classes="headerActions">
+                    <WrapPanel Classes="wideOnly" ItemSpacing="10" LineSpacing="10" VerticalAlignment="Bottom">
                     <Border VerticalAlignment="Bottom" Padding="16,10" CornerRadius="12"
                             BorderBrush="{DynamicResource Line}" BorderThickness="1" Background="{DynamicResource Surface}">
                         <StackPanel Orientation="Horizontal" Spacing="12">
@@ -137,6 +135,26 @@
                         </StackPanel>
                     </Button>
                     </WrapPanel>
+                    </Panel>
+                </Grid>
+                <!-- Phones (the canvas): the active split in a lime banner, and Share beside it -->
+                <Grid Classes="phoneOnly" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Border Padding="14,0" MinHeight="48" CornerRadius="14" BorderThickness="1"
+                            BorderBrush="{DynamicResource LimeTintLine}" Background="{DynamicResource LimeTint}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalAlignment="Center">
+                            <TextBlock Text="ACTIVE" FontSize="11" FontWeight="Bold" LetterSpacing="1.1" Foreground="{DynamicResource AccentInk}"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ActiveName}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        </Grid>
+                    </Border>
+                    <Button Grid.Column="1" Classes="btn outline" Padding="14,0" Command="{Binding OpenShareCommand}"
+                            AutomationProperties.Name="Share a split with friends">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <v:Icon Data="{StaticResource IcShare}" Width="16" Height="16"/>
+                            <TextBlock Text="Share" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </StackPanel>
 

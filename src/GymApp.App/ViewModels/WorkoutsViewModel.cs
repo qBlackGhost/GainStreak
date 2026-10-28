@@ -37,7 +37,8 @@ public partial class DayCardViewModel : ObservableObject
         _owner = owner;
         IsNext = showNext && day.IsNext && !day.IsToday;
         Exercises = day.Exercises.Take(Shown)
-            .Select(e => new DayExerciseLine(e.Name, $"{e.WarmupSets} warm-up + {e.WorkingSets} working")).ToList();
+            .Select(e => new DayExerciseLine(e.Name,
+                e.WarmupSets > 0 ? $"{e.WarmupSets} warm-up · {e.WorkingSets} working" : $"{e.WorkingSets} working")).ToList();
     }
 
     public string Name => Day.Name;

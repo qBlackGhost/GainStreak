@@ -116,7 +116,7 @@
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="VerticalContentAlignment" Value="Center"/>
     </Style>
-    <Style Selector=".phone TextBox#PasswordBox">
+    <Style Selector=".phone TextBox.revealable">
         <Setter Property="Padding" Value="44,0,52,0"/>
     </Style>
 

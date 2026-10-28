@@ -35,6 +35,12 @@ public class SegmentedPill : Panel
     public static readonly StyledProperty<double> PillOffsetProperty =
         AvaloniaProperty.Register<SegmentedPill, double>(nameof(PillOffset));
 
+    /// <summary>Pills that stand for the same switch on two screens (the phones' Log in / Create account, Leaderboard /
+    /// Map). When one appears right after another of its group went, its pill slides over from where that one was
+    /// instead of starting in place, so the switch looks like one control across the screen change.</summary>
+    public static readonly StyledProperty<string?> SlideGroupProperty =
+        AvaloniaProperty.Register<SegmentedPill, string?>(nameof(SlideGroup));
+
     /// <summary>For two-option toggles bound to a bool: false is the first option, true the second.</summary>
     public static readonly IValueConverter BoolToIndex = new FuncValueConverter<bool, int>(b => b ? 1 : 0);
 
@@ -44,6 +50,10 @@ public class SegmentedPill : Panel
     [
         new DoubleTransition { Property = PillOffsetProperty, Duration = SlideDuration, Easing = new CubicEaseInOut() }
     ];
+
+    // The last index each group showed, and when (Stopwatch ticks)
+    private static readonly System.Collections.Generic.Dictionary<string, (int Index, long At)> Groups = [];
+    private static readonly TimeSpan GroupMemory = TimeSpan.FromSeconds(1.5);
 
     private double _cell;
     private Size _size;   // the arranged size; Bounds isn't updated yet while arranging
@@ -63,6 +73,7 @@ public class SegmentedPill : Panel
     public double PillCornerRadius { get => GetValue(PillCornerRadiusProperty); set => SetValue(PillCornerRadiusProperty, value); }
     public double PillInset { get => GetValue(PillInsetProperty); set => SetValue(PillInsetProperty, value); }
     public double PillOffset { get => GetValue(PillOffsetProperty); set => SetValue(PillOffsetProperty, value); }
+    public string? SlideGroup { get => GetValue(SlideGroupProperty); set => SetValue(SlideGroupProperty, value); }
 
     protected override Size MeasureOverride(Size available)
     {
@@ -90,9 +101,14 @@ public class SegmentedPill : Panel
         var target = Math.Clamp(SelectedIndex, 0, n - 1) * cell;
         if (Math.Abs(cell - _cell) > 0.5)
         {
+            // The first layout: in place, or sliding over from the group's last pill
+            var first = _cell <= 0;
             Transitions = null;
-            PillOffset = target;
+            PillOffset = first && FromGroup() is { } from && from != SelectedIndex
+                ? Math.Clamp(from, 0, n - 1) * cell
+                : target;
             Transitions = _slide;
+            PillOffset = target;
             _cell = cell;
         }
         else
@@ -101,8 +117,14 @@ public class SegmentedPill : Panel
             PillOffset = target;
         }
         Paint();
+        if (SlideGroup is { } group) Groups[group] = (SelectedIndex, System.Diagnostics.Stopwatch.GetTimestamp());
         return final;
     }
+
+    private int? FromGroup() =>
+        SlideGroup is { } group && Groups.TryGetValue(group, out var last)
+        && System.Diagnostics.Stopwatch.GetElapsedTime(last.At) < GroupMemory
+            ? last.Index : null;
 
     /// <summary>The background: a transparent box the panel's size (so nothing stretches) with the pill on it.</summary>
     private void Paint()

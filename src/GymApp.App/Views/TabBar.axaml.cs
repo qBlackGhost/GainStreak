@@ -13,6 +13,9 @@ public partial class TabBar : UserControl
     public static readonly IValueConverter Is =
         new FuncValueConverter<AppTab?, object?, bool>((tab, parameter) => parameter is AppTab t && tab == t);
 
+    /// <summary>The transparent strip above the bar that the Home circle rises into (the first row in TabBar.axaml).</summary>
+    public const double RiseHeight = 12;
+
     public TabBar()
     {
         InitializeComponent();

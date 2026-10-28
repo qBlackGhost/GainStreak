@@ -143,7 +143,12 @@ public partial class DayViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
     [ObservableProperty] public partial string CountText { get; set; } = "";
-    [ObservableProperty] public partial string CountLabel { get; set; } = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CountShort))]
+    public partial string CountLabel { get; set; } = "";
+
+    /// <summary>"3 / 20", the phones' count pill.</summary>
+    public string CountShort => CountLabel.Replace(" exercises", "");
     [ObservableProperty] public partial string SetsLabel { get; set; } = "";
     [ObservableProperty] public partial string WeekdaysText { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }

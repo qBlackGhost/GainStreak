@@ -46,11 +46,9 @@
 
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <Button x:Name="InboxButton" Classes="bare" Click="OnInbox" AutomationProperties.Name="Inbox">
-                    <Panel>
-                        <Border Width="40" Height="40" CornerRadius="20" Background="{DynamicResource Fill}">
-                            <v:Icon Data="{StaticResource IcBell}" Width="19" Height="19" Stroke="{DynamicResource Ink}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                    <Panel Width="40" Height="40">
+                        <v:Icon Data="{StaticResource IcBell}" Width="22" Height="22" Stroke="{DynamicResource Ink}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <!-- New in the inbox -->
                         <Border x:Name="InboxBadge" IsVisible="False" MinWidth="18" Height="18" Padding="5,0" CornerRadius="9"
                                 Background="{DynamicResource Accent}" BorderBrush="{DynamicResource PageBg}" BorderThickness="2"

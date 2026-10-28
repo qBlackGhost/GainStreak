@@ -25,6 +25,34 @@
             <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
+        <!-- Phones: the row's name and sets open the exercise; a quiet trash removes it -->
+        <Style Selector="Button.rowOpen">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.rowOpen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.rowRemove">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector=".phone Border.exRow"><Setter Property="Padding" Value="2,4,4,4"/></Style>
         <Style Selector="Border.exRow.dragging">
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
@@ -170,7 +198,12 @@
                         </StackPanel>
                         <TextBlock Text="{Binding Subtitle}" FontSize="15" Classes="soft"/>
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding CountLabel}" Classes="mono muted" FontSize="13" VerticalAlignment="Bottom"/>
+                    <TextBlock Grid.Column="1" Classes="mono muted wideOnly" Text="{Binding CountLabel}" FontSize="13" VerticalAlignment="Bottom"/>
+                    <!-- Phones (the canvas): the count in an outlined pill -->
+                    <Border Grid.Column="1" Classes="phoneOnly" Padding="10,5" CornerRadius="999" BorderBrush="{DynamicResource Control}"
+                            BorderThickness="1" VerticalAlignment="Bottom">
+                        <TextBlock Text="{Binding CountShort}" Classes="mono soft" FontSize="12" FontWeight="Bold"/>
+                    </Border>
                 </Grid>
                 <TextBlock Text="{Binding Info}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
                            IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -254,7 +287,7 @@
                                                             <TextBlock Text="{Binding Number}" Classes="mono light" FontSize="13" FontWeight="Bold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
-                                                        <StackPanel Grid.Column="2" Spacing="3" VerticalAlignment="Center">
+                                                        <StackPanel Grid.Column="2" Classes="wideOnly" Spacing="3" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold"/>
                                                             <!-- Wraps, so the planned sets go under the group on a phone -->
                                                             <WrapPanel ItemSpacing="8" LineSpacing="3">
@@ -264,7 +297,23 @@
                                                                 <TextBlock Text="{Binding Planned}" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
                                                             </WrapPanel>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                        <!-- Phones (the canvas): the number, then the name and "Group · sets" opening the exercise -->
+                                                        <TextBlock Grid.Column="1" Classes="mono muted phoneOnly" Text="{Binding Number}" FontSize="13"
+                                                                   FontWeight="Bold" Width="18" VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="2" Classes="rowOpen phoneOnly" Command="{Binding OpenCommand}"
+                                                                AutomationProperties.Name="{Binding Name, StringFormat='Open {0}'}">
+                                                            <StackPanel Spacing="2">
+                                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                                <TextBlock FontSize="12" Classes="muted" TextWrapping="Wrap">
+                                                                    <Run Text="{Binding Group}" FontWeight="SemiBold" Foreground="{DynamicResource Soft}"/><Run Text=" · "/><Run Text="{Binding Planned}"/>
+                                                                </TextBlock>
+                                                            </StackPanel>
+                                                        </Button>
+                                                        <Button Grid.Column="3" Classes="rowRemove phoneOnly" Command="{Binding RemoveCommand}"
+                                                                AutomationProperties.Name="{Binding Name, StringFormat='Remove {0} from day'}">
+                                                            <v:Icon Data="{StaticResource IcTrash}" StrokeThickness="2" Width="18" Height="18"/>
+                                                        </Button>
+                                                        <StackPanel Grid.Column="3" Classes="wideOnly" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                             <Button Classes="btn light small" Content="Open" Command="{Binding OpenCommand}"/>
                                                             <Button Classes="btn outline small" Width="36" Height="36" MinHeight="36" Padding="0"
                                                                     Foreground="{DynamicResource Soft}" Command="{Binding RemoveCommand}"

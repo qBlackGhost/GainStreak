@@ -679,6 +679,7 @@
                             <Button Grid.Column="1" Classes="link" FontSize="14" Content="Open workouts" VerticalAlignment="Center"
                                     Command="{Binding BuildWorkoutCommand}" IsVisible="{Binding HasExercises}"/>
                         </Grid>
+                        <Panel Classes="wideOnly">
                         <StackPanel IsVisible="{Binding HasExercises}" Grid.IsSharedSizeScope="True">
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -712,6 +713,27 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </StackPanel>
+                        </Panel>
+                        <!-- Phones (the canvas): a row each, the plan under the name, the last top set on the right -->
+                        <Panel Classes="phoneOnly">
+                        <ItemsControl ItemsSource="{Binding Exercises}" IsVisible="{Binding HasExercises}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:TodayExerciseViewModel">
+                                    <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="56">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                <TextBlock Text="{Binding Plan}" FontSize="12" Classes="muted"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Text="{Binding LastTime}" FontSize="13" FontWeight="Bold" Classes="mono soft"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        </Panel>
                         <Border MinHeight="140" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1" Padding="20"
                                 IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <StackPanel Spacing="12" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -803,13 +825,25 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:RecentPrViewModel">
                                     <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,0,0,1" MinHeight="48">
-                                        <Grid ColumnDefinitions="*,Auto,52" ColumnSpacing="16" VerticalAlignment="Center">
+                                        <Panel VerticalAlignment="Center">
+                                        <Grid Classes="wideOnly" ColumnDefinitions="*,Auto,52" ColumnSpacing="16">
                                             <TextBlock Text="{Binding Exercise}" FontWeight="SemiBold" FontSize="14"
                                                        TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                             <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="mono" FontSize="14"/>
                                             <TextBlock Grid.Column="2" Text="{Binding Date}" Classes="muted" FontSize="14"
                                                        TextAlignment="Right" TextWrapping="NoWrap"/>
                                         </Grid>
+                                        <!-- Phones (the canvas): the set in lime over its date, on the right -->
+                                        <Grid Classes="phoneOnly" ColumnDefinitions="*,Auto" ColumnSpacing="12" MinHeight="52">
+                                            <TextBlock Text="{Binding Exercise}" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Value}" Classes="mono" FontSize="14" FontWeight="Bold"
+                                                           Foreground="{DynamicResource AccentInk}" HorizontalAlignment="Right"/>
+                                                <TextBlock Text="{Binding Date}" Classes="muted" FontSize="11" HorizontalAlignment="Right"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        </Panel>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
