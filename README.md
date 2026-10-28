@@ -208,6 +208,52 @@ Installed copies check the folder at startup and download a newer release in the
 
 For a quick local build without an installer, `dotnet publish src/GymApp.Desktop -c Release -r osx-arm64 --self-contained true -o publish/osx-arm64` still works (it needs `GymAppServerUrl` too).
 
+### Phones
+
+The phone betas go out through Google Play internal testing and TestFlight. Both use the same `Version` as the desktop and talk to `GymAppServerUrl`. `build/release-mobile.sh` builds them into `Releases/mobile/<version>/`:
+
+- `GainStreak-<version>-<build>.aab`: the Android App Bundle for Google Play.
+- `GainStreak-<version>-<build>.apk`: the same build to send to a tester directly (they allow installs from unknown sources once).
+- `GainStreak-<version>-<build>.ipa`: the iOS build for TestFlight.
+
+The build number is the commit count (`git rev-list --count HEAD`), because both stores only take a higher one than the last upload. Commit first, and upload each commit's build once.
+
+**Accounts (one-time).** A Google Play developer account ($25 once) and the Apple Developer Program ($99 a year). The package and bundle id is `com.gainstreak.app`. It can't change once the first build is uploaded. Store questionnaire answers are in `docs/STORE_LISTING.md`.
+
+**Signing.** Nothing for signing lives in the repo, and `.gitignore` keeps keystores and profiles out. Keep them somewhere backed up outside it.
+
+- **Android:** make an upload key once and keep it safe. Google Play App Signing holds the real app key; a lost upload key can be reset from the Play Console.
+
+  ```bash
+  keytool -genkeypair -v -keystore ~/keys/gainstreak-upload.keystore -alias gainstreak -keyalg RSA -keysize 2048 -validity 10000
+  ```
+
+  Then set `GAINSTREAK_ANDROID_KEYSTORE` (the keystore's path), `GAINSTREAK_ANDROID_KEY_ALIAS` and `GAINSTREAK_ANDROID_KEYSTORE_PASS`, plus `GAINSTREAK_ANDROID_KEY_PASS` if the key's password differs. The script passes the passwords as `env:` references, so they don't show in the build log.
+- **iOS:**
+  1. In Xcode → Settings → Accounts, add the Apple ID and download an **Apple Distribution** certificate, which goes into the keychain.
+  2. On developer.apple.com, register the App ID `com.gainstreak.app` and make an **App Store** provisioning profile for it, then open the profile to install it.
+  3. Set `GAINSTREAK_IOS_SIGN_IDENTITY` to the certificate's name, e.g. `Apple Distribution: Your Name (TEAMID)`. The team id is the part in brackets.
+  4. Set `GAINSTREAK_IOS_PROVISIONING_PROFILE` to the profile's name.
+
+Then:
+
+```bash
+build/release-mobile.sh
+```
+
+`--android` or `--ios` builds just one of them. Uploading:
+
+- **Google Play:**
+  1. In the Play Console, create the app.
+  2. Under Testing → Internal testing, create a release and upload the `.aab`.
+  3. Add the testers' Google accounts to the tester list and send them the opt-in link.
+- **TestFlight:**
+  1. In App Store Connect, create the app with the same bundle id.
+  2. Upload the `.ipa` with Apple's Transporter app.
+  3. Once it's processed, add testers under TestFlight. Internal testers need no review; external testers need a short beta review first.
+
+Updates install through the stores. When the server's `MinClientVersion` turns a build away, the 426 banner's **Update** button opens the Play Store on Android. On iOS it appears once `GymAppAppStoreId` (in `src/MobileHead.targets`) holds the App Store id. Raise `MinClientVersion` only once every head has a build that passes it.
+
 ## Running the app against a local server
 
 The social server (accounts, friends, the leaderboard and shared gym check-ins) is `src/GymApp.Server`, an ASP.NET Core API on Postgres. See `docs/PHASE_13_SOCIAL_SERVER.md` and `docs/PHASE_14_APP_ON_SOCIAL_SERVER.md`.

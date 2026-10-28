@@ -10,7 +10,7 @@
     <ApplicationId>com.gainstreak.app</ApplicationId>
     <ApplicationTitle>GainStreak</ApplicationTitle>
     <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
-    <!-- Only goes up; the release script will set it per build (16h) -->
+    <!-- CFBundleVersion: only goes up. build/release-mobile.sh sets it to the commit count -->
     <ApplicationVersion>1</ApplicationVersion>
     <DefaultDebugServerUrl>http://localhost:5080</DefaultDebugServerUrl>
     <!-- Everything is compiled ahead of time; the interpreter runs only code generated at runtime ("-all" interprets no
@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <!-- Entitlements need a signed app. The Simulator takes an ad-hoc signature, so it needs no Apple certificate; device
-       and TestFlight builds sign with the developer certificate (16h) -->
+       and TestFlight builds sign with the distribution certificate and profile build/release-mobile.sh passes in -->
   <PropertyGroup Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">
     <CodesignKey>-</CodesignKey>
   </PropertyGroup>

@@ -486,3 +486,11 @@ $RECYCLE.BIN/
 
 # dotnet publish output (see README)
 publish/
+
+# Mobile signing (build/release-mobile.sh reads them from outside the repo; never commit them)
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile

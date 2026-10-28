@@ -2,6 +2,21 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.16.0
+
+- **GainStreak on phones:** first beta builds for Android (Google Play internal testing, or an APK sent directly) and iPhone (TestFlight). They're the same app as on the desktop: same account, same rules, same server. Workouts stay on the device they were logged on, so a phone and a computer signed in to one account each keep their own.
+- **Phone layout:**
+  - Five tabs at the bottom: Splits, Workouts, a raised Home button, Calories and Friends. Profile and the inbox are in the top bar.
+  - Popups open as sheets from the bottom, and the Android back button goes back.
+  - Friends holds both the leaderboard and the map behind a Leaderboard / Map switch.
+  - The map fills the screen. Its sheet shows your gym until you drag it up, and the map's settings sit behind the sliders button.
+- **Signing in on a phone:** the session is kept in the iPhone's Keychain or Android's encrypted storage.
+- **Reminders (phones):** Profile → Reminders, off until you turn them on, which asks for permission. There's a reminder on training days at a time you pick (18:00 by default), and one the morning after a missed day (09:00). The desktop has no reminders.
+- **"Please update":** when the server turns an old build away, the banner's **Update** button opens the Play Store on Android (iPhone once the App Store listing exists).
+- **Log in and Create account:** a sliding Log in / Create account switch, a fade between the two, and a show-password eye on both.
+- **Splits:** the **Set active** button is gone; **Open** does the same.
+- **Migration:** `AddReminders` in the app's SQLite (four new `Users` columns). The server is unchanged.
+
 ## 0.15.6
 
 - **Profile setup:** right after creating an account, a new screen asks for gender (Male, Female or Prefer not to say), birth date, height, current weight, activity and home city before Home. Everything is optional: **Skip for now** saves nothing, and **Save and continue** saves only what was filled in (the weight as today's weigh-in). A box shows how many of the five body answers are in and, once all are, the maintenance estimate. After saving, a summary lists each answer or "Not set" and offers to use the estimate as the daily calorie goal. Signing in, even on a new device, still goes straight to Home.

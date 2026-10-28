@@ -10,10 +10,12 @@
     <ApplicationId>com.gainstreak.app</ApplicationId>
     <ApplicationTitle>GainStreak</ApplicationTitle>
     <ApplicationDisplayVersion>$(Version)</ApplicationDisplayVersion>
-    <!-- Only goes up; the release script will set it per build (16h) -->
+    <!-- The versionCode: only goes up. build/release-mobile.sh sets it to the commit count -->
     <ApplicationVersion>1</ApplicationVersion>
-    <!-- An APK installs straight onto an emulator or phone; store builds switch to aab in 16h -->
-    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <!-- An APK installs straight onto an emulator or phone. Release builds make the App Bundle for Google Play too
+         (build/release-mobile.sh signs both) -->
+    <AndroidPackageFormat Condition="'$(Configuration)' != 'Release'">apk</AndroidPackageFormat>
+    <AndroidPackageFormats Condition="'$(Configuration)' == 'Release'">aab;apk</AndroidPackageFormats>
     <DefaultDebugServerUrl>http://10.0.2.2:5080</DefaultDebugServerUrl>
   </PropertyGroup>
 
