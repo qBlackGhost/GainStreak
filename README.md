@@ -218,7 +218,7 @@ The phone betas go out through Google Play internal testing and TestFlight. Both
 
 The build number is the commit count (`git rev-list --count HEAD`), because both stores only take a higher one than the last upload. Commit first, and upload each commit's build once.
 
-**Accounts (one-time).** A Google Play developer account ($25 once) and the Apple Developer Program ($99 a year). The package and bundle id is `com.gainstreak.app`. It can't change once the first build is uploaded. Store questionnaire answers are in `docs/STORE_LISTING.md`.
+**Accounts (one-time).** A Google Play developer account ($25 once) and the Apple Developer Program ($99 a year). The package and bundle id is `com.gainstreak.app`. It can't change once the first build is uploaded. Store questionnaire answers are in `docs/STORE_LISTING.md`, and the privacy policy and account-deletion pages the stores link to are in `site/` (published with GitHub Pages; see that file).
 
 **Signing.** Nothing for signing lives in the repo, and `.gitignore` keeps keystores and profiles out. Keep them somewhere backed up outside it.
 

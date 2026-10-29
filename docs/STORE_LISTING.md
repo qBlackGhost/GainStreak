@@ -64,16 +64,24 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 ## Deleting an account
 
 - **In the app:** Profile → Account → **Delete account**. It asks for the password, then deletes the online account and everything that hangs off it: sessions, friendships, stats, check-ins and shares. It also deletes the workouts and the rest of the data on that phone. Required by the App Store; built in Phase 14.
-- **Without the app (Google Play needs a web link):** still to do. A simple page, or an email address such as a support inbox that deletes accounts on request. The link goes in the Data safety form.
+- **Without the app (Google Play needs a web link):** `site/delete-account.html`, which gives the in-app steps and an email request (deleted within 30 days), and lists what's deleted and what's kept. The link goes in the Data safety form.
 
 ## Still needed before the first upload
 
-- [ ] **Privacy policy URL** (both stores), written from "What the app stores and sends" above. A GitHub Pages page in the public releases repository is enough.
-- [ ] **Account deletion web link** for Google Play (see above).
-- [ ] **Support URL or email** (App Store).
+- [x] **Privacy policy URL** (both stores): https://qblackghost.github.io/GainStreak-releases/privacy.html, from `site/privacy.html` (see "Public pages" below).
+- [x] **Account deletion web link** for Google Play: https://qblackghost.github.io/GainStreak-releases/delete-account.html
+- [x] **Support URL or email** (App Store): https://qblackghost.github.io/GainStreak-releases/ (names `gainstreak.app@gmail.com`).
 - [ ] **Content rating questionnaire** (Play) and **age rating** (App Store). There's no violence, gambling or purchases. Usernames are the only text other people see, shown to friends and in username search.
 - [ ] **Screenshots** (see below).
 - [ ] **Test account for App Review:** Apple's reviewers need to sign in. Make a review account with a few friends and some check-ins, and give its username and password in App Store Connect, not in this repo.
+
+## Public pages (`site/`)
+
+`site/` holds the pages the stores link to: `index.html` (support), `privacy.html` and `delete-account.html`, with one `style.css`. They're plain HTML with no scripts, cookies or outside requests, in light and dark.
+
+- **Contact:** `gainstreak.app@gmail.com` on all three pages, the address that answers account requests. Use the same one as the Play Console's developer email and the App Store's support contact.
+- **Publishing:** GitHub Pages serves the `docs/` folder on `main` of the public releases repository (qBlackGhost/GainStreak-releases) at https://qblackghost.github.io/GainStreak-releases/. After changing a page here, copy `site/` over that `docs/` folder and push; Pages rebuilds in a minute or two.
+- **Keep them in step** with "What the app stores and sends": new data sent to the server means a new row in the privacy table and a new "Last updated" date.
 
 ## Screenshots (the 16e phone layouts)
 
