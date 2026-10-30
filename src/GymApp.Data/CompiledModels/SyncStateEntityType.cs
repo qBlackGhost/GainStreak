@@ -20,7 +20,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.SyncState",
                 typeof(SyncState),
                 baseEntityType,
-                propertyCount: 5,
+                propertyCount: 6,
                 navigationCount: 1,
                 foreignKeyCount: 1,
                 keyCount: 1);
@@ -32,6 +32,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(SyncState).GetField("<UserId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: 0);
+
+            var avatarDirtySince = runtimeEntityType.AddProperty(
+                "AvatarDirtySince",
+                typeof(DateTime?),
+                propertyInfo: typeof(SyncState).GetProperty("AvatarDirtySince", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(SyncState).GetField("<AvatarDirtySince>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var checkInsDirtySince = runtimeEntityType.AddProperty(
                 "CheckInsDirtySince",

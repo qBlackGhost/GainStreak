@@ -217,5 +217,9 @@
         <StreamGeometry x:Key="IcMoon">M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z</StreamGeometry>
         <!-- Filled, for a Path rather than an Icon -->
         <StreamGeometry x:Key="IcStar">M12 2l3 7 7 0.6-5.3 4.7L18.3 22 12 18l-6.3 4 1.6-7.7L2 9.6 9 9z</StreamGeometry>
+        <StreamGeometry x:Key="IcBolt">M13 3L5 14h6l-1 7 8-11h-6z</StreamGeometry>
+        <StreamGeometry x:Key="IcHeart">M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z</StreamGeometry>
+        <StreamGeometry x:Key="IcMountain">M3 20l6-11 4 7 3-4 5 8z</StreamGeometry>
+        <StreamGeometry x:Key="IcTarget">M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M8 12a4 4 0 1 0 8 0a4 4 0 1 0-8 0</StreamGeometry>
         <StreamGeometry x:Key="IcArc">M 40 240 A 200 200 0 0 1 440 240</StreamGeometry>
 </ResourceDictionary>

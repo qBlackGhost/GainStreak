@@ -48,7 +48,7 @@ public class LeaderboardService(ISocialStore store) : ILeaderboardService
         if (stats.All(x => x.UserId != userId)) return null;   // deleted meanwhile
 
         var entries = stats.Select(x => new LeaderboardEntry(x.UserId, x.Username,
-            period == LeaderboardPeriod.ThisWeek ? x.WeekPoints : x.TotalPoints, x.TotalPoints, x.CurrentStreak));
+            period == LeaderboardPeriod.ThisWeek ? x.WeekPoints : x.TotalPoints, x.TotalPoints, x.CurrentStreak, x.Avatar));
         return new LeaderboardView(period, monday, sunday, Leaderboard.Rank(entries, userId));
     }
 }

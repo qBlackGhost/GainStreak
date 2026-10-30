@@ -31,7 +31,7 @@ public partial class Sidebar : UserControl
         var user = GymApplication.Services.GetRequiredService<SessionService>().CurrentUser;
         var name = user?.Username ?? "";
         NameText.Text = name;
-        InitialsText.Text = name.Length == 0 ? "?" : name[..Math.Min(2, name.Length)].ToUpperInvariant();
+        YourAvatar.DataContext = GymApplication.Services.GetRequiredService<MainViewModel>();
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)

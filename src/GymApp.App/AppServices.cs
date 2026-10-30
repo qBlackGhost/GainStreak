@@ -89,6 +89,8 @@ public static class AppServices
         sc.AddTransient<DayViewModel>();
         sc.AddTransient<ExerciseViewModel>();
         sc.AddTransient<CustomExercisesViewModel>();
+        sc.AddTransient<ExerciseFormViewModel>();
+        sc.AddTransient<AvatarPickerViewModel>();
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();

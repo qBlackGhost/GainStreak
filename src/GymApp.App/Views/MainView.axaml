@@ -42,6 +42,8 @@
             <Panel x:Name="Body">
                 <!-- The current screen; MainView.axaml.cs sets it, cross-fading between the phones' paired screens -->
                 <TransitioningContentControl x:Name="Screen" PageTransition="{x:Null}"/>
+                <!-- A form's popup over the screen (a new split, a new exercise) -->
+                <ContentControl Content="{Binding Popup}" IsVisible="{Binding IsPopupOpen}"/>
                 <!-- The feedback popup covers the screen below the banners -->
                 <ContentControl Content="{Binding Feedback}" IsVisible="{Binding IsFeedbackOpen}"/>
             </Panel>

@@ -14,10 +14,10 @@ public enum LeaderboardPeriod { ThisWeek, AllTime }
 
 /// <summary>One person going into the board. <see cref="PeriodPoints"/> is what they're ranked by;
 /// <see cref="TotalPoints"/> only sets the level.</summary>
-public record LeaderboardEntry(int UserId, string Username, int PeriodPoints, int TotalPoints, int CurrentStreak);
+public record LeaderboardEntry(int UserId, string Username, int PeriodPoints, int TotalPoints, int CurrentStreak, string? Avatar = null);
 
 /// <summary>One row of the board. Rows tied on points share a rank. The level is always the all-time one.</summary>
-public record LeaderboardRow(int Rank, int UserId, string Username, int Points, LevelInfo Level, int CurrentStreak, bool IsYou);
+public record LeaderboardRow(int Rank, int UserId, string Username, int Points, LevelInfo Level, int CurrentStreak, bool IsYou, string? Avatar = null);
 
 /// <summary>The friends leaderboard. Only public stats go in: username, points and streak.</summary>
 public static class Leaderboard
@@ -66,7 +66,7 @@ public static class Leaderboard
             var e = ordered[i];
             var rank = i > 0 && e.PeriodPoints == ordered[i - 1].PeriodPoints ? rows[i - 1].Rank : i + 1;
             rows.Add(new LeaderboardRow(rank, e.UserId, e.Username, e.PeriodPoints, LevelCalculator.For(e.TotalPoints),
-                e.CurrentStreak, e.UserId == viewerId));
+                e.CurrentStreak, e.UserId == viewerId, e.Avatar));
         }
         return rows;
     }

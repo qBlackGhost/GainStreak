@@ -1,106 +1,169 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
              x:Class="GymApp.App.Views.CustomExercisesView"
              x:DataType="vm:CustomExercisesViewModel">
+    <!-- The user's own exercises in a centred column: grouped by muscle like the day's picker, each with where it's used.
+         New and Edit open the exercise popup; deleting asks in a popup of its own. -->
     <UserControl.Styles>
-        <Style Selector="Border.card">
-            <Setter Property="BorderBrush" Value="#40808080"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="12"/>
-            <Setter Property="Padding" Value="16"/>
-            <Setter Property="VerticalAlignment" Value="Top"/>
+        <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="40,0,14,0"/>
+        </Style>
+        <Style Selector="Border.exRow">
+            <Setter Property="Padding" Value="16,8,6,8"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Divider}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+        <Style Selector="ContentPresenter:nth-last-child(1) Border.exRow">
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Button.rowIcon">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.rowIcon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
     </UserControl.Styles>
-
-    <ScrollViewer>
-        <StackPanel Spacing="12" Margin="24" MaxWidth="720" HorizontalAlignment="Stretch">
-            <DockPanel>
-                <Button DockPanel.Dock="Left" Content="← Back" Command="{Binding BackCommand}"/>
-                <StackPanel HorizontalAlignment="Center">
-                    <TextBlock Text="My exercises" FontSize="24" FontWeight="SemiBold"
-                               HorizontalAlignment="Center"/>
-                    <TextBlock Text="{Binding Counter}" Opacity="0.7" HorizontalAlignment="Center"/>
-                </StackPanel>
-            </DockPanel>
-
-            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <TextBlock Text="{Binding Info}" Foreground="SeaGreen" TextWrapping="Wrap"
-                       IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-            <!-- ===== Create / edit form ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="{Binding FormTitle}" FontSize="18" FontWeight="SemiBold"/>
-
-                    <StackPanel Spacing="10" IsVisible="{Binding CanAdd}">
-                        <StackPanel Spacing="4">
-                            <TextBox PlaceholderText="Exercise name" MaxLength="{Binding MaxNameLength}"
-                                     Text="{Binding Name}"/>
-                            <TextBlock Classes="fieldError" Text="{Binding NameError}"
-                                       IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-                        <StackPanel Spacing="4">
-                            <ComboBox ItemsSource="{Binding Groups}" SelectedItem="{Binding SelectedGroup}"
-                                      PlaceholderText="Muscle group" HorizontalAlignment="Stretch"/>
-                            <TextBlock Classes="fieldError" Text="{Binding GroupError}"
-                                       IsVisible="{Binding GroupError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsDefault="True"/>
-                            <Button Content="Cancel" Command="{Binding CancelEditCommand}"
-                                    IsVisible="{Binding IsEditing}"/>
-                        </StackPanel>
+    <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
+        <DockPanel>
+            <v:Sidebar Current="Workouts"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Classes="page" Spacing="18" MaxWidth="760">
+                    <StackPanel Spacing="14">
+                        <Button Classes="btn outline" MinHeight="40" Padding="10,0,14,0" FontSize="14" HorizontalAlignment="Left"
+                                Command="{Binding BackCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <v:Icon Data="{StaticResource IcBack}" StrokeThickness="2.2" Width="16" Height="16"/>
+                                <TextBlock Text="Workouts" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                            <TextBlock Classes="pageTitle" Text="My exercises" FontWeight="ExtraBold"/>
+                            <TextBlock Grid.Column="1" Classes="mono muted wideOnly" Text="{Binding CountLabel}" FontSize="13" VerticalAlignment="Bottom"/>
+                            <Border Grid.Column="1" Classes="phoneOnly" Padding="10,5" CornerRadius="999" BorderBrush="{DynamicResource Control}"
+                                    BorderThickness="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CountShort}" Classes="mono soft" FontSize="12" FontWeight="Bold"/>
+                            </Border>
+                        </Grid>
                     </StackPanel>
 
-                    <TextBlock Text="You've reached the limit. Delete one of your exercises to add another."
-                               Opacity="0.7" TextWrapping="Wrap" IsVisible="{Binding !CanAdd}"/>
-                </StackPanel>
-            </Border>
+                    <TextBlock Text="{Binding Info}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
+                               IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding Error}" Classes="error"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-            <!-- ===== The user's own exercises ===== -->
-            <Border Classes="card">
-                <StackPanel Spacing="8">
-                    <TextBlock Text="Your exercises" FontSize="18" FontWeight="SemiBold"/>
-                    <TextBlock Text="You haven't added any exercises yet." Opacity="0.7"
-                               IsVisible="{Binding IsEmpty}"/>
+                    <!-- Nothing yet -->
+                    <Border Classes="card" IsVisible="{Binding IsEmpty}">
+                        <StackPanel Spacing="10" HorizontalAlignment="Center" Margin="0,24">
+                            <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource LimeTint}" HorizontalAlignment="Center">
+                                <v:Icon Data="{StaticResource IcDumbbell}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2"
+                                        Width="22" Height="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="Add your own exercises" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="For anything that isn't in the list, like a machine at your gym." FontSize="14" Classes="muted"
+                                       TextAlignment="Center" MaxWidth="280"/>
+                            <Button Classes="btn primary" HorizontalAlignment="Center" Margin="0,6,0,0" Content="New exercise" Command="{Binding NewCommand}"/>
+                        </StackPanel>
+                    </Border>
 
-                    <ItemsControl ItemsSource="{Binding Items}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:CustomExerciseItemViewModel">
-                                <Border BorderBrush="#40808080" BorderThickness="0,0,0,1" Padding="0,10">
+                    <StackPanel Spacing="18" IsVisible="{Binding HasExercises}">
+                        <Button Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Command="{Binding NewCommand}" IsVisible="{Binding CanAdd}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <v:Icon Data="{StaticResource IcPlus}" Stroke="Black" StrokeThickness="2.4" Width="14" Height="14"/>
+                                <TextBlock Text="New exercise" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Text="You've reached the limit. Delete one of your exercises to add another." FontSize="14" Classes="muted"
+                                   IsVisible="{Binding IsAtLimit}"/>
+
+                        <Panel>
+                            <TextBox Classes="field" PlaceholderText="Search your exercises" Text="{Binding Search}"
+                                     AutomationProperties.Name="Search your exercises"/>
+                            <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2"
+                                    Width="16" Height="16" HorizontalAlignment="Left" Margin="14,0,0,0" IsHitTestVisible="False"/>
+                        </Panel>
+                        <TextBlock Text="No exercises match." FontSize="14" Classes="muted" IsVisible="{Binding NoMatches}"/>
+
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="18"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CustomExerciseGroup">
                                     <StackPanel Spacing="8">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <StackPanel VerticalAlignment="Center" Spacing="2">
-                                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold"
-                                                           TextWrapping="Wrap"/>
-                                                <TextBlock Text="{Binding Group}" Opacity="0.7" FontSize="12"/>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
-                                                        VerticalAlignment="Center">
-                                                <Button Content="Edit" Command="{Binding EditCommand}"/>
-                                                <Button Content="Delete" Command="{Binding DeleteCommand}"
-                                                        IsVisible="{Binding !IsConfirmingDelete}"/>
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <!-- Delete confirmation: says what goes with the exercise -->
-                                        <StackPanel Spacing="6" IsVisible="{Binding IsConfirmingDelete}">
-                                            <TextBlock Text="{Binding ConfirmText}" TextWrapping="Wrap"
-                                                       Foreground="IndianRed"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <Button Content="Yes, delete" Command="{Binding ConfirmDeleteCommand}"/>
-                                                <Button Content="Keep it" Command="{Binding CancelDeleteCommand}"/>
-                                            </StackPanel>
-                                        </StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" LetterSpacing="1.2" Classes="muted"/>
+                                        <Border Classes="card" Padding="0">
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:CustomExerciseItemViewModel">
+                                                        <Border Classes="exRow">
+                                                            <Grid ColumnDefinitions="*,Auto,Auto">
+                                                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding UsageText}" FontSize="12" Classes="muted"/>
+                                                                </StackPanel>
+                                                                <Button Grid.Column="1" Classes="rowIcon" Command="{Binding EditCommand}"
+                                                                        ToolTip.Tip="Edit" AutomationProperties.Name="Edit">
+                                                                    <v:Icon Data="{StaticResource IcPencil}" StrokeThickness="2" Width="17" Height="17"/>
+                                                                </Button>
+                                                                <Button Grid.Column="2" Classes="rowIcon" Command="{Binding DeleteCommand}"
+                                                                        ToolTip.Tip="Delete" AutomationProperties.Name="Delete">
+                                                                    <v:Icon Data="{StaticResource IcTrash}" StrokeThickness="2" Width="17" Height="17"/>
+                                                                </Button>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
                                     </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
-            </Border>
-        </StackPanel>
-    </ScrollViewer>
+            </ScrollViewer>
+        </DockPanel>
+
+        <!-- Delete: says what goes with the exercise -->
+        <Panel IsVisible="{Binding IsConfirmingDelete}">
+            <Border Background="{DynamicResource Scrim}" PointerPressed="OnDeleteScrimPressed"/>
+            <v:Sheet Width="420" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24"
+                     CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="{Binding DeleteTitle}" FontSize="22" FontWeight="ExtraBold"/>
+                    <TextBlock Text="{Binding DeleteText}" FontSize="14" Classes="soft"/>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Keep it" Command="{Binding CancelDeleteCommand}"/>
+                        <Button Grid.Column="1" Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Foreground="{DynamicResource ErrorText}" Content="Delete" Command="{Binding ConfirmDeleteCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </v:Sheet>
+        </Panel>
+    </Grid>
 </UserControl>

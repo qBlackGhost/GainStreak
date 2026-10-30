@@ -59,13 +59,8 @@
                     </Panel>
                 </Button>
                 <Button Classes="bare" Click="OnProfile" AutomationProperties.Name="Profile">
-                    <Border Width="40" Height="40" CornerRadius="20" Padding="2" BorderThickness="2"
-                            BorderBrush="{DynamicResource AccentInk}">
-                        <Border CornerRadius="16" Background="{DynamicResource Inverse}">
-                            <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="12" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Border>
+                    <v:AvatarView Width="40" Height="40" Choice="{Binding OwnAvatar}" Initials="{Binding Initials}" Level="{Binding OwnLevel}"
+                                  Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
                 </Button>
             </StackPanel>
         </Grid>

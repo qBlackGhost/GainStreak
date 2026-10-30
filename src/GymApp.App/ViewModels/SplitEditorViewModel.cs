@@ -35,8 +35,17 @@ public partial class SplitEditorViewModel : ViewModelBase
     [ObservableProperty] public partial string? NameError { get; set; }
     [ObservableProperty] public partial string? DaysError { get; set; }
 
-    public string Title => _splitId is null ? "New custom split" : "Edit split";
-    public string DaysSummary => $"{Days.Count(d => d.IsSelected)} training day(s) per week";
+    public string Title => _splitId is null ? "New split" : "Edit split";
+    public string SaveLabel => _splitId is null ? "Create split" : "Save changes";
+
+    public string DaysSummary
+    {
+        get
+        {
+            var training = Days.Count(d => d.IsSelected);
+            return $"{training} training {(training == 1 ? "day" : "days")} · {Days.Count - training} rest";
+        }
+    }
 
     public SplitEditorViewModel(SplitService splits, SessionService session, Func<MainViewModel> shell)
     {
@@ -53,6 +62,8 @@ public partial class SplitEditorViewModel : ViewModelBase
     public void Load(WorkoutSplit? split)
     {
         _splitId = split?.Id;
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(SaveLabel));
         Name = split?.Name ?? "";
         if (split is null) return;
 
@@ -91,5 +102,5 @@ public partial class SplitEditorViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand] private void Cancel() => _shell().ShowSplits();
+    [RelayCommand] private void Cancel() => _shell().ClosePopup();
 }

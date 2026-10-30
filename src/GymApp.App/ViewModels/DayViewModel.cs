@@ -254,15 +254,17 @@ public partial class DayViewModel : ViewModelBase, IClosesOnBack
 
     [RelayCommand] private void SelectFilter(GroupFilter filter) => SelectedFilter = filter;
 
-    internal async Task AddAsync(PickerItemViewModel item)
+    internal Task AddAsync(PickerItemViewModel item) => AddAsync(item.ExerciseId);
+
+    private async Task AddAsync(int exerciseId)
     {
         try
         {
-            var r = await _days.AddAsync(UserId, _dayId, item.ExerciseId);
+            var r = await _days.AddAsync(UserId, _dayId, exerciseId);
             if (!r.Success) { Error = r.Error; Info = null; return; }
 
             // Go straight to the new exercise so its sets can be set up right away
-            _shell().ShowExercise(_menuDay!, _splitName, item.ExerciseId);
+            _shell().ShowExercise(_menuDay!, _splitName, exerciseId);
         }
         catch (Exception)
         {
@@ -391,7 +393,14 @@ public partial class DayViewModel : ViewModelBase, IClosesOnBack
         }
     }
 
-    [RelayCommand] private void NewExercise() => _shell().ShowCustomExercises(_menuDay!, _splitName);
+    [RelayCommand]
+    private void NewExercise() => _shell().OpenExerciseForm(null, $"Saved to your exercises and added to {Title}",
+        async e =>
+        {
+            await ReloadAsync(reloadCatalog: true);   // if the day is full, it's still in the list to pick from
+            await AddAsync(e.Id);
+        },
+        () => _shell().ShowCustomExercises(_menuDay!, _splitName));
 
     [RelayCommand] private void Back() => _shell().ShowWorkouts();
 }

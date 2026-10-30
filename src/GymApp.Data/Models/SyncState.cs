@@ -11,6 +11,7 @@ public class SyncState
     public DateTime? StatsDirtySince { get; set; }
     public DateTime? CheckInsDirtySince { get; set; }
     public DateTime? SharingDirtySince { get; set; }
+    public DateTime? AvatarDirtySince { get; set; }
     /// <summary>The last refusal, for the log only; never shown or retried.</summary>
     public string? LastError { get; set; }
 }

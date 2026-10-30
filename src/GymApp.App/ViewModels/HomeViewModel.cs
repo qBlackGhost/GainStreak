@@ -366,7 +366,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
         var splitResult = menu is null ? null
             : checkIn.PlannedDay is { } planned ? $"{menu.SplitName} · today: {planned.Name}" : $"{menu.SplitName} · rest today";
-        var (exercises, openDay) = SetupPlan.Exercises(menu, checkIn.Day);
+        var exercises = SetupPlan.Exercises(menu);
         var (body, opensProfile) = SetupPlan.Calories(calories?.Goal, profile);
 
         var steps = new List<SetupStepViewModel>
@@ -375,7 +375,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                 "Choose a weekly plan, its variant and the day your first workout falls on. PPL and Upper / Lower are good starts.",
                 "Choose a split", splitResult, isLocked: false, () => _shell().ShowSplits()),
             new(2, exercises.Title, exercises.Text, exercises.Cta, exercises.Result,
-                isLocked: !checkIn.HasSplit, () => OpenSetupDay(menu, openDay)),
+                isLocked: !checkIn.HasSplit, () => _shell().ShowWorkouts()),
             new(3, body.Title, body.Text, body.Cta, body.Result, isLocked: false,
                 opensProfile ? () => _shell().ShowProfile() : () => _shell().ShowCalories()),
             new(4, "Choose your home city",
@@ -389,12 +389,6 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         SetupDoneText = $"{done} / {steps.Count} done";
         SetupProgress = done / (double)steps.Count;
         ShowSetup = done < steps.Count;
-    }
-
-    private void OpenSetupDay(WorkoutMenu? menu, MenuDay? day)
-    {
-        if (menu is not null && day is not null) _shell().ShowDay(day, menu.SplitName);
-        else _shell().ShowWorkouts();
     }
 
     private async Task RefreshCaloriesAsync(int userId)

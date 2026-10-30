@@ -14,46 +14,43 @@ public class SetupPlanTests
 
     [Fact] public void Exercises_WithoutASplit_OpensWorkouts()
     {
-        var (step, open) = SetupPlan.Exercises(null, null);
+        var step = SetupPlan.Exercises(null);
 
         Assert.Equal(("Add exercises to every workout day", "Open Workouts"), (step.Title, step.Cta));
         Assert.Null(step.Result);
-        Assert.Null(open);
     }
 
-    [Fact] public void Exercises_NothingYet_NamesEveryDay_AndOpensTodayFirst()
+    [Fact] public void Exercises_NothingYet_NamesEveryDay_AndOpensWorkouts()
     {
-        var (step, open) = SetupPlan.Exercises(Menu(Day(1, "Push", 0), Day(2, "Pull", 0), Day(3, "Legs", 0)), new CheckInDay(2, "Pull"));
+        var step = SetupPlan.Exercises(Menu(Day(1, "Push", 0), Day(2, "Pull", 0), Day(3, "Legs", 0)));
 
         Assert.Equal("Your split has 3 workout days: Push, Pull and Legs. Give each one a few exercises and planned sets.", step.Text);
-        Assert.Equal("Open Pull", step.Cta);
-        Assert.Equal(2, open!.SplitDayId);
+        Assert.Equal("Open Workouts", step.Cta);
         Assert.Null(step.Result);
     }
 
-    [Fact] public void Exercises_SomeDaysDone_IsNotDone_AndOpensTheFirstEmptyDay()
+    [Fact] public void Exercises_SomeDaysDone_IsNotDone_AndOpensWorkouts()
     {
-        // Today's day (Push) is filled, which used to finish the step
-        var (step, open) = SetupPlan.Exercises(Menu(Day(1, "Push", 4), Day(2, "Pull", 0), Day(3, "Legs", 0)), new CheckInDay(1, "Push"));
+        // One filled day used to finish the step
+        var step = SetupPlan.Exercises(Menu(Day(1, "Push", 4), Day(2, "Pull", 0), Day(3, "Legs", 0)));
 
         Assert.Null(step.Result);
         Assert.Equal("1 of 3 days are ready. Pull and Legs still need exercises.", step.Text);
-        Assert.Equal(("Open Pull", 2), (step.Cta, open!.SplitDayId));
+        Assert.Equal("Open Workouts", step.Cta);
     }
 
     [Fact] public void Exercises_OneDayLeft_SaysWhich()
     {
-        var (step, _) = SetupPlan.Exercises(Menu(Day(1, "Upper", 5), Day(2, "Lower", 0)), null);
+        var step = SetupPlan.Exercises(Menu(Day(1, "Upper", 5), Day(2, "Lower", 0)));
 
         Assert.Equal("1 of 2 days are ready. Lower still needs exercises.", step.Text);
     }
 
     [Fact] public void Exercises_EveryDayFilled_IsDone()
     {
-        var (step, open) = SetupPlan.Exercises(Menu(Day(1, "Upper", 5), Day(2, "Lower", 3)), null);
+        var step = SetupPlan.Exercises(Menu(Day(1, "Upper", 5), Day(2, "Lower", 3)));
 
         Assert.Equal("All 2 days have exercises", step.Result);
-        Assert.Null(open);
     }
 
     // --- Step 3: body data, then the calorie goal ---

@@ -20,6 +20,7 @@ public interface ISocialSyncHooks
     void MarkStatsDirty(int userId);
     void MarkCheckInsDirty(int userId);
     void MarkSharingDirty(int userId);
+    void MarkAvatarDirty(int userId);
 }
 
 public sealed class NoSocialSync : ISocialSyncHooks
@@ -28,6 +29,7 @@ public sealed class NoSocialSync : ISocialSyncHooks
     public void MarkStatsDirty(int userId) { }
     public void MarkCheckInsDirty(int userId) { }
     public void MarkSharingDirty(int userId) { }
+    public void MarkAvatarDirty(int userId) { }
 }
 
 /// <summary>
@@ -44,7 +46,7 @@ public sealed class SocialSync(
     public const int CheckInDays = 31;
     public static readonly TimeSpan Interval = TimeSpan.FromMinutes(15);
 
-    private enum Flag { Stats, CheckIns, Sharing }
+    private enum Flag { Stats, CheckIns, Sharing, Avatar }
 
     private readonly ConcurrentDictionary<int, SemaphoreSlim> _locks = new();
     // Marks for one user are written one at a time: two at once would both try to insert the user's SyncState row
@@ -57,6 +59,7 @@ public sealed class SocialSync(
     public void MarkStatsDirty(int userId) => Background(() => MarkAsync(userId, Flag.Stats));
     public void MarkCheckInsDirty(int userId) => Background(() => MarkAsync(userId, Flag.CheckIns));
     public void MarkSharingDirty(int userId) => Background(() => MarkAsync(userId, Flag.Sharing));
+    public void MarkAvatarDirty(int userId) => Background(() => MarkAsync(userId, Flag.Avatar));
 
     /// <summary>Syncs the signed-in user in the background, if they're linked. For sign-in, restore, the window coming
     /// back to the front, the timer and the connection coming back.</summary>
@@ -119,7 +122,7 @@ public sealed class SocialSync(
         }
     }
 
-    /// <summary>Uploads whatever is dirty for <paramref name="userId"/>: sharing, then check-ins, then stats. Stops at
+    /// <summary>Uploads whatever is dirty for <paramref name="userId"/>: the avatar, sharing, then check-ins, then stats. Stops at
     /// the first offline step, leaving it and the rest for next time.</summary>
     public async Task SyncAsync(int userId)
     {
@@ -133,6 +136,7 @@ public sealed class SocialSync(
                 state = await db.SyncStates.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId);
             if (state is null) return;
 
+            if (state.AvatarDirtySince is { } avatar && !await RunAsync(userId, Flag.Avatar, avatar, UploadAvatarAsync)) return;
             if (state.SharingDirtySince is { } sharing && !await RunAsync(userId, Flag.Sharing, sharing, UploadSharingAsync)) return;
             if (state.CheckInsDirtySince is { } checkIns && !await RunAsync(userId, Flag.CheckIns, checkIns, UploadCheckInsAsync)) return;
             if (state.StatsDirtySince is { } stats) await RunAsync(userId, Flag.Stats, stats, UploadStatsAsync);
@@ -168,12 +172,21 @@ public sealed class SocialSync(
         {
             Flag.Sharing => await q.Where(s => s.SharingDirtySince == markedAt)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.SharingDirtySince, (DateTime?)null)),
+            Flag.Avatar => await q.Where(s => s.AvatarDirtySince == markedAt)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.AvatarDirtySince, (DateTime?)null)),
             Flag.CheckIns => await q.Where(s => s.CheckInsDirtySince == markedAt)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.CheckInsDirtySince, (DateTime?)null)),
             _ => await q.Where(s => s.StatsDirtySince == markedAt)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatsDirtySince, (DateTime?)null)),
         };
         return true;
+    }
+
+    private async Task<ApiResult?> UploadAvatarAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var avatar = await db.UserProfiles.Where(p => p.UserId == userId).Select(p => p.Avatar).FirstOrDefaultAsync();
+        return await api.SetAvatarAsync(avatar);
     }
 
     private async Task<ApiResult?> UploadSharingAsync(int userId)
@@ -253,6 +266,7 @@ public sealed class SocialSync(
             switch (flag)
             {
                 case Flag.Sharing: state.SharingDirtySince = now; break;
+                case Flag.Avatar: state.AvatarDirtySince = now; break;
                 case Flag.CheckIns: state.CheckInsDirtySince = now; break;
                 default: state.StatsDirtySince = now; break;
             }

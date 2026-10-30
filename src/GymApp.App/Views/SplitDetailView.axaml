@@ -114,30 +114,87 @@
             <Setter Property="Height" Value="232"/>
         </Style>
         <Style Selector="ItemsControl#UsageLegend"><Setter Property="Grid.Column" Value="1"/></Style>
-        <Style Selector=".phone ItemsControl#WeekCells"><Setter Property="Margin" Value="-2.5"/></Style>
-        <Style Selector=".phone Panel.wk">
-            <Setter Property="MinHeight" Value="72"/>
-            <Setter Property="Margin" Value="2.5"/>
+
+        <!-- Phones' week (the GainStreak Mobile canvas): the days are the start day picker. The start is lime and
+             raised, training days filled, rest days a dashed outline -->
+        <Style Selector="Button.wkPick">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="MinHeight" Value="86"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector=".phone Border.wkTile"><Setter Property="Padding" Value="2,8"/></Style>
-        <Style Selector=".phone TextBlock.cellTitle">
+        <Style Selector="Button.wkPick:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.wkPick:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border.pickTile">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="3,9,3,8"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Border.pickTile.rest">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Faint}"/>
+        </Style>
+        <Style Selector="Border.pickTile.start">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+            <Setter Property="TextElement.Foreground" Value="Black"/>
+            <Setter Property="RenderTransform" Value="translateY(-3px)"/>
+            <Setter Property="BoxShadow" Value="0 6 16 0 #40000000"/>
+        </Style>
+        <Style Selector="TextBlock.wkDay">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="0.6"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="Border.pickTile.start TextBlock.wkDay">
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Opacity" Value="0.8"/>
+        </Style>
+        <Style Selector="TextBlock.wkName">
             <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="ExtraBold"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.wkName.long"><Setter Property="FontSize" Value="10"/></Style>
+        <Style Selector="Border.pickTile.rest TextBlock.wkName"><Setter Property="FontWeight" Value="SemiBold"/></Style>
+        <Style Selector="Border.wkBar">
+            <Setter Property="Width" Value="18"/>
+            <Setter Property="Height" Value="4"/>
+            <Setter Property="CornerRadius" Value="2"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="Border.pickTile.start Border.wkBar">
+            <Setter Property="Background" Value="Black"/>
+            <Setter Property="Opacity" Value="0.6"/>
+        </Style>
+        <Style Selector="Border.pickTile.rest Border.wkBar"><Setter Property="Opacity" Value="0"/></Style>
+
+        <!-- Phones' "Who uses it": a small donut beside a compact legend -->
+        <Style Selector="TextBlock.legendName">
             <Setter Property="TextWrapping" Value="NoWrap"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
         </Style>
-        <!-- Who uses it: the donut above its legend -->
-        <Style Selector=".phone Grid#Usage"><Setter Property="RowSpacing" Value="16"/></Style>
-        <Style Selector=".phone Panel#UsageDonut">
-            <Setter Property="Width" Value="200"/>
-            <Setter Property="Height" Value="200"/>
-            <Setter Property="Grid.ColumnSpan" Value="2"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-        <Style Selector=".phone ItemsControl#UsageLegend">
-            <Setter Property="Grid.Column" Value="0"/>
-            <Setter Property="Grid.Row" Value="1"/>
-            <Setter Property="Grid.ColumnSpan" Value="2"/>
-        </Style>
+        <Style Selector="TextBlock.legendName.mine"><Setter Property="FontWeight" Value="Bold"/></Style>
 
         <!-- Two columns by default; stacked when narrow -->
         <Style Selector="StackPanel#RightColumn">
@@ -150,6 +207,12 @@
             <Setter Property="Grid.Column" Value="0"/>
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="2"/>
+        </Style>
+
+        <!-- Hides a phoneOnly / wideOnly element with nothing to show. A style, not an IsVisible binding (which would
+             beat those classes); last, so it wins over them -->
+        <Style Selector=":is(Control).off">
+            <Setter Property="IsVisible" Value="False"/>
         </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
@@ -210,12 +273,33 @@
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+            <!-- Phones (the canvas): "Good for" first, as a small card above the setup -->
+            <Border Classes="card phoneOnly" Classes.off="{Binding !HasGoodFor}" Padding="14,12" CornerRadius="14">
+                <StackPanel Spacing="6">
+                    <TextBlock Text="GOOD FOR" Classes="step" FontSize="11"/>
+                    <ItemsControl ItemsSource="{Binding GoodFor}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
+                                            Width="14" Height="14" VerticalAlignment="Top" Margin="0,2,0,0"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding}" FontSize="13" Classes="soft" LineHeight="18"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
 
                 <!-- ===== Set up this split ===== -->
                 <StackPanel x:Name="LeftColumn" Spacing="24">
-                <Border x:Name="SetupCard" Classes="card" Padding="28">
-                    <StackPanel Spacing="26">
+                <Border x:Name="SetupCard" Classes="card">
+                    <StackPanel Spacing="20">
                         <!-- 1 · Days per week (presets with more than one layout) -->
                         <StackPanel Spacing="10" IsVisible="{Binding HasVariants}">
                             <TextBlock Text="1 · DAYS PER WEEK" Classes="step"/>
@@ -261,8 +345,8 @@
                             </WrapPanel>
                         </StackPanel>
 
-                        <!-- First workout day (presets; custom splits fix their weekdays) -->
-                        <StackPanel Spacing="10" IsVisible="{Binding IsPreset}">
+                        <!-- First workout day (presets; custom splits fix their weekdays). Phones tap the week instead -->
+                        <StackPanel Classes="wideOnly" Classes.off="{Binding !IsPreset}" Spacing="10">
                             <TextBlock Text="{Binding StartStepLabel}" Classes="step"/>
                             <Border Padding="4" CornerRadius="12" Background="{DynamicResource Fill}">
                                 <ItemsControl ItemsSource="{Binding StartDayOptions}">
@@ -284,14 +368,15 @@
                         <!-- Your week -->
                         <StackPanel Spacing="12">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBlock Text="YOUR WEEK" Classes="step" VerticalAlignment="Bottom"/>
+                                <TextBlock Text="YOUR WEEK" Classes="step wideOnly" VerticalAlignment="Bottom"/>
+                                <TextBlock Text="{Binding WeekStepLabel}" Classes="step phoneOnly" FontSize="11" VerticalAlignment="Bottom"/>
                                 <TextBlock Grid.Column="1" FontSize="13" Classes="soft">
                                     <Run Text="{Binding TrainCount}" FontFamily="{StaticResource Mono}" Foreground="{DynamicResource Ink}"/><Run
                                          Text=" training · "/><Run Text="{Binding RestCount}" FontFamily="{StaticResource Mono}"
                                          Foreground="{DynamicResource Ink}"/><Run Text=" rest"/>
                                 </TextBlock>
                             </Grid>
-                            <ItemsControl x:Name="WeekCells" ItemsSource="{Binding Cells}">
+                            <ItemsControl x:Name="WeekCells" Classes="wideOnly" ItemsSource="{Binding Cells}">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
@@ -320,33 +405,63 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <TextBlock Text="Rest days count toward your streak." FontSize="12" Classes="muted"/>
+                            <TextBlock Text="Rest days count toward your streak." FontSize="12" Classes="muted wideOnly"/>
+
+                            <!-- Phones: tap a day to start the split there -->
+                            <ItemsControl Classes="phoneOnly" ItemsSource="{Binding Cells}" Margin="-2">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ScheduleCell">
+                                        <Button Classes="wkPick" IsHitTestVisible="{Binding CanPick}"
+                                                AutomationProperties.Name="{Binding Weekday}"
+                                                Command="{Binding $parent[ItemsControl].((vm:SplitDetailViewModel)DataContext).PickStartDayCommand}"
+                                                CommandParameter="{Binding Weekday}">
+                                            <Panel>
+                                                <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3"
+                                                           RadiusX="12" RadiusY="12" IsVisible="{Binding !IsTraining}"/>
+                                                <Border Classes="pickTile" Classes.rest="{Binding !IsTraining}"
+                                                        Classes.start="{Binding IsTrainingStart}">
+                                                    <Grid RowDefinitions="Auto,*,Auto">
+                                                        <TextBlock Classes="wkDay" Text="{Binding UpperLabel}"/>
+                                                        <TextBlock Grid.Row="1" Classes="wkName" Classes.long="{Binding IsLongTitle}"
+                                                                   Text="{Binding Title}"/>
+                                                        <Border Grid.Row="2" Classes="wkBar"/>
+                                                    </Grid>
+                                                </Border>
+                                            </Panel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="{Binding WeekHint}" FontSize="12" Classes="muted phoneOnly" LineHeight="17"/>
                         </StackPanel>
 
                         <!-- Use -->
-                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                <TextBlock Text="{Binding FootNote}" FontSize="13" Classes="muted" LineHeight="20" MaxWidth="380"
-                                           HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Classes="btn outline" MinHeight="48" Content="Edit split"
-                                        Command="{Binding EditCommand}" IsVisible="{Binding !IsPreset}"/>
+                        <!-- Use: a big button in the middle of the card, Edit split (custom splits) under it -->
+                        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                            <StackPanel Spacing="10" HorizontalAlignment="Center">
                                 <!-- "Use this split" / "Save" until saved, then a greyed "In use" with a check -->
-                                <Button Grid.Column="2" Classes="btn primary use" Classes.inUse="{Binding IsInUse}"
-                                        Classes.justSaved="{Binding JustSaved}" MinHeight="48" Padding="24,0" FontSize="15"
+                                <Button Classes="btn primary use" Classes.inUse="{Binding IsInUse}"
+                                        Classes.justSaved="{Binding JustSaved}" MinHeight="56" MinWidth="260" Padding="36,0"
+                                        FontSize="17" CornerRadius="14" HorizontalContentAlignment="Center"
                                         Command="{Binding UseCommand}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <v:Icon Classes="useCheck" Data="{StaticResource IcCheck}" StrokeThickness="2.6" Width="14" Height="14"
+                                        <v:Icon Classes="useCheck" Data="{StaticResource IcCheck}" StrokeThickness="2.6" Width="16" Height="16"
                                                 Stroke="{DynamicResource AccentInk}" VerticalAlignment="Center" IsVisible="{Binding IsInUse}"/>
                                         <TextBlock Text="{Binding UseLabel}" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
-                            </Grid>
+                                <Button Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Content="Edit split" Command="{Binding EditCommand}" IsVisible="{Binding !IsPreset}"/>
+                            </StackPanel>
                         </Border>
                     </StackPanel>
                 </Border>
 
                 <!-- ===== Who uses it: share of lifters per split (small ones grouped into Other) ===== -->
-                <Border Classes="card" IsVisible="{Binding HasUsage}">
+                <Border Classes="card wideOnly" Classes.off="{Binding !HasUsage}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Who uses it" FontSize="20" FontWeight="Bold"/>
                         <TextBlock Text="{Binding UsageHeadline}" FontSize="14" Classes="light" LineHeight="22"/>
@@ -380,6 +495,40 @@
                         <TextBlock Text="{Binding UsageNote}" FontSize="12" Foreground="{DynamicResource Faint}"/>
                     </StackPanel>
                 </Border>
+
+                <!-- Phones (the canvas): the title and "Share of lifters" on one line, a small donut beside the legend -->
+                <Border Classes="card phoneOnly" Classes.off="{Binding !HasUsage}" Padding="16,14">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="Who uses it" FontSize="17" FontWeight="Bold" VerticalAlignment="Bottom"/>
+                            <TextBlock Grid.Column="1" Text="Share of lifters" FontSize="12" Classes="muted" VerticalAlignment="Bottom"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                            <Panel Width="120" Height="120" VerticalAlignment="Center">
+                                <v:Donut Slices="{Binding UsageSlices}"/>
+                                <StackPanel Spacing="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding MinePercent}" FontFamily="{StaticResource Mono}" FontSize="22" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentInk}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="of lifters" FontSize="10" Classes="muted" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Panel>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding UsageSlices}" VerticalAlignment="Center">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SplitUsageSlice">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" MinHeight="26">
+                                            <v:DonutSwatch Tone="{Binding Tone}" Width="10" Height="10" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Classes="legendName" Classes.mine="{Binding IsThis}"
+                                                       Classes.soft="{Binding !IsThis}" Text="{Binding Name}" FontSize="12"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="2" Text="{Binding PercentText}" FontFamily="{StaticResource Mono}" FontSize="12"
+                                                       FontWeight="Bold" Classes.soft="{Binding !IsThis}" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </StackPanel>
+                </Border>
                 </StackPanel>
 
                 <!-- ===== About ===== -->
@@ -400,11 +549,10 @@
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Text="Muscles come from the exercises you've added to each day." FontSize="12" Foreground="{DynamicResource Faint}"/>
-                        </StackPanel>
+                            </ItemsControl>                        </StackPanel>
                     </Border>
-                    <Border Classes="card" IsVisible="{Binding HasGoodFor}">
+                    <!-- Phones show it at the top instead -->
+                    <Border Classes="card wideOnly" Classes.off="{Binding !HasGoodFor}">
                         <StackPanel Spacing="10">
                             <TextBlock Text="Good for" FontSize="20" FontWeight="Bold"/>
                             <ItemsControl ItemsSource="{Binding GoodFor}">

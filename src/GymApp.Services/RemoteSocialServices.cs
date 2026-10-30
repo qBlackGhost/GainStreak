@@ -150,6 +150,6 @@ public class RemoteLeaderboardService(SocialApiClient api, SocialCacheStore cach
 
     private static LeaderboardView ToView(CorePeriod period, LeaderboardResponse r) =>
         new(period, r.WeekStart, r.WeekEnd, r.Rows
-            .Select(x => new LeaderboardRow(x.Rank, x.UserId, x.Username, x.Points, LevelCalculator.ForNumber(x.Level), x.CurrentStreak, x.IsYou))
+            .Select(x => new LeaderboardRow(x.Rank, x.UserId, x.Username, x.Points, LevelCalculator.ForNumber(x.Level), x.CurrentStreak, x.IsYou, x.Avatar))
             .ToList());
 }

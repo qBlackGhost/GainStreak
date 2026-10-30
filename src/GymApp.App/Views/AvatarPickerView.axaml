@@ -1,0 +1,107 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.AvatarPickerView"
+             x:DataType="vm:AvatarPickerViewModel">
+    <!-- The avatar popup: a centred card, a sheet from the bottom on phones. Escape or a click outside cancels. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
+        <Style Selector=".phone StackPanel#Form"><Setter Property="Margin" Value="16,18,16,20"/></Style>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Button.pick">
+            <Setter Property="Width" Value="48"/>
+            <Setter Property="Height" Value="48"/>
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="24"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.pick:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
+        </Style>
+        <Style Selector="Button.pick.on /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource Ink}"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="460" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="Form" Spacing="16">
+                    <TextBlock Text="Your avatar" FontSize="22" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
+                    <StackPanel Spacing="6" HorizontalAlignment="Center">
+                        <v:AvatarView Width="84" Height="84" HorizontalAlignment="Center" Choice="{Binding Preview}" Initials="{Binding Initials}"
+                                      Level="{Binding Level}" Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                        <TextBlock Text="Your ring changes as you level up" FontSize="12" Classes="muted"/>
+                    </StackPanel>
+
+                    <Border Classes="track">
+                        <v:SegmentedPill SelectedIndex="{Binding ModeIndex}" PillInset="0">
+                            <Button Classes="seg" Classes.on="{Binding !UsesIcon}" MinHeight="40" FontSize="14"
+                                    Content="Initials" Command="{Binding ShowInitialsCommand}"/>
+                            <Button Classes="seg" Classes.on="{Binding UsesIcon}" MinHeight="40" FontSize="14"
+                                    Content="Icon" Command="{Binding ShowIconCommand}"/>
+                        </v:SegmentedPill>
+                    </Border>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="COLOUR" Classes="caps" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding Colors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel ItemSpacing="4" LineSpacing="4"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AvatarColorOption">
+                                    <Button Classes="pick" Classes.on="{Binding IsSelected}" AutomationProperties.Name="{Binding Color}"
+                                            Command="{Binding $parent[UserControl].((vm:AvatarPickerViewModel)DataContext).SelectColorCommand}"
+                                            CommandParameter="{Binding}">
+                                        <v:AvatarView Width="36" Height="36" Choice="{Binding Color}"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6" IsVisible="{Binding UsesIcon}">
+                        <TextBlock Text="ICON" Classes="caps" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding Icons}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel ItemSpacing="4" LineSpacing="4"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:AvatarIconOption">
+                                    <Button Classes="pick" Classes.on="{Binding IsSelected}" AutomationProperties.Name="{Binding Icon}"
+                                            Command="{Binding $parent[UserControl].((vm:AvatarPickerViewModel)DataContext).SelectIconCommand}"
+                                            CommandParameter="{Binding}">
+                                        <v:AvatarView Width="36" Height="36" Choice="{Binding Preview}"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Cancel" Command="{Binding CancelCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Save" Command="{Binding SaveCommand}" IsDefault="True"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
+</UserControl>

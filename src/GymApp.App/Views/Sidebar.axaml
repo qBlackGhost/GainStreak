@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:v="using:GymApp.App.Views"
+             xmlns:vm="using:GymApp.App.ViewModels"
              x:Class="GymApp.App.Views.Sidebar">
     <!-- The left navigation shared by the dark screens. Below 900 px of window it becomes a bar along the top
          (Sidebar.axaml.cs sets "narrow" on it and on the DockPanel it sits in). -->
@@ -99,10 +100,9 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                     <Button Classes="nav" Padding="0" Click="OnProfile" ToolTip.Tip="Profile">
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource Inverse}">
-                                <TextBlock x:Name="InitialsText" Foreground="{DynamicResource OnInverse}" FontWeight="Bold" FontSize="14"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
+                            <v:AvatarView x:Name="YourAvatar" x:DataType="vm:MainViewModel" Width="40" Height="40" Choice="{Binding OwnAvatar}"
+                                          Initials="{Binding Initials}" Level="{Binding OwnLevel}"
+                                          Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
                             <StackPanel x:Name="ProfileText" Spacing="2" VerticalAlignment="Center">
                                 <TextBlock x:Name="NameText" FontWeight="SemiBold" FontSize="14" Foreground="{DynamicResource Ink}"
                                            TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100"/>

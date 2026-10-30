@@ -63,6 +63,15 @@ public partial class MainViewModel : ViewModelBase
         IsFeedbackOpen = true;
     }
 
+    /// <summary>The popup with a form of its own (a new split, a new exercise), over the current screen, or null.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPopupOpen))]
+    public partial ViewModelBase? Popup { get; private set; }
+
+    public bool IsPopupOpen => Popup is not null;
+
+    public void ClosePopup() => Popup = null;
+
     public MainViewModel(SessionService session, IServiceProvider sp)
     {
         _session = session;
@@ -116,6 +125,10 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>The app bar's streak, refreshed whenever the screen changes.</summary>
     [ObservableProperty] public partial int Streak { get; private set; }
 
+    /// <summary>The user's own avatar, for the app bar and sidebar; the level is for its ring.</summary>
+    [ObservableProperty] public partial string? OwnAvatar { get; private set; }
+    [ObservableProperty] public partial int OwnLevel { get; private set; }
+
     /// <summary>The app bar's avatar.</summary>
     public string Initials => _session.CurrentUser?.Username is { Length: > 0 } name
         ? name[..Math.Min(2, name.Length)].ToUpperInvariant() : "?";
@@ -123,7 +136,7 @@ public partial class MainViewModel : ViewModelBase
     /// <summary>The tab a screen belongs to: null for the screens before sign-in and those the app bar opens.</summary>
     public static AppTab? TabOf(Type screen) => screen.Name switch
     {
-        nameof(SplitsViewModel) or nameof(SplitDetailViewModel) or nameof(SplitEditorViewModel) => AppTab.Splits,
+        nameof(SplitsViewModel) or nameof(SplitDetailViewModel) => AppTab.Splits,
         nameof(WorkoutsViewModel) or nameof(DayViewModel) or nameof(ExerciseViewModel)
             or nameof(CustomExercisesViewModel) => AppTab.Workouts,
         nameof(HomeViewModel) => AppTab.Home,
@@ -141,6 +154,7 @@ public partial class MainViewModel : ViewModelBase
         // The feedback popup covers the screen but not the phones' tab bar: a tab, or a screen opened any other way,
         // closes it. The note survives (FeedbackViewModel is a singleton)
         IsFeedbackOpen = false;
+        Popup = null;
         var vm = open();
         var type = vm.GetType();
         if (root) _back.Clear();
@@ -170,6 +184,19 @@ public partial class MainViewModel : ViewModelBase
         if (_session.CurrentUser is not { } user) return;
         try { Streak = (await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today)).Current; }
         catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "App bar streak"); }
+        await RefreshAvatarAsync();
+    }
+
+    /// <summary>Reads the user's avatar again, after the picker or with the screen.</summary>
+    public async Task RefreshAvatarAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        try
+        {
+            OwnAvatar = await _sp.GetRequiredService<ProfileService>().GetAvatarAsync(user.Id);
+            OwnLevel = LevelCalculator.For(user.Points).Number;
+        }
+        catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "App bar avatar"); }
     }
 
     /// <summary>Back (the phones' back button, Android's system back): closes an open popup first, then goes to the
@@ -177,6 +204,7 @@ public partial class MainViewModel : ViewModelBase
     public bool GoBack()
     {
         if (IsFeedbackOpen) { Feedback.CloseCommand.Execute(null); return true; }
+        if (IsPopupOpen) { ClosePopup(); return true; }
         if (Current is IClosesOnBack screen && screen.CloseOnBack()) return true;
         if (_back.Count == 0) return false;
         var previous = _back[^1];
@@ -241,12 +269,30 @@ public partial class MainViewModel : ViewModelBase
         return vm;
     }, root: false);
 
-    public void ShowSplitEditor(WorkoutSplit? split) => Open(() =>
+    /// <summary>The new split popup; with a split, it edits that one.</summary>
+    public void OpenSplitEditor(WorkoutSplit? split)
     {
         var vm = _sp.GetRequiredService<SplitEditorViewModel>();
         vm.Load(split);      // null = new split, otherwise pre-fills the form
-        return vm;
-    }, root: false);
+        Popup = vm;
+    }
+
+    /// <summary>The new exercise popup; with an exercise, it edits that one. <paramref name="saved"/> runs after it
+    /// closes; <paramref name="manage"/> is its link to the user's exercises, if it has one.</summary>
+    public void OpenExerciseForm(Exercise? exercise, string subtitle, Func<Exercise, Task> saved, Action? manage = null)
+    {
+        var vm = _sp.GetRequiredService<ExerciseFormViewModel>();
+        vm.Load(exercise, subtitle, saved, manage);
+        Popup = vm;
+    }
+
+    /// <summary>The avatar popup. <paramref name="saved"/> runs after it closes.</summary>
+    public void OpenAvatarPicker(string? avatar, string initials, int level, Func<Task> saved)
+    {
+        var vm = _sp.GetRequiredService<AvatarPickerViewModel>();
+        vm.Load(avatar, initials, level, saved);
+        Popup = vm;
+    }
 
     public void ShowSplitDetail(WorkoutSplit split) => Open(() =>
     {

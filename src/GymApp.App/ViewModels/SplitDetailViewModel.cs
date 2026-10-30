@@ -11,10 +11,14 @@ using GymApp.Services;
 
 namespace GymApp.App.ViewModels;
 
-/// <summary>One day of the "Your week" preview.</summary>
-public record ScheduleCell(string Label, string Title, bool IsTraining, bool IsStart)
+/// <summary>One day of the "Your week" preview. On phones a preset's days are tapped to pick the start day
+/// (<see cref="CanPick"/>).</summary>
+public record ScheduleCell(string Label, string Title, bool IsTraining, bool IsStart, DayOfWeek Weekday, bool CanPick)
 {
     public bool IsTrainingStart => IsTraining && IsStart;
+    /// <summary>"Full Body", "Upper"…: names over six letters get the phones' smaller size.</summary>
+    public bool IsLongTitle => Title.Length > 6;
+    public string UpperLabel => Label.ToUpperInvariant();
 }
 
 /// <summary>One step of the rotation: "Push →".</summary>
@@ -123,7 +127,9 @@ public partial class SplitDetailViewModel : ViewModelBase
     [ObservableProperty] public partial string Name { get; set; } = "";
     [ObservableProperty] public partial string? Description { get; set; }
     [ObservableProperty] public partial bool IsRecommended { get; set; }
-    [ObservableProperty] public partial bool IsPreset { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WeekHint))]
+    public partial bool IsPreset { get; set; }
     [ObservableProperty] public partial string Rotation { get; set; } = "";
     [ObservableProperty] public partial IReadOnlyList<RotationStep> RotationSteps { get; set; } = [];
     [ObservableProperty] public partial string WeekSummary { get; set; } = "";
@@ -137,6 +143,11 @@ public partial class SplitDetailViewModel : ViewModelBase
     // Numbered steps: "1 · Days per week" only for presets with more than one variant
     [ObservableProperty] public partial string RotationStepLabel { get; set; } = "1 · ROTATION";
     [ObservableProperty] public partial string StartStepLabel { get; set; } = "2 · FIRST WORKOUT DAY";
+    // Phones (the GainStreak Mobile canvas): no start day row, the week's days are tapped instead
+    [ObservableProperty] public partial string WeekStepLabel { get; set; } = "2 · YOUR WEEK";
+    public string WeekHint => IsPreset
+        ? "Tap a day to start the split there. Rest days count toward your streak."
+        : "Rest days count toward your streak.";
 
     // About this split
     [ObservableProperty] public partial string? About { get; set; }
@@ -154,7 +165,7 @@ public partial class SplitDetailViewModel : ViewModelBase
     partial void OnUsageSlicesChanged(IReadOnlyList<SplitUsageSlice> value) => OnPropertyChanged(nameof(HasUsage));
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(UseLabel), nameof(FootNote), nameof(IsInUse), nameof(CanUse))]
+    [NotifyPropertyChangedFor(nameof(UseLabel), nameof(IsInUse), nameof(CanUse))]
     [NotifyCanExecuteChangedFor(nameof(UseCommand))]
     public partial bool IsActive { get; set; }
 
@@ -169,7 +180,7 @@ public partial class SplitDetailViewModel : ViewModelBase
     [ObservableProperty] public partial SplitVariant? SelectedVariant { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(FootNote), nameof(StartDayIndex))]
+    [NotifyPropertyChangedFor(nameof(StartDayIndex))]
     public partial DayOfWeek StartDay { get; set; } = DayOfWeek.Monday;
 
     [ObservableProperty] public partial IReadOnlyList<ScheduleCell> Cells { get; set; } = [];
@@ -185,12 +196,6 @@ public partial class SplitDetailViewModel : ViewModelBase
     public bool IsInUse => IsActive && !IsDirty;
     public bool CanUse => !IsInUse;
     public string UseLabel => !IsActive ? "Use this split" : IsDirty ? "Save" : "In use";
-    public string FootNote => IsActive
-        ? IsDirty ? "Save to update your schedule from today on."
-          : IsPreset ? "This is your current split. Changing the start day updates your schedule from today on."
-                     : "This is your current split. Edit it to change its days."
-        : IsPreset ? $"Switching split keeps your past streak days. Your new week starts on {StartDay}."
-                   : "Switching split keeps your past streak days.";
 
     public SplitDetailViewModel(SplitService splits, DayExerciseService dayExercises, SessionService session,
         ISplitUsageService usage, Func<MainViewModel> shell)
@@ -218,6 +223,7 @@ public partial class SplitDetailViewModel : ViewModelBase
         VariantOptions = Variants.Select(v => new VariantOptionViewModel(v, this)).ToList();
         RotationStepLabel = HasVariants ? "2 · ROTATION" : "1 · ROTATION";
         StartStepLabel = HasVariants ? "3 · FIRST WORKOUT DAY" : "2 · FIRST WORKOUT DAY";
+        WeekStepLabel = HasVariants ? "3 · YOUR WEEK" : "2 · YOUR WEEK";
 
         var guide = SplitGuides.For(split.Id, IsPreset);
         About = Description ?? guide?.About;
@@ -291,6 +297,13 @@ public partial class SplitDetailViewModel : ViewModelBase
         Rebuild();
     }
 
+    /// <summary>A tapped day of the phones' week: the split starts there (presets only).</summary>
+    [RelayCommand]
+    private void PickStartDay(DayOfWeek day)
+    {
+        if (IsPreset) StartDay = day;
+    }
+
     partial void OnStartDayChanged(DayOfWeek value)
     {
         foreach (var d in StartDayOptions) d.IsSelected = d.Day == value;
@@ -314,7 +327,6 @@ public partial class SplitDetailViewModel : ViewModelBase
         OnPropertyChanged(nameof(IsInUse));
         OnPropertyChanged(nameof(CanUse));
         OnPropertyChanged(nameof(UseLabel));
-        OnPropertyChanged(nameof(FootNote));
         UseCommand.NotifyCanExecuteChanged();
     }
 
@@ -343,7 +355,9 @@ public partial class SplitDetailViewModel : ViewModelBase
             s.Weekday.ToString()[..3],
             s.RotationIndex is { } i ? names[i % names.Count] : "Rest",
             s.IsTraining,
-            s.Weekday == start)).ToList();
+            s.Weekday == start,
+            s.Weekday,
+            IsPreset)).ToList();
 
         var training = slots.Count(s => s.IsTraining);
         TrainCount = training.ToString(CultureInfo.InvariantCulture);
@@ -395,6 +409,6 @@ public partial class SplitDetailViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand] private void Edit() => _shell().ShowSplitEditor(_split);
+    [RelayCommand] private void Edit() => _shell().OpenSplitEditor(_split);
     [RelayCommand] private void Back() => _shell().ShowSplits();
 }

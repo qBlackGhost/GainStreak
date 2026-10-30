@@ -171,6 +171,12 @@
         <Style Selector="Border#AddSheetBody ScrollViewer.list">
             <Setter Property="MaxHeight" Value="Infinity"/>
         </Style>
+        <!-- Phones: the day's exercises fill the card and scroll with the page, not in a capped box of their own,
+             and without the scrollbar's gap on the right -->
+        <Style Selector=".phone Grid.stack Border#ChosenCard ScrollViewer.list">
+            <Setter Property="MaxHeight" Value="Infinity"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
     </UserControl.Styles>
     <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
@@ -230,9 +236,9 @@
                             </Button>
                         </Grid>
                         <TextBlock DockPanel.Dock="Bottom" Classes="wideOnly" Margin="0,16,0,0" FontSize="12" Foreground="{DynamicResource Faint}"
-                                   Text="Drag the handle to reorder (or use the arrow keys on it). Removing an exercise keeps its logged sets and PR."/>
+                                   Text="Open an exercise to log its sets. Drag the handle to reorder (or use the arrow keys on it). Removing an exercise keeps its logged sets and PR."/>
                         <TextBlock DockPanel.Dock="Bottom" Classes="phoneOnly" Margin="0,12,0,0" FontSize="12" Foreground="{DynamicResource Faint}"
-                                   Text="Hold the handle to reorder. Removing an exercise keeps its logged sets and PR."/>
+                                   LineHeight="17" Text="Tap an exercise to open it and log its sets. Hold the handle to reorder. Removing an exercise keeps its logged sets and PR."/>
                         <!-- Phones (the canvas): the picker opens as a sheet; copy is down here instead of up top -->
                         <Grid DockPanel.Dock="Bottom" Classes="phoneOnly" ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,14,0,0">
                             <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="48" Command="{Binding OpenAddCommand}">
@@ -477,11 +483,13 @@
                     </Border>
                     <TextBlock Text="{Binding CopySkipNote}" FontSize="12" Classes="muted"/>
                 </StackPanel>
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                    <Button Classes="btn outline" Content="Cancel" Command="{Binding CancelCopyCommand}"/>
-                    <Button Classes="btn primary" Content="Copy exercises" Command="{Binding ConfirmCopyCommand}"
-                            IsEnabled="{Binding HasPendingCopy}"/>
-                </StackPanel>
+                <!-- Cancel and Copy across the bottom, the same height, Copy the wider -->
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10">
+                    <Button Classes="btn outline" MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="Cancel" Command="{Binding CancelCopyCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="Copy exercises" Command="{Binding ConfirmCopyCommand}" IsEnabled="{Binding HasPendingCopy}"/>
+                </Grid>
             </StackPanel>
         </v:Sheet>
     </Border>

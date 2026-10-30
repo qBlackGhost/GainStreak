@@ -42,12 +42,8 @@ public partial class SetRowViewModel : ObservableObject
     [ObservableProperty] public partial string WeightText { get; set; } = "";
     [ObservableProperty] public partial string RepsText { get; set; } = "";
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasPrompt))]
-    public partial string Prompt { get; set; } = "";
-
+    /// <summary>A working set that beats the PR: its boxes turn lime.</summary>
     [ObservableProperty] public partial bool IsNewPr { get; set; }
-    [ObservableProperty] public partial bool IsTie { get; set; }
 
     // Per side mode: what the row adds up to, e.g. "140 kg" and "(60 × 2 + 20 bar)"
     [ObservableProperty]
@@ -57,7 +53,6 @@ public partial class SetRowViewModel : ObservableObject
     public bool HasTotalHint => TotalHint.Length > 0;
 
     public string KindLabel => IsWarmup ? "Warm-up" : "Working";
-    public bool HasPrompt => Prompt.Length > 0;
 
     partial void OnIsWarmupChanged(bool value) => _owner.RowChanged();
     partial void OnWeightTextChanged(string value) => _owner.RowChanged();
@@ -68,48 +63,12 @@ public partial class SetRowViewModel : ObservableObject
         _owner.TryReadTotal(WeightText, out var kg) ? kg : (double?)null,
         NumberParsing.TryParseReps(RepsText, out var reps) ? reps : (int?)null);
 
-    public void ApplyPrompt(PrPrompt? prompt)
-    {
-        Prompt = prompt?.Text ?? "";
-        IsNewPr = prompt?.Status == PrStatus.NewPr;
-        IsTie = prompt?.Status == PrStatus.Tie;
-    }
+    public void ApplyPrompt(PrPrompt? prompt) => IsNewPr = prompt?.Status == PrStatus.NewPr;
 
     [RelayCommand] private void ToggleKind() => IsWarmup = !IsWarmup;
     [RelayCommand] private void SetWarmup() => IsWarmup = true;
     [RelayCommand] private void SetWorking() => IsWarmup = false;
     [RelayCommand] private void Remove() => _owner.RemoveRow(this);
-}
-
-/// <summary>One line of the PR history. Manual entries can be undone.</summary>
-public partial class PrRowViewModel : ObservableObject
-{
-    private readonly ExerciseViewModel _owner;
-
-    public PrRowViewModel(PrEntry entry, ExerciseViewModel owner)
-    {
-        _owner = owner;
-        Date = entry.Date;
-        DateText = ExerciseViewModel.FormatDate(entry.Date);
-        BestText = $"{NumberParsing.FormatKg(entry.WeightKg)} kg × {entry.Reps}";
-        OneRmText = $"≈ {NumberParsing.FormatKg(Math.Round(entry.OneRepMaxKg, 1))} kg";
-        KindText = entry.Kind switch
-        {
-            PrEntryKind.Baseline => "First",
-            PrEntryKind.Manual => "Edited",
-            _ => "PR"
-        };
-        IsManual = entry.Kind == PrEntryKind.Manual;
-    }
-
-    public DateOnly Date { get; }
-    public string DateText { get; }
-    public string BestText { get; }
-    public string OneRmText { get; }
-    public string KindText { get; }
-    public bool IsManual { get; }
-
-    [RelayCommand] private Task Undo() => _owner.RemoveAdjustmentAsync(Date);
 }
 
 /// <summary>One set of the "Last time" card.</summary>
@@ -138,7 +97,6 @@ public partial class ExerciseViewModel : ViewModelBase
     private bool _loading;
 
     public ObservableCollection<SetRowViewModel> Rows { get; } = new();
-    public ObservableCollection<PrRowViewModel> PrEntries { get; } = new();
 
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string Subtitle { get; set; } = "";
@@ -174,7 +132,20 @@ public partial class ExerciseViewModel : ViewModelBase
     [ObservableProperty] public partial string BestText { get; set; } = "No PR yet";
     [ObservableProperty] public partial string OneRmText { get; set; } = "";
     [ObservableProperty] public partial string BestNote { get; set; } = "";
-    [ObservableProperty] public partial bool HasPrEntries { get; set; }
+    /// <summary>The PR that stands is one the user edited, so the PR card offers to undo it.</summary>
+    [ObservableProperty] public partial bool CanUndoPrEdit { get; set; }
+
+    // Weekly stats: the best set of each week, a page of weeks at a time (0 ends with this week)
+    [ObservableProperty] public partial IReadOnlyList<WeekBar> WeekBars { get; set; } = [];
+    [ObservableProperty] public partial string WeekRangeText { get; set; } = "";
+    [ObservableProperty] public partial bool HasWeeks { get; set; }
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(OlderWeeksCommand))]
+    public partial bool HasOlderWeeks { get; set; }
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(NewerWeeksCommand))]
+    public partial bool HasNewerWeeks { get; set; }
+    private int _weekPage;
 
     [ObservableProperty] public partial bool IsEditingPr { get; set; }
     [ObservableProperty] public partial string PrWeightText { get; set; } = "";
@@ -221,6 +192,7 @@ public partial class ExerciseViewModel : ViewModelBase
     public void Load(MenuDay day, string splitName, int exerciseId)
     {
         _day = day;
+        _weekPage = 0;
         _splitName = splitName;
         _exerciseId = exerciseId;
         _today = AppClock.Today;
@@ -622,9 +594,7 @@ public partial class ExerciseViewModel : ViewModelBase
             BestNote = cur.Kind == PrEntryKind.Manual ? "Edited by you" : $"Set on {FormatDate(cur.Date)}";
         }
 
-        PrEntries.Clear();
-        foreach (var e in pr.Entries.Reverse()) PrEntries.Add(new PrRowViewModel(e, this));
-        HasPrEntries = PrEntries.Count > 0;
+        CanUndoPrEdit = pr.Current is { Kind: PrEntryKind.Manual };
 
         HasPr = pr.Current is not null;
         if (pr.Current is { } c)
@@ -636,7 +606,29 @@ public partial class ExerciseViewModel : ViewModelBase
                        : c.Date == _today ? "Today" : c.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture);
         }
         ShowTopSets();
+        ShowWeeks();
     }
+
+    private void ShowWeeks()
+    {
+        HasWeeks = _history.Sets.Any(s => s.Kind == SetKind.Working);
+        var page = WeeklyStats.Build(_history.Sets, _history.Pr.Entries, _today, _weekPage, ChartHeight);
+        WeekBars = page.Bars;
+        WeekRangeText = page.RangeText;
+        HasOlderWeeks = page.HasOlder;
+        HasNewerWeeks = page.HasNewer;
+    }
+
+    /// <summary>The six weeks before the ones shown (a swipe to the right, or the ‹ button).</summary>
+    [RelayCommand(CanExecute = nameof(HasOlderWeeks))]
+    private void OlderWeeks() { _weekPage++; ShowWeeks(); }
+
+    /// <summary>The six weeks after the ones shown (a swipe to the left, or the › button).</summary>
+    [RelayCommand(CanExecute = nameof(HasNewerWeeks))]
+    private void NewerWeeks() { _weekPage--; ShowWeeks(); }
+
+    [RelayCommand]
+    private Task UndoPrEdit() => _history.Pr.Current is { Kind: PrEntryKind.Manual } c ? RemoveAdjustmentAsync(c.Date) : Task.CompletedTask;
 
     private string FormatShort(DateOnly d) => d == _today ? "today" : d.ToString("d MMM", CultureInfo.InvariantCulture);
 

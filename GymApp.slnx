@@ -11,6 +11,9 @@
     <Project Path="src/GymApp.Social/GymApp.Social.csproj" />
     <Project Path="src/GymApp.TestBench/GymApp.TestBench.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/GymApp.ScreenshotSeed/GymApp.ScreenshotSeed.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/GymApp.Server.Tests/GymApp.Server.Tests.csproj" />
     <Project Path="tests/GymApp.Tests/GymApp.Tests.csproj" />

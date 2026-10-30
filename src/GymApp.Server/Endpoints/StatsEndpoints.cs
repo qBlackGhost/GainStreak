@@ -81,6 +81,6 @@ public static class StatsEndpoints
 
         return Results.Ok(new LeaderboardResponse(parsed.Value, view.WeekStart, view.WeekEnd,
             view.Rows.Select(r => new LeaderboardRowResponse(
-                r.Rank, r.UserId, r.Username, r.Points, r.Level.Number, r.Level.Name, r.CurrentStreak, r.IsYou)).ToList()));
+                r.Rank, r.UserId, r.Username, r.Points, r.Level.Number, r.Level.Name, r.CurrentStreak, r.IsYou, r.Avatar)).ToList()));
     }
 }

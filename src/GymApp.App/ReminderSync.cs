@@ -56,4 +56,5 @@ public sealed class ReminderHooks(ISocialSyncHooks inner, ReminderSync reminders
     public void MarkStatsDirty(int userId) { inner.MarkStatsDirty(userId); reminders.RequestRefresh(); }
     public void MarkCheckInsDirty(int userId) { inner.MarkCheckInsDirty(userId); reminders.RequestRefresh(); }
     public void MarkSharingDirty(int userId) => inner.MarkSharingDirty(userId);
+    public void MarkAvatarDirty(int userId) => inner.MarkAvatarDirty(userId);
 }

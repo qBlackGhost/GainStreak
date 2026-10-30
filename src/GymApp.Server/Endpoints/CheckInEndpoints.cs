@@ -19,10 +19,21 @@ public static class CheckInEndpoints
     public static void MapCheckIns(this IEndpointRouteBuilder app)
     {
         app.MapPut("/v1/me/sharing", SetSharing);
+        app.MapPut("/v1/me/avatar", SetAvatar);
         app.MapPut("/v1/me/checkins", ReplaceCheckIns);
         app.MapPut("/v1/me/checkins/{date}", PutCheckIn);
         app.MapDelete("/v1/me/checkins/{date}", DeleteCheckIn);
         app.MapGet("/v1/friends/checkins", GetFriendCheckIns);
+    }
+
+    private static async Task<IResult> SetAvatar(AvatarRequest request, ClaimsPrincipal me, ServerDbContext db)
+    {
+        if (request.Avatar is not null && AvatarChoice.Parse(request.Avatar) is null)
+            return Problems.BadRequest("That avatar doesn't exist.");
+        var userId = me.UserId();
+        var updated = await db.Users.Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.Avatar, request.Avatar));
+        return updated == 0 ? Results.NotFound() : Results.NoContent();
     }
 
     private static async Task<IResult> SetSharing(SharingRequest request, ClaimsPrincipal me, ServerDbContext db)

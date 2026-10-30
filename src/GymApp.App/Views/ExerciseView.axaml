@@ -31,35 +31,30 @@
         <Style Selector="TextBox.field.pr">
             <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
         </Style>
-        <Style Selector="TextBlock.prompt">
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
-        </Style>
-        <Style Selector="TextBlock.prompt"><Setter Property="Margin" Value="42,0,0,0"/></Style>
         <Style Selector="TextBlock.totalHint"><Setter Property="Margin" Value="242,0,0,0"/></Style>
         <Style Selector="TextBlock.exTitle"><Setter Property="FontSize" Value="40"/></Style>
         <Style Selector="Border#SetsCard"><Setter Property="Padding" Value="28"/></Style>
-        <!-- Phones (the canvas): the rows' narrower columns (PhoneGrid) move these under the weight -->
-        <Style Selector=".phone TextBlock.prompt"><Setter Property="Margin" Value="22,0,0,0"/></Style>
+        <!-- Phones (the canvas): the rows' narrower columns (PhoneGrid) move this under the weight -->
         <Style Selector=".phone TextBlock.totalHint"><Setter Property="Margin" Value="146,0,0,0"/></Style>
         <Style Selector=".phone Border#SetsCard"><Setter Property="Padding" Value="16"/></Style>
         <Style Selector=".phone TextBlock.exTitle"><Setter Property="FontSize" Value="30"/></Style>
+        <Style Selector="TextBlock.cardTitle"><Setter Property="FontSize" Value="20"/></Style>
+        <Style Selector=".phone TextBlock.cardTitle"><Setter Property="FontSize" Value="18"/></Style>
         <!-- In the narrow set rows: no 64 px floor on the boxes, and the type switch's words fit -->
         <Style Selector=".phone v|PhoneGrid TextBox"><Setter Property="MinWidth" Value="0"/></Style>
-        <Style Selector=".phone v|PhoneGrid Button.seg"><Setter Property="FontSize" Value="12"/></Style>
-        <Style Selector="TextBlock.prompt.newpr">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
-        </Style>
-        <Style Selector="TextBlock.prompt.tie">
-            <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+        <Style Selector=".phone v|PhoneGrid Button.seg"><Setter Property="FontSize" Value="11"/></Style>
+        <!-- A switch's words stay on one line ("Working" used to break in the phones' narrow rows) -->
+        <Style Selector="Button.seg TextBlock">
+            <Setter Property="TextWrapping" Value="NoWrap"/>
         </Style>
         <!-- The phones' planned-set pills -->
         <Style Selector="Border.planPill">
-            <Setter Property="Padding" Value="12,2,4,2"/>
+            <Setter Property="Padding" Value="10,2,2,2"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Border.planPill TextBlock">
+            <Setter Property="TextWrapping" Value="NoWrap"/>
         </Style>
         <!-- − / + steppers -->
         <Style Selector="Button.step">
@@ -74,6 +69,8 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
+        <!-- In the phones' planned-set pills the steppers are a little narrower, so the label and count fit -->
+        <Style Selector="Border.planPill Button.step"><Setter Property="Width" Value="32"/></Style>
         <Style Selector="Button.step:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource Fill3}"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
@@ -113,7 +110,76 @@
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
+
+        <!-- Weekly stats: the week's best set; a PR week in lime, a week without sets just its date -->
+        <Style Selector="Border.weekBar">
+            <Setter Property="Background" Value="{DynamicResource ControlHover}"/>
+            <Setter Property="CornerRadius" Value="6,6,2,2"/>
+            <Setter Property="MaxWidth" Value="40"/>
+        </Style>
+        <Style Selector="Border.weekBar.pr">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style Selector="Button.weekNav">
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="MinHeight" Value="36"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.weekNav:disabled">
+            <Setter Property="Opacity" Value="0.35"/>
+        </Style>
+
+        <!-- Hides a phoneOnly / wideOnly element with nothing to show. A style, not an IsVisible binding (which would
+             beat those classes); last, so it wins over them -->
+        <Style Selector=":is(Control).off">
+            <Setter Property="IsVisible" Value="False"/>
+        </Style>
     </UserControl.Styles>
+    <UserControl.Resources>
+        <!-- Top set per session: in the right column, on phones at the top (the canvas) -->
+        <DataTemplate x:Key="TopSetsCard" x:DataType="vm:ExerciseViewModel">
+            <Border Classes="card">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="Top set per session" Classes="cardTitle" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="kg" FontSize="12" Classes="muted" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+                        <ItemsControl ItemsSource="{Binding TopSets}" Height="124">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:TopSetBar">
+                                    <StackPanel Spacing="4" VerticalAlignment="Bottom" Margin="5,0">
+                                        <TextBlock Text="{Binding Weight}" Classes="mono soft" FontSize="11" HorizontalAlignment="Center"/>
+                                        <Border Classes="topBar" Classes.pr="{Binding IsPr}" Height="{Binding Height}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding TopSets}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:TopSetBar">
+                                <TextBlock Text="{Binding Date}" FontSize="11" Classes="muted" HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border Width="10" Height="10" CornerRadius="3" Background="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                        <TextBlock Text="PR session" FontSize="12" Classes="muted"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Workouts"/>
 
@@ -165,6 +231,67 @@
                     <TextBlock Grid.Column="1" Text="{Binding Info}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"/>
                 </Grid>
             </Border>
+
+            <!-- ===== Weekly stats: the heaviest working set of each week, six weeks a page; swipe or ‹ › for others ===== -->
+            <Border Classes="card" Classes.off="{Binding !HasWeeks}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Weekly stats" Classes="cardTitle" FontWeight="Bold"/>
+                            <TextBlock FontSize="12" Classes="muted">
+                                <Run Text="Best set per week · "/><Run Text="{Binding WeekRangeText}"/>
+                            </TextBlock>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="btn outline weekNav" Command="{Binding OlderWeeksCommand}"
+                                AutomationProperties.Name="Earlier weeks" ToolTip.Tip="Earlier weeks">
+                            <v:Icon Data="{StaticResource IcBack}" StrokeThickness="2.2" Width="14" Height="14"/>
+                        </Button>
+                        <Button Grid.Column="2" Classes="btn outline weekNav" Command="{Binding NewerWeeksCommand}"
+                                AutomationProperties.Name="Later weeks" ToolTip.Tip="Later weeks">
+                            <v:Icon Data="{StaticResource IcArrowRight}" StrokeThickness="2.2" Width="14" Height="14"/>
+                        </Button>
+                    </Grid>
+                    <!-- The chart takes the swipes (SetupWeekSwipe in the code-behind) -->
+                    <StackPanel x:Name="WeekChart" Spacing="8" Background="Transparent">
+                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
+                            <ItemsControl ItemsSource="{Binding WeekBars}" Height="124">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:WeekBar">
+                                        <StackPanel Spacing="4" VerticalAlignment="Bottom" Margin="5,0">
+                                            <TextBlock Text="{Binding Weight}" Classes="mono soft" FontSize="11" HorizontalAlignment="Center"
+                                                       IsVisible="{Binding HasSet}"/>
+                                            <Border Classes="weekBar" Classes.pr="{Binding IsPr}" Height="{Binding Height}"
+                                                    IsVisible="{Binding HasSet}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding WeekBars}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:WeekBar">
+                                    <TextBlock Text="{Binding Label}" FontSize="11" Classes="muted" HorizontalAlignment="Center"
+                                               TextWrapping="NoWrap"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <Border Width="10" Height="10" CornerRadius="3" Background="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                        <TextBlock Text="PR week" FontSize="12" Classes="muted"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Phones (the canvas): the top-set chart before today's sets -->
+            <ContentControl Classes="phoneOnly" Classes.off="{Binding !HasTopSets}" Content="{Binding}"
+                            ContentTemplate="{StaticResource TopSetsCard}"/>
 
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
 
@@ -249,26 +376,24 @@
                         </Border>
 
                         <!-- Bar exercises: type the total, or what goes on each side plus the bar -->
-                        <Border Padding="16,12" CornerRadius="14" Background="{DynamicResource Surface2}" IsVisible="{Binding UsesBar}">
-                            <StackPanel Spacing="8">
-                                <WrapPanel ItemSpacing="20" LineSpacing="10">
-                                    <TextBlock Text="WEIGHT" FontSize="12" FontWeight="Bold" LetterSpacing="1.4" Classes="muted"
-                                               VerticalAlignment="Center"/>
-                                    <Border Width="200" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
-                                        <v:SegmentedPill SelectedIndex="{Binding WeightModeIndex}" PillInset="0" PillCornerRadius="8">
-                                            <Button Classes="seg" Classes.on="{Binding IsTotalMode}" MinHeight="34" Padding="0"
-                                                    CornerRadius="8" Content="Total" Command="{Binding SetTotalModeCommand}"/>
-                                            <Button Classes="seg" Classes.on="{Binding IsPerSide}" MinHeight="34" Padding="0"
-                                                    CornerRadius="8" Content="Per side" Command="{Binding SetPerSideModeCommand}"/>
+                        <!-- One compact row: the Total / Per side switch, and the bar's weight beside it in per side mode -->
+                        <Border Padding="10,8" CornerRadius="12" Background="{DynamicResource Surface2}" IsVisible="{Binding UsesBar}">
+                            <StackPanel Spacing="6">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                    <Border Width="150" Padding="2" CornerRadius="9" Background="{DynamicResource Fill}" VerticalAlignment="Center">
+                                        <v:SegmentedPill SelectedIndex="{Binding WeightModeIndex}" PillInset="0" PillCornerRadius="7">
+                                            <Button Classes="seg" Classes.on="{Binding IsTotalMode}" MinHeight="30" Padding="0" FontSize="12"
+                                                    CornerRadius="7" Content="Total" Command="{Binding SetTotalModeCommand}"/>
+                                            <Button Classes="seg" Classes.on="{Binding IsPerSide}" MinHeight="30" Padding="0" FontSize="12"
+                                                    CornerRadius="7" Content="Per side" Command="{Binding SetPerSideModeCommand}"/>
                                         </v:SegmentedPill>
                                     </Border>
-                                    <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsPerSide}">
-                                        <TextBlock Text="Bar" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                        <TextBox TextInputOptions.ContentType="Number" Classes="field" Width="84" MinHeight="40" PlaceholderText="kg" Text="{Binding BarText}"
-                                                 AutomationProperties.Name="Bar weight in kg"/>
-                                        <TextBlock Text="optional" FontSize="12" Foreground="{DynamicResource Faint}" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPerSide}">
+                                        <TextBlock Text="Bar" FontSize="13" Classes="light" VerticalAlignment="Center"/>
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field" Width="68" MinHeight="34" FontSize="14"
+                                                 PlaceholderText="kg" Text="{Binding BarText}" AutomationProperties.Name="Bar weight in kg, optional"/>
                                     </StackPanel>
-                                </WrapPanel>
+                                </Grid>
                                 <TextBlock Text="{Binding BarError}" Classes="error" FontSize="13"
                                            IsVisible="{Binding BarError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                             </StackPanel>
@@ -276,7 +401,7 @@
 
                         <!-- The sets -->
                         <StackPanel Spacing="4" Grid.IsSharedSizeScope="True">
-                            <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4" PhoneColumns="14,116,*,0.8*,44" PhoneColumnSpacing="8">
+                            <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4" PhoneColumns="14,124,*,0.8*,44" PhoneColumnSpacing="8">
                                 <TextBlock Text="SET" Classes="colHead wideOnly"/>
                                 <TextBlock Text="#" Classes="colHead phoneOnly"/>
                                 <TextBlock Grid.Column="1" Text="TYPE" Classes="colHead"/>
@@ -288,7 +413,7 @@
                                     <DataTemplate x:DataType="vm:SetRowViewModel">
                                         <Border BorderBrush="{DynamicResource Fill}" BorderThickness="0,1,0,0" Padding="0,8">
                                             <StackPanel Spacing="6">
-                                                <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" PhoneColumns="14,116,*,0.8*,44" PhoneColumnSpacing="8">
+                                                <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" PhoneColumns="14,124,*,0.8*,44" PhoneColumnSpacing="8">
                                                     <TextBlock Text="{Binding Number}" Classes="mono soft" FontSize="14" FontWeight="Bold"
                                                                VerticalAlignment="Center"/>
                                                     <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
@@ -320,8 +445,6 @@
                                                     <Run Text="total"/>
                                                     <Run Text="{Binding TotalDetail}" Foreground="{DynamicResource Faint}"/>
                                                 </TextBlock>
-                                                <TextBlock Classes="prompt" Classes.newpr="{Binding IsNewPr}" Classes.tie="{Binding IsTie}"
-                                                           Text="{Binding Prompt}" IsVisible="{Binding HasPrompt}"/>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
@@ -332,7 +455,24 @@
                         <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
                                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-                        <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Phones (the canvas): Add set and Save sets side by side across the card -->
+                        <Grid Classes="phoneOnly" ColumnDefinitions="*,1.3*" ColumnSpacing="8">
+                            <Panel>
+                                <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="12" RadiusY="12"/>
+                                <Button Classes="btn" Background="Transparent" Foreground="{DynamicResource Ink}" FontWeight="SemiBold"
+                                        MinHeight="50" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                        Command="{Binding AddRowCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <v:Icon Data="{StaticResource IcPlus}" StrokeThickness="2.6" Width="15" Height="15"/>
+                                        <TextBlock Text="Add set" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </Panel>
+                            <Button Grid.Column="1" Classes="btn primary" MinHeight="50" FontSize="15" CornerRadius="12"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Content="Save sets" Command="{Binding SaveCommand}"/>
+                        </Grid>
+                        <Grid Classes="wideOnly" ColumnDefinitions="Auto,*,Auto">
                             <Panel>
                                 <Rectangle Stroke="{DynamicResource ControlHover}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="10" RadiusY="10"/>
                                 <Button Classes="btn" Background="Transparent" Foreground="{DynamicResource Ink}" FontWeight="SemiBold" Padding="16,0"
@@ -435,35 +575,21 @@
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
-                            <Button Classes="btn outline small" MinHeight="40" HorizontalAlignment="Left"
-                                    Command="{Binding StartEditPrCommand}" IsVisible="{Binding !IsEditingPr}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <v:Icon Data="{StaticResource IcPencil}" StrokeThickness="2.2" Width="14" Height="14"/>
-                                    <TextBlock Text="Edit PR" VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-
-                            <!-- PR history, so a manual edit can be undone -->
-                            <StackPanel IsVisible="{Binding HasPrEntries}">
-                                <TextBlock Text="HISTORY" FontSize="11" FontWeight="Bold" LetterSpacing="1.1" Foreground="{DynamicResource Faint}"
-                                           Margin="0,0,0,4"/>
-                                <ItemsControl ItemsSource="{Binding PrEntries}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:PrRowViewModel">
-                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="40" Padding="0,6">
-                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                                    <TextBlock FontSize="13" Classes="soft" VerticalAlignment="Center">
-                                                        <Run Text="{Binding DateText}"/><Run Text=" · "/><Run Text="{Binding KindText}"/>
-                                                    </TextBlock>
-                                                    <TextBlock Grid.Column="1" Text="{Binding BestText}" Classes="mono" FontSize="13" FontWeight="Bold"
-                                                               VerticalAlignment="Center"/>
-                                                    <Button Grid.Column="2" Classes="link" FontSize="12" Content="Undo" Command="{Binding UndoCommand}"
-                                                            IsVisible="{Binding IsManual}" VerticalAlignment="Center"/>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !IsEditingPr}">
+                                <Button Classes="btn outline small" MinHeight="40" Command="{Binding StartEditPrCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <v:Icon Data="{StaticResource IcPencil}" StrokeThickness="2.2" Width="14" Height="14"/>
+                                        <TextBlock Text="Edit PR" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <!-- An edited PR can be taken back, which brings back the one from your sets -->
+                                <Button Classes="btn outline small" MinHeight="40" Command="{Binding UndoPrEditCommand}"
+                                        IsVisible="{Binding CanUndoPrEdit}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <v:Icon Data="{StaticResource IcMadeUp}" StrokeThickness="2.2" Width="14" Height="14"/>
+                                        <TextBlock Text="Undo edit" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </StackPanel>
                     </Border>
@@ -496,44 +622,9 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ===== Top set per session ===== -->
-                    <Border Classes="card" IsVisible="{Binding HasTopSets}">
-                        <StackPanel Spacing="14">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBlock Text="Top set per session" FontSize="20" FontWeight="Bold"/>
-                                <TextBlock Grid.Column="1" Text="kg" FontSize="12" Classes="muted" VerticalAlignment="Bottom"/>
-                            </Grid>
-                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,0,0,1">
-                                <ItemsControl ItemsSource="{Binding TopSets}" Height="124">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:TopSetBar">
-                                            <StackPanel Spacing="4" VerticalAlignment="Bottom" Margin="5,0">
-                                                <TextBlock Text="{Binding Weight}" Classes="mono soft" FontSize="11" HorizontalAlignment="Center"/>
-                                                <Border Classes="topBar" Classes.pr="{Binding IsPr}" Height="{Binding Height}"/>
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </Border>
-                            <ItemsControl ItemsSource="{Binding TopSets}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:TopSetBar">
-                                        <TextBlock Text="{Binding Date}" FontSize="11" Classes="muted" HorizontalAlignment="Center"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <Border Width="10" Height="10" CornerRadius="3" Background="{DynamicResource Accent}" VerticalAlignment="Center"/>
-                                <TextBlock Text="PR session" FontSize="12" Classes="muted"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
+                    <!-- ===== Top set per session (phones show it at the top) ===== -->
+                    <ContentControl Classes="wideOnly" Classes.off="{Binding !HasTopSets}" Content="{Binding}"
+                                    ContentTemplate="{StaticResource TopSetsCard}"/>
 
                     <!-- First time -->
                     <Panel IsVisible="{Binding !HasLast}">

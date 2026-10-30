@@ -1,68 +1,105 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.App.ViewModels"
-             x:Class="GymApp.App.Views.SplitEditorView"
              xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.SplitEditorView"
              x:DataType="vm:SplitEditorViewModel">
+    <!-- The new split popup: a centred card, a sheet from the bottom on phones. The seven days in one row; each picked
+         day gets a row to name it. Escape or a click outside cancels. -->
     <UserControl.Styles>
-        <!-- Seven days side by side; on phones (16e) one row each: the day, then its name -->
-        <Style Selector="ItemsControl#DayCells UniformGrid"><Setter Property="Rows" Value="1"/></Style>
-        <Style Selector="v|PhoneGrid.dayCell"><Setter Property="RowSpacing" Value="6"/></Style>
-        <Style Selector="TextBox.dayName"><Setter Property="Grid.Row" Value="1"/></Style>
-        <Style Selector="ToggleButton.dayToggle"><Setter Property="Height" Value="56"/></Style>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
-        <Style Selector=".phone StackPanel#Form">
-            <Setter Property="Margin" Value="16,14,16,32"/>
+        <Style Selector=".phone StackPanel#Form"><Setter Property="Margin" Value="16,18,16,20"/></Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+        <Style Selector="ToggleButton.day">
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource Fill2}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+            <Setter Property="Cursor" Value="Hand"/>
         </Style>
-        <Style Selector=".phone ItemsControl#DayCells UniformGrid">
-            <Setter Property="Rows" Value="0"/>
-            <Setter Property="Columns" Value="1"/>
+        <Style Selector="ToggleButton.day:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill2}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
-        <Style Selector=".phone v|PhoneGrid.dayCell"><Setter Property="RowSpacing" Value="0"/></Style>
-        <Style Selector=".phone ToggleButton.dayToggle"><Setter Property="Height" Value="48"/></Style>
-        <Style Selector=".phone TextBox.dayName">
-            <Setter Property="Grid.Row" Value="0"/>
-            <Setter Property="Grid.Column" Value="1"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
+        <Style Selector="ToggleButton.day:checked /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Foreground" Value="Black"/>
         </Style>
     </UserControl.Styles>
-    <ScrollViewer>
-        <StackPanel x:Name="Form" Spacing="16" MaxWidth="900" HorizontalAlignment="Center">
-            <TextBlock Text="{Binding Title}" FontSize="24" FontWeight="SemiBold"/>
-            <StackPanel Spacing="4">
-                <TextBox PlaceholderText="Split name" MaxLength="40" Text="{Binding Name}"/>
-                <TextBlock Classes="fieldError" Text="{Binding NameError}"
-                           IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            </StackPanel>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="520" MaxHeight="760" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="Form" Spacing="14">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Pick your days, then name them" FontSize="13" Classes="muted"/>
+                    </StackPanel>
 
-            <TextBlock Text="Pick your training days and name each one" FontWeight="SemiBold"/>
-            <ItemsControl x:Name="DayCells" ItemsSource="{Binding Days}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate><UniformGrid/></ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:DayCellViewModel">
-                        <v:PhoneGrid Classes="dayCell" ColumnDefinitions="*" RowDefinitions="Auto,Auto" Margin="3"
-                                     PhoneColumns="88,*" PhoneColumnSpacing="8">
-                            <ToggleButton Classes="dayToggle" Content="{Binding Label}" IsChecked="{Binding IsSelected}"
-                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                            <TextBox Classes="dayName" PlaceholderText="e.g. Push" MaxLength="20"
-                                     Text="{Binding Name}" IsEnabled="{Binding IsSelected}"/>
-                        </v:PhoneGrid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <TextBlock Text="{Binding DaysSummary}" Opacity="0.7"/>
-            <TextBlock Classes="fieldError" Text="{Binding DaysError}"
-                       IsVisible="{Binding DaysError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <StackPanel Spacing="4">
+                        <TextBox x:Name="NameBox" Classes="field" PlaceholderText="Split name" MaxLength="40" Text="{Binding Name}"
+                                 AutomationProperties.Name="Split name"/>
+                        <TextBlock Classes="fieldError" Text="{Binding NameError}"
+                                   IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
 
-            <TextBlock Text="{Binding Error}" Foreground="IndianRed" TextWrapping="Wrap"
-                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button Content="Save" Command="{Binding SaveCommand}" IsDefault="True"/>
-                <Button Content="Cancel" Command="{Binding CancelCommand}"/>
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Days}" Margin="-2,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DayCellViewModel">
+                                <ToggleButton Classes="day" Content="{Binding Label}" IsChecked="{Binding IsSelected}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Margins, not spacing: the hidden rows must take no room -->
+                    <ItemsControl ItemsSource="{Binding Days}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DayCellViewModel">
+                                <Grid ColumnDefinitions="44,*" ColumnSpacing="8" Margin="0,0,0,8" IsVisible="{Binding IsSelected}">
+                                    <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" Classes="field" PlaceholderText="e.g. Push" MaxLength="20" Text="{Binding Name}"
+                                             AutomationProperties.Name="{Binding Label}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding DaysSummary}" FontSize="13" Classes="muted"/>
+                    <TextBlock Classes="fieldError" Text="{Binding DaysError}"
+                               IsVisible="{Binding DaysError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Cancel" Command="{Binding CancelCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsDefault="True"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
 </UserControl>

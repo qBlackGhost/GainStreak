@@ -113,6 +113,9 @@ public sealed class SocialApiClient
 
     // --- Check-ins ---
 
+    public Task<ApiResult> SetAvatarAsync(string? avatar, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, "v1/me/avatar", new AvatarRequest(avatar), ct);
+
     public Task<ApiResult> SetSharingAsync(bool share, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Put, "v1/me/sharing", new SharingRequest(share), ct);
 

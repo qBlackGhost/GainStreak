@@ -24,6 +24,9 @@ public class UserProfile
     /// null = not asked yet, false = declined, true = shared. Only true shares anything.</summary>
     public bool? ShareGymCheckIns { get; set; }
 
+    /// <summary>The user's choice in <see cref="Core.AvatarChoice"/> form; null for the plain initials.</summary>
+    public string? Avatar { get; set; }
+
     /// <summary>The user's usual gym, chosen once. Preselected at check-in, or used automatically when the
     /// check-in doesn't ask for a gym.</summary>
     public int? HomeGymId { get; set; }

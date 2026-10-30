@@ -27,6 +27,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.Property(u => u.Username).HasMaxLength(Credentials.MaxUsernameLength);
             e.Property(u => u.UsernameNormalized).HasMaxLength(Credentials.MaxUsernameLength);
             e.Property(u => u.Email).HasMaxLength(Credentials.MaxEmailLength);
+            e.Property(u => u.Avatar).HasMaxLength(Core.AvatarChoice.MaxLength);
             e.HasIndex(u => u.UsernameNormalized).IsUnique().HasDatabaseName(UsernameIndex);
             e.HasIndex(u => u.Email).IsUnique().HasDatabaseName(EmailIndex);
         });

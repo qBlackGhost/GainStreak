@@ -41,12 +41,9 @@ public sealed class NavigationTests : IAsyncLifetime
     {
         _shell.ShowSplits();
         _shell.ShowSplitDetail(await APresetAsync());
-        _shell.ShowSplitEditor(await APresetAsync());
-        Assert.IsType<SplitEditorViewModel>(_shell.Current);
+        Assert.IsType<SplitDetailViewModel>(_shell.Current);
         Assert.True(_shell.CanGoBack);
 
-        Assert.True(_shell.GoBack());
-        Assert.IsType<SplitDetailViewModel>(_shell.Current);
         Assert.True(_shell.GoBack());
         Assert.IsType<SplitsViewModel>(_shell.Current);
         Assert.False(_shell.CanGoBack);
@@ -80,6 +77,136 @@ public sealed class NavigationTests : IAsyncLifetime
         Assert.False(_shell.CanGoBack);
         Assert.Equal(AppTab.Workouts, _shell.SelectedTab);
         Assert.False(_shell.GoBack());
+    }
+
+    [Fact] public async Task ThePopup_OpensOverTheScreen_AndBackClosesItFirst()
+    {
+        _shell.ShowSplits();
+        _shell.ShowSplitDetail(await APresetAsync());
+        _shell.OpenSplitEditor(await APresetAsync());
+        Assert.IsType<SplitEditorViewModel>(_shell.Popup);
+        Assert.IsType<SplitDetailViewModel>(_shell.Current);
+
+        Assert.True(_shell.GoBack());
+        Assert.Null(_shell.Popup);
+        Assert.IsType<SplitDetailViewModel>(_shell.Current);
+    }
+
+    [Fact] public async Task OpeningAScreen_ClosesThePopup()
+    {
+        _shell.ShowSplits();
+        _shell.OpenSplitEditor(await APresetAsync());
+        _shell.ShowHome();
+        Assert.Null(_shell.Popup);
+    }
+
+    [Fact] public async Task TheExerciseForm_NeedsAGroup_ThenSavesAndCloses()
+    {
+        Data.Models.Exercise? saved = null;
+        _shell.OpenExerciseForm(null, "", e => { saved = e; return Task.CompletedTask; });
+        var form = Assert.IsType<ExerciseFormViewModel>(_shell.Popup);
+        form.Name = "Landmine press";
+
+        await form.SaveCommand.ExecuteAsync(null);
+        Assert.NotNull(form.GroupError);
+        Assert.Same(form, _shell.Popup);
+
+        form.SelectGroupCommand.Execute(form.Groups[2]);
+        await form.SaveCommand.ExecuteAsync(null);
+        Assert.Null(_shell.Popup);
+        Assert.Equal("Landmine press", saved?.Name);
+        Assert.Equal(form.Groups[2].Group, saved?.MuscleGroup);
+    }
+
+    [Fact] public async Task NewExerciseOnADay_AddsItAndOpensIt()
+    {
+        var day = _menu.Days[0];
+        _shell.ShowDay(day, _menu.SplitName);
+        var dayVm = Assert.IsType<DayViewModel>(_shell.Current);
+        dayVm.NewExerciseCommand.Execute(null);
+        var form = Assert.IsType<ExerciseFormViewModel>(_shell.Popup);
+        Assert.True(form.CanManage);
+        form.Name = "Landmine press";
+        form.SelectGroupCommand.Execute(form.Groups[0]);
+
+        await form.SaveCommand.ExecuteAsync(null);
+
+        Assert.Null(_shell.Popup);
+        Assert.IsType<ExerciseViewModel>(_shell.Current);
+    }
+
+    private async Task<CustomExercisesViewModel> MyExercisesAsync(params string[] names)
+    {
+        var userId = _sp.GetRequiredService<SessionService>().CurrentUser!.Id;
+        foreach (var name in names)
+            Assert.True((await _sp.GetRequiredService<ExerciseService>().CreateAsync(userId, name, Data.Models.MuscleGroup.Back)).Success);
+        var vm = _sp.GetRequiredService<CustomExercisesViewModel>();
+        await vm.ReloadAsync();
+        return vm;
+    }
+
+    [Fact] public async Task MyExercises_GroupByMuscle_AndSearchFilters()
+    {
+        var vm = await MyExercisesAsync("Seal row", "Pendlay row", "Rack pull");
+        Assert.Equal("BACK", Assert.Single(vm.Groups).Title);
+        Assert.Equal(3, vm.Groups[0].Items.Count);
+        Assert.Equal("Not in a day yet", vm.Groups[0].Items[0].UsageText);
+
+        vm.Search = "ROW";
+        Assert.Equal(2, vm.Groups[0].Items.Count);
+
+        vm.Search = "nothing";
+        Assert.Empty(vm.Groups);
+        Assert.True(vm.NoMatches);
+    }
+
+    [Fact] public async Task MyExercises_DeleteAsksFirst_AndBackKeepsIt()
+    {
+        var vm = await MyExercisesAsync("Seal row");
+        await vm.Groups[0].Items[0].DeleteCommand.ExecuteAsync(null);
+        Assert.True(vm.IsConfirmingDelete);
+        Assert.Equal("Delete Seal row?", vm.DeleteTitle);
+
+        Assert.True(vm.CloseOnBack());
+        Assert.False(vm.IsConfirmingDelete);
+        Assert.False(vm.IsEmpty);
+
+        await vm.Groups[0].Items[0].DeleteCommand.ExecuteAsync(null);
+        await vm.ConfirmDeleteCommand.ExecuteAsync(null);
+        Assert.False(vm.IsConfirmingDelete);
+        Assert.True(vm.IsEmpty);
+    }
+
+    [Fact] public async Task TheAvatarPicker_SavesAndUpdatesTheAppBar()
+    {
+        _shell.OpenAvatarPicker(null, "AL", 3, () => Task.CompletedTask);
+        var picker = Assert.IsType<AvatarPickerViewModel>(_shell.Popup);
+        Assert.Equal("black", picker.Preview);
+
+        picker.ShowIconCommand.Execute(null);
+        Assert.Equal("black:dumbbell", picker.Preview);
+        picker.SelectColorCommand.Execute(picker.Colors.First(c => c.Color == "teal"));
+        picker.SelectIconCommand.Execute(picker.Icons.First(i => i.Icon == "flame"));
+        Assert.Equal("teal:flame", picker.Preview);
+
+        await picker.SaveCommand.ExecuteAsync(null);
+        await _shell.RefreshAvatarAsync();
+        Assert.Null(_shell.Popup);
+        Assert.Equal("teal:flame", _shell.OwnAvatar);
+    }
+
+    [Fact] public void TheAvatarPicker_EveryColourStaysOnTheIconTab()
+    {
+        _shell.OpenAvatarPicker("teal:flame", "AL", 1, () => Task.CompletedTask);
+        var picker = Assert.IsType<AvatarPickerViewModel>(_shell.Popup);
+        Assert.True(picker.UsesIcon);
+
+        foreach (var color in picker.Colors)
+        {
+            picker.SelectColorCommand.Execute(color);
+            Assert.True(picker.UsesIcon);
+            Assert.Equal($"{color.Color}:flame", picker.Preview);
+        }
     }
 
     [Fact] public void OpeningAScreenAlreadyInTheStack_GoesBackToIt()
@@ -168,7 +295,6 @@ public sealed class NavigationTests : IAsyncLifetime
         { nameof(ProfileSetupViewModel), null },
         { nameof(SplitsViewModel), AppTab.Splits },
         { nameof(SplitDetailViewModel), AppTab.Splits },
-        { nameof(SplitEditorViewModel), AppTab.Splits },
         { nameof(WorkoutsViewModel), AppTab.Workouts },
         { nameof(DayViewModel), AppTab.Workouts },
         { nameof(ExerciseViewModel), AppTab.Workouts },

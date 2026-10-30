@@ -97,7 +97,7 @@ public partial class SplitsViewModel : ViewModelBase, IClosesOnBack
     // Selecting a split now happens on its detail page (variant + start day live there)
     internal void Open(SplitItemViewModel item) => _shell().ShowSplitDetail(item.Split);
 
-    internal void Edit(SplitItemViewModel item) => _shell().ShowSplitEditor(item.Split);
+    internal void Edit(SplitItemViewModel item) => _shell().OpenSplitEditor(item.Split);
 
     internal async Task DeleteAsync(SplitItemViewModel item)
     {
@@ -120,6 +120,6 @@ public partial class SplitsViewModel : ViewModelBase, IClosesOnBack
         }
     }
 
-    [RelayCommand] private void New() => _shell().ShowSplitEditor(null);
+    [RelayCommand] private void New() => _shell().OpenSplitEditor(null);
     [RelayCommand] private void Back() => _shell().ShowHome();
 }

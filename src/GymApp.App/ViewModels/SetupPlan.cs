@@ -13,29 +13,27 @@ public record SetupStepText(string Title, string Text, string Cta, string? Resul
 /// Pure, so the rules are easy to test; <see cref="HomeViewModel"/> turns them into cards.</summary>
 public static class SetupPlan
 {
-    /// <summary>Step 2 is done once every workout day of the split has at least one exercise. The day to open is
-    /// today's when it is still empty, else the first empty one in split order.</summary>
-    public static (SetupStepText Step, MenuDay? Open) Exercises(WorkoutMenu? menu, CheckInDay? today)
+    /// <summary>Step 2 is done once every workout day of the split has at least one exercise. Its button always
+    /// opens Workouts, where every day is listed.</summary>
+    public static SetupStepText Exercises(WorkoutMenu? menu)
     {
-        const string title = "Add exercises to every workout day";
+        const string title = "Add exercises to every workout day", cta = "Open Workouts";
         if (menu is null || menu.Days.Count == 0)
-            return (new(title, "Pick a few exercises and planned sets for each day of your split, so every workout is ready to check in.",
-                "Open Workouts", null), null);
+            return new(title, "Pick a few exercises and planned sets for each day of your split, so every workout is ready to check in.",
+                cta, null);
 
         var days = menu.Days;
         var filled = days.Count(d => d.ExerciseCount > 0);
         if (filled == days.Count)
-            return (new(title, "Every day of your split has exercises. Change them any time in Workouts.", "Open Workouts",
-                $"All {days.Count} day{(days.Count == 1 ? "" : "s")} have exercises"), null);
+            return new(title, "Every day of your split has exercises. Change them any time in Workouts.", cta,
+                $"All {days.Count} day{(days.Count == 1 ? "" : "s")} have exercises");
 
-        var next = days.FirstOrDefault(d => d.SplitDayId == today?.SplitDayId && d.ExerciseCount == 0)
-                   ?? days.First(d => d.ExerciseCount == 0);
         var text = filled == 0
             ? $"Your split has {days.Count} workout day{(days.Count == 1 ? "" : "s")}: {JoinList(days.Select(d => d.Name).ToList())}. " +
               "Give each one a few exercises and planned sets."
             : $"{filled} of {days.Count} days are ready. {JoinList(days.Where(d => d.ExerciseCount == 0).Select(d => d.Name).ToList())} " +
               $"still need{(days.Count - filled == 1 ? "s" : "")} exercises.";
-        return (new(title, text, $"Open {next.Name}", null), next);
+        return new(title, text, cta, null);
     }
 
     /// <summary>The body data the maintenance estimate needs that is still missing. Gender is left out: "Prefer not

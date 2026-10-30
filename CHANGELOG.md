@@ -2,6 +2,13 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.16.1
+
+- **Splits:** the small **New split** button is gone; the dashed card under your splits does the same.
+- **Avatars:** tap your avatar on Profile to pick one of nine colours and show your initials or one of eight icons. It shows in the app bar, the sidebar, the leaderboard and your friends list, and friends see it too.
+- **Level rings:** every avatar on the leaderboard and friends list, and your own, has a ring that follows the level: dark at levels 1–2, silver at 3–4, lime at 5–6 and gold at Legend.
+- **Migration:** `AddAvatar` in the app's SQLite (a new `UserProfiles` and a new `SyncStates` column) and `AddUserAvatar` in the server's Postgres (a new `Users` column). Run the server's `migrate` before deploying it.
+
 ## 0.16.0
 
 - **GainStreak on phones:** first beta builds for Android (Google Play internal testing, or an APK sent directly) and iPhone (TestFlight). They're the same app as on the desktop: same account, same rules, same server. Workouts stay on the device they were logged on, so a phone and a computer signed in to one account each keep their own.
@@ -15,6 +22,18 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 - **"Please update":** when the server turns an old build away, the banner's **Update** button opens the Play Store on Android (iPhone once the App Store listing exists).
 - **Log in and Create account:** a sliding Log in / Create account switch, a fade between the two, and a show-password eye on both.
 - **Splits:** the **Set active** button is gone; **Open** does the same.
+- **My exercises:** a new look. Your exercises are grouped by muscle with a search, and each one shows how many days it's in and how many sets you've logged. **New exercise** is at the top, and deleting now asks in a popup.
+- **New split and New exercise are popups:** both open over the screen you're on instead of as a page, a sheet from the bottom on phones and a centered card on the desktop. For a split, tap the days in one row and a box to name each picked day appears. For an exercise, pick the muscle group from chips. An exercise created from a day goes straight into that day, and **Manage your exercises** opens your list, where **Edit** uses the same popup.
+- **Friends:** the note under the title ("Friends see your username…") is gone, and so is the Sent requests card: the requests you sent are listed in the Add friend card, under the search, with **Cancel** on each.
+- **Get set up:** step 2's button now opens Workouts instead of a single day.
+- **Profile on phones:** Body data is more compact. Units and Gender sit side by side, the birth date fits on one row, Height sits beside your age, and activity is three short choices with their daily steps. **Save profile** sits right beside the maintenance estimate.
+- **Profile:** the Units and Gender switches are smaller, and the Height box is sized like the other fields. **Visible to friends** and **Your gym on the Map** are gone from the home city card; sharing is still on the Map. On the weight chart every weigh-in is a dot: tap one (or use the arrow keys) to see its weight and day above it, the newest to start with.
+- **Workouts:** an empty day's card no longer has **Copy from a day** beside **Add exercises** (it opened the same page). Copying is still on the day's page.
+- **A workout day's page:** the note under the exercises now says to tap (or open) an exercise to log its sets. On phones the list fills the card and scrolls with the page instead of in a box of its own. In **Copy from another day**, **Cancel** and **Copy exercises** sit side by side across the bottom.
+- **An exercise's page:** a new **Weekly stats** card at the top charts the heaviest working set of each week, six weeks at a time, with the weeks you set a PR in lime. Swipe it (or use ‹ ›) for earlier or later weeks. It replaces the PR history list; an edited PR now has **Undo edit** next to **Edit PR**. The PR hint under each set ("PR 80 kg × 6 · 7+ reps…", "New PR!") is gone; a set that beats the PR still turns its boxes lime. The Total / Per side switch is smaller, with the bar's weight on the same row.
+- **An exercise's page on phones:** the top-set chart comes before today's sets, **Add set** and **Save sets** sit side by side across the card, "Working" fits on one line in the set rows, and the Warm-up / Working counters fit their pills.
+- **A split's page:** the notes beside **Use this split** and under "About this split" are gone, on the desktop too. **Use this split** is bigger and in the middle of the card, with **Edit split** under it for custom splits, and the setup card is more compact.
+- **A split's page on phones:** "Good for" is now a small card at the top. The start day row is gone: tap a day in **Your week** to start the split there, and the start day turns lime. "Who uses it" is smaller, with the donut beside its legend.
 - **Migration:** `AddReminders` in the app's SQLite (four new `Users` columns). The server is unchanged.
 
 ## 0.15.6

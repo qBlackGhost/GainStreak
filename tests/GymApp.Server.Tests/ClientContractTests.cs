@@ -105,6 +105,19 @@ public class ClientContractTests : ServerTest
         Assert.Equal(404, unknown.Status);
     }
 
+    [Fact] public async Task Avatar_ShowsOnMeAndTheLeaderboard_AndUnknownIsRefused()
+    {
+        var (alice, _) = await RegisterAsync("alice");
+        Assert.True((await alice.SetAvatarAsync("teal:flame")).IsOk);
+        Assert.Equal("teal:flame", (await alice.GetMeAsync()).Value!.Avatar);
+        Assert.True((await alice.UploadStatsAsync(Stats(100, 10, 1))).IsOk);
+        Assert.Equal("teal:flame", (await alice.GetLeaderboardAsync(LeaderboardPeriod.AllTime, Today)).Value!.Rows[0].Avatar);
+
+        Assert.True((await alice.SetAvatarAsync("beige")).IsRefused);
+        Assert.True((await alice.SetAvatarAsync(null)).IsOk);
+        Assert.Null((await alice.GetMeAsync()).Value!.Avatar);
+    }
+
     [Fact] public async Task StatsUpload_AndLeaderboard()
     {
         var (alice, aliceMe) = await RegisterAsync("alice");

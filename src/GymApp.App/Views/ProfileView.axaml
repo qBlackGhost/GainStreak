@@ -72,25 +72,50 @@
         </Style>
         <!-- Sizes the phones change (the GainStreak Mobile canvas), here so the ".phone" styles can override them -->
         <Style Selector="Border.roomy"><Setter Property="Padding" Value="28"/></Style>
-        <Style Selector="Border#Avatar">
+        <Style Selector="Button.bare">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="v|AvatarView#Avatar">
             <Setter Property="Width" Value="72"/>
             <Setter Property="Height" Value="72"/>
         </Style>
-        <Style Selector="Button.wideSeg"><Setter Property="MinWidth" Value="170"/></Style>
+        <Style Selector="Button.wideSeg"><Setter Property="MinWidth" Value="130"/></Style>
         <Style Selector=".phone Border.roomy"><Setter Property="Padding" Value="16"/></Style>
-        <Style Selector=".phone Border#Avatar">
+        <Style Selector=".phone v|AvatarView#Avatar">
             <Setter Property="Width" Value="56"/>
             <Setter Property="Height" Value="56"/>
         </Style>
         <Style Selector=".phone Button.wideSeg"><Setter Property="MinWidth" Value="0"/></Style>
-        <!-- Units and Gender: 360 wide at most on desktop, the full width on phones (the canvas) -->
-        <Style Selector="Border.fieldTrack">
-            <Setter Property="MaxWidth" Value="360"/>
-            <Setter Property="HorizontalAlignment" Value="Left"/>
+        <!-- The phones' compact body data (design C): small caps labels over tight switches -->
+        <Style Selector="TextBlock.bdLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="0.9"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
         </Style>
-        <Style Selector=".phone Border.fieldTrack">
-            <Setter Property="MaxWidth" Value="Infinity"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Style Selector="Border.compactTrack">
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="CornerRadius" Value="9"/>
+        </Style>
+        <Style Selector="Border.compactTrack TextBlock">
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+        <!-- Units and Gender: compact switches, 320 wide at most -->
+        <Style Selector="Border.fieldTrack">
+            <Setter Property="MaxWidth" Value="320"/>
+            <Setter Property="Padding" Value="3"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
         </Style>
         <!-- The phones' header card -->
         <Style Selector="Border.statTile">
@@ -120,12 +145,10 @@
             <Border Classes="card phoneOnly">
                 <StackPanel Spacing="14">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                        <Border Width="64" Height="64" CornerRadius="32" Padding="3" BorderThickness="2" BorderBrush="{DynamicResource AccentInk}">
-                            <Border CornerRadius="28" Background="{DynamicResource Inverse}">
-                                <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="22" FontWeight="ExtraBold"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                        </Border>
+                        <Button Classes="bare" Command="{Binding EditAvatarCommand}" AutomationProperties.Name="Change avatar">
+                            <v:AvatarView Width="64" Height="64" Choice="{Binding Avatar}" Initials="{Binding Initials}" Level="{Binding AvatarLevel}"
+                                          Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                        </Button>
                         <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                     </Grid>
@@ -172,10 +195,11 @@
             <Grid x:Name="Header" Classes="wideOnly" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
                 <!-- A grid, so the chips wrap on a phone -->
                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
-                    <Border x:Name="Avatar" CornerRadius="36" Background="{DynamicResource Inverse}" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Initials}" Foreground="{DynamicResource OnInverse}" FontSize="26" FontWeight="ExtraBold"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    <Button Classes="bare" VerticalAlignment="Center" Command="{Binding EditAvatarCommand}"
+                            ToolTip.Tip="Change avatar" AutomationProperties.Name="Change avatar">
+                        <v:AvatarView x:Name="Avatar" Choice="{Binding Avatar}" Initials="{Binding Initials}" Level="{Binding AvatarLevel}"
+                                      Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                    </Button>
                     <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                         <TextBlock Classes="pageTitle" Text="{Binding Username}" FontWeight="ExtraBold"/>
                         <WrapPanel ItemSpacing="8" LineSpacing="8">
@@ -235,17 +259,17 @@
                                 </StackPanel>
                             </Grid>
 
-                            <!-- Phones: each label above its field -->
-                            <v:PhoneGrid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18"
+                            <!-- Wide: a label beside each field (phones have the compact layout below) -->
+                            <v:PhoneGrid Classes="wideOnly" ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18"
                                          PhoneStack="True">
                                 <!-- Units -->
                                 <TextBlock Text="Units" Classes="formLabel"/>
                                 <StackPanel Grid.Column="1" Spacing="6">
                                     <Border Classes="track fieldTrack">
                                         <v:SegmentedPill SelectedIndex="{Binding UnitsIndex}" PillInset="0">
-                                            <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="40" FontSize="14"
+                                            <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="32" FontSize="13"
                                                     Content="Metric · kg, cm" Command="{Binding SelectMetricCommand}"/>
-                                            <Button Classes="seg" Classes.on="{Binding IsImperial}" MinHeight="40" FontSize="14"
+                                            <Button Classes="seg" Classes.on="{Binding IsImperial}" MinHeight="32" FontSize="13"
                                                     Content="Imperial · lb, ft" Command="{Binding SelectImperialCommand}"/>
                                         </v:SegmentedPill>
                                     </Border>
@@ -259,9 +283,9 @@
                                     <Border Classes="track fieldTrack">
                                         <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
                                             <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
-                                                    MinHeight="40" FontSize="14" Classes.wideSeg="True" Content="Male" Command="{Binding SelectMaleCommand}"/>
+                                                    MinHeight="32" FontSize="13" Classes.wideSeg="True" Content="Male" Command="{Binding SelectMaleCommand}"/>
                                             <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
-                                                    MinHeight="40" FontSize="14" Classes.wideSeg="True" Content="Female" Command="{Binding SelectFemaleCommand}"/>
+                                                    MinHeight="32" FontSize="13" Classes.wideSeg="True" Content="Female" Command="{Binding SelectFemaleCommand}"/>
                                         </v:SegmentedPill>
                                     </Border>
                                     <TextBlock Classes="fieldError" Text="{Binding SexError}"
@@ -296,19 +320,20 @@
                                 <!-- Height -->
                                 <TextBlock Grid.Row="3" Text="Height" Classes="formLabel"/>
                                 <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6">
-                                    <Panel MaxWidth="200" HorizontalAlignment="Left" IsVisible="{Binding IsMetric}">
-                                        <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Width="200" Padding="14,0,48,0" Text="{Binding HeightCmText}"
+                                    <!-- Sized like the birth date boxes, the unit inside on the right -->
+                                    <Panel HorizontalAlignment="Left" IsVisible="{Binding IsMetric}">
+                                        <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Width="128" Padding="14,0,40,0" Text="{Binding HeightCmText}"
                                                  AutomationProperties.Name="Height in centimetres"/>
                                         <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
                                     </Panel>
                                     <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsImperial}">
                                         <Panel>
-                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightFtText}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="96" Padding="14,0,32,0" Text="{Binding HeightFtText}"
                                                      AutomationProperties.Name="Feet"/>
                                             <Border Classes="unitTag"><TextBlock Text="ft" FontSize="13" Classes="muted"/></Border>
                                         </Panel>
                                         <Panel>
-                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="110" Padding="14,0,36,0" Text="{Binding HeightInText}"
+                                            <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" Width="96" Padding="14,0,32,0" Text="{Binding HeightInText}"
                                                      AutomationProperties.Name="Inches"/>
                                             <Border Classes="unitTag"><TextBlock Text="in" FontSize="13" Classes="muted"/></Border>
                                         </Panel>
@@ -349,6 +374,119 @@
                                 </StackPanel>
                             </v:PhoneGrid>
 
+                            <!-- Phones (design C): Units and Gender side by side, the birth date on one row, height beside the
+                                 age, then three short activity choices -->
+                            <StackPanel Classes="phoneOnly" Spacing="14">
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <StackPanel Spacing="5">
+                                        <TextBlock Text="UNITS" Classes="bdLabel"/>
+                                        <Border Classes="track compactTrack">
+                                            <v:SegmentedPill SelectedIndex="{Binding UnitsIndex}" PillInset="0">
+                                                <Button Classes="seg" Classes.on="{Binding IsMetric}" MinHeight="30" FontSize="12" Padding="0"
+                                                        Content="Metric" Command="{Binding SelectMetricCommand}"/>
+                                                <Button Classes="seg" Classes.on="{Binding IsImperial}" MinHeight="30" FontSize="12" Padding="0"
+                                                        Content="Imperial" Command="{Binding SelectImperialCommand}"/>
+                                            </v:SegmentedPill>
+                                        </Border>
+                                        <TextBlock Classes="fieldError" Text="{Binding UnitsError}"
+                                                   IsVisible="{Binding UnitsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="5">
+                                        <TextBlock Text="GENDER" Classes="bdLabel"/>
+                                        <Border Classes="track compactTrack">
+                                            <v:SegmentedPill SelectedIndex="{Binding SexIndex}" PillInset="0">
+                                                <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
+                                                        MinHeight="30" FontSize="12" Padding="0" Content="Male" Command="{Binding SelectMaleCommand}"/>
+                                                <Button Classes="seg" Classes.on="{Binding SexIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=1}"
+                                                        MinHeight="30" FontSize="12" Padding="0" Content="Female" Command="{Binding SelectFemaleCommand}"/>
+                                            </v:SegmentedPill>
+                                        </Border>
+                                        <TextBlock Classes="fieldError" Text="{Binding SexError}"
+                                                   IsVisible="{Binding SexError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="BIRTH DATE" Classes="bdLabel"/>
+                                    <Grid ColumnDefinitions="56,*,76" ColumnSpacing="8">
+                                        <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" TextAlignment="Center" PlaceholderText="Day"
+                                                 Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
+                                        <ComboBox Grid.Column="1" Classes="field" HorizontalAlignment="Stretch" ItemsSource="{Binding Months}"
+                                                  SelectedItem="{Binding BirthMonth}" PlaceholderText="Month" AutomationProperties.Name="Month">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:MonthOption">
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Grid.Column="2" TextInputOptions.ContentType="Digits" Classes="field mono" TextAlignment="Center"
+                                                 PlaceholderText="Year" Text="{Binding BirthYearText}" AutomationProperties.Name="Year"/>
+                                    </Grid>
+                                    <TextBlock Classes="fieldError" Text="{Binding BirthDateError}"
+                                               IsVisible="{Binding BirthDateError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                    <StackPanel Spacing="5">
+                                        <TextBlock Text="HEIGHT" Classes="bdLabel"/>
+                                        <Panel IsVisible="{Binding IsMetric}">
+                                            <TextBox TextInputOptions.ContentType="Number" Classes="field mono" Padding="12,0,38,0" Text="{Binding HeightCmText}"
+                                                     AutomationProperties.Name="Height in centimetres"/>
+                                            <Border Classes="unitTag"><TextBlock Text="cm" FontSize="13" Classes="muted"/></Border>
+                                        </Panel>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="6" IsVisible="{Binding IsImperial}">
+                                            <Panel>
+                                                <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" MinWidth="0" Padding="10,0,26,0"
+                                                         Text="{Binding HeightFtText}" AutomationProperties.Name="Feet"/>
+                                                <Border Classes="unitTag" Margin="0,0,10,0"><TextBlock Text="ft" FontSize="12" Classes="muted"/></Border>
+                                            </Panel>
+                                            <Panel Grid.Column="1">
+                                                <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" MinWidth="0" Padding="10,0,26,0"
+                                                         Text="{Binding HeightInText}" AutomationProperties.Name="Inches"/>
+                                                <Border Classes="unitTag" Margin="0,0,10,0"><TextBlock Text="in" FontSize="12" Classes="muted"/></Border>
+                                            </Panel>
+                                        </Grid>
+                                    </StackPanel>
+                                    <!-- The age, worked out from the birth date -->
+                                    <StackPanel Grid.Column="1" Spacing="5">
+                                        <TextBlock Text="AGE" Classes="bdLabel"/>
+                                        <Border MinHeight="44" CornerRadius="10" Padding="12,0" Background="{DynamicResource Fill}">
+                                            <TextBlock Text="{Binding AgeNumber}" Classes="mono soft" FontSize="15" VerticalAlignment="Center"/>
+                                        </Border>
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Classes="fieldError" Text="{Binding HeightError}"
+                                           IsVisible="{Binding HeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="ACTIVITY · STEPS A DAY" Classes="bdLabel"/>
+                                    <Border Classes="track compactTrack">
+                                        <ItemsControl ItemsSource="{Binding ActivityOptions}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <v:SegmentedPill SelectedIndex="{Binding ActivityIndex}" PillInset="0"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ActivityOption">
+                                                    <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="44" Padding="2,0"
+                                                            Command="{Binding PickCommand}" AutomationProperties.Name="{Binding Name}">
+                                                        <StackPanel Spacing="1" HorizontalAlignment="Center">
+                                                            <TextBlock Text="{Binding ShortName}" FontSize="12" FontWeight="Bold" TextWrapping="NoWrap"
+                                                                       HorizontalAlignment="Center"/>
+                                                            <TextBlock Text="{Binding ShortSteps}" FontSize="11" Opacity="0.75" TextWrapping="NoWrap"
+                                                                       HorizontalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                    <TextBlock Classes="fieldError" Text="{Binding ActivityError}"
+                                               IsVisible="{Binding ActivityError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                </StackPanel>
+                            </StackPanel>
+
                             <!-- Maintenance and save -->
                             <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
@@ -361,8 +499,10 @@
                                         <TextBlock Text="{Binding MaintenanceNote}" FontSize="12" Foreground="{DynamicResource FlameText}"
                                                    IsVisible="{Binding MaintenanceNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="Unsaved changes" FontSize="13" Classes="soft" VerticalAlignment="Center"
-                                               IsVisible="{Binding IsDirty}"/>
+                                    <!-- Not on phones, where Save sits right beside the estimate (design C) -->
+                                    <Panel Grid.Column="1" Classes="wideOnly" VerticalAlignment="Center">
+                                        <TextBlock Text="Unsaved changes" FontSize="13" Classes="soft" IsVisible="{Binding IsDirty}"/>
+                                    </Panel>
                                     <Button Grid.Column="2" Classes="btn primary" Padding="22,0" Content="Save profile"
                                             Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" VerticalAlignment="Center"/>
                                 </Grid>
@@ -388,16 +528,9 @@
                             </Grid>
                             <!-- Trend: the last weigh-ins, oldest to newest -->
                             <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
-                                <Viewbox Stretch="Fill" Height="96">
-                                    <Canvas Width="320" Height="96">
-                                        <Line StartPoint="0,88" EndPoint="320,88" Stroke="{DynamicResource Line}" StrokeThickness="1"/>
-                                        <Polyline Points="{Binding TrendPoints}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.5"
-                                                  StrokeLineCap="Round" StrokeJoin="Round"/>
-                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Accent}" Stroke="{DynamicResource Surface}"
-                                                 StrokeThickness="2" Canvas.Left="{Binding TrendLast.X, Converter={x:Static v:ProfileView.Minus5}}"
-                                                 Canvas.Top="{Binding TrendLast.Y, Converter={x:Static v:ProfileView.Minus5}}"/>
-                                    </Canvas>
-                                </Viewbox>
+                                <!-- Tap a dot for that day's weight, like the Health app -->
+                                <v:WeightChart Points="{Binding TrendPoints}" Height="150"
+                                               AutomationProperties.Name="Weight trend. Tap a point to see its weight."/>
                                 <Grid ColumnDefinitions="*,Auto">
                                     <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
                                     <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
@@ -511,20 +644,6 @@
                                 </ItemsControl>
                             </Border>
                             <TextBlock Text="City search uses OpenStreetMap (Nominatim)." FontSize="12" Foreground="{DynamicResource Faint}"/>
-
-                            <!-- Your gym and "Ask for gym" live on the Map; sharing can be changed here too -->
-                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,16,0,0">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                    <StackPanel Spacing="2" VerticalAlignment="Center">
-                                        <TextBlock Text="Visible to friends" FontSize="14" Classes="light"/>
-                                        <TextBlock Text="Friends see the gym and day of your check-ins, never the time." FontSize="12" Classes="muted"/>
-                                    </StackPanel>
-                                    <ToggleSwitch Grid.Column="1" IsChecked="{Binding ShareGymCheckIns}" OnContent="" OffContent=""
-                                                  VerticalAlignment="Center"/>
-                                    <Button Grid.Column="2" Classes="link" Content="Your gym on the Map →"
-                                            Command="{Binding ShowGymSummaryCommand}" VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
                         </StackPanel>
                     </Border>
 

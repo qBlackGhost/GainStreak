@@ -1126,6 +1126,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("AvatarDirtySince")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("CheckInsDirtySince")
                         .HasColumnType("TEXT");
 
@@ -1290,6 +1293,9 @@ namespace GymApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true);
+
+                    b.Property<string>("Avatar")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("TEXT");

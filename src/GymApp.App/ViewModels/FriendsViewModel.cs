@@ -48,6 +48,8 @@ public record FriendsBoardRowViewModel(LeaderboardRow Row)
     public bool IsFirst => Row.Rank == 1;
     public string Username => Row.IsYou ? $"{Row.Username} (you)" : Row.Username;
     public string Initials => ViewModels.Initials.Of(Row.Username);
+    public string? Avatar => Row.Avatar;
+    public int LevelNumber => Row.Level.Number;
     public string LevelText => $"Level {Row.Level.Number} · {Row.Level.Name}";
     public string PointsText => $"{Row.Points.ToString("N0", CultureInfo.InvariantCulture)} pts";
     public string StreakText => Row.CurrentStreak.ToString(CultureInfo.InvariantCulture);
@@ -56,12 +58,14 @@ public record FriendsBoardRowViewModel(LeaderboardRow Row)
 }
 
 /// <summary>One accepted friend. Remove asks for confirmation first: the button turns into "Confirm remove".</summary>
-public partial class FriendRowViewModel(Friend friend, string? level, FriendsViewModel owner) : ObservableObject
+public partial class FriendRowViewModel(Friend friend, LeaderboardRow? row, FriendsViewModel owner) : ObservableObject
 {
     public int UserId => friend.UserId;
     public string Username => friend.Username;
     public string Initials => ViewModels.Initials.Of(friend.Username);
-    public string SinceText => (level is null ? "" : level + " · ")
+    public string? Avatar => row?.Avatar;
+    public int LevelNumber => row?.Level.Number ?? 1;
+    public string SinceText => (row is null ? "" : $"Level {row.Level.Number} · {row.Level.Name} · ")
                                + $"since {friend.Since.ToLocalTime().ToString("MMM yyyy", CultureInfo.InvariantCulture)}";
 
     [ObservableProperty]
@@ -163,20 +167,20 @@ public partial class FriendsViewModel : ViewModelBase
         await LoadBoardAsync();
     }
 
-    /// <summary>The board, and each friend's level for their row. A failure only empties the board.</summary>
-    private async Task<IReadOnlyDictionary<int, LevelInfo>> LoadBoardAsync()
+    /// <summary>The board, and each friend's row of it for their level and avatar. A failure only empties the board.</summary>
+    private async Task<IReadOnlyDictionary<int, LeaderboardRow>> LoadBoardAsync()
     {
-        var levels = new Dictionary<int, LevelInfo>();
-        if (UserId is not { } me) return levels;
+        var rows = new Dictionary<int, LeaderboardRow>();
+        if (UserId is not { } me) return rows;
         try
         {
             var period = IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek;
             var view = await _board.GetAsync(me, period);
-            if (view is null || IsAllTime != (view.Period == LeaderboardPeriod.AllTime)) return levels;   // toggled meanwhile
+            if (view is null || IsAllTime != (view.Period == LeaderboardPeriod.AllTime)) return rows;   // toggled meanwhile
             BoardStale = StaleText.For(view);
             Board.Clear();
             foreach (var r in view.Rows) Board.Add(new FriendsBoardRowViewModel(r));
-            foreach (var r in view.Rows) levels[r.UserId] = r.Level;
+            foreach (var r in view.Rows) rows[r.UserId] = r;
             PeriodText = IsAllTime ? "All time" : Leaderboard.WeekTitle(view.WeekStart);
         }
         catch (Exception)
@@ -184,7 +188,7 @@ public partial class FriendsViewModel : ViewModelBase
             Board.Clear();
             Error = "Could not load the leaderboard.";
         }
-        return levels;
+        return rows;
     }
 
     public ObservableCollection<FriendRowViewModel> Friends { get; } = new();
@@ -210,12 +214,11 @@ public partial class FriendsViewModel : ViewModelBase
         if (UserId is not { } me) return;
         try
         {
-            var levels = await LoadBoardAsync();
+            var board = await LoadBoardAsync();
             var friends = await _friends.GetFriendsAsync(me);
             Friends.Clear();
             foreach (var f in friends)
-                Friends.Add(new FriendRowViewModel(f,
-                    levels.TryGetValue(f.UserId, out var l) ? $"Level {l.Number} · {l.Name}" : null, this));
+                Friends.Add(new FriendRowViewModel(f, board.GetValueOrDefault(f.UserId), this));
             FriendsTitle = friends.Count == 0 ? "Friends" : $"Friends ({friends.Count}/{FriendService.MaxFriends})";
             FriendCountText = $"{friends.Count} / {FriendService.MaxFriends} friends";
             HasNoFriends = friends.Count == 0;

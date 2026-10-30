@@ -87,6 +87,17 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 
 Take them in dark mode with a seeded account: a week of workouts, a few PRs, two or three friends and some check-ins.
 
+**The seeded account** comes from `tools/GymApp.ScreenshotSeed`, which runs the app's own services against the local server (`docker compose up -d && dotnet run --project src/GymApp.Server`):
+
+```bash
+dotnet run --project tools/GymApp.ScreenshotSeed -- /tmp/gainstreak-seed
+```
+
+It makes **alex** (six weeks of Push / Pull / Legs, PRs, weekly weigh-ins, calories most days, today a training day not yet started, dark theme) and three friends, **maya**, **jonas** and **sam**, each with their own split, history and gym check-ins in Timișoara, all friends with alex. The password for all four is in the tool's `Program.cs` (local test accounts only). A rerun signs in to the same accounts and replaces their data. Then put `gymapp.db` on a phone running a Debug build (which talks to the local server) and sign in as alex:
+
+- **iOS Simulator:** `xcrun simctl get_app_container booted com.gainstreak.app data` gives the app's folder; copy the file to `Library/Application Support/GymApp/gymapp.db` there while the app is closed.
+- **Android emulator:** `adb push gymapp.db /data/local/tmp/` then `adb shell run-as com.gainstreak.app cp /data/local/tmp/gymapp.db files/GymApp/gymapp.db` (Debug builds only), with the app stopped.
+
 1. **Home:** the greeting, level card and today's workout.
 2. **Workouts → a day:** the exercise list.
 3. **Exercise:** sets, plan and the PR block.

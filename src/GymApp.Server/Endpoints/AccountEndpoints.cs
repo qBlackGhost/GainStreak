@@ -176,5 +176,5 @@ public static class AccountEndpoints
         return Results.NoContent();
     }
 
-    private static MeResponse ToMe(User user) => new(user.Id, user.Username, user.Email, user.ShareGymCheckIns);
+    private static MeResponse ToMe(User user) => new(user.Id, user.Username, user.Email, user.ShareGymCheckIns, user.Avatar);
 }

@@ -94,6 +94,20 @@ public class ExerciseService(IDbContextFactory<AppDbContext> dbFactory)
             await db.SetLogs.CountAsync(s => s.UserId == userId && s.ExerciseId == exerciseId));
     }
 
+    /// <summary>The usage of each of the user's exercises that has any; the rest aren't in the result.</summary>
+    public async Task<Dictionary<int, ExerciseUsage>> GetUsagesAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var days = await db.UserDayExercises.Where(x => x.UserId == userId)
+            .GroupBy(x => x.ExerciseId).Select(g => new { Id = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count);
+        var sets = await db.SetLogs.Where(s => s.UserId == userId)
+            .GroupBy(s => s.ExerciseId).Select(g => new { Id = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Id, x => x.Count);
+        return days.Keys.Union(sets.Keys).ToDictionary(id => id,
+            id => new ExerciseUsage(days.GetValueOrDefault(id), sets.GetValueOrDefault(id)));
+    }
+
     /// <summary>Deletes one of the user's own exercises. Its day-list entries, sets and PR adjustments go
     /// with it (cascade). Built-ins and other users' exercises are never touched.</summary>
     public async Task<bool> DeleteAsync(int userId, int exerciseId)

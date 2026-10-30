@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
-using Avalonia;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +12,9 @@ using GymApp.Services;
 
 namespace GymApp.App.ViewModels;
 
+/// <summary>One weigh-in on the Profile's weight chart: its value in the shown unit, and the bubble's two lines.</summary>
+public record WeightChartPoint(double Value, string ValueText, string DateText);
+
 /// <summary>One option of the activity selector: "Less active", "under 7,500 steps".</summary>
 public partial class ActivityOption(ActivityLevel level, Action<ActivityOption>? pick = null) : ObservableObject
 {
@@ -20,6 +22,15 @@ public partial class ActivityOption(ActivityLevel level, Action<ActivityOption>?
     public string Name => ActivityLevels.DisplayName(Level);
     public string Range => ActivityLevels.StepRange(Level);
     public string Steps => Range.Replace(" / day", "");
+    /// <summary>The phones' compact choices: "Less active" over "&lt;7.5k".</summary>
+    public string ShortName => Name[..1] + Name[1..].ToLowerInvariant();
+    public string ShortSteps => Level switch
+    {
+        ActivityLevel.LessActive => "<7.5k",
+        ActivityLevel.Active => "7.5–12.5k",
+        ActivityLevel.VeryActive => ">12.5k",
+        _ => ""
+    };
 
     [ObservableProperty] public partial bool IsSelected { get; set; }
 
@@ -88,6 +99,8 @@ public partial class ProfileViewModel : ViewModelBase
     // ===== Header =====
     [ObservableProperty] public partial string Username { get; set; } = "";
     [ObservableProperty] public partial string Initials { get; set; } = "";
+    [ObservableProperty] public partial string? Avatar { get; set; }
+    [ObservableProperty] public partial int AvatarLevel { get; set; }
     [ObservableProperty] public partial string SplitText { get; set; } = "";
     [ObservableProperty] public partial bool HasSplit { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
@@ -133,15 +146,15 @@ public partial class ProfileViewModel : ViewModelBase
     public partial Sex? SelectedSex { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AgeText))]
+    [NotifyPropertyChangedFor(nameof(AgeText), nameof(AgeNumber))]
     public partial string BirthDayText { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AgeText))]
+    [NotifyPropertyChangedFor(nameof(AgeText), nameof(AgeNumber))]
     public partial MonthOption? BirthMonth { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(AgeText))]
+    [NotifyPropertyChangedFor(nameof(AgeText), nameof(AgeNumber))]
     public partial string BirthYearText { get; set; } = "";
 
     [ObservableProperty] public partial string HeightCmText { get; set; } = "";
@@ -171,7 +184,9 @@ public partial class ProfileViewModel : ViewModelBase
     [RelayCommand] private void SelectFemale() => SelectedSex = Sex.Female;
 
     /// <summary>"Age 21" from the three birth date boxes, or "Age —" until they make a real date.</summary>
-    public string AgeText => TryReadBirthDate(out var b) && b is { } d ? $"Age {BodyMetrics.AgeOn(d, Today)}" : "Age —";
+    public string AgeText => $"Age {AgeNumber}";
+    /// <summary>The age alone, for the phones' Age box ("31", or "—" without a birth date).</summary>
+    public string AgeNumber => TryReadBirthDate(out var b) && b is { } d ? BodyMetrics.AgeOn(d, Today).ToString(CultureInfo.InvariantCulture) : "—";
 
     /// <summary>Something in the body data form changed since it was filled or saved.</summary>
     [ObservableProperty] public partial bool IsDirty { get; set; }
@@ -189,13 +204,11 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string LogWeightLabel { get; set; } = "Log today's weight";
     [ObservableProperty] public partial bool HasHistory { get; set; }
     [ObservableProperty] public partial bool HasTrend { get; set; }
-    [ObservableProperty] public partial IList<Point> TrendPoints { get; set; } = [];
-    [ObservableProperty] public partial Point TrendLast { get; set; }
+    /// <summary>The trend chart's weigh-ins, oldest to newest, in the shown unit.</summary>
+    [ObservableProperty] public partial IReadOnlyList<WeightChartPoint> TrendPoints { get; set; } = [];
     [ObservableProperty] public partial string TrendFirstLabel { get; set; } = "";
     [ObservableProperty] public partial string TrendLastLabel { get; set; } = "";
 
-    /// <summary>The trend chart's drawing area (the view scales it to the card's width).</summary>
-    public const double TrendWidth = 320, TrendHeight = 96;
     private const int TrendCount = 8, RecentShown = 5;
 
     // ===== Appearance: System, Light, Dark (12e); applies at once and is saved on the user =====
@@ -223,12 +236,18 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string? CitySearchMessage { get; set; }
     [ObservableProperty] public partial bool CanRetryCitySearch { get; set; }
     [ObservableProperty] public partial bool HasCityCandidates { get; set; }
-    [ObservableProperty] public partial bool ShareGymCheckIns { get; set; }
 
     /// <summary>"GainStreak 0.14.1", from the assembly version (Directory.Build.props).</summary>
     public string VersionText { get; } = $"GainStreak {AppVersion.Current}";
 
     // The phones have no sidebar, so Profile holds these there
+    [RelayCommand]
+    private void EditAvatar() => _shell().OpenAvatarPicker(Avatar, Initials, AvatarLevel, async () =>
+    {
+        await _shell().RefreshAvatarAsync();
+        Avatar = _shell().OwnAvatar;
+    });
+
     [RelayCommand] private void SendFeedback() => _shell().ShowFeedback();
     [RelayCommand] private Task LogOut() => _accounts.LogOutAsync();
 
@@ -257,12 +276,14 @@ public partial class ProfileViewModel : ViewModelBase
             Username = s.Username;
             ApplyEmail(s.Email);
             Initials = s.Username.Length == 0 ? "?" : s.Username[..Math.Min(2, s.Username.Length)].ToUpperInvariant();
+            Avatar = s.Profile.Avatar;
             HasSplit = s.SplitName is not null;
             SplitText = s.SplitName?.Replace(" (", " · ").TrimEnd(')') ?? "No split selected";
             StreakText = $"{s.CurrentStreak} day streak · best {s.LongestStreak}";
             CurrentStreak = s.CurrentStreak.ToString(CultureInfo.InvariantCulture);
             BestStreak = s.LongestStreak.ToString(CultureInfo.InvariantCulture);
             var level = LevelCalculator.For(_session.CurrentUser?.Points ?? 0);
+            AvatarLevel = level.Number;
             LevelText = $"Level {level.Number} · {level.Name}";
             LevelNumber = level.Number.ToString(CultureInfo.InvariantCulture);
             LevelName = level.Name;
@@ -271,9 +292,6 @@ public partial class ProfileViewModel : ViewModelBase
 
             if (refillForm) FillForm(s.Profile);
             ApplyHomeCity(s.Profile.HomeCity);
-            _applyingShare = true;   // so filling the toggle does not save it again
-            ShareGymCheckIns = s.Profile.ShareGymCheckIns == true;
-            _applyingShare = false;
 
             // Weight and history are shown in the saved unit, so they match what the form says after a reload
             var units = s.Profile.Units;
@@ -365,16 +383,16 @@ public partial class ProfileViewModel : ViewModelBase
             DeltaText = "First weigh-in";
         }
 
-        // Oldest to newest, scaled into the chart box with half a kilo (or pound) of headroom
+        // Oldest to newest; the chart scales them and shows a tapped one's weight and date
         var pts = recent.Take(TrendCount).Reverse().ToList();
         HasTrend = pts.Count > 1;
         if (!HasTrend) { TrendPoints = []; return; }
-        var values = pts.Select(p => Shown(p.WeightKg)).ToList();
-        double lo = values.Min() - 0.5, hi = values.Max() + 0.5;
-        TrendPoints = values.Select((v, i) => new Point(
-            8 + i * ((TrendWidth - 16) / (values.Count - 1)),
-            TrendHeight - 16 - (v - lo) / (hi - lo) * (TrendHeight - 26))).ToList();
-        TrendLast = TrendPoints[^1];
+        TrendPoints = pts.Select(p =>
+        {
+            var v = Shown(p.WeightKg);
+            return new WeightChartPoint(v, $"{v.ToString("0.#", CultureInfo.InvariantCulture)} {WeightUnit}",
+                p.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture));
+        }).ToList();
         TrendFirstLabel = pts[0].Date.ToString("d MMM", CultureInfo.InvariantCulture);
         TrendLastLabel = pts[^1].Date.ToString("d MMM", CultureInfo.InvariantCulture);
     }
@@ -672,34 +690,6 @@ public partial class ProfileViewModel : ViewModelBase
         }
     }
 
-    // ===== Sharing check-ins with friends =====
-
-    private bool _applyingShare;
-
-    // Saved straight away, like on the Map
-    partial void OnShareGymCheckInsChanged(bool value)
-    {
-        if (_applyingShare) return;
-        _ = SaveShareAsync(value);
-    }
-
-    private async Task SaveShareAsync(bool value)
-    {
-        try
-        {
-            Info = null;
-            var r = await _profiles.SetShareGymCheckInsAsync(UserId, value);
-            if (!r.Success) { Error = r.Error; return; }
-            Error = null;
-            Info = value ? "Friends now see the gym and day of your check-ins." : "Your check-ins are private now.";
-
-        }
-        catch (Exception)
-        {
-            Error = "Could not save that setting.";
-        }
-    }
-
     // ===== Home city =====
 
     private void ApplyHomeCity(City? city)
@@ -790,9 +780,6 @@ public partial class ProfileViewModel : ViewModelBase
 
     [RelayCommand]
     private void ShowSplits() => _shell().ShowSplits();
-
-    [RelayCommand]
-    private void ShowGymSummary() => _shell().ShowGyms();
 
     private static string DayLabel(DateOnly date)
     {

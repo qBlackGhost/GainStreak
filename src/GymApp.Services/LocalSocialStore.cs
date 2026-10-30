@@ -133,7 +133,10 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
                 .Where(u => ids.Contains(u.Id))
                 .Select(u => new { u.Id, u.Username, u.Points, u.CurrentStreak })
                 .ToListAsync();
-            return users.Select(u => new PublicStats(u.Id, u.Username, u.Points, week.GetValueOrDefault(u.Id), u.CurrentStreak))
+            var avatars = await db.UserProfiles.AsNoTracking()
+                .Where(p => ids.Contains(p.UserId))
+                .ToDictionaryAsync(p => p.UserId, p => p.Avatar);
+            return users.Select(u => new PublicStats(u.Id, u.Username, u.Points, week.GetValueOrDefault(u.Id), u.CurrentStreak, avatars.GetValueOrDefault(u.Id)))
                 .ToList();
         }
 

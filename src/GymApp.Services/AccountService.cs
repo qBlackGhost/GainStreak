@@ -257,12 +257,20 @@ public class AccountService(
         if (password is not null && !PasswordHasher.Verify(password, user.PasswordHash))
             user.PasswordHash = PasswordHasher.Hash(password);
 
-        // A sharing change still waiting to upload is newer than what the server says
-        var pending = user.Id != 0 && await db.SyncStates.AnyAsync(s => s.UserId == user.Id && s.SharingDirtySince != null);
-        if (!pending && user.Id != 0 && await ProfileService.ProfileForWriteAsync(db, user.Id) is { } profile)
-            profile.ShareGymCheckIns = me.ShareGymCheckIns;
-        else if (user.Id == 0 && me.ShareGymCheckIns is not null)
-            db.UserProfiles.Add(new UserProfile { User = user, ShareGymCheckIns = me.ShareGymCheckIns });
+        if (user.Id == 0)
+        {
+            if (me.ShareGymCheckIns is not null || me.Avatar is not null)
+                db.UserProfiles.Add(new UserProfile { User = user, ShareGymCheckIns = me.ShareGymCheckIns, Avatar = me.Avatar });
+            return;
+        }
+
+        // A sharing or avatar change still waiting to upload is newer than what the server says
+        var pending = await db.SyncStates.Where(s => s.UserId == user.Id)
+            .Select(s => new { s.SharingDirtySince, s.AvatarDirtySince }).FirstOrDefaultAsync();
+        if (pending is { SharingDirtySince: not null, AvatarDirtySince: not null }) return;
+        if (await ProfileService.ProfileForWriteAsync(db, user.Id) is not { } profile) return;
+        if (pending?.SharingDirtySince is null) profile.ShareGymCheckIns = me.ShareGymCheckIns;
+        if (pending?.AvatarDirtySince is null) profile.Avatar = me.Avatar;
     }
 
     /// <summary>

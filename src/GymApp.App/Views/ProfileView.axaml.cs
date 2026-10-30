@@ -16,9 +16,6 @@ public partial class ProfileView : UserControl
     public static readonly IValueConverter IsIndex = new FuncValueConverter<int, object?, bool>((index, parameter) =>
         int.TryParse(parameter?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var p) && p == index);
 
-    /// <summary>Centers the trend's 10 px end dot on the last point.</summary>
-    public static readonly IValueConverter Minus5 = new FuncValueConverter<double, double>(v => v - 5);
-
     public ProfileView()
     {
         InitializeComponent();

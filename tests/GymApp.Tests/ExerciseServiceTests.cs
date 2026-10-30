@@ -138,6 +138,7 @@ public class ExerciseServiceTests : IDisposable
         }
 
         Assert.Equal(new ExerciseUsage(1, 2), await _svc.GetUsageAsync(_alice, ex.Id));
+        Assert.Equal(new ExerciseUsage(1, 2), (await _svc.GetUsagesAsync(_alice))[ex.Id]);
 
         await _svc.DeleteAsync(_alice, ex.Id);
         Assert.Equal(new ExerciseUsage(0, 0), await _svc.GetUsageAsync(_alice, ex.Id));

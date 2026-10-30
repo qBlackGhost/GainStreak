@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.UserProfile",
                 typeof(UserProfile),
                 baseEntityType,
-                propertyCount: 12,
+                propertyCount: 13,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -52,6 +52,13 @@ namespace GymApp.Data.CompiledModels
                 valueGenerated: ValueGenerated.OnAdd,
                 sentinel: true);
             askForGymAfterCheckIn.AddAnnotation("Relational:DefaultValue", true);
+
+            var avatar = runtimeEntityType.AddProperty(
+                "Avatar",
+                typeof(string),
+                propertyInfo: typeof(UserProfile).GetProperty("Avatar", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<Avatar>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var birthDate = runtimeEntityType.AddProperty(
                 "BirthDate",

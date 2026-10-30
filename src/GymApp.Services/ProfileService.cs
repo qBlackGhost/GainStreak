@@ -160,6 +160,28 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
         return new(true);
     }
 
+    /// <summary>The user's avatar, or null for the plain initials.</summary>
+    public async Task<string?> GetAvatarAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.UserProfiles.Where(p => p.UserId == userId).Select(p => p.Avatar).FirstOrDefaultAsync();
+    }
+
+    /// <summary>Sets the avatar friends see; null goes back to the plain initials.</summary>
+    public async Task<ProfileResult> SetAvatarAsync(int userId, AvatarChoice? avatar)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var profile = await ProfileForWriteAsync(db, userId);
+        if (profile is null) return new(false, "User not found.");
+        profile.Avatar = avatar?.ToString();
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save your avatar."); }
+        (sync ?? NoSocialSync.Instance).MarkAvatarDirty(userId);
+        return new(true);
+    }
+
     /// <summary>Turns "Visible to friends" on or off: whether accepted friends see the gym and day of the user's check-ins
     /// (last 30 days). Off hides the past ones at once too, since the map is a query, not a copy. Creates the profile
     /// row if there is none yet.</summary>

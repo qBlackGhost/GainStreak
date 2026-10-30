@@ -14,6 +14,7 @@ public sealed class RecordingSync : ISocialSyncHooks
     public void MarkStatsDirty(int userId) => Marks.Add($"stats:{userId}");
     public void MarkCheckInsDirty(int userId) => Marks.Add($"checkins:{userId}");
     public void MarkSharingDirty(int userId) => Marks.Add($"sharing:{userId}");
+    public void MarkAvatarDirty(int userId) => Marks.Add($"avatar:{userId}");
 }
 
 /// <summary>Data for the sync tests: a city, an OSM gym and a custom gym with a picked address.</summary>

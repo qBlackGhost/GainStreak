@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ExerciseFormView"
+             x:DataType="vm:ExerciseFormViewModel">
+    <!-- The new exercise popup: a centred card, a sheet from the bottom on phones. Escape or a click outside cancels. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
+        <Style Selector=".phone StackPanel#Form"><Setter Property="Margin" Value="16,18,16,20"/></Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+        <!-- Muscle group chips -->
+        <Style Selector="Button.chip">
+            <Setter Property="MinHeight" Value="34"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.chip.on">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+        <Style Selector="Button.chip.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Foreground" Value="Black"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="480" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel x:Name="Form" Spacing="16">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="ExtraBold"/>
+                        <TextBlock Text="{Binding Subtitle}" FontSize="13" Classes="muted" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="NAME" Classes="caps" FontWeight="SemiBold"/>
+                        <TextBox x:Name="NameBox" Classes="field" PlaceholderText="Landmine press" MaxLength="{Binding MaxNameLength}"
+                                 Text="{Binding Name}" AutomationProperties.Name="Exercise name"/>
+                        <TextBlock Classes="fieldError" Text="{Binding NameError}"
+                                   IsVisible="{Binding NameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="MUSCLE GROUP" Classes="caps" FontWeight="SemiBold"/>
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MuscleChipViewModel">
+                                    <Button Classes="chip" Classes.on="{Binding IsSelected}" Content="{Binding Label}"
+                                            Command="{Binding $parent[UserControl].((vm:ExerciseFormViewModel)DataContext).SelectGroupCommand}"
+                                            CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="fieldError" Text="{Binding GroupError}"
+                                   IsVisible="{Binding GroupError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Cancel" Command="{Binding CancelCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsDefault="True"/>
+                    </Grid>
+                    <Button Classes="link" FontSize="13" HorizontalAlignment="Center" Content="Manage your exercises"
+                            Command="{Binding ManageCommand}" IsVisible="{Binding CanManage}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
+</UserControl>

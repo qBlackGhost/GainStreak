@@ -19,6 +19,9 @@ public class User
     /// <summary>Null until the user has been asked.</summary>
     public bool? ShareGymCheckIns { get; set; }
 
+    /// <summary>The user's choice in <see cref="Core.AvatarChoice"/> form; null for the plain initials.</summary>
+    public string? Avatar { get; set; }
+
     /// <summary>The preset the user trains with (the app's preset id), from the last stats upload. Null with
     /// <see cref="UsesCustomSplit"/> false: no split chosen, or never uploaded.</summary>
     public int? SplitPresetId { get; set; }
