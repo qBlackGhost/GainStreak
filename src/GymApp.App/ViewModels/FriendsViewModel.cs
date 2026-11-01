@@ -83,6 +83,17 @@ public partial class FriendRowViewModel(Friend friend, LeaderboardRow? row, Frie
     }
 
     [RelayCommand] private void CancelRemove() => IsConfirmingRemove = false;
+    [RelayCommand] private void Report() => owner.OpenReport(UserId, Username);
+}
+
+/// <summary>Someone you blocked. They only come back through Unblock: they don't show in search.</summary>
+public partial class BlockedRowViewModel(BlockedUser user, FriendsViewModel owner) : ObservableObject
+{
+    public int UserId => user.UserId;
+    public string Username => user.Username;
+    public string Initials => ViewModels.Initials.Of(user.Username);
+
+    [RelayCommand] private Task Unblock() => owner.UnblockAsync(this);
 }
 
 /// <summary>A request you sent, waiting for an answer; it can be cancelled. Requests you get are in the inbox.</summary>
@@ -114,14 +125,24 @@ public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) 
     [RelayCommand(CanExecute = nameof(CanAct))]
     private Task Act() => owner.SendRequestAsync(user.UserId);   // sending to someone who asked you accepts theirs
     private bool CanAct() => user.Relation is FriendRelation.None or FriendRelation.RequestReceived;
+
+    [RelayCommand] private void Report() => owner.OpenReport(user.UserId, user.Username);
 }
 
 /// <summary>The friends screen: the leaderboard (this week or all time), your friends, the username search and
 /// the requests you sent (the ones you get are in the inbox). Only reads results from the friend and leaderboard services (local or the server's). User ids in
 /// the rows are the service's own (server ids in remote mode): they're passed back as they came, never compared with
 /// the signed-in user's local id.</summary>
-public partial class FriendsViewModel : ViewModelBase
+public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
 {
+    /// <summary>Back closes the report popup first.</summary>
+    public bool CloseOnBack()
+    {
+        if (!Report.IsOpen) return false;
+        Report.IsOpen = false;
+        return true;
+    }
+
     private readonly IFriendService _friends;
     private readonly ILeaderboardService _board;
     private readonly SessionService _session;
@@ -129,8 +150,9 @@ public partial class FriendsViewModel : ViewModelBase
     private readonly InboxService _inbox;
 
     public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell,
-                            InboxService inbox)
+                            InboxService inbox, ReportUserDialogViewModel report)
     {
+        Report = report;
         _friends = friends;
         _inbox = inbox;
         _board = board;
@@ -139,6 +161,7 @@ public partial class FriendsViewModel : ViewModelBase
         _ = LoadAsync();
     }
 
+    public ReportUserDialogViewModel Report { get; }
     public ObservableCollection<FriendsBoardRowViewModel> Board { get; } = new();
 
     [ObservableProperty]
@@ -194,10 +217,12 @@ public partial class FriendsViewModel : ViewModelBase
     public ObservableCollection<FriendRowViewModel> Friends { get; } = new();
     public ObservableCollection<RequestRowViewModel> Outgoing { get; } = new();
     public ObservableCollection<FoundUserViewModel> Results { get; } = new();
+    public ObservableCollection<BlockedRowViewModel> Blocked { get; } = new();
 
     [ObservableProperty] public partial string FriendsTitle { get; set; } = "Friends";
     [ObservableProperty] public partial bool HasNoFriends { get; set; }
     [ObservableProperty] public partial bool HasOutgoing { get; set; }
+    [ObservableProperty] public partial bool HasBlocked { get; set; }
     [ObservableProperty] public partial string Query { get; set; } = "";
     [ObservableProperty] public partial string? SearchHint { get; set; }
     [ObservableProperty] public partial string? Notice { get; set; }
@@ -227,6 +252,12 @@ public partial class FriendsViewModel : ViewModelBase
             Outgoing.Clear();
             foreach (var r in requests.Outgoing) Outgoing.Add(new RequestRowViewModel(r, this));
             HasOutgoing = Outgoing.Count > 0;
+
+            var blocked = await _friends.GetBlockedAsync(me);
+            Blocked.Clear();
+            foreach (var b in blocked) Blocked.Add(new BlockedRowViewModel(b, this));
+            HasBlocked = Blocked.Count > 0;
+
             StaleNotice = StaleText.For(friends as ICachedResult) ?? StaleText.For(requests) ?? BoardStale;
             SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
             SentShortText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} sent";
@@ -268,6 +299,17 @@ public partial class FriendsViewModel : ViewModelBase
     internal Task RemoveAsync(FriendRowViewModel row) =>
         RunAsync(me => _friends.RemoveAsync(me, row.UserId), _ => $"{row.Username} was removed from your friends.");
 
+    internal Task UnblockAsync(BlockedRowViewModel row) =>
+        RunAsync(me => _friends.UnblockAsync(me, row.UserId), _ => $"{row.Username} was unblocked.");
+
+    internal void OpenReport(int otherId, string username) =>
+        Report.Open(otherId, username, async notice =>
+        {
+            Error = null;
+            Notice = notice;
+            if (UserId is { } me) await ReloadAsync(me);
+        });
+
     /// <summary>Runs a write, then reloads the lists and the search results so every button shows the new state.</summary>
     private async Task RunAsync(Func<int, Task<FriendResult>> write, Func<FriendResult, string?> notice)
     {
@@ -282,6 +324,11 @@ public partial class FriendsViewModel : ViewModelBase
         {
             Error = "Something went wrong. Try again.";
         }
+        await ReloadAsync(me);
+    }
+
+    private async Task ReloadAsync(int me)
+    {
         await LoadAsync();
         if (Results.Count > 0) await RefreshResultsAsync(me);
         try { await _inbox.RefreshUnreadAsync(me); }   // accepting from the search clears an inbox request

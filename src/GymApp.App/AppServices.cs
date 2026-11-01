@@ -36,6 +36,7 @@ public static class AppServices
             sc.AddTransient<IFeedbackService, LocalFeedbackService>();
             sc.AddTransient<ISplitUsageService, LocalSplitUsageService>();
             sc.AddTransient<IShareService, LocalShareService>();
+            sc.AddTransient<IUserReportService, LocalUserReportService>();
         }
         else
         {
@@ -55,6 +56,7 @@ public static class AppServices
             sc.AddTransient<IFeedbackService, RemoteFeedbackService>();
             sc.AddTransient<ISplitUsageService, RemoteSplitUsageService>();
             sc.AddTransient<IShareService, RemoteShareService>();
+            sc.AddTransient<IUserReportService, RemoteUserReportService>();
             // Uploads stats, check-ins and the sharing setting; the services mark what changed through the hooks
             sc.AddTransient(sp => new StatsProjectionService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
@@ -95,6 +97,8 @@ public static class AppServices
         sc.AddTransient<CalorieService>();
         sc.AddTransient<ProfileViewModel>();
         sc.AddTransient<ProfileSetupViewModel>();
+        sc.AddTransient<ConfirmEmailViewModel>();
+        sc.AddTransient<ForgotPasswordViewModel>();
         sc.AddTransient<CaloriesViewModel>();
         sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
         sc.AddTransient<CityService>();
@@ -112,12 +116,14 @@ public static class AppServices
         sc.AddTransient<IInboxSource, ShareInboxSource>();
         sc.AddTransient<SplitShareService>();
         sc.AddTransient<ShareDialogViewModel>();
+        sc.AddTransient<ReportUserDialogViewModel>();
         sc.AddSingleton(_ => new InboxStore(platform.DataDirectory));
         sc.AddSingleton(sp => new InboxService(sp.GetServices<IInboxSource>, sp.GetRequiredService<InboxStore>(),
             sp.GetRequiredService<SessionService>()));   // one, so every sidebar shows the same badge
         sc.AddTransient(sp => new InboxViewModel(sp.GetRequiredService<InboxService>(), sp.GetRequiredService<IFriendService>(),
             sp.GetRequiredService<SessionService>(), sp.GetRequiredService<Func<MainViewModel>>(),
-            sp.GetRequiredService<IShareService>(), sp.GetRequiredService<SplitShareService>(), sp.GetRequiredService<WorkoutMenuService>()));
+            sp.GetRequiredService<IShareService>(), sp.GetRequiredService<SplitShareService>(), sp.GetRequiredService<WorkoutMenuService>(),
+            sp.GetRequiredService<ReportUserDialogViewModel>()));
         sc.AddTransient<FriendsViewModel>();
         return sc;
     }

@@ -25,7 +25,11 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 | Gym check-ins: gym name, its OpenStreetMap id and coordinates, city, date (optional: only once the user turns on "Visible to friends") | The friends map | Friends, as gym and day only, never the time |
 | Friend requests and friendships | Friends | The two people involved |
 | Shared splits and workouts (snapshots of exercises and sets) | Sending a plan to a friend | The receiving friend; removed once used or after 30 days |
+| Users the person blocked | Keeping them apart | Nobody else |
+| Reports about another user: who, the reason, an optional note | Dealing with abuse | The developer; forwarded to a private Discord channel |
 | Feedback text and, for a problem, the error report the user chose to attach (app version, system, error log with user folder names removed) | Fixing bugs | The developer; forwarded to a private Discord channel |
+
+The email address also receives codes, for confirming it and resetting the password, sent through Google's mail servers.
 
 **Other services the phone talks to:** OpenStreetMap's map tiles, Nominatim (city search) and the Overpass API (the gyms in a city). They see the phone's IP address and the area asked for, nothing about the account.
 
@@ -33,7 +37,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 
 ## Google Play: Data safety form
 
-- **Does the app collect or share data?** Collects: yes. Shared with third parties: no. Discord forwarding of feedback is a service the developer uses, which Play counts as processing, not sharing.
+- **Does the app collect or share data?** Collects: yes. Shared with third parties: no. Discord forwarding of feedback and reports is a service the developer uses, which Play counts as processing, not sharing.
 - **Encrypted in transit:** yes (HTTPS only; release builds refuse plain HTTP).
 - **Users can request deletion:** yes (see "Deleting an account").
 - **Data types:**
@@ -46,7 +50,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
   - **App info and performance:**
     - Crash logs and diagnostics: collected only when the user attaches them to feedback; optional; used for analytics (bug fixing).
   - **Messages:**
-    - Other in-app messages (feedback text): collected; optional; used for developer communications.
+    - Other in-app messages (feedback text, notes on reports about other users): collected; optional; used for developer communications and fraud prevention, security and compliance.
 - **Not collected:** location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files, device ids.
 
 ## App Store: App Privacy ("nutrition label")
@@ -54,7 +58,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 - **Data linked to the user:**
   - Contact Info: Email Address (App Functionality).
   - Identifiers: User ID (App Functionality).
-  - User Content: Other User Content, meaning shared splits and workouts, check-ins and feedback (App Functionality).
+  - User Content: Other User Content, meaning shared splits and workouts, check-ins, feedback and reports about other users (App Functionality).
   - Usage Data: Other Usage Data, meaning points, streak and level (App Functionality).
   - Diagnostics: Crash Data and Other Diagnostic Data, only when attached to feedback (App Functionality).
 - **Data used to track you:** none.
@@ -70,16 +74,17 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 
 - [x] **Privacy policy URL** (both stores): https://qblackghost.github.io/GainStreak-releases/privacy.html, from `site/privacy.html` (see "Public pages" below).
 - [x] **Account deletion web link** for Google Play: https://qblackghost.github.io/GainStreak-releases/delete-account.html
+- [ ] **Terms of use URL:** https://qblackghost.github.io/GainStreak-releases/terms.html, from `site/terms.html`. Sign-up requires agreeing to it. Publish it before a build that links to it goes out.
 - [x] **Support URL or email** (App Store): https://qblackghost.github.io/GainStreak-releases/ (names `gainstreak.app@gmail.com`).
-- [ ] **Content rating questionnaire** (Play) and **age rating** (App Store). There's no violence, gambling or purchases. Usernames are the only text other people see, shown to friends and in username search.
+- [ ] **Content rating questionnaire** (Play) and **age rating** (App Store). There's no violence, gambling or purchases. Other people see usernames (to friends and in username search) and the names in what friends share. Users can report and block each other.
 - [ ] **Screenshots** (see below).
 - [ ] **Test account for App Review:** Apple's reviewers need to sign in. Make a review account with a few friends and some check-ins, and give its username and password in App Store Connect, not in this repo.
 
 ## Public pages (`site/`)
 
-`site/` holds the pages the stores link to: `index.html` (support), `privacy.html` and `delete-account.html`, with one `style.css`. They're plain HTML with no scripts, cookies or outside requests, in light and dark.
+`site/` holds the pages the stores link to: `index.html` (support), `privacy.html`, `terms.html` and `delete-account.html`, with one `style.css`. They're plain HTML with no scripts, cookies or outside requests, in light and dark.
 
-- **Contact:** `gainstreak.app@gmail.com` on all three pages, the address that answers account requests. Use the same one as the Play Console's developer email and the App Store's support contact.
+- **Contact:** `gainstreak.app@gmail.com` on all four pages, the address that answers account requests. Use the same one as the Play Console's developer email and the App Store's support contact.
 - **Publishing:** GitHub Pages serves the `docs/` folder on `main` of the public releases repository (qBlackGhost/GainStreak-releases) at https://qblackghost.github.io/GainStreak-releases/. After changing a page here, copy `site/` over that `docs/` folder and push; Pages rebuilds in a minute or two.
 - **Keep them in step** with "What the app stores and sends": new data sent to the server means a new row in the privacy table and a new "Last updated" date.
 

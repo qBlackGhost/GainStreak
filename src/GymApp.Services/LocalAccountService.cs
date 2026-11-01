@@ -24,6 +24,14 @@ public class LocalAccountService(
 
     public Task<bool> RestoreAsync() => Task.FromResult(remember.TryRestore());
 
+    private const string NoServerMessage = "That needs the social server.";
+
+    public bool? EmailConfirmed => null;
+    public Task<AccountResult> SendConfirmCodeAsync() => Task.FromResult(AccountResult.Fail(NoServerMessage));
+    public Task<AccountResult> ConfirmEmailAsync(string code) => Task.FromResult(AccountResult.Fail(NoServerMessage));
+    public Task<AccountResult> RequestPasswordResetAsync(string email) => Task.FromResult(AccountResult.Fail(NoServerMessage));
+    public Task<AccountResult> ResetPasswordAsync(string email, string code, string newPassword) => Task.FromResult(AccountResult.Fail(NoServerMessage));
+
     public Task LogOutAsync()
     {
         remember.Forget();

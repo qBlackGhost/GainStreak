@@ -1,0 +1,66 @@
+using System.Security.Cryptography;
+using System.Text;
+using GymApp.Contracts;
+using GymApp.Server.Auth;
+using GymApp.Server.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace GymApp.Server.Email;
+
+/// <summary>The codes that confirm an email or reset a password: six digits, good for <see cref="EmailCode.Lifetime"/>
+/// and <see cref="EmailCode.MaxAttempts"/> tries. A code proves the person reads that inbox, so the hash also covers the
+/// user: a code can't be looked up across accounts.</summary>
+public class EmailCodeService(ServerDbContext db, IEmailSender sender, TimeProvider clock)
+{
+    public enum Outcome { Sent, TooSoon, NotSent }
+
+    /// <summary>Replaces any code of that purpose and emails the new one. <paramref name="force"/> skips the wait, for a
+    /// code nobody asked for twice (a new account, a changed email).</summary>
+    public async Task<Outcome> SendAsync(User user, EmailCodePurpose purpose, bool force = false)
+    {
+        var now = clock.GetUtcNow().UtcDateTime;
+        var row = await db.EmailCodes.FirstOrDefaultAsync(c => c.UserId == user.Id && c.Purpose == purpose);
+        if (!force && row is not null && now - row.CreatedAt < EmailCode.ResendAfter) return Outcome.TooSoon;
+
+        var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D" + EmailCodeRules.Length);
+        if (row is null)
+        {
+            row = new EmailCode { UserId = user.Id, Purpose = purpose };
+            db.EmailCodes.Add(row);
+        }
+        row.CodeHash = Hash(user.Id, code);
+        row.Attempts = 0;
+        row.CreatedAt = now;
+        row.ExpiresAt = now + EmailCode.Lifetime;
+        await db.SaveChangesAsync();
+
+        var (subject, intro) = purpose == EmailCodePurpose.ConfirmEmail
+            ? ("Confirm your GainStreak email", "Use this code to confirm your email:")
+            : ("Reset your GainStreak password", "Use this code to reset your password:");
+        var minutes = (int)EmailCode.Lifetime.TotalMinutes;
+        var body = $"Hi {user.Username},\n\n{intro}\n\n{code}\n\nIt works for {minutes} minutes. " +
+                   "If this wasn't you, you can ignore this email.\n\nGainStreak";
+        return await sender.SendAsync(user.Email, subject, body) ? Outcome.Sent : Outcome.NotSent;
+    }
+
+    /// <summary>Whether the code is right. A right one is used up; a wrong one counts as a try.</summary>
+    public async Task<bool> CheckAsync(int userId, EmailCodePurpose purpose, string? code)
+    {
+        var row = await db.EmailCodes.FirstOrDefaultAsync(c => c.UserId == userId && c.Purpose == purpose);
+        if (row is null) return false;
+        if (row.Attempts >= EmailCode.MaxAttempts || row.ExpiresAt <= clock.GetUtcNow().UtcDateTime) return false;
+
+        var given = Encoding.UTF8.GetBytes(Hash(userId, (code ?? "").Trim()));
+        if (CryptographicOperations.FixedTimeEquals(given, Encoding.UTF8.GetBytes(row.CodeHash)))
+        {
+            db.EmailCodes.Remove(row);
+            await db.SaveChangesAsync();
+            return true;
+        }
+        row.Attempts++;
+        await db.SaveChangesAsync();
+        return false;
+    }
+
+    private static string Hash(int userId, string code) => SessionTokens.Hash($"{userId}:{code}");
+}

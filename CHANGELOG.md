@@ -2,6 +2,21 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.17.0
+
+- **Report or block someone:** tap the flag beside a friend or a search result, or **Report or block** on anything in your inbox. Pick what's wrong, add a note if you like, and send it. **Also block** is on by default.
+- **Blocking:** ends any friendship or request between you, and neither of you can find the other or send a request. They aren't told: to them your username just doesn't exist. Splits and workouts waiting between you are deleted.
+- **Blocked list:** the people you've blocked are in a new **Blocked** card on Friends, with **Unblock**. Unblocking doesn't bring the friendship back; either of you can send a new request.
+- **Confirm your email:** after signing up, you get a 6-digit code by email to type in. You can do it later: nothing is held back, and Profile reminds you until it's done. Changing your email means confirming the new one.
+- **Forgot password?** on Log in: enter your email, then the code and a new password. It signs out every device.
+- **Terms of use:** creating an account now means ticking a box to agree to the [terms](https://qblackghost.github.io/GainStreak-releases/terms.html), which also go on the website.
+- **Show password:** the eye inside the password boxes is gone. A small **Show password** button sits beside the Password label on Log in and Create account, where it shows both boxes at once, and they stay shown as you move between fields.
+- **Keyboard on phones:** on Log in and Create account the keyboard's key moves to the next field, and on the last Create account field it closes the keyboard. Tapping outside a field closes the keyboard on every screen.
+- **Usernames:** new accounts can't use slurs or profanity, or names that pass as staff (`admin`, `support`, `gainstreak`). Existing usernames keep working.
+- **Suspended accounts:** an account that breaks the rules can be suspended after a report. It's signed out everywhere, can't sign in, and disappears from search, leaderboards, friend lists, the map and shares. Its workouts stay on the phone, and lifting the suspension brings everything back.
+- **Leaderboard on phones:** a long username no longer runs into the **YOU** tag. The name gets the whole line, the tag sits beside your level, and a streak of 0 is hidden.
+- **Migration:** `AddUserBlocks` in the app's SQLite (a new `UserBlocks` table, used by the TestBench's local mode) and `AddUserBlocksAndReports`, `AddUserSuspension` and `AddEmailConfirmation` in the server's Postgres (new `UserBlocks`, `UserReports` and `EmailCodes` tables, two new `Users` columns). Run the server's `migrate` before deploying it.
+
 ## 0.16.1
 
 - **Splits:** the small **New split** button is gone; the dashed card under your splits does the same.

@@ -22,6 +22,8 @@ public partial class LoginViewModel : ViewModelBase
     }
 
     /// <summary>The username or the account email.</summary>
+    public PasswordVisibility PasswordView { get; } = new();
+
     [ObservableProperty] public partial string Username { get; set; } = "";
     [ObservableProperty] public partial string Password { get; set; } = "";
     [ObservableProperty] public partial string? Error { get; set; }
@@ -126,4 +128,7 @@ public partial class LoginViewModel : ViewModelBase
 
     [RelayCommand]
     private void GoToRegister() => _shell().ShowRegister();
+
+    [RelayCommand]
+    private void GoToForgotPassword() => _shell().ShowForgotPassword(Username.Contains('@') ? Username : null);
 }

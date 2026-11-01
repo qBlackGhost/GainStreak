@@ -14,6 +14,10 @@ public class User
     /// <summary>Stored normalized (<see cref="Core.Credentials.NormalizeEmail"/>); unique.</summary>
     public string Email { get; set; } = "";
 
+    /// <summary>When a code sent to <see cref="Email"/> came back; null until then, and again after the email changes.
+    /// Nothing is held back from an unconfirmed account: the app only reminds.</summary>
+    public DateTime? EmailConfirmedAt { get; set; }
+
     public string PasswordHash { get; set; } = "";
 
     /// <summary>Null until the user has been asked.</summary>
@@ -29,6 +33,10 @@ public class User
     public bool UsesCustomSplit { get; set; }
 
     public DateTime CreatedAt { get; set; }
+
+    /// <summary>Set by the <c>suspend</c> command (<see cref="AccountCommands"/>). A suspended account can't sign in and
+    /// doesn't show to anyone, but keeps its data, so <c>unsuspend</c> puts everything back.</summary>
+    public DateTime? SuspendedAt { get; set; }
 
     public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
 }

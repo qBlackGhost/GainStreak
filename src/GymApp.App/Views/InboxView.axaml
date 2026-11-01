@@ -67,6 +67,8 @@
                         Command="{Binding MarkAllReadCommand}"/>
             </Grid>
 
+            <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold"
+                       IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding StaleNotice}" Classes="muted"
@@ -102,6 +104,8 @@
                                                 <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                                 <TextBlock Text="{Binding StatusText}" FontSize="12" Classes="muted"/>
+                                                <Button Classes="link" FontSize="12" Foreground="{DynamicResource Muted}" HorizontalAlignment="Left"
+                                                        Content="Report or block" Command="{Binding ReportCommand}"/>
                                             </StackPanel>
                                             <Button Grid.Column="3" Classes="btn outline small" Content="Decline" Command="{Binding DeclineCommand}"/>
                                             <Button Grid.Column="4" Classes="btn primary small" Content="Accept" Command="{Binding AcceptCommand}"/>
@@ -181,6 +185,8 @@
                                                     <Button Classes="btn primary small" Content="Add split" Command="{Binding AddCommand}"/>
                                                     <Button Classes="btn ghost small" Content="Dismiss" Command="{Binding DismissCommand}"
                                                             Foreground="{DynamicResource Soft}"/>
+                                                    <Button Classes="btn ghost small" Content="Report or block" Command="{Binding ReportCommand}"
+                                                            Foreground="{DynamicResource Soft}"/>
                                                 </WrapPanel>
                                             </StackPanel>
                                         </Grid>
@@ -247,6 +253,8 @@
                                                     <Button Classes="btn outline small" Content="{Binding PreviewLabel}" Command="{Binding TogglePreviewCommand}"/>
                                                     <Button Classes="btn primary small" Content="Add to a day" Command="{Binding AddCommand}"/>
                                                     <Button Classes="btn ghost small" Content="Dismiss" Command="{Binding DismissCommand}"
+                                                            Foreground="{DynamicResource Soft}"/>
+                                                    <Button Classes="btn ghost small" Content="Report or block" Command="{Binding ReportCommand}"
                                                             Foreground="{DynamicResource Soft}"/>
                                                 </WrapPanel>
                                             </StackPanel>
@@ -420,5 +428,7 @@
             </StackPanel>
         </v:Sheet>
     </Border>
+
+    <v:ReportUserDialog DataContext="{Binding Report}"/>
     </Grid>
 </UserControl>

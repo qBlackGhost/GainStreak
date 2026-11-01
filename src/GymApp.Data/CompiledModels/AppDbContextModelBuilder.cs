@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("f304ae81-2c9f-4505-8fe4-9ec33bfbf3fa"), entityTypeCount: 21)
+            : base(skipDetectChanges: false, modelId: new Guid("46527d4b-eebc-40c6-8e4c-895c921ec636"), entityTypeCount: 22)
         {
         }
 
@@ -32,6 +32,7 @@ namespace GymApp.Data.CompiledModels
             var splitVariant = SplitVariantEntityType.Create(this);
             var syncState = SyncStateEntityType.Create(this);
             var user = UserEntityType.Create(this);
+            var userBlock = UserBlockEntityType.Create(this);
             var userDayExercise = UserDayExerciseEntityType.Create(this);
             var userProfile = UserProfileEntityType.Create(this);
             var userSchedule = UserScheduleEntityType.Create(this);
@@ -59,6 +60,8 @@ namespace GymApp.Data.CompiledModels
             SyncStateEntityType.CreateForeignKey1(syncState, user);
             UserEntityType.CreateForeignKey1(user, workoutSplit);
             UserEntityType.CreateForeignKey2(user, splitVariant);
+            UserBlockEntityType.CreateForeignKey1(userBlock, user);
+            UserBlockEntityType.CreateForeignKey2(userBlock, user);
             UserDayExerciseEntityType.CreateForeignKey1(userDayExercise, exercise);
             UserDayExerciseEntityType.CreateForeignKey2(userDayExercise, splitDay);
             UserDayExerciseEntityType.CreateForeignKey3(userDayExercise, user);
@@ -88,6 +91,7 @@ namespace GymApp.Data.CompiledModels
             SplitVariantEntityType.CreateAnnotations(splitVariant);
             SyncStateEntityType.CreateAnnotations(syncState);
             UserEntityType.CreateAnnotations(user);
+            UserBlockEntityType.CreateAnnotations(userBlock);
             UserDayExerciseEntityType.CreateAnnotations(userDayExercise);
             UserProfileEntityType.CreateAnnotations(userProfile);
             UserScheduleEntityType.CreateAnnotations(userSchedule);

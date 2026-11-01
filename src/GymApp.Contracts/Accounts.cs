@@ -9,7 +9,8 @@ public sealed record LoginRequest(string Login, string Password, string DeviceNa
 public sealed record AuthResponse(string Token, MeResponse User);
 
 /// <summary><see cref="ShareGymCheckIns"/> is null until the user has been asked.</summary>
-public sealed record MeResponse(int Id, string Username, string Email, bool? ShareGymCheckIns, string? Avatar = null);
+public sealed record MeResponse(int Id, string Username, string Email, bool? ShareGymCheckIns, string? Avatar = null,
+    bool EmailConfirmed = false);
 
 /// <summary>Replaces the avatar: a colour, optionally with an icon ("violet" or "violet:flame"), or null for the plain initials.</summary>
 public sealed record AvatarRequest(string? Avatar);
@@ -20,6 +21,25 @@ public sealed record ChangePasswordRequest(string CurrentPassword, string NewPas
 public sealed record ChangeEmailRequest(string CurrentPassword, string Email);
 
 public sealed record DeleteAccountRequest(string Password);
+
+/// <summary>The code from the "confirm your email" message.</summary>
+public sealed record ConfirmEmailRequest(string Code);
+
+/// <summary>Answers 204 whether or not an account has that email, so the form can't be used to find accounts.</summary>
+public sealed record PasswordResetRequest(string Email);
+
+public sealed record PasswordResetConfirmRequest(string Email, string Code, string NewPassword);
+
+/// <summary>The messages the emailed codes share between the app and the server.</summary>
+public static class EmailCodeRules
+{
+    public const int Length = 6;
+
+    public const string WrongCodeMessage = "That code isn't right, or it has expired.";
+    public const string TooSoonMessage = "We just sent a code. Wait a minute before asking for another.";
+    public const string NotSentMessage = "We couldn't send the email. Try again later.";
+    public const string AlreadyConfirmedMessage = "Your email is already confirmed.";
+}
 
 /// <summary>The form field a 400 or 409 is about, sent as the <c>field</c> extension of the ProblemDetails
 /// so the app can show the message under the right box. Absent when the error isn't about one field.</summary>

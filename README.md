@@ -308,6 +308,7 @@ Settings come from environment variables only:
 | `AllowedHosts` | The host name(s) clients use, separated by `;`. Required |
 | `MinClientVersion` | Optional. The oldest app version the API accepts, e.g. `0.15.0`. Older builds, and builds from before 0.15 (which don't send their version), get a 426 and show "please update"; workouts keep working on the device. Unset, every build is accepted |
 | `Feedback__DiscordWebhookUrl` | Optional. A Discord webhook (Channel settings → Integrations → Webhooks → New Webhook → Copy URL). Each problem report or idea from the app is posted there, the error report as an attached file. Unset, feedback is only stored in the `Feedback` table. Keep it secret: anyone with the URL can post to the channel |
+| `Email__Host`, `Email__User`, `Email__Password` | Optional. The SMTP server that sends the email-confirmation and password-reset codes. For Gmail: `smtp.gmail.com`, the address, and an app password (Google Account → Security → 2-Step Verification → App passwords). Any SMTP provider works. `Email__Port` defaults to 587 and `Email__From` to the user. Unset, nothing is sent in production, and in Development the emails go to the server's log |
 | `ForwardedHeaders__KnownNetworks__0` (`__1`, …) | The proxy's network in CIDR form, e.g. `10.0.0.0/8`, if it isn't on the same machine. Only these may set the client IP |
 
 HTTPS ends at the host's proxy; the container listens on plain HTTP on port 8080 and runs as a non-root user. Migrations never run on start: apply them first with the same image.
@@ -317,6 +318,17 @@ docker run --rm -e ConnectionStrings__Social="Host=...;Database=...;Username=...
 ```
 
 Outside Docker, the same is `dotnet GymApp.Server.dll migrate`.
+
+### Acting on reports
+
+Reports arrive in the Discord channel with the reported username. To suspend that account, or to lift the suspension, run the image the same way:
+
+```bash
+docker run --rm -e ConnectionStrings__Social="Host=...;Database=...;Username=...;Password=..." gymapp-server suspend <username>
+docker run --rm -e ConnectionStrings__Social="Host=...;Database=...;Username=...;Password=..." gymapp-server unsuspend <username>
+```
+
+Suspending ends every session and refuses sign-in, and the account disappears from search, leaderboards, friend lists, the map and shares. Nothing is deleted, so `unsuspend` puts it all back. To remove an account for good, delete its row in `Users`: everything hanging off it goes with it.
 
 ## Project layout
 

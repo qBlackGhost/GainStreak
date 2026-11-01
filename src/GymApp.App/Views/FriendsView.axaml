@@ -95,6 +95,7 @@
             <Setter Property="Padding" Value="8,4"/>
         </Style>
         <Style Selector=".phone Border.streakChip StackPanel.streak"><Setter Property="MinWidth" Value="0"/></Style>
+        <Style Selector=".phone Border.streakChip.none"><Setter Property="IsVisible" Value="False"/></Style>
         <Style Selector="Border.youTag">
             <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="CornerRadius" Value="5"/>
@@ -104,6 +105,7 @@
         <Style Selector="TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Username (at least 3 letters)"/></Style>
         <Style Selector=".phone TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Add friend by username"/></Style>
     </UserControl.Styles>
+    <Grid>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Friends"/>
         <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
@@ -159,11 +161,11 @@
                                     <DataTemplate x:DataType="vm:FriendsBoardRowViewModel">
                                         <Border Classes="boardRow" Classes.you="{Binding IsYou}">
                                             <v:PhoneGrid ColumnDefinitions="40,Auto,*,Auto,76" ColumnSpacing="14" VerticalAlignment="Center"
-                                                         PhoneColumns="34,Auto,*,Auto,Auto" PhoneColumnSpacing="10">
+                                                         PhoneColumns="24,Auto,*,Auto,Auto" PhoneColumnSpacing="10">
                                                 <Panel>
                                                     <TextBlock Text="{Binding RankText}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
                                                                Classes="rank wideOnly" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
-                                                    <TextBlock Text="{Binding RankNumber}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"
+                                                    <TextBlock Text="{Binding RankNumber}" FontSize="16" FontWeight="ExtraBold" VerticalAlignment="Center"
                                                                HorizontalAlignment="Center" Classes="rank phoneOnly" Classes.first="{Binding IsFirst}" TextWrapping="NoWrap"/>
                                                 </Panel>
                                                 <v:AvatarView Grid.Column="1" Classes="face" Classes.you="{Binding IsYou}" Choice="{Binding Avatar}"
@@ -171,16 +173,19 @@
                                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Username}" FontSize="15" FontWeight="Bold" Classes="wideOnly"
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                    <Grid Classes="phoneOnly" ColumnDefinitions="Auto,Auto" ColumnSpacing="6">
-                                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold"
-                                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                        <Border Grid.Column="1" Classes="youTag" IsVisible="{Binding IsYou}">
+                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Classes="phoneOnly"
+                                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                    <TextBlock Text="{Binding LevelText}" FontSize="12" Classes="muted wideOnly"/>
+                                                    <!-- Phones: the YOU tag on this line, so a long name can't push it into the streak -->
+                                                    <Grid Classes="phoneOnly" ColumnDefinitions="Auto,*">
+                                                        <Border Classes="youTag" Margin="0,0,6,0" IsVisible="{Binding IsYou}">
                                                             <TextBlock Text="YOU" FontSize="10" FontWeight="ExtraBold" Foreground="Black"/>
                                                         </Border>
+                                                        <TextBlock Grid.Column="1" Text="{Binding LevelText}" FontSize="12" Classes="muted"
+                                                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                                                     </Grid>
-                                                    <TextBlock Text="{Binding LevelText}" FontSize="12" Classes="muted"/>
                                                 </StackPanel>
-                                                <Border Grid.Column="3" Classes="streakChip" Classes.lit="{Binding HasStreak}" VerticalAlignment="Center">
+                                                <Border Grid.Column="3" Classes="streakChip" Classes.lit="{Binding HasStreak}" Classes.none="{Binding !HasStreak}" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center"
                                                                 ToolTip.Tip="Current streak"
                                                                 Classes="streak" Classes.lit="{Binding HasStreak}">
@@ -221,7 +226,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FriendRowViewModel">
                                         <Border Classes="listRow">
-                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                                                 <v:AvatarView Classes="face" Choice="{Binding Avatar}" Initials="{Binding Initials}"
                                                               Level="{Binding LevelNumber}"/>
                                                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
@@ -235,6 +240,10 @@
                                                 <Button Grid.Column="3" Classes="btn outline small" Foreground="{DynamicResource Soft}"
                                                         Classes.danger="{Binding IsConfirmingRemove}" Content="{Binding RemoveLabel}"
                                                         Command="{Binding RemoveCommand}" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="4" Classes="icon" Command="{Binding ReportCommand}" VerticalAlignment="Center"
+                                                        ToolTip.Tip="Report or block" AutomationProperties.Name="Report or block">
+                                                    <v:Icon Data="{StaticResource IcFlag}"/>
+                                                </Button>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -269,13 +278,17 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FoundUserViewModel">
                                         <Border Classes="listRow" MinHeight="52">
-                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                                                 <Border Classes="avatar">
                                                     <TextBlock Text="{Binding Initials}" FontSize="13" FontWeight="Bold"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="14" FontWeight="SemiBold"
                                                            VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                <Button Grid.Column="3" Classes="icon" Command="{Binding ReportCommand}" VerticalAlignment="Center"
+                                                        ToolTip.Tip="Report or block" AutomationProperties.Name="Report or block">
+                                                    <v:Icon Data="{StaticResource IcFlag}"/>
+                                                </Button>
                                                 <Button Grid.Column="2" Classes="btn light small" Classes.primary="{Binding IsAccept}"
                                                         Content="{Binding ActionLabel}" Command="{Binding ActCommand}"/>
                                             </Grid>
@@ -312,9 +325,37 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Blocked users: only here, since they don't show in search -->
+                    <Border Classes="card" IsVisible="{Binding HasBlocked}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="Blocked" Classes="h2"/>
+                            <ItemsControl ItemsSource="{Binding Blocked}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:BlockedRowViewModel">
+                                        <Border Classes="listRow">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                <Border Classes="avatar">
+                                                    <TextBlock Text="{Binding Initials}" FontSize="13" FontWeight="Bold"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="14" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                <Button Grid.Column="2" Classes="btn outline small" Foreground="{DynamicResource Soft}"
+                                                        Content="Unblock" Command="{Binding UnblockCommand}" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
                 </StackPanel>
             </Grid>
         </StackPanel>
         </ScrollViewer>
     </DockPanel>
+
+    <v:ReportUserDialog DataContext="{Binding Report}"/>
+    </Grid>
 </UserControl>

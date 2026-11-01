@@ -68,9 +68,9 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
             await db.Users.AsNoTracking().Where(u => u.Id == userId)
                 .Select(u => new SocialUser(u.Id, u.Username)).FirstOrDefaultAsync();
 
-        public async Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, int excludeUserId, int limit) =>
+        public async Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, IReadOnlyCollection<int> excludeUserIds, int limit) =>
             await db.Users.AsNoTracking()
-                .Where(u => u.Id != excludeUserId && u.Username.StartsWith(prefix))   // NOCASE column: ignores case
+                .Where(u => !excludeUserIds.Contains(u.Id) && u.Username.StartsWith(prefix))   // NOCASE column: ignores case
                 .OrderBy(u => u.Username)
                 .Take(limit)
                 .Select(u => new SocialUser(u.Id, u.Username))
@@ -118,6 +118,26 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
         public async Task DeleteFriendshipAsync(int userAId, int userBId)
         {
             if (await Row(userAId, userBId) is { } row) db.Friendships.Remove(row);
+        }
+
+        public async Task<IReadOnlyList<BlockRecord>> GetBlocksAsync(int userId) =>
+            await db.UserBlocks.AsNoTracking()
+                .Where(x => x.BlockerId == userId || x.BlockedId == userId)
+                .Select(x => new BlockRecord(x.BlockerId, x.BlockedId, x.CreatedAt, x.BlockerId == userId
+                    ? new SocialUser(x.Blocked.Id, x.Blocked.Username)
+                    : new SocialUser(x.Blocker.Id, x.Blocker.Username)))
+                .ToListAsync();
+
+        public Task AddBlockAsync(int blockerId, int blockedId, DateTime at)
+        {
+            db.UserBlocks.Add(new UserBlock { BlockerId = blockerId, BlockedId = blockedId, CreatedAt = at });
+            return Task.CompletedTask;
+        }
+
+        public async Task DeleteBlockAsync(int blockerId, int blockedId)
+        {
+            if (await db.UserBlocks.FirstOrDefaultAsync(x => x.BlockerId == blockerId && x.BlockedId == blockedId) is { } row)
+                db.UserBlocks.Remove(row);
         }
 
         public async Task<IReadOnlyList<PublicStats>> GetPublicStatsAsync(IReadOnlyCollection<int> userIds, DateOnly weekStart, DateOnly weekEnd, DateOnly today)

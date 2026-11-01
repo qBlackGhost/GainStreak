@@ -57,6 +57,100 @@ public abstract class FriendServiceTests : IAsyncLifetime
         Assert.True((await _svc.AcceptAsync(y, x)).Success);
     }
 
+    // ---- block ----
+
+    [Fact] public async Task Block_EndsTheFriendship_AndKeepsThemApart()
+    {
+        await MakeFriends(_alice, _bob);
+
+        Assert.True((await _svc.BlockAsync(_alice, _bob)).Success);
+
+        Assert.Empty(await _svc.GetFriendsAsync(_alice));
+        Assert.Empty(await _svc.GetFriendsAsync(_bob));
+        Assert.Empty(await RowsAsync());
+        Assert.Equal(["bob"], (await _svc.GetBlockedAsync(_alice)).Select(b => b.Username));
+        Assert.Empty(await _svc.GetBlockedAsync(_bob));
+    }
+
+    [Fact] public async Task Block_RemovesAPendingRequest_FromEitherSide()
+    {
+        await _svc.SendRequestAsync(_bob, _alice);
+        await _svc.BlockAsync(_alice, _bob);
+        Assert.Empty((await _svc.GetRequestsAsync(_alice)).Incoming);
+        Assert.Empty((await _svc.GetRequestsAsync(_bob)).Outgoing);
+
+        await _svc.SendRequestAsync(_carol, _bob);
+        await _svc.BlockAsync(_carol, _bob);
+        Assert.Empty((await _svc.GetRequestsAsync(_bob)).Incoming);
+    }
+
+    [Fact] public async Task Blocked_CantRequest_AndLooksLikeAnUnknownUser()
+    {
+        await _svc.BlockAsync(_alice, _bob);
+
+        var theirs = await _svc.SendRequestAsync(_bob, _alice);
+        Assert.False(theirs.Success);
+        Assert.Equal(FriendService.UnknownUserError, theirs.Error);
+
+        var mine = await _svc.SendRequestAsync(_alice, _bob);
+        Assert.False(mine.Success);
+        Assert.NotEqual(FriendService.UnknownUserError, mine.Error);
+    }
+
+    [Fact] public async Task Search_HidesBlocks_BothWays()
+    {
+        await _svc.BlockAsync(_alice, _bob);
+
+        Assert.Empty((await _svc.SearchAsync(_alice, "bob")).Users);
+        Assert.Empty((await _svc.SearchAsync(_bob, "alice")).Users);
+        Assert.Equal(["bob"], (await _svc.SearchAsync(_carol, "bob")).Users.Select(u => u.Username));
+    }
+
+    [Fact] public async Task Unblock_LetsThemMeetAgain_ButFriendshipDoesntComeBack()
+    {
+        await MakeFriends(_alice, _bob);
+        await _svc.BlockAsync(_alice, _bob);
+
+        Assert.True((await _svc.UnblockAsync(_alice, _bob)).Success);
+
+        Assert.Empty(await _svc.GetBlockedAsync(_alice));
+        Assert.Empty(await _svc.GetFriendsAsync(_alice));
+        Assert.Single((await _svc.SearchAsync(_alice, "bob")).Users);
+        Assert.True((await _svc.SendRequestAsync(_bob, _alice)).Success);
+    }
+
+    [Fact] public async Task BlockedBothWays_EachUnblockOnlyLiftsTheirOwn()
+    {
+        await _svc.BlockAsync(_alice, _bob);
+        await _svc.BlockAsync(_bob, _alice);
+
+        await _svc.UnblockAsync(_alice, _bob);
+
+        Assert.False((await _svc.SendRequestAsync(_alice, _bob)).Success);
+        Assert.Equal(["alice"], (await _svc.GetBlockedAsync(_bob)).Select(b => b.Username));
+    }
+
+    [Fact] public async Task Block_Twice_IsFine_AndUnblockingNobodyIsToo()
+    {
+        Assert.True((await _svc.BlockAsync(_alice, _bob)).Success);
+        Assert.True((await _svc.BlockAsync(_alice, _bob)).Success);
+        Assert.Single(await _svc.GetBlockedAsync(_alice));
+        Assert.True((await _svc.UnblockAsync(_alice, _carol)).Success);
+    }
+
+    [Fact] public async Task Block_RefusesYourselfAndUnknownUsers()
+    {
+        Assert.False((await _svc.BlockAsync(_alice, _alice)).Success);
+        Assert.Equal(FriendService.UnknownUserError, (await _svc.BlockAsync(_alice, 999_999)).Error);
+    }
+
+    [Fact] public async Task DeletingAUser_RemovesTheirBlocks()
+    {
+        await _svc.BlockAsync(_alice, _bob);
+        await DeleteUserAsync(_bob);
+        Assert.Empty(await _svc.GetBlockedAsync(_alice));
+    }
+
     // ---- send / accept ----
 
     [Fact] public async Task SendThenAccept_BothSeeEachOther()

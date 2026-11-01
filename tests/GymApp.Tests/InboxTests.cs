@@ -29,7 +29,38 @@ public class InboxTests : IDisposable
         if (Directory.Exists(_dir)) Directory.Delete(_dir, recursive: true);
     }
 
-    private InboxViewModel NewViewModel() => new(_inbox, _friends, _session, () => null!, new LocalShareService(), null!, null!);
+    private InboxViewModel NewViewModel() => new(_inbox, _friends, _session, () => null!, new LocalShareService(), null!, null!,
+        new ReportUserDialogViewModel(_friends, new LocalUserReportService(), _session));
+
+    [Fact] public async Task BlockingFromAnInboxRow_RemovesTheRequest_AndSaysSo()
+    {
+        await _friends.SendRequestAsync(_bob, _alice);
+        var vm = NewViewModel();
+        await vm.LoadAsync();
+
+        var row = Assert.IsType<FriendRequestRowViewModel>(Assert.Single(vm.Rows));
+        row.ReportCommand.Execute(null);
+        Assert.True(vm.Report.IsOpen);
+        Assert.Equal("Report or block bob", vm.Report.Title);
+        await vm.Report.BlockOnlyCommand.ExecuteAsync(null);   // asks first
+        Assert.True(vm.Report.IsOpen);
+        await vm.Report.BlockOnlyCommand.ExecuteAsync(null);
+
+        Assert.False(vm.Report.IsOpen);
+        Assert.Equal("bob is blocked.", vm.Notice);
+        Assert.Empty(vm.Rows);
+        Assert.Equal("bob", Assert.Single(await _friends.GetBlockedAsync(_alice)).Username);
+    }
+
+    [Fact] public void Back_ClosesTheReportPopupFirst()
+    {
+        var vm = NewViewModel();
+        vm.Report.Open(_bob, "bob", _ => Task.CompletedTask);
+
+        Assert.True(vm.CloseOnBack());
+        Assert.False(vm.Report.IsOpen);
+        Assert.False(vm.CloseOnBack());
+    }
 
     [Fact] public async Task IncomingRequests_AreNewUntilMarkedRead_AndTheBadgeFollows()
     {

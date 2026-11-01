@@ -208,7 +208,8 @@ public class InboxShareTests : IDisposable
         var inbox = new InboxService(() => [new FriendRequestInboxSource(friends), new ShareInboxSource(_shares)],
             new InboxStore(_dir), _session);
         var splitShares = new SplitShareService(_db, new SplitService(_db, new PointsService(_db)));
-        _vm = new InboxViewModel(inbox, friends, _session, () => null!, _shares, splitShares, new WorkoutMenuService(_db));
+        _vm = new InboxViewModel(inbox, friends, _session, () => null!, _shares, splitShares, new WorkoutMenuService(_db),
+            new ReportUserDialogViewModel(friends, new LocalUserReportService(), _session));
     }
 
     public void Dispose()

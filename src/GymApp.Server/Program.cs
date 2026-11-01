@@ -2,6 +2,7 @@ using GymApp.Contracts;
 using GymApp.Server;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
+using GymApp.Server.Email;
 using GymApp.Server.Endpoints;
 using GymApp.Server.Feedback;
 using GymApp.Server.Friends;
@@ -9,16 +10,18 @@ using GymApp.Social;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
-// `dotnet GymApp.Server.dll migrate` applies the migrations and exits; production never migrates at startup
+// `dotnet GymApp.Server.dll migrate` applies the migrations and exits; production never migrates at startup.
+// `suspend <username>` and `unsuspend <username>` do their one thing and exit too
 var migrateOnly = args is ["migrate"];
-var builder = WebApplication.CreateBuilder(migrateOnly ? [] : args);
+var isCommand = AccountCommands.IsCommand(args);
+var builder = WebApplication.CreateBuilder(migrateOnly || isCommand ? [] : args);
 
 // Production reads its settings from environment variables only (ConnectionStrings__Social, AllowedHosts).
 // A missing one is a message and exit code 1, not an exception: an unhandled one at startup can leave a container hanging.
 var connection = builder.Configuration.GetConnectionString("Social");
 var missing =
     string.IsNullOrWhiteSpace(connection) ? "Set ConnectionStrings:Social (ConnectionStrings__Social in production)."
-    : !migrateOnly && builder.Environment.IsProduction() && string.IsNullOrWhiteSpace(builder.Configuration["AllowedHosts"])
+    : !migrateOnly && !isCommand && builder.Environment.IsProduction() && string.IsNullOrWhiteSpace(builder.Configuration["AllowedHosts"])
         ? "Set AllowedHosts to the server's host name(s), separated by ';'."
     : null;
 // The oldest app build the API accepts (unset: any); a value that isn't a version is a startup error like the above
@@ -28,6 +31,10 @@ catch (InvalidOperationException e) { missing ??= e.Message; }
 // Where feedback is forwarded (unset: only stored); a value that isn't an https URL is a startup error too
 Uri? discordWebhook = null;
 try { discordWebhook = DiscordFeedbackForwarder.ReadWebhook(builder.Configuration); }
+catch (InvalidOperationException e) { missing ??= e.Message; }
+// How emails go out (unset: to the log in Development, nowhere in production); half-set is a startup error too
+EmailSettings? email = null;
+try { email = EmailSettings.Read(builder.Configuration); }
 catch (InvalidOperationException e) { missing ??= e.Message; }
 if (missing is not null)
 {
@@ -47,6 +54,10 @@ builder.Services.ConfigureHttpJsonOptions(o => ApiFormat.Configure(o.SerializerO
 builder.Services.AddProblemDetails();
 builder.Services.AddGymRateLimits();
 builder.Services.AddSingleton<CheckInCleanup>();
+if (email is not null) builder.Services.AddSingleton<IEmailSender>(sp => ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp, email));
+else if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
+else builder.Services.AddSingleton<IEmailSender, NoEmailSender>();
+builder.Services.AddScoped<EmailCodeService>();
 if (discordWebhook is not null)
 {
     // No request logging: it would print the webhook URL, and the URL is the secret. The forwarder logs failures itself
@@ -64,6 +75,15 @@ builder.Services.AddAuthorizationBuilder()
     .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
 
 var app = builder.Build();
+
+if (isCommand)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var (ok, message) = await AccountCommands.RunAsync(args, scope.ServiceProvider.GetRequiredService<ServerDbContext>(), TimeProvider.System);
+    (ok ? Console.Out : Console.Error).WriteLine(message);
+    Environment.ExitCode = ok ? 0 : 1;
+    return;
+}
 
 if (migrateOnly || app.Environment.IsDevelopment())
 {
@@ -106,6 +126,7 @@ app.MapFriends();
 app.MapStats();
 app.MapCheckIns();
 app.MapFeedback();
+app.MapReports();
 app.MapShares();
 
 app.Run();

@@ -1,0 +1,82 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ReportUserDialog"
+             x:DataType="vm:ReportUserDialogViewModel"
+             IsVisible="{Binding IsOpen}">
+    <!-- The report popup over Friends and the inbox: why, a note, and whether to block too. Block alone sits on the left -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="{DynamicResource RedTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ErrorText}"/>
+        </Style>
+        <!-- Reasons as chips, so the whole popup fits above the phones' tab bar -->
+        <Style Selector="Button.source.reason">
+            <Setter Property="MinHeight" Value="40"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+        </Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+        </Style>
+    </UserControl.Styles>
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="480" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="24" CornerRadius="18"
+                Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="16">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Reports go to the developer. Blocking ends any friendship or request, and neither of you can find the other. They aren't told about either."
+                                   FontSize="13" Classes="soft"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="icon" Command="{Binding CloseCommand}" VerticalAlignment="Top"
+                            ToolTip.Tip="Close" AutomationProperties.Name="Close">
+                        <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                    </Button>
+                </Grid>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="WHAT'S WRONG?" Classes="caps" FontWeight="SemiBold"/>
+                    <ItemsControl ItemsSource="{Binding Reasons}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ReportReasonViewModel">
+                                <Button Classes="source reason" Classes.on="{Binding IsSelected}" Command="{Binding ChooseCommand}">
+                                    <TextBlock Text="{Binding Label}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="NoWrap"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+
+                <TextBox Classes="field" Text="{Binding Note}" MaxLength="{Binding MaxNoteLength}" Height="64" AcceptsReturn="True"
+                         TextWrapping="Wrap" PlaceholderText="Add details (optional)" AutomationProperties.Name="Details"/>
+                <CheckBox IsChecked="{Binding AlsoBlock}" Content="{Binding AlsoBlockLabel}" MinHeight="44"/>
+
+                <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                    <Button Classes="btn outline" Classes.danger="{Binding IsConfirmingBlock}" Content="{Binding BlockLabel}"
+                            Command="{Binding BlockOnlyCommand}"/>
+                    <Button Grid.Column="2" Classes="btn outline" Content="Cancel" Command="{Binding CloseCommand}"/>
+                    <Button Grid.Column="3" Classes="btn primary" Content="Send report" Command="{Binding SendCommand}"/>
+                </Grid>
+            </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Border>
+</UserControl>

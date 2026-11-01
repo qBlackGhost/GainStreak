@@ -293,6 +293,8 @@ public sealed class NavigationTests : IAsyncLifetime
         { nameof(LoginViewModel), null },
         { nameof(RegisterViewModel), null },
         { nameof(ProfileSetupViewModel), null },
+        { nameof(ConfirmEmailViewModel), null },
+        { nameof(ForgotPasswordViewModel), null },
         { nameof(SplitsViewModel), AppTab.Splits },
         { nameof(SplitDetailViewModel), AppTab.Splits },
         { nameof(WorkoutsViewModel), AppTab.Workouts },

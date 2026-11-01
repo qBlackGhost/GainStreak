@@ -45,6 +45,55 @@ public class FriendEndpointTests(PostgresFixture postgres) : ServerTest(postgres
         Assert.Empty(await GetAsync<List<FriendResponse>>(bob, "/v1/friends"));
     }
 
+    [Fact] public async Task Block_HidesThemEverywhere_UntilUnblocked()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+        await SendAsync(alice, bob);
+        await bob.Client.PostAsync($"/v1/friends/{alice.User.Id}/accept", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.PutAsync($"/v1/blocks/{bob.User.Id}", null)).StatusCode);
+
+        Assert.Empty(await GetAsync<List<FriendResponse>>(bob, "/v1/friends"));
+        Assert.Empty(await GetAsync<List<FoundUserResponse>>(bob, "/v1/users/search?q=ali"));
+        Assert.Equal(HttpStatusCode.NotFound, (await bob.Client.PostAsync($"/v1/friends/{alice.User.Id}/request", null)).StatusCode);
+        Assert.Equal(["bobby"], (await GetAsync<List<BlockedUserResponse>>(alice, "/v1/blocks")).Select(b => b.Username));
+        Assert.Empty(await GetAsync<List<BlockedUserResponse>>(bob, "/v1/blocks"));
+
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.DeleteAsync($"/v1/blocks/{bob.User.Id}")).StatusCode);
+        Assert.Empty(await GetAsync<List<BlockedUserResponse>>(alice, "/v1/blocks"));
+        await SendAsync(bob, alice);
+    }
+
+    [Fact] public async Task Block_DeletesSharesBetweenThem_SoUnblockingDoesntBringThemBack()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+        var carol = await SignUpAsync("carol");
+        await using (var db = Db())
+        {
+            db.Shares.AddRange(
+                new GymApp.Server.Data.Share { FromUserId = bob.User.Id, ToUserId = alice.User.Id, Kind = GymApp.Server.Data.ShareKind.Split, Payload = "{}", CreatedAt = DateTime.UtcNow },
+                new GymApp.Server.Data.Share { FromUserId = alice.User.Id, ToUserId = bob.User.Id, Kind = GymApp.Server.Data.ShareKind.Split, Payload = "{}", CreatedAt = DateTime.UtcNow },
+                new GymApp.Server.Data.Share { FromUserId = carol.User.Id, ToUserId = alice.User.Id, Kind = GymApp.Server.Data.ShareKind.Split, Payload = "{}", CreatedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+        }
+
+        await alice.Client.PutAsync($"/v1/blocks/{bob.User.Id}", null);
+
+        await using var check = Db();
+        Assert.Equal(carol.User.Id, (await check.Shares.SingleAsync()).FromUserId);
+    }
+
+    [Fact] public async Task Block_NeedsASession_AndRefusesBadTargets()
+    {
+        var alice = await SignUpAsync("alice");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Client.PutAsync($"/v1/blocks/{alice.User.Id}", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await alice.Client.PutAsync($"/v1/blocks/{alice.User.Id}", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await alice.Client.PutAsync("/v1/blocks/999999", null)).StatusCode);
+    }
+
     [Fact] public async Task DeclineAndCancel_RemoveTheRequest()
     {
         var alice = await SignUpAsync("alice");

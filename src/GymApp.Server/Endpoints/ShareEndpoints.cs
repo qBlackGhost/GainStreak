@@ -66,7 +66,7 @@ public static class ShareEndpoints
         var rows = await (
             from s in db.Shares
             join u in db.Users on s.FromUserId equals u.Id
-            where s.ToUserId == userId && s.CreatedAt >= since && friendIds.Contains(s.FromUserId)
+            where s.ToUserId == userId && s.CreatedAt >= since && friendIds.Contains(s.FromUserId) && u.SuspendedAt == null
             orderby s.CreatedAt descending, s.Id descending
             select new { s.Id, s.FromUserId, u.Username, s.CreatedAt, s.Kind, s.Payload }).ToListAsync();
 

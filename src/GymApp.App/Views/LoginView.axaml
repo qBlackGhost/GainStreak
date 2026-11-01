@@ -60,27 +60,29 @@
                         <StackPanel Spacing="8">
                             <TextBlock Text="Username or email" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox TextInputOptions.ContentType="Email" TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
+                                <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Email" TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" PlaceholderText="you@example.com" Text="{Binding Username}"
                                          AutomationProperties.Name="Username or email"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                             </Panel>
                         </StackPanel>
 
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Password" Classes="fieldLabel"/>
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="Password" Classes="fieldLabel" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding PasswordView.Label}"
+                                        Command="{Binding PasswordView.ToggleCommand}"/>
+                            </Grid>
                             <Panel>
-                                <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" PasswordChar="●" PlaceholderText="Your password" Text="{Binding Password}"
+                                <TextBox TextInputOptions.ContentType="Password" Classes="field" PasswordChar="{Binding PasswordView.Mask}" PlaceholderText="Your password" Text="{Binding Password}"
                                          AutomationProperties.Name="Password"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
-                                <!-- Phones: show the password while typing it -->
-                                <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
-                                    <v:Icon Data="{StaticResource IcEye}"/>
-                                </Button>
                             </Panel>
                         </StackPanel>
 
                         <Button Classes="btn primary block" Content="Log in" Command="{Binding LoginCommand}"
                                 IsDefault="{Binding IsSigningIn}"/>
+                        <Button Classes="link" Content="Forgot password?" FontSize="14" HorizontalAlignment="Center"
+                                Command="{Binding GoToForgotPasswordCommand}"/>
                     </StackPanel>
 
                     <!-- Move this account online: an email if it has none, another username if it's taken -->
@@ -88,7 +90,7 @@
                         <StackPanel Spacing="8" IsVisible="{Binding ShowMoveEmail}">
                             <TextBlock Text="Email" Classes="fieldLabel"/>
                             <Panel>
-                                <TextBox TextInputOptions.ContentType="Email" Classes="field" PlaceholderText="you@example.com" Text="{Binding MoveEmail}"
+                                <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Email" Classes="field" PlaceholderText="you@example.com" Text="{Binding MoveEmail}"
                                          AutomationProperties.Name="Email"/>
                                 <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                             </Panel>

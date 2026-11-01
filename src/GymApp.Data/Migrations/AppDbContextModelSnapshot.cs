@@ -1244,6 +1244,24 @@ namespace GymApp.Data.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.UserBlock", b =>
+                {
+                    b.Property<int>("BlockerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BlockedId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("BlockerId", "BlockedId");
+
+                    b.HasIndex("BlockedId");
+
+                    b.ToTable("UserBlocks");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.UserDayExercise", b =>
                 {
                     b.Property<int>("Id")
@@ -1677,6 +1695,25 @@ namespace GymApp.Data.Migrations
                     b.Navigation("SelectedSplit");
 
                     b.Navigation("SelectedVariant");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.UserBlock", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "Blocked")
+                        .WithMany()
+                        .HasForeignKey("BlockedId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "Blocker")
+                        .WithMany()
+                        .HasForeignKey("BlockerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Blocked");
+
+                    b.Navigation("Blocker");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.UserDayExercise", b =>

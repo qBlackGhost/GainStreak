@@ -4,8 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Server.Data;
 
-/// <summary>The server's Postgres database: accounts, sessions, friendships, projected stats, shared check-ins, feedback
-/// and the splits and workouts friends share.
+/// <summary>The server's Postgres database: accounts, sessions, friendships, blocks, projected stats, shared check-ins,
+/// feedback, user reports and the splits and workouts friends share.
 /// Separate from the app's AppDbContext, which never leaves the phone.</summary>
 public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
 {
@@ -19,6 +19,9 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<CheckIn> CheckIns => Set<CheckIn>();
     public DbSet<FeedbackEntry> Feedback => Set<FeedbackEntry>();
     public DbSet<Share> Shares => Set<Share>();
+    public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
+    public DbSet<UserReport> UserReports => Set<UserReport>();
+    public DbSet<EmailCode> EmailCodes => Set<EmailCode>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -93,6 +96,34 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.HasIndex(x => new { x.ToUserId, x.CreatedAt });
             e.HasOne<User>().WithMany().HasForeignKey(x => x.FromUserId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.ToUserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<EmailCode>(e =>
+        {
+            e.Property(c => c.Purpose).HasConversion<string>().HasMaxLength(16);
+            e.Property(c => c.CodeHash).HasMaxLength(64);
+            e.HasIndex(c => new { c.UserId, c.Purpose }).IsUnique();
+            e.HasOne<User>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<UserBlock>(e =>
+        {
+            e.HasKey(x => new { x.BlockerId, x.BlockedId });
+            e.HasIndex(x => x.BlockedId);
+            e.ToTable(t => t.HasCheckConstraint("CK_UserBlocks_NotSelf", "\"BlockerId\" <> \"BlockedId\""));
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.BlockerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.BlockedId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<UserReport>(e =>
+        {
+            e.Property(r => r.Reason).HasConversion<string>().HasMaxLength(16);
+            e.Property(r => r.Note).HasMaxLength(UserReportRules.MaxNoteLength);
+            e.HasIndex(r => r.CreatedAt);
+            e.HasIndex(r => r.ReportedUserId);
+            // Deleting an account deletes what it sent, and a report about an account that's gone has nothing to act on
+            e.HasOne<User>().WithMany().HasForeignKey(r => r.ReporterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(r => r.ReportedUserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

@@ -11,7 +11,8 @@ namespace GymApp.Server.Friends;
 /// <summary>
 /// <see cref="ISocialStore"/> on the server's Postgres, so the shared <see cref="FriendService"/> rules run here too.
 /// Each session is a Serializable transaction: if two requests' check-then-write overlap, one of them fails at the write
-/// or the commit and <see cref="FriendService"/> reports its usual "That request just changed".
+/// or the commit and <see cref="FriendService"/> reports its usual "That request just changed". A suspended account
+/// (<see cref="User.SuspendedAt"/>) reads as gone: it isn't found or listed, though its rows stay for <c>unsuspend</c>.
 /// </summary>
 public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) : ISocialStore
 {
@@ -49,15 +50,16 @@ public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) :
     private sealed class Session(ServerDbContext db, IDbContextTransaction tx) : ISocialSession
     {
         public async Task<SocialUser?> FindUserAsync(int userId) =>
-            await db.Users.AsNoTracking().Where(u => u.Id == userId)
+            await db.Users.AsNoTracking().Where(u => u.Id == userId && u.SuspendedAt == null)
                 .Select(u => new SocialUser(u.Id, u.Username)).FirstOrDefaultAsync();
 
-        public async Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, int excludeUserId, int limit)
+        public async Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, IReadOnlyCollection<int> excludeUserIds, int limit)
         {
             // A prefix match on the lowercase name, with LIKE's wildcards taken literally
             var pattern = User.NormalizeUsername(prefix).Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_") + "%";
+            var excluded = excludeUserIds.ToList();
             return await db.Users.AsNoTracking()
-                .Where(u => u.Id != excludeUserId && EF.Functions.Like(u.UsernameNormalized, pattern, @"\"))
+                .Where(u => u.SuspendedAt == null && !excluded.Contains(u.Id) && EF.Functions.Like(u.UsernameNormalized, pattern, @"\"))
                 .OrderBy(u => u.UsernameNormalized).ThenBy(u => u.Username)
                 .Take(limit)
                 .Select(u => new SocialUser(u.Id, u.Username))
@@ -70,6 +72,7 @@ public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) :
                 from f in db.Friendships.AsNoTracking()
                 where f.UserAId == userId || f.UserBId == userId
                 join u in db.Users on (f.UserAId == userId ? f.UserBId : f.UserAId) equals u.Id
+                where u.SuspendedAt == null
                 select new { Row = f, u.Id, u.Username }).ToListAsync();
             return rows.Select(r => new FriendLink(ToRecord(r.Row), new SocialUser(r.Id, r.Username))).ToList();
         }
@@ -101,6 +104,28 @@ public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) :
         public async Task DeleteFriendshipAsync(int userAId, int userBId)
         {
             if (await Row(userAId, userBId) is { } row) db.Friendships.Remove(row);
+        }
+
+        public async Task<IReadOnlyList<BlockRecord>> GetBlocksAsync(int userId)
+        {
+            var rows = await (
+                from x in db.UserBlocks.AsNoTracking()
+                where x.BlockerId == userId || x.BlockedId == userId
+                join u in db.Users on (x.BlockerId == userId ? x.BlockedId : x.BlockerId) equals u.Id
+                select new { Row = x, u.Id, u.Username }).ToListAsync();
+            return rows.Select(r => new BlockRecord(r.Row.BlockerId, r.Row.BlockedId, r.Row.CreatedAt, new SocialUser(r.Id, r.Username))).ToList();
+        }
+
+        public Task AddBlockAsync(int blockerId, int blockedId, DateTime at)
+        {
+            db.UserBlocks.Add(new UserBlock { BlockerId = blockerId, BlockedId = blockedId, CreatedAt = at });
+            return Task.CompletedTask;
+        }
+
+        public async Task DeleteBlockAsync(int blockerId, int blockedId)
+        {
+            if (await db.UserBlocks.FirstOrDefaultAsync(x => x.BlockerId == blockerId && x.BlockedId == blockedId) is { } row)
+                db.UserBlocks.Remove(row);
         }
 
         /// <summary>

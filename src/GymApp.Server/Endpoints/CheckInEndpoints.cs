@@ -152,7 +152,7 @@ public static class CheckInEndpoints
         var rows = await (
             from c in db.CheckIns.AsNoTracking()
             join u in db.Users on c.UserId equals u.Id
-            where friendIds.Contains(c.UserId) && u.ShareGymCheckIns == true && c.Date >= start
+            where friendIds.Contains(c.UserId) && u.ShareGymCheckIns == true && u.SuspendedAt == null && c.Date >= start
             orderby c.Date descending, u.UsernameNormalized
             select new { CheckIn = c, u.Username }).ToListAsync();
 

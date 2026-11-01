@@ -3,20 +3,24 @@ namespace GymApp.Core;
 /// <summary>Rules for new accounts. Existing usernames that don't follow them keep working; only registration checks.</summary>
 public static class Credentials
 {
+    /// <summary>The terms new accounts agree to, from <c>site/terms.html</c>.</summary>
+    public const string TermsUrl = "https://qblackghost.github.io/GainStreak-releases/terms.html";
+
     public const int MinUsernameLength = 3;
     public const int MaxUsernameLength = 32;
     public const int MinPasswordLength = 8;
     public const int MaxPasswordLength = 128;
     public const int MaxEmailLength = 254;
 
-    /// <summary>Letters, digits, '_', '.' and '-' only (no spaces, emoji or control characters), 3 to 32 of them.
-    /// Expects the trimmed username.</summary>
+    /// <summary>Letters, digits, '_', '.' and '-' only (no spaces, emoji or control characters), 3 to 32 of them, and
+    /// nothing <see cref="UsernameFilter"/> refuses. Expects the trimmed username.</summary>
     public static string? CheckUsername(string username)
     {
         if (username.Length < MinUsernameLength) return $"Username must be at least {MinUsernameLength} characters.";
         if (username.Length > MaxUsernameLength) return $"Username must be at most {MaxUsernameLength} characters.";
         if (!username.All(c => char.IsLetterOrDigit(c) || c is '_' or '.' or '-'))
             return "Use only letters, digits, '_', '.' and '-' in your username.";
+        if (!UsernameFilter.IsAllowed(username)) return "That username isn't allowed. Pick another one.";
         return null;
     }
 

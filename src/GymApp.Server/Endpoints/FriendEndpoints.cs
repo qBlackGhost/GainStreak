@@ -1,12 +1,14 @@
 using System.Security.Claims;
 using GymApp.Contracts;
 using GymApp.Server.Auth;
+using GymApp.Server.Data;
 using GymApp.Social;
+using Microsoft.EntityFrameworkCore;
 using Relation = GymApp.Contracts.FriendRelation;
 
 namespace GymApp.Server.Endpoints;
 
-/// <summary><c>/v1/users/search</c> and <c>/v1/friends</c>: thin wrappers over the shared <see cref="FriendService"/>,
+/// <summary><c>/v1/users/search</c>, <c>/v1/friends</c> and <c>/v1/blocks</c>: thin wrappers over the shared <see cref="FriendService"/>,
 /// always acting as the signed-in user, so the app's rules (limits, only the receiver accepts) hold for any client.</summary>
 public static class FriendEndpoints
 {
@@ -27,6 +29,27 @@ public static class FriendEndpoints
             Run(friends.CancelAsync(me.UserId(), userId)));
         friends.MapDelete("/{userId:int}", (int userId, ClaimsPrincipal me, FriendService friends) =>
             Run(friends.RemoveAsync(me.UserId(), userId)));
+
+        var blocks = app.MapGroup("/v1/blocks");
+        blocks.MapGet("", GetBlocked);
+        blocks.MapPut("/{userId:int}", Block);
+        blocks.MapDelete("/{userId:int}", (int userId, ClaimsPrincipal me, FriendService friends) =>
+            Run(friends.UnblockAsync(me.UserId(), userId)));
+    }
+
+    private static async Task<IResult> GetBlocked(ClaimsPrincipal me, FriendService friends) =>
+        Results.Ok((await friends.GetBlockedAsync(me.UserId()))
+            .Select(b => new BlockedUserResponse(b.UserId, b.Username, b.BlockedAt)).ToList());
+
+    private static async Task<IResult> Block(int userId, ClaimsPrincipal me, FriendService friends, ServerDbContext db)
+    {
+        var id = me.UserId();
+        var result = await friends.BlockAsync(id, userId);
+        if (!result.Success) return Refused(result);
+        // Already hidden, since only friends' shares are listed; gone, so unblocking doesn't bring them back
+        await db.Shares.Where(s => (s.FromUserId == id && s.ToUserId == userId) || (s.FromUserId == userId && s.ToUserId == id))
+            .ExecuteDeleteAsync();
+        return Results.NoContent();
     }
 
     private static async Task<IResult> Search(string? q, ClaimsPrincipal me, FriendService friends)

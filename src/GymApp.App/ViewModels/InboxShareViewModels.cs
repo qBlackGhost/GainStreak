@@ -32,7 +32,7 @@ public partial class SharedSplitRowViewModel : InboxRowViewModel
 {
     private readonly InboxViewModel _owner;
 
-    public SharedSplitRowViewModel(SharedSplitItem item, DateTime nowLocal, InboxViewModel owner) : base(item, nowLocal)
+    public SharedSplitRowViewModel(SharedSplitItem item, DateTime nowLocal, InboxViewModel owner) : base(item, nowLocal, owner)
     {
         _owner = owner;
         Share = item;
@@ -66,7 +66,7 @@ public partial class SharedWorkoutRowViewModel : InboxRowViewModel
 {
     private readonly InboxViewModel _owner;
 
-    public SharedWorkoutRowViewModel(SharedWorkoutItem item, DateTime nowLocal, InboxViewModel owner) : base(item, nowLocal)
+    public SharedWorkoutRowViewModel(SharedWorkoutItem item, DateTime nowLocal, InboxViewModel owner) : base(item, nowLocal, owner)
     {
         _owner = owner;
         Share = item;

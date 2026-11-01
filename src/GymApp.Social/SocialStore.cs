@@ -19,6 +19,9 @@ public record FriendshipRecord(int UserAId, int UserBId, int RequestedById, Frie
 /// <summary>A friendship seen from one user, with the other user's public details.</summary>
 public record FriendLink(FriendshipRecord Friendship, SocialUser Other);
 
+/// <summary>One user blocking another, seen from one of the two: <see cref="Other"/> is the other one.</summary>
+public record BlockRecord(int BlockerId, int BlockedId, DateTime CreatedAt, SocialUser Other);
+
 /// <summary>The stats friends may see: username, points and current streak. Never body data, logs, PRs or gyms.</summary>
 public record PublicStats(int UserId, string Username, int TotalPoints, int WeekPoints, int CurrentStreak, string? Avatar = null);
 
@@ -47,7 +50,7 @@ public interface ISocialSession : IAsyncDisposable
     Task<SocialUser?> FindUserAsync(int userId);
 
     /// <summary>Users whose username starts with <paramref name="prefix"/> (ignoring case), by username.</summary>
-    Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, int excludeUserId, int limit);
+    Task<IReadOnlyList<SocialUser>> SearchUsersAsync(string prefix, IReadOnlyCollection<int> excludeUserIds, int limit);
 
     /// <summary>Every friendship row involving the user, pending or accepted.</summary>
     Task<IReadOnlyList<FriendLink>> GetFriendshipsAsync(int userId);
@@ -58,6 +61,12 @@ public interface ISocialSession : IAsyncDisposable
     Task AddFriendshipAsync(FriendshipRecord friendship);
     Task UpdateFriendshipAsync(FriendshipRecord friendship);
     Task DeleteFriendshipAsync(int userAId, int userBId);
+
+    /// <summary>Every block involving the user, in either direction.</summary>
+    Task<IReadOnlyList<BlockRecord>> GetBlocksAsync(int userId);
+
+    Task AddBlockAsync(int blockerId, int blockedId, DateTime at);
+    Task DeleteBlockAsync(int blockerId, int blockedId);
 
     /// <summary>Public stats for each user that exists. <see cref="PublicStats.WeekPoints"/> sums the points dated
     /// <paramref name="weekStart"/> to <paramref name="weekEnd"/>, both included. <paramref name="today"/> is the

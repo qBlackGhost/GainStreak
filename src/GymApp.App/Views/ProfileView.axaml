@@ -664,6 +664,12 @@
                                 <Button Grid.Column="2" Classes="btn outline small" MinHeight="40" Content="{Binding EditEmailLabel}"
                                         Command="{Binding EditEmailCommand}" VerticalAlignment="Center"/>
                             </Grid>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" IsVisible="{Binding EmailNeedsConfirming}">
+                                <TextBlock Text="Not confirmed yet. If this address is wrong, you can't reset your password." FontSize="12"
+                                           Classes="muted" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                <Button Grid.Column="1" Classes="btn outline small" MinHeight="40" Content="Confirm"
+                                        Command="{Binding ConfirmEmailCommand}" VerticalAlignment="Center"/>
+                            </Grid>
                             <StackPanel Spacing="10" IsVisible="{Binding IsEditingEmail}">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="New email" FontSize="12" Classes="muted"/>

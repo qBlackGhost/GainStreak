@@ -27,22 +27,26 @@ public static class InboxTime
 }
 
 /// <summary>A row under "New". Each item kind has its own row view model and data template (InboxView.axaml).</summary>
-public abstract class InboxRowViewModel(InboxItem item, DateTime nowLocal) : ObservableObject
+public abstract partial class InboxRowViewModel(InboxItem item, DateTime nowLocal, InboxViewModel owner) : ObservableObject
 {
     public InboxItem Item => item;
     public string Username => item.FromUsername;
     public string Initials => ViewModels.Initials.Of(item.FromUsername);
     public bool IsNew => item.IsNew;
     public string WhenText => InboxTime.Ago(item.At, nowLocal);
+
+    protected InboxViewModel Owner => owner;
+
+    [RelayCommand] private void Report() => owner.OpenReport(item);
 }
 
 public partial class FriendRequestRowViewModel(FriendRequestItem item, DateTime nowLocal, InboxViewModel owner)
-    : InboxRowViewModel(item, nowLocal)
+    : InboxRowViewModel(item, nowLocal, owner)
 {
     public string StatusText => $"Wants to be friends · {WhenText}";
 
-    [RelayCommand] private Task Accept() => owner.AcceptAsync(item);
-    [RelayCommand] private Task Decline() => owner.DeclineAsync(item);
+    [RelayCommand] private Task Accept() => Owner.AcceptAsync(item);
+    [RelayCommand] private Task Decline() => Owner.DeclineAsync(item);
 }
 
 /// <summary>A line under "Earlier".</summary>
@@ -62,6 +66,7 @@ public partial class InboxViewModel : ViewModelBase, IClosesOnBack
     {
         if (SplitAdd.IsOpen) { SplitAdd.IsOpen = false; return true; }
         if (WorkoutAdd.IsOpen) { WorkoutAdd.IsOpen = false; return true; }
+        if (Report.IsOpen) { Report.IsOpen = false; return true; }
         return false;
     }
 
@@ -79,8 +84,9 @@ public partial class InboxViewModel : ViewModelBase, IClosesOnBack
 
     public InboxViewModel(InboxService inbox, IFriendService friends, SessionService session, Func<MainViewModel> shell,
                           IShareService shares, SplitShareService splitShares, WorkoutMenuService menu,
-                          Func<DateTime>? now = null)
+                          ReportUserDialogViewModel report, Func<DateTime>? now = null)
     {
+        Report = report;
         _inbox = inbox;
         _friends = friends;
         _session = session;
@@ -93,6 +99,7 @@ public partial class InboxViewModel : ViewModelBase, IClosesOnBack
 
     public SplitAddViewModel SplitAdd { get; } = new();
     public WorkoutAddViewModel WorkoutAdd { get; } = new();
+    public ReportUserDialogViewModel Report { get; }
 
     /// <summary>Call right after resolving from DI.</summary>
     public Task LoadAsync() => ReloadAsync();
@@ -115,6 +122,7 @@ public partial class InboxViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial bool IsCaughtUp { get; set; }
     [ObservableProperty] public partial string EmptyText { get; set; } = "";
     [ObservableProperty] public partial bool HasHistory { get; set; }
+    [ObservableProperty] public partial string? Notice { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
     [ObservableProperty] public partial string? StaleNotice { get; set; }
 
@@ -232,6 +240,14 @@ public partial class InboxViewModel : ViewModelBase, IClosesOnBack
         }
         await ReloadAsync();
     }
+
+    internal void OpenReport(InboxItem item) =>
+        Report.Open(item.FromUserId, item.FromUsername, async notice =>
+        {
+            Error = null;
+            Notice = notice;
+            await ReloadAsync();
+        });
 
     // ===== Shares =====
 

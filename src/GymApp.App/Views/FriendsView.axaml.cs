@@ -26,14 +26,15 @@ public partial class FriendsView : UserControl
         };
     }
 
-    /// <summary>Phones (the GainStreak Mobile canvas): the leaderboard, then adding friends, then your friends. Wider:
+    /// <summary>Phones (the GainStreak Mobile canvas): the leaderboard, then adding friends, then your friends, then
+    /// anyone blocked. Wider:
     /// your friends under the leaderboard, adding friends beside them.</summary>
     private void PlaceYourFriends(bool phone)
     {
         if (phone && YourFriends.Parent == LeftColumn)
         {
             LeftColumn.Children.Remove(YourFriends);
-            RightColumn.Children.Add(YourFriends);
+            RightColumn.Children.Insert(1, YourFriends);
         }
         else if (!phone && YourFriends.Parent == RightColumn)
         {

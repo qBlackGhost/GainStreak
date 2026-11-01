@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ConfirmEmailView"
+             x:DataType="vm:ConfirmEmailViewModel">
+    <!-- Enter the emailed code: after signing up, or from the reminder on Profile. Later always leaves -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/AuthStyles.axaml"/>
+    </UserControl.Styles>
+    <Panel Background="{DynamicResource PageBg}">
+    <Ellipse Classes="authGlow phoneOnly"/>
+    <ScrollViewer TextElement.Foreground="{DynamicResource Ink}">
+        <StackPanel Classes="authColumn" Spacing="20">
+            <StackPanel Spacing="12" HorizontalAlignment="Center">
+                <Image Source="{StaticResource GainStreakLogo}" Width="56" Height="56" HorizontalAlignment="Center"/>
+                <TextBlock FontSize="22" FontWeight="ExtraBold" LetterSpacing="0.6" HorizontalAlignment="Center"><Run Text="GAIN"/><Run Text="STREAK" Foreground="{DynamicResource AccentInk}"/></TextBlock>
+            </StackPanel>
+            <Border Classes="card authCard">
+                <StackPanel Spacing="18">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Confirm your email" FontSize="30" FontWeight="ExtraBold"/>
+                        <TextBlock Text="{Binding Intro}" FontSize="14" Classes="soft" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <Border Classes="formError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <v:Icon Data="{StaticResource IcInfo}" Stroke="{DynamicResource ErrorText}" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Error}" FontSize="13" Foreground="{DynamicResource ErrorText}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
+                    <TextBlock Text="{Binding Notice}" FontSize="13" Foreground="{DynamicResource AccentInk}" TextWrapping="Wrap"
+                               IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <StackPanel Spacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Code from the email" Classes="fieldLabel"/>
+                            <Panel>
+                                <TextBox TextInputOptions.ReturnKeyType="Done" TextInputOptions.ContentType="Digits" Classes="field" MaxLength="6" PlaceholderText="6 digits" Text="{Binding Code}"
+                                         AutomationProperties.Name="Code"/>
+                                <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
+                            </Panel>
+                        </StackPanel>
+                        <Button Classes="btn primary block" Content="Confirm email" Command="{Binding ConfirmCommand}" IsDefault="True"/>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Button Classes="link" Content="Send a new code" FontSize="14" Command="{Binding ResendCommand}"/>
+                        <Button Grid.Column="2" Classes="link" Content="Later" FontSize="14" Command="{Binding LaterCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+    </Panel>
+</UserControl>

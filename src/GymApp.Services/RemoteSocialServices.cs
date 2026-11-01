@@ -93,6 +93,17 @@ public class RemoteFriendService(SocialApiClient api, SocialCacheStore cache, Se
         return (await cache.GetAsync<FriendRequestsResponse>(userId, SocialCacheKeys.Requests))?.Value.Incoming.Count ?? 0;
     }
 
+    public Task<FriendResult> BlockAsync(int userId, int otherId) => WriteAsync(userId, () => api.BlockAsync(otherId));
+    public Task<FriendResult> UnblockAsync(int userId, int otherId) => WriteAsync(userId, () => api.UnblockAsync(otherId));
+
+    /// <summary>Not cached: offline the list is empty, and unblocking needs a connection anyway.</summary>
+    public async Task<IReadOnlyList<BlockedUser>> GetBlockedAsync(int userId)
+    {
+        SignedInGuard.Check(session, userId);
+        var r = await api.GetBlockedAsync();
+        return r.IsOk ? r.Value!.Select(b => new BlockedUser(b.UserId, b.Username, b.BlockedAt)).ToList() : [];
+    }
+
     private async Task<FriendResult> WriteAsync(int userId, Func<Task<ApiResult>> call)
     {
         SignedInGuard.Check(session, userId);

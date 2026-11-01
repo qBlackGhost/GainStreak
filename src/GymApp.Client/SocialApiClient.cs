@@ -55,6 +55,19 @@ public sealed class SocialApiClient
     public Task<ApiResult> LogoutAsync(CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "v1/auth/logout", null, ct, expiresSession: false);
 
+    /// <summary>Always succeeds for a well-formed request: see <see cref="PasswordResetRequest"/>.</summary>
+    public Task<ApiResult> RequestPasswordResetAsync(PasswordResetRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "v1/auth/password-reset", request, ct, expiresSession: false);
+
+    public Task<ApiResult> ResetPasswordAsync(PasswordResetConfirmRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "v1/auth/password-reset/confirm", request, ct, expiresSession: false);
+
+    public Task<ApiResult> SendConfirmCodeAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "v1/me/email/code", null, ct);
+
+    public Task<ApiResult> ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, "v1/me/email/confirm", request, ct);
+
     public Task<ApiResult<MeResponse>> GetMeAsync(CancellationToken ct = default) =>
         SendAsync<MeResponse>(HttpMethod.Get, "v1/me", null, ct);
 
@@ -96,6 +109,20 @@ public sealed class SocialApiClient
 
     public Task<ApiResult> RemoveFriendAsync(int userId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, $"v1/friends/{userId}", null, ct);
+
+    // --- Blocks and reports ---
+
+    public Task<ApiResult<List<BlockedUserResponse>>> GetBlockedAsync(CancellationToken ct = default) =>
+        SendAsync<List<BlockedUserResponse>>(HttpMethod.Get, "v1/blocks", null, ct);
+
+    public Task<ApiResult> BlockAsync(int userId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, $"v1/blocks/{userId}", null, ct);
+
+    public Task<ApiResult> UnblockAsync(int userId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"v1/blocks/{userId}", null, ct);
+
+    public Task<ApiResult> ReportUserAsync(int userId, UserReportRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"v1/users/{userId}/report", request, ct);
 
     // --- Stats ---
 

@@ -34,6 +34,73 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         return db.Feedback.AsNoTracking().OrderBy(f => f.Id).ToList();
     }
 
+    private static Task<HttpResponseMessage> ReportAsync(SignedIn user, int otherId, UserReportRequest request) =>
+        user.Client.PostAsJsonAsync($"/v1/users/{otherId}/report", request, ApiFormat.Json);
+
+    [Fact] public async Task UserReport_IsStored_AndForwardedBeforeAnswering()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+
+        var response = await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Username, "  Look at that name  "));
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        await using var db = Db();
+        var row = await db.UserReports.AsNoTracking().SingleAsync();
+        Assert.Equal((alice.User.Id, bob.User.Id, UserReportReason.Username, "Look at that name"),
+            (row.ReporterId, row.ReportedUserId, row.Reason, row.Note));
+        Assert.NotNull(row.ForwardedAt);
+        Assert.Single(_discord.Posts);
+    }
+
+    [Fact] public async Task UserReport_MessageNamesBothUsers_AndCantPingAnyone()
+    {
+        var report = new UserReport { Id = 7, ReporterId = 1, ReportedUserId = 2, Reason = UserReportReason.Spam, Note = "@everyone" };
+
+        var text = await DiscordFeedbackForwarder.BuildReportMessage(report, "alice", "bobby").ReadAsStringAsync();
+
+        Assert.Contains("Spam or fake account", text);
+        Assert.Contains("bobby (user 2)", text);
+        Assert.Contains("alice (user 1)", text);
+        Assert.Contains("\"allowed_mentions\":{\"parse\":[]}", text);
+    }
+
+    [Fact] public async Task UserReport_RefusesYourself_UnknownUsers_AndLongNotes()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await ReportAsync(alice, alice.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await ReportAsync(alice, 999_999, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await ReportAsync(alice, bob.User.Id,
+            new UserReportRequest(UserReportReason.Other, new string('x', UserReportRules.MaxNoteLength + 1)))).StatusCode);
+        await using var db = Db();
+        Assert.Empty(await db.UserReports.ToListAsync());
+    }
+
+    [Fact] public async Task UserReports_AreLimitedPerUser()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+
+        for (var i = 0; i < 10; i++)
+            Assert.Equal(HttpStatusCode.NoContent, (await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+    }
+
+    [Fact] public async Task DeletingEitherAccount_DeletesTheReport()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+        await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Harassment));
+
+        await using var db = Db();
+        await db.Users.Where(u => u.Id == bob.User.Id).ExecuteDeleteAsync();
+
+        Assert.Empty(await db.UserReports.ToListAsync());
+    }
+
     [Fact] public async Task Problem_IsStored_Scrubbed_WithTheAppVersion_AndForwardedBeforeAnswering()
     {
         var alice = await SignUpAsync("alice");

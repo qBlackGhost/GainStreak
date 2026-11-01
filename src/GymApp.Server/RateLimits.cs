@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace GymApp.Server;
 
 /// <summary>Rate limit policies. Register, login and search are limited per IP (they're what a script would hammer),
-/// feedback and sharing per user; everything else per signed-in user, or per IP before sign-in.</summary>
+/// feedback, reports and sharing per user; everything else per signed-in user, or per IP before sign-in.</summary>
 public static class RateLimits
 {
     public const string Register = "register";
@@ -13,6 +13,9 @@ public static class RateLimits
     public const string Search = "search";
     public const string Feedback = "feedback";
     public const string Share = "share";
+    public const string Report = "report";
+    public const string EmailCode = "email-code";
+    public const string PasswordReset = "password-reset";
 
     public static IServiceCollection AddGymRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(o =>
@@ -24,6 +27,10 @@ public static class RateLimits
             // Per signed-in user: enough for a tester on a bad day, not for a script filling the Discord channel
             o.AddPolicy(Feedback, ctx => Fixed($"feedback:{UserOrIp(ctx)}", 5, TimeSpan.FromHours(1)));
             o.AddPolicy(Share, ctx => Fixed($"share:{UserOrIp(ctx)}", 30, TimeSpan.FromHours(1)));
+            // Each sends an email, and a wrong code costs a try: both are what a script would hammer
+            o.AddPolicy(EmailCode, ctx => Fixed($"email-code:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
+            o.AddPolicy(PasswordReset, ctx => PerIp(ctx, 10, TimeSpan.FromHours(1)));
+            o.AddPolicy(Report, ctx => Fixed($"report:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });

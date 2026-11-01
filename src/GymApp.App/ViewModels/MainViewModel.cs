@@ -85,7 +85,8 @@ public partial class MainViewModel : ViewModelBase
         IsFeedbackOpen = false;
         // A brand-new account gets the profile setup first; it can be skipped to Home
         if (!_session.IsLoggedIn) ShowLogin();
-        else if (_session.IsNewAccount) Open(_sp.GetRequiredService<ProfileSetupViewModel>, root: true);
+        else if (_session.IsNewAccount && _sp.GetRequiredService<IAccountService>().EmailConfirmed == false) ShowConfirmEmail(afterSignUp: true);
+        else if (_session.IsNewAccount) ShowProfileSetup();
         else ShowHome();
     }
 
@@ -146,7 +147,8 @@ public partial class MainViewModel : ViewModelBase
     };
 
     private static bool IsBeforeSignIn(Type screen) =>
-        screen == typeof(LoginViewModel) || screen == typeof(RegisterViewModel) || screen == typeof(ProfileSetupViewModel);
+        screen == typeof(LoginViewModel) || screen == typeof(RegisterViewModel) || screen == typeof(ProfileSetupViewModel)
+        || screen == typeof(ConfirmEmailViewModel) || screen == typeof(ForgotPasswordViewModel);
 
     /// <summary>Shows a screen. <paramref name="open"/> creates and loads it; it runs again when going back to it.</summary>
     private void Open(Func<ViewModelBase> open, bool root)
@@ -215,7 +217,31 @@ public partial class MainViewModel : ViewModelBase
 
 
     public void ShowRegister() => Open(_sp.GetRequiredService<RegisterViewModel>, root: true);
-    public void ShowLogin() => Open(_sp.GetRequiredService<LoginViewModel>, root: true);
+    public void ShowLogin() => ShowLogin(notice: null);
+
+    public void ShowLogin(string? notice) => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<LoginViewModel>();
+        if (notice is not null) vm.Notice = notice;
+        return vm;
+    }, root: true);
+
+    public void ShowProfileSetup() => Open(_sp.GetRequiredService<ProfileSetupViewModel>, root: true);
+
+    /// <summary><paramref name="afterSignUp"/>: the step before the profile setup; otherwise opened from Profile.</summary>
+    public void ShowConfirmEmail(bool afterSignUp = false) => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<ConfirmEmailViewModel>();
+        vm.AfterSignUp = afterSignUp;
+        return vm;
+    }, root: afterSignUp);
+
+    public void ShowForgotPassword(string? email = null) => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<ForgotPasswordViewModel>();
+        vm.Email = email ?? "";
+        return vm;
+    }, root: false);
     public void ShowHome() => Open(_sp.GetRequiredService<HomeViewModel>, root: true);
     public void ShowWorkouts() => Open(_sp.GetRequiredService<WorkoutsViewModel>, root: true);
     public void ShowCalories() => Open(_sp.GetRequiredService<CaloriesViewModel>, root: true);

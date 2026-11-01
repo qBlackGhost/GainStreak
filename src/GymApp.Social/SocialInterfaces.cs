@@ -22,6 +22,10 @@ public interface IFriendService
     Task<IReadOnlyList<Friend>> GetFriendsAsync(int userId);
     Task<FriendRequests> GetRequestsAsync(int userId);
     Task<int> IncomingCountAsync(int userId);
+    Task<FriendResult> BlockAsync(int userId, int otherId);
+    Task<FriendResult> UnblockAsync(int userId, int otherId);
+    /// <summary>The users you blocked, by username.</summary>
+    Task<IReadOnlyList<BlockedUser>> GetBlockedAsync(int userId);
 }
 
 public interface ILeaderboardService

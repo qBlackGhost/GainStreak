@@ -44,6 +44,22 @@ public sealed class RemoteSocialServicesTests : IDisposable
 
     // --- Reads and the cache ---
 
+    [Fact]
+    public async Task Blocks_GoThroughTheServer_AndOfflineListsNobody()
+    {
+        _server.On("GET v1/blocks", HttpStatusCode.OK, new List<BlockedUserResponse> { new(901, "bob", DateTime.UtcNow) });
+        _server.On("PUT v1/blocks/902", HttpStatusCode.NoContent);
+        _server.On("DELETE v1/blocks/901", HttpStatusCode.NoContent);
+
+        Assert.Equal(["bob"], (await _friends.GetBlockedAsync(_me)).Select(b => b.Username));
+        Assert.True((await _friends.BlockAsync(_me, 902)).Success);
+        Assert.True((await _friends.UnblockAsync(_me, 901)).Success);
+
+        _server.Offline = true;
+        Assert.Empty(await _friends.GetBlockedAsync(_me));
+        Assert.False((await _friends.BlockAsync(_me, 902)).Success);
+    }
+
     [Fact] public async Task OnlineRead_IsFresh_AndSavedToTheCache()
     {
         ServeFriends();

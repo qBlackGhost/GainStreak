@@ -29,6 +29,9 @@ public class AccountService(
 
     private readonly string _device = deviceName ?? Environment.MachineName;
 
+    /// <summary>Only ever from the server this session, so it isn't kept on the phone.</summary>
+    public bool? EmailConfirmed { get; private set; }
+
     public async Task<AccountResult> RegisterAsync(string username, string email, string password)
     {
         username = username.Trim();
@@ -125,6 +128,7 @@ public class AccountService(
                 return false;
             }
             await RefreshAsync(db, user, r.Value!, password: null);
+            EmailConfirmed = r.Value!.EmailConfirmed;
             user.RememberTokenHash = TokenHash(token);
             await db.SaveChangesAsync();
             session.SignIn(user);
@@ -161,6 +165,44 @@ public class AccountService(
         session.SignOut(SessionEndedNotice);
     }
 
+    public async Task<AccountResult> SendConfirmCodeAsync()
+    {
+        var r = await api.SendConfirmCodeAsync();
+        return r.IsOk ? new AccountResult(true) : Failed(r);
+    }
+
+    public async Task<AccountResult> ConfirmEmailAsync(string code)
+    {
+        var r = await api.ConfirmEmailAsync(new ConfirmEmailRequest(code.Trim()));
+        if (!r.IsOk) return Failed(r);
+        EmailConfirmed = true;
+        return new AccountResult(true);
+    }
+
+    public async Task<AccountResult> RequestPasswordResetAsync(string email)
+    {
+        email = Credentials.NormalizeEmail(email);
+        if (Credentials.CheckEmail(email) is { } emailError) return AccountResult.Fail(emailError, FormField.Email);
+        var r = await api.RequestPasswordResetAsync(new PasswordResetRequest(email));
+        return r.IsOk ? new AccountResult(true) : Failed(r);
+    }
+
+    public async Task<AccountResult> ResetPasswordAsync(string email, string code, string newPassword)
+    {
+        email = Credentials.NormalizeEmail(email);
+        if (Credentials.CheckPassword(newPassword) is { } passwordError) return AccountResult.Fail(passwordError, FormField.NewPassword);
+        var r = await api.ResetPasswordAsync(new PasswordResetConfirmRequest(email, code.Trim(), newPassword));
+        if (!r.IsOk) return Failed(r);
+
+        // The cached copy too, or the old password would still sign in on this phone while offline
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var hash = PasswordHasher.Hash(newPassword);
+        await db.Users.Where(u => u.ServerUserId != null && u.Email == email).ExecuteUpdateAsync(u => u
+            .SetProperty(x => x.PasswordHash, hash)
+            .SetProperty(x => x.RememberTokenHash, (string?)null));
+        return new AccountResult(true);
+    }
+
     public async Task<AccountResult> ChangeEmailAsync(string newEmail, string currentPassword)
     {
         if (session.CurrentUser is not { } current) return AccountResult.Fail("Sign in first.");
@@ -176,6 +218,7 @@ public class AccountService(
         user.Email = email;
         await db.SaveChangesAsync();
         current.Email = email;
+        EmailConfirmed = false;
         return AccountResult.Ok(user);
     }
 
@@ -223,6 +266,7 @@ public class AccountService(
     /// Workouts stay.</summary>
     private async Task ForgetAsync(bool clearCache)
     {
+        EmailConfirmed = null;
         tokens.Clear();
         if (session.CurrentUser is not { } user) return;
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -243,6 +287,7 @@ public class AccountService(
         }
         user.ServerUserId = me.Id;
         user.RememberTokenHash = TokenHash(token);
+        EmailConfirmed = me.EmailConfirmed;
         await RefreshAsync(db, user, me, password);
         await db.SaveChangesAsync();
         return user;

@@ -26,6 +26,9 @@ public partial class MainView : UserControl
     private TopLevel? _top;
     private IInsetsManager? _insets;
     private IInputPane? _keyboard;
+    /// <summary>When a field was last tapped or the keyboard last changed. Elapsed time on screen, so not AppClock.</summary>
+    private long _keyboardMovedAt;
+    private const int KeyboardSettleMs = 800;
     private MainViewModel? _vm;
 
     public MainView()
@@ -59,6 +62,12 @@ public partial class MainView : UserControl
     /// the few screens that move a part around in code rather than with styles.</summary>
     public static bool IsPhoneLayout(Visual view) => view.FindAncestorOfType<MainView>()?.Classes.Contains("phone") == true;
 
+    public static void HideKeyboard(Visual view)
+    {
+        // With no text field focused, the system closes the keyboard
+        TopLevel.GetTopLevel(view)?.FocusManager?.Focus(null);
+    }
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -73,6 +82,7 @@ public partial class MainView : UserControl
         }
         _keyboard = top.InputPane;
         if (_keyboard is not null) _keyboard.StateChanged += OnKeyboardChanged;
+        AddHandler(TappedEvent, OnTapped, handledEventsToo: true);
         ActualThemeVariantChanged += OnThemeChanged;
         OnThemeChanged(this, EventArgs.Empty);
         ApplyInsets();
@@ -83,6 +93,7 @@ public partial class MainView : UserControl
         if (_top is not null) _top.BackRequested -= OnBackRequested;
         if (_insets is not null) _insets.SafeAreaChanged -= OnSafeAreaChanged;
         if (_keyboard is not null) _keyboard.StateChanged -= OnKeyboardChanged;
+        RemoveHandler(TappedEvent, OnTapped);
         ActualThemeVariantChanged -= OnThemeChanged;
         _top = null;
         _insets = null;
@@ -135,9 +146,26 @@ public partial class MainView : UserControl
         if (_insets is not null && Background is ISolidColorBrush page) _insets.SystemBarColor = page.Color;
     }
 
+    /// <summary>A tap outside a field closes the keyboard. Not one on a button: the show-password eye keeps it open, and
+    /// any other button does its own thing. Nor one just after a field was tapped or the keyboard opened: the page is
+    /// still moving, so a tap aimed at the eye can land beside it, and closing would throw the page back.</summary>
+    private void OnTapped(object? sender, TappedEventArgs e)
+    {
+        var tapped = e.Source as Visual;
+        if (tapped?.FindAncestorOfType<TextBox>(includeSelf: true) is not null)
+        {
+            _keyboardMovedAt = Environment.TickCount64;
+            return;
+        }
+        if (_top?.FocusManager?.GetFocusedElement() is not TextBox) return;
+        if (Environment.TickCount64 - _keyboardMovedAt < KeyboardSettleMs) return;
+        if (tapped?.FindAncestorOfType<Button>(includeSelf: true) is null) HideKeyboard(this);
+    }
+
     private void OnKeyboardChanged(object? sender, InputPaneStateEventArgs e)
     {
         ApplyInsets();
+        _keyboardMovedAt = Environment.TickCount64;
         // Once the content has moved up, scroll the field being typed into back into view
         if (e.NewState == InputPaneState.Open)
             Dispatcher.UIThread.Post(() => (_top?.FocusManager?.GetFocusedElement() as Control)?.BringIntoView(),

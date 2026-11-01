@@ -101,23 +101,17 @@
             </RadialGradientBrush>
         </Setter>
     </Style>
-    <!-- Show the password: inside the right of the field -->
-    <Style Selector="Button.reveal">
-        <Setter Property="HorizontalAlignment" Value="Right"/>
+    <!-- Show password, beside the Password label -->
+    <Style Selector="Button.showPassword">
+        <!-- Never takes focus: the field keeps it, so a tap doesn't close the keyboard -->
+        <Setter Property="Focusable" Value="False"/>
+        <!-- On press, not release: the keyboard's bar can change during the tap and move the page, which cancels a click
+             that waits for the release -->
+        <Setter Property="ClickMode" Value="Press"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="Width" Value="44"/>
-        <Setter Property="Height" Value="44"/>
-        <Setter Property="Margin" Value="0,0,3,0"/>
-        <Setter Property="Padding" Value="0"/>
-        <Setter Property="CornerRadius" Value="10"/>
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
-    </Style>
-    <Style Selector=".phone TextBox.revealable">
-        <Setter Property="Padding" Value="44,0,52,0"/>
+        <Setter Property="FontSize" Value="13"/>
+        <!-- Keeps the 44 pt touch area without making the label's row taller than the others -->
+        <Setter Property="Margin" Value="0,-14"/>
     </Style>
 
     <!-- A whole-form message (wrong password, could not connect) -->

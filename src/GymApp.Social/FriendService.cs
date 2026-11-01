@@ -19,6 +19,8 @@ public record Friend(int UserId, string Username, DateTime Since);
 
 public record FriendRequest(int UserId, string Username, DateTime SentAt);
 
+public record BlockedUser(int UserId, string Username, DateTime BlockedAt);
+
 /// <summary>Pending requests, newest first.</summary>
 public record FriendRequests(IReadOnlyList<FriendRequest> Incoming, IReadOnlyList<FriendRequest> Outgoing) : ICachedResult
 {
@@ -29,6 +31,9 @@ public record FriendRequests(IReadOnlyList<FriendRequest> Incoming, IReadOnlyLis
 /// <summary>
 /// Friend requests and friendships. Friendship is mutual: a request has to be accepted before either user sees the
 /// other on the leaderboard. Declining, cancelling and removing delete the row, so a new request can follow.
+/// Blocking ends any friendship or request and keeps the two apart until it's undone: neither finds the other in search
+/// or can send a request. Leaderboards, the map and shares all go through friendship, so they need nothing more. The
+/// blocked user isn't told: to them, the blocker looks like a username that doesn't exist.
 /// Social actions never earn points.
 /// </summary>
 public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFriendService
@@ -56,7 +61,8 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
             return new(false, [], $"Type at least {MinSearchLength} characters.");
 
         await using var s = await store.OpenAsync();
-        var users = await s.SearchUsersAsync(query, userId, MaxSearchResults);
+        var hidden = (await s.GetBlocksAsync(userId)).Select(b => b.Other.Id).Append(userId).ToList();
+        var users = await s.SearchUsersAsync(query, hidden, MaxSearchResults);
         var links = (await s.GetFriendshipsAsync(userId)).ToDictionary(l => l.Other.Id, l => l.Friendship);
 
         var found = users.Select(u => new FoundUser(u.Id, u.Username,
@@ -74,6 +80,10 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
 
         await using var s = await store.OpenAsync();
         if (await s.FindUserAsync(otherId) is null) return new(false, UnknownUserError);
+
+        var blocks = (await s.GetBlocksAsync(userId)).Where(x => x.Other.Id == otherId).ToList();
+        if (blocks.Any(x => x.BlockerId == userId)) return new(false, "You blocked them. Unblock them first.");
+        if (blocks.Count > 0) return new(false, UnknownUserError);
 
         var (a, b) = Pair(userId, otherId);
         if (await s.GetFriendshipAsync(a, b) is { } existing)
@@ -136,6 +146,40 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
 
         await s.DeleteFriendshipAsync(a, b);
         return await CommitAsync(s, new FriendResult(true));
+    }
+
+    /// <summary>Ends any friendship or request between the two and keeps them apart. Blocking twice changes nothing.</summary>
+    public async Task<FriendResult> BlockAsync(int userId, int otherId)
+    {
+        if (userId == otherId) return new(false, "You can't block yourself.");
+
+        await using var s = await store.OpenAsync();
+        if (await s.FindUserAsync(otherId) is null) return new(false, UnknownUserError);
+        if ((await s.GetBlocksAsync(userId)).Any(x => x.BlockerId == userId && x.BlockedId == otherId))
+            return new(true);
+
+        var (a, b) = Pair(userId, otherId);
+        await s.DeleteFriendshipAsync(a, b);
+        await s.AddBlockAsync(userId, otherId, Now);
+        return await CommitAsync(s, new FriendResult(true));
+    }
+
+    /// <summary>Lifts your block. Friendship doesn't come back: either of you can send a new request. Not blocked is fine too.</summary>
+    public async Task<FriendResult> UnblockAsync(int userId, int otherId)
+    {
+        await using var s = await store.OpenAsync();
+        await s.DeleteBlockAsync(userId, otherId);
+        return await CommitAsync(s, new FriendResult(true));
+    }
+
+    public async Task<IReadOnlyList<BlockedUser>> GetBlockedAsync(int userId)
+    {
+        await using var s = await store.OpenAsync();
+        return (await s.GetBlocksAsync(userId))
+            .Where(x => x.BlockerId == userId)
+            .Select(x => new BlockedUser(x.Other.Id, x.Other.Username, x.CreatedAt))
+            .OrderBy(x => x.Username, StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     /// <summary>Accepted friends, by username.</summary>

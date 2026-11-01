@@ -47,7 +47,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Username" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" MaxLength="32" PlaceholderText="Letters, digits, _ . -" Text="{Binding Username}"
+                            <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.AutoCapitalization="False" TextInputOptions.ShowSuggestions="False" Classes="field" MaxLength="32" PlaceholderText="Letters, digits, _ . -" Text="{Binding Username}"
                                      AutomationProperties.Name="Username"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcUser}"/>
                         </Panel>
@@ -58,7 +58,7 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Email" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox TextInputOptions.ContentType="Email" Classes="field" MaxLength="254" PlaceholderText="you@example.com" Text="{Binding Email}"
+                            <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Email" Classes="field" MaxLength="254" PlaceholderText="you@example.com" Text="{Binding Email}"
                                      AutomationProperties.Name="Email"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcMail}"/>
                         </Panel>
@@ -67,15 +67,16 @@
                     </StackPanel>
 
                     <StackPanel Spacing="8">
-                        <TextBlock Text="Password" Classes="fieldLabel"/>
+                        <!-- Phones: Show password beside the label, above the keyboard from both boxes -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Password" Classes="fieldLabel" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding PasswordView.Label}"
+                                    Command="{Binding PasswordView.ToggleCommand}"/>
+                        </Grid>
                         <Panel>
-                            <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" MaxLength="128" PasswordChar="●" PlaceholderText="8 to 128 characters"
+                            <TextBox TextInputOptions.ReturnKeyType="Next" TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}" PlaceholderText="8 to 128 characters"
                                      Text="{Binding Password}" AutomationProperties.Name="Password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
-                            <!-- Phones: show the password while typing it -->
-                            <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
-                                <v:Icon Data="{StaticResource IcEye}"/>
-                            </Button>
                         </Panel>
                         <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
                                    IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -84,16 +85,27 @@
                     <StackPanel Spacing="8">
                         <TextBlock Text="Confirm password" Classes="fieldLabel"/>
                         <Panel>
-                            <TextBox TextInputOptions.ContentType="Password" Classes="field revealable" MaxLength="128" PasswordChar="●" PlaceholderText="Type it again"
+                            <TextBox TextInputOptions.ReturnKeyType="Done" TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}" PlaceholderText="Type it again"
                                      Text="{Binding ConfirmPassword}" AutomationProperties.Name="Confirm password"/>
                             <v:Icon Classes="fieldIcon" Data="{StaticResource IcLock}"/>
-                            <!-- Phones: show the password while typing it -->
-                            <Button Classes="reveal phoneOnly" Click="OnReveal" AutomationProperties.Name="Show password">
-                                <v:Icon Data="{StaticResource IcEye}"/>
-                            </Button>
                         </Panel>
                         <TextBlock Classes="fieldError" Text="{Binding ConfirmPasswordError}"
                                    IsVisible="{Binding ConfirmPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <CheckBox VerticalAlignment="Top" Margin="0,5,-16,0" MinWidth="0" IsChecked="{Binding AgreedToTerms}" AutomationProperties.Name="I agree to the Terms of Use"/>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="I agree to the" FontSize="14" VerticalAlignment="Center"/>
+                                    <Button Classes="link" Content="Terms of Use" FontSize="14" Click="OnOpenTerms" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock Text="No abusive content or behaviour. Accounts that break the rules are suspended." FontSize="12" Classes="muted" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Classes="fieldError" Text="{Binding TermsError}"
+                                   IsVisible="{Binding TermsError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     </StackPanel>
 
                     <Button Classes="btn primary block" Content="Create account" Command="{Binding RegisterCommand}" IsDefault="True"

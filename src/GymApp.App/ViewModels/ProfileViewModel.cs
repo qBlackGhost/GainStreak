@@ -115,6 +115,8 @@ public partial class ProfileViewModel : ViewModelBase
     // ===== Account =====
     [ObservableProperty] public partial string EmailText { get; set; } = "";
     [ObservableProperty] public partial bool HasEmail { get; set; }
+    /// <summary>The reminder under the email. Not when offline, when the app doesn't know.</summary>
+    [ObservableProperty] public partial bool EmailNeedsConfirming { get; set; }
     [ObservableProperty] public partial bool IsEditingEmail { get; set; }
     [ObservableProperty] public partial string NewEmail { get; set; } = "";
     [ObservableProperty] public partial string EmailPassword { get; set; } = "";
@@ -540,8 +542,12 @@ public partial class ProfileViewModel : ViewModelBase
     private void ApplyEmail(string? email)
     {
         HasEmail = email is not null;
+        EmailNeedsConfirming = HasEmail && _accounts.EmailConfirmed == false;
         EmailText = email ?? "No email yet. Add one so you can sign in with it.";
     }
+
+    [RelayCommand]
+    private void ConfirmEmail() => _shell().ShowConfirmEmail();
 
     [RelayCommand]
     private void EditEmail()

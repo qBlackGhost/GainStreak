@@ -26,6 +26,21 @@ public interface IAccountService
 
     Task LogOutAsync();
 
+    /// <summary>Whether the signed-in account's email is confirmed; null when unknown (offline, signed out, or local
+    /// accounts, which have no email to confirm).</summary>
+    bool? EmailConfirmed { get; }
+
+    /// <summary>Emails another code to the signed-in account.</summary>
+    Task<AccountResult> SendConfirmCodeAsync();
+
+    Task<AccountResult> ConfirmEmailAsync(string code);
+
+    /// <summary>Emails a code if an account has that address. Succeeds either way, so it can't be used to find accounts.</summary>
+    Task<AccountResult> RequestPasswordResetAsync(string email);
+
+    /// <summary>Sets a new password with the emailed code. Every device has to sign in again.</summary>
+    Task<AccountResult> ResetPasswordAsync(string email, string code, string newPassword);
+
     Task<AccountResult> ChangeEmailAsync(string newEmail, string currentPassword);
     Task<AccountResult> ChangePasswordAsync(string currentPassword, string newPassword);
 

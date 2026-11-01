@@ -189,6 +189,7 @@
         <StreamGeometry x:Key="IcLock">M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM8 10V7a4 4 0 0 1 8 0v3</StreamGeometry>
         <StreamGeometry x:Key="IcMail">M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 7l9 6 9-6</StreamGeometry>
         <StreamGeometry x:Key="IcUser">M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21c0-4 3.6-7 8-7s8 3 8 7</StreamGeometry>
+        <StreamGeometry x:Key="IcFlag">M5 21V4h13l-3 4.5 3 4.5H5</StreamGeometry>
         <StreamGeometry x:Key="IcShield">M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z</StreamGeometry>
         <StreamGeometry x:Key="IcCopy">M10 8h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zM16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2</StreamGeometry>
         <StreamGeometry x:Key="IcSearch">M4 11a7 7 0 1 0 14 0a7 7 0 1 0-14 0M20 20l-3.5-3.5</StreamGeometry>
@@ -207,8 +208,6 @@
         <StreamGeometry x:Key="IcShare">M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 3v13M7 8l5-5 5 5</StreamGeometry>
         <StreamGeometry x:Key="IcInbox">M3 13l2.5-7.5A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.9 1.5L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 13h5l1.5 3h5l1.5-3h5</StreamGeometry>
         <StreamGeometry x:Key="IcBell">M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3c0 0 3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0</StreamGeometry>
-        <StreamGeometry x:Key="IcEye">M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z</StreamGeometry>
-        <StreamGeometry x:Key="IcEyeOff">M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.1A9.8 9.8 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7a9.6 9.6 0 0 0 5.4-1.6</StreamGeometry>
         <StreamGeometry x:Key="IcSliders">M4 6h9M17 6h3M15 4v4M4 12h3M11 12h9M9 10v4M4 18h11M19 18h1M17 16v4</StreamGeometry>
         <StreamGeometry x:Key="IcHome">M3 11l9-8 9 8M5 9.5V20h5v-6h4v6h5V9.5</StreamGeometry>
         <StreamGeometry x:Key="IcChevronLeft">M15 6l-6 6 6 6</StreamGeometry>

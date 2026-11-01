@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<SocialCache> SocialCache => Set<SocialCache>();
     public DbSet<SyncState> SyncStates => Set<SyncState>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
@@ -210,6 +211,14 @@ public class AppDbContext : DbContext
             .HasForeignKey(f => f.UserAId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<Friendship>().HasOne(f => f.UserB).WithMany()
             .HasForeignKey(f => f.UserBId).OnDelete(DeleteBehavior.Cascade);
+
+        // Blocks: one row per direction; deleting either user removes it
+        b.Entity<UserBlock>().HasKey(x => new { x.BlockerId, x.BlockedId });
+        b.Entity<UserBlock>().HasIndex(x => x.BlockedId);
+        b.Entity<UserBlock>().HasOne(x => x.Blocker).WithMany()
+            .HasForeignKey(x => x.BlockerId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserBlock>().HasOne(x => x.Blocked).WithMany()
+            .HasForeignKey(x => x.BlockedId).OnDelete(DeleteBehavior.Cascade);
 
         // Missed-day choices: one per missed day, keyed by the missed date. Choice is stored as an int
         b.Entity<MissedDayChoice>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();

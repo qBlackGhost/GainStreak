@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GymApp.Server.Feedback;
 
 /// <summary>
-/// Posts each new feedback to a Discord channel through its webhook (<c>Feedback:DiscordWebhookUrl</c>, env
+/// Posts each new feedback and user report to a Discord channel through its webhook (<c>Feedback:DiscordWebhookUrl</c>, env
 /// <c>Feedback__DiscordWebhookUrl</c>). Unset, nothing is forwarded and feedback is only stored. The note goes in an
 /// embed; the error report (and a note too long for the embed) as an attached text file. Mentions are switched off, so
 /// "@everyone" in a note is just text. A failed post is logged and the row keeps a null <see cref="FeedbackEntry.ForwardedAt"/>.
@@ -47,22 +47,29 @@ public sealed class DiscordFeedbackForwarder(
     /// <summary>Posts the unforwarded feedback from the last <see cref="RetryWindow"/>, oldest first, at most
     /// <see cref="MaxPerPass"/>. Stops at the first failure, since Discord is likely down for the rest too. Never
     /// throws; returns how many went through.</summary>
-    public async Task<int> ForwardPendingAsync(CancellationToken ct = default)
+    public Task<int> ForwardPendingAsync(CancellationToken ct = default) =>
+        ForwardPendingAsync((db, since) => db.Feedback
+            .Where(f => f.ForwardedAt == null && f.CreatedAt >= since)
+            .OrderBy(f => f.Id).Select(f => f.Id).Take(MaxPerPass).ToListAsync(ct), ForwardAsync, ct);
+
+    /// <summary>The same for user reports.</summary>
+    public Task<int> ForwardPendingReportsAsync(CancellationToken ct = default) =>
+        ForwardPendingAsync((db, since) => db.UserReports
+            .Where(r => r.ForwardedAt == null && r.CreatedAt >= since)
+            .OrderBy(r => r.Id).Select(r => r.Id).Take(MaxPerPass).ToListAsync(ct), ForwardReportAsync, ct);
+
+    private async Task<int> ForwardPendingAsync(Func<ServerDbContext, DateTime, Task<List<int>>> pending,
+        Func<int, CancellationToken, Task<bool>> forward, CancellationToken ct)
     {
         var forwarded = 0;
         try
         {
             List<int> ids;
             await using (var scope = scopes.CreateAsyncScope())
-            {
-                var since = clock.GetUtcNow().UtcDateTime - RetryWindow;
-                ids = await scope.ServiceProvider.GetRequiredService<ServerDbContext>().Feedback
-                    .Where(f => f.ForwardedAt == null && f.CreatedAt >= since)
-                    .OrderBy(f => f.Id).Select(f => f.Id).Take(MaxPerPass).ToListAsync(ct);
-            }
+                ids = await pending(scope.ServiceProvider.GetRequiredService<ServerDbContext>(), clock.GetUtcNow().UtcDateTime - RetryWindow);
             foreach (var id in ids)
             {
-                if (!await ForwardAsync(id, ct)) break;
+                if (!await forward(id, ct)) break;
                 forwarded++;
             }
         }
@@ -94,6 +101,61 @@ public sealed class DiscordFeedbackForwarder(
         var now = clock.GetUtcNow().UtcDateTime;
         await db.Feedback.Where(f => f.Id == feedbackId).ExecuteUpdateAsync(s => s.SetProperty(f => f.ForwardedAt, now), ct);
         return true;
+    }
+
+    /// <summary>Posts one stored user report and marks it forwarded. False if Discord refused it.</summary>
+    public async Task<bool> ForwardReportAsync(int reportId, CancellationToken ct = default)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
+        var row = await (from r in db.UserReports
+                         join sender in db.Users on r.ReporterId equals sender.Id
+                         join target in db.Users on r.ReportedUserId equals target.Id
+                         where r.Id == reportId
+                         select new { Report = r, Reporter = sender.Username, Reported = target.Username }).FirstOrDefaultAsync(ct);
+        if (row is null) return false;   // deleted with an account meanwhile
+
+        using var content = BuildReportMessage(row.Report, row.Reporter, row.Reported);
+        using var response = await http.CreateClient(HttpClientName).PostAsync(webhook, content, ct);
+        if (!response.IsSuccessStatusCode)
+        {
+            log.LogWarning("Discord refused user report {Id}: {Status}.", reportId, (int)response.StatusCode);
+            return false;
+        }
+        var now = clock.GetUtcNow().UtcDateTime;
+        await db.UserReports.Where(r => r.Id == reportId).ExecuteUpdateAsync(s => s.SetProperty(r => r.ForwardedAt, now), ct);
+        return true;
+    }
+
+    /// <summary>The webhook body for a user report: one embed, with the ids to act on. A note is at most
+    /// <see cref="UserReportRules.MaxNoteLength"/> characters, so it always fits.</summary>
+    public static MultipartFormDataContent BuildReportMessage(UserReport report, string reporter, string reported)
+    {
+        var payload = new
+        {
+            username = "GainStreak reports",
+            allowed_mentions = new { parse = Array.Empty<string>() },
+            embeds = new[]
+            {
+                new
+                {
+                    title = "User report: " + UserReportRules.Label(report.Reason),
+                    description = report.Note ?? "(No note.)",
+                    color = 0xFFB020,
+                    fields = new[]
+                    {
+                        new { name = "Reported", value = $"{reported} (user {report.ReportedUserId.ToString(CultureInfo.InvariantCulture)})", inline = true },
+                        new { name = "From", value = $"{reporter} (user {report.ReporterId.ToString(CultureInfo.InvariantCulture)})", inline = true },
+                        new { name = "Id", value = "#" + report.Id.ToString(CultureInfo.InvariantCulture), inline = true }
+                    },
+                    timestamp = DateTime.SpecifyKind(report.CreatedAt, DateTimeKind.Utc).ToString("O", CultureInfo.InvariantCulture)
+                }
+            }
+        };
+
+        var json = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8);
+        json.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        return new MultipartFormDataContent { { json, "payload_json" } };
     }
 
     /// <summary>The webhook body: <c>payload_json</c> with one embed, plus <c>files[0]</c> when there's a report or
