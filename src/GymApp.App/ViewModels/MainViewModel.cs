@@ -85,7 +85,7 @@ public partial class MainViewModel : ViewModelBase
         IsFeedbackOpen = false;
         // A brand-new account gets the profile setup first; it can be skipped to Home
         if (!_session.IsLoggedIn) ShowLogin();
-        else if (_session.IsNewAccount && _sp.GetRequiredService<IAccountService>().EmailConfirmed == false) ShowConfirmEmail(afterSignUp: true);
+        else if (_session.IsNewAccount && _sp.GetRequiredService<IAccountService>().EmailConfirmed == false) ShowConfirmEmail(afterSignUp: true, sendCode: true);
         else if (_session.IsNewAccount) ShowProfileSetup();
         else ShowHome();
     }
@@ -228,13 +228,21 @@ public partial class MainViewModel : ViewModelBase
 
     public void ShowProfileSetup() => Open(_sp.GetRequiredService<ProfileSetupViewModel>, root: true);
 
-    /// <summary><paramref name="afterSignUp"/>: the step before the profile setup; otherwise opened from Profile.</summary>
-    public void ShowConfirmEmail(bool afterSignUp = false) => Open(() =>
+    /// <summary><paramref name="afterSignUp"/>: the step before the profile setup; otherwise opened from Profile.
+    /// <paramref name="sendCode"/>: nothing has been emailed yet.</summary>
+    public void ShowConfirmEmail(bool afterSignUp = false, bool sendCode = false)
     {
-        var vm = _sp.GetRequiredService<ConfirmEmailViewModel>();
-        vm.AfterSignUp = afterSignUp;
-        return vm;
-    }, root: afterSignUp);
+        var first = sendCode;
+        Open(() =>
+        {
+            var vm = _sp.GetRequiredService<ConfirmEmailViewModel>();
+            vm.AfterSignUp = afterSignUp;
+            // Only the first time; going back to the screen doesn't send another
+            if (first) _ = vm.SendFirstCodeAsync();
+            first = false;
+            return vm;
+        }, root: afterSignUp);
+    }
 
     public void ShowForgotPassword(string? email = null) => Open(() =>
     {

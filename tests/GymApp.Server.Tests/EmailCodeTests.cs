@@ -29,6 +29,13 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     protected override void ConfigureServices(IServiceCollection services) => services.AddSingleton<IEmailSender>(_mail);
 
+    private async Task<SignedIn> SignUpWithCodeAsync(string username)
+    {
+        var user = await SignUpAsync(username);
+        await user.Client.PostAsync("/v1/me/email/code", null);
+        return user;
+    }
+
     private string LastCode() => Regex.Match(_mail.Sent[^1].Body, @"\b\d{6}\b").Value;
     private static string Wrong(string code) => code == "000000" ? "000001" : "000000";
 
@@ -47,32 +54,42 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
     private static async Task<MeResponse> MeAsync(SignedIn user) =>
         (await user.Client.GetFromJsonAsync<MeResponse>("/v1/me", ApiFormat.Json))!;
 
-    [Fact] public async Task SignUp_EmailsACode_AndConfirmingIsRemembered()
+    [Fact] public async Task SignUp_SendsNoEmail_TheAppAsksForTheCode_AndConfirmingIsRemembered()
     {
         var alice = await SignUpAsync("alice");
-
-        Assert.Equal("alice@example.com", Assert.Single(_mail.Sent).To);
+        Assert.Empty(_mail.Sent);
         Assert.False(alice.User.EmailConfirmed);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await ConfirmAsync(alice, LastCode())).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
+        Assert.Equal("alice@example.com", Assert.Single(_mail.Sent).To);
 
+        Assert.Equal(HttpStatusCode.NoContent, (await ConfirmAsync(alice, LastCode())).StatusCode);
         Assert.True((await MeAsync(alice)).EmailConfirmed);
     }
 
-    [Fact] public async Task SignUp_StillWorks_WhenTheEmailCantBeSent()
+    [Fact] public async Task AFailedSend_CanBeRetriedStraightAway()
     {
+        var alice = await SignUpAsync("alice");
         _mail.Fails = true;
+        Assert.Equal(HttpStatusCode.BadRequest, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
 
+        _mail.Fails = false;
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
+    }
+
+    [Fact] public async Task TwoRequestsAtOnce_NeverFail()
+    {
         var alice = await SignUpAsync("alice");
 
-        Assert.False(alice.User.EmailConfirmed);
-        var resend = await alice.Client.PostAsync("/v1/me/email/code", null);
-        Assert.Equal(HttpStatusCode.BadRequest, resend.StatusCode);
+        var both = await Task.WhenAll(alice.Client.PostAsync("/v1/me/email/code", null), alice.Client.PostAsync("/v1/me/email/code", null));
+
+        Assert.All(both, r => Assert.True((int)r.StatusCode < 500));
+        Assert.Contains(both, r => r.StatusCode == HttpStatusCode.NoContent);
     }
 
     [Fact] public async Task TheCode_IsStoredOnlyAsAHash()
     {
-        await SignUpAsync("alice");
+        await SignUpWithCodeAsync("alice");
 
         await using var db = Db();
         Assert.DoesNotContain(LastCode(), (await db.EmailCodes.SingleAsync()).CodeHash);
@@ -80,7 +97,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task WrongCodes_RunOutAfterFiveTries_EvenForTheRightOneAfter()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         var code = LastCode();
 
         for (var i = 0; i < EmailCode.MaxAttempts; i++)
@@ -92,7 +109,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task AnExpiredCode_IsRefused()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         await using (var db = Db())
             await db.EmailCodes.ExecuteUpdateAsync(c => c.SetProperty(x => x.ExpiresAt, DateTime.UtcNow.AddMinutes(-1)));
 
@@ -101,7 +118,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task ACode_WorksOnce()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         var code = LastCode();
         await ConfirmAsync(alice, code);
 
@@ -110,7 +127,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task AskingAgain_WaitsAMinute_AndReplacesTheCode()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         var first = LastCode();
 
         Assert.Equal(HttpStatusCode.BadRequest, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
@@ -125,7 +142,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task AConfirmedEmail_NeedsNoCode()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         await ConfirmAsync(alice, LastCode());
 
         Assert.Equal(HttpStatusCode.Conflict, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
@@ -133,20 +150,21 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task ChangingTheEmail_NeedsConfirmingAgain_AtTheNewAddress()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
         await ConfirmAsync(alice, LastCode());
 
         var change = await alice.Client.PutAsJsonAsync("/v1/me/email", new ChangeEmailRequest(DefaultPassword, "new@example.com"), ApiFormat.Json);
 
         Assert.Equal(HttpStatusCode.NoContent, change.StatusCode);
         Assert.False((await MeAsync(alice)).EmailConfirmed);
+        Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.PostAsync("/v1/me/email/code", null)).StatusCode);
         Assert.Equal("new@example.com", _mail.Sent[^1].To);
         Assert.Equal(HttpStatusCode.NoContent, (await ConfirmAsync(alice, LastCode())).StatusCode);
     }
 
     [Fact] public async Task Reset_SetsTheNewPassword_EndsEverySession_AndConfirmsTheEmail()
     {
-        var alice = await SignUpAsync("alice");
+        var alice = await SignUpWithCodeAsync("alice");
 
         Assert.Equal(HttpStatusCode.NoContent, (await RequestResetAsync("ALICE@example.com")).StatusCode);
         Assert.Equal("Reset your GainStreak password", _mail.Sent[^1].Subject);
@@ -161,7 +179,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task ResetRequest_LooksTheSame_WhetherOrNotTheAccountExists()
     {
-        await SignUpAsync("alice");
+        await SignUpWithCodeAsync("alice");
         _mail.Sent.Clear();
 
         var unknown = await RequestResetAsync("nobody@example.com");
@@ -172,7 +190,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task Reset_RefusesAWrongCode_AndAWeakPassword_AndKeepsTheOldOne()
     {
-        await SignUpAsync("alice");
+        await SignUpWithCodeAsync("alice");
         await RequestResetAsync("alice@example.com");
         var code = LastCode();
 
@@ -185,14 +203,14 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
 
     [Fact] public async Task AConfirmCode_CantResetAPassword()
     {
-        await SignUpAsync("alice");
+        await SignUpWithCodeAsync("alice");
 
         Assert.Equal(HttpStatusCode.BadRequest, (await ResetAsync("alice@example.com", LastCode())).StatusCode);
     }
 
     [Fact] public async Task ASuspendedAccount_GetsNoResetCode()
     {
-        await SignUpAsync("alice");
+        await SignUpWithCodeAsync("alice");
         await using (var db = Db()) await AccountCommands.RunAsync(["suspend", "alice"], db, Clock);
         _mail.Sent.Clear();
 
@@ -216,6 +234,7 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
     {
         var phone = await PhoneAsync("alice");
         Assert.False(phone.Accounts.EmailConfirmed);
+        Assert.True((await phone.Accounts.SendConfirmCodeAsync()).Success);
 
         Assert.True((await phone.Accounts.ConfirmEmailAsync(LastCode())).Success);
 

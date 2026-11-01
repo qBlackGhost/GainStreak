@@ -45,7 +45,7 @@ public static class AccountEndpoints
         me.MapDelete("", DeleteAccount);
     }
 
-    private static async Task<IResult> Register(RegisterRequest request, ServerDbContext db, TimeProvider clock, EmailCodeService codes)
+    private static async Task<IResult> Register(RegisterRequest request, ServerDbContext db, TimeProvider clock)
     {
         var username = (request.Username ?? "").Trim();
         var email = Credentials.NormalizeEmail(request.Email ?? "");
@@ -82,8 +82,6 @@ public static class AccountEndpoints
 
         var token = SessionTokens.Start(db, user.Id, request.DeviceName, now);
         await db.SaveChangesAsync();
-        // A failed send doesn't fail the sign-up: the app can ask for another code
-        await codes.SendAsync(user, EmailCodePurpose.ConfirmEmail, force: true);
         return Results.Created("/v1/me", new AuthResponse(token, ToMe(user)));
     }
 
@@ -131,7 +129,7 @@ public static class AccountEndpoints
         return user is null ? Results.NotFound() : Results.Ok(ToMe(user));
     }
 
-    private static async Task<IResult> ChangeEmail(ChangeEmailRequest request, ClaimsPrincipal principal, ServerDbContext db, EmailCodeService codes)
+    private static async Task<IResult> ChangeEmail(ChangeEmailRequest request, ClaimsPrincipal principal, ServerDbContext db)
     {
         var email = Credentials.NormalizeEmail(request.Email ?? "");
         if (Credentials.CheckEmail(email) is { } emailError) return Problems.BadRequest(emailError, ProblemFields.Email);
@@ -157,10 +155,11 @@ public static class AccountEndpoints
         }
         // A code sent to the old address means nothing now
         await db.EmailCodes.Where(c => c.UserId == userId).ExecuteDeleteAsync();
-        await codes.SendAsync(user, EmailCodePurpose.ConfirmEmail, force: true);
         return Results.NoContent();
     }
 
+    /// <summary>The app asks for the code from its confirm screen, not as part of signing up or changing the email: those
+    /// must answer inside its 10-second timeout, which a cold start plus a slow mail server could use up.</summary>
     private static async Task<IResult> SendConfirmCode(ClaimsPrincipal principal, ServerDbContext db, EmailCodeService codes)
     {
         var userId = principal.UserId();

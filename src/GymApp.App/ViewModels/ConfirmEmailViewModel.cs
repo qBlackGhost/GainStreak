@@ -13,7 +13,7 @@ public partial class ConfirmEmailViewModel(IAccountService accounts, SessionServ
     public const string SentNotice = "We sent a new code.";
 
     public bool AfterSignUp { get; set; }
-    public string Intro => $"We sent a {Contracts.EmailCodeRules.Length}-digit code to {session.CurrentUser?.Email}. If you can't see it, check your spam folder.";
+    public string Intro => $"Enter the {Contracts.EmailCodeRules.Length}-digit code we emailed to {session.CurrentUser?.Email}. If you can't see it, check your spam folder.";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConfirmCommand), nameof(ResendCommand))]
@@ -36,6 +36,9 @@ public partial class ConfirmEmailViewModel(IAccountService accounts, SessionServ
     {
         if (await RunAsync(accounts.SendConfirmCodeAsync)) Notice = SentNotice;
     }
+
+    /// <summary>The first code, as the screen opens. Signing up doesn't send it, so it can't slow signing up down.</summary>
+    public Task SendFirstCodeAsync() => RunAsync(accounts.SendConfirmCodeAsync);
 
     [RelayCommand] private void Later() => Leave();
 

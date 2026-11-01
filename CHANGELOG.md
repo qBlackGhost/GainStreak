@@ -2,6 +2,11 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.17.1
+
+- **Signing up and changing your email:** these no longer wait for the email to go out, so a slow mail server can't make them look offline. The code is sent when the **Confirm your email** screen opens, which now also opens after you change your email.
+- **Codes that didn't send:** if a code can't be sent, you can ask for another straight away.
+
 ## 0.17.0
 
 - **Report or block someone:** tap the flag beside a friend or a search result, or **Report or block** on anything in your inbox. Pick what's wrong, add a note if you like, and send it. **Also block** is on by default.

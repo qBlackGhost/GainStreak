@@ -587,6 +587,7 @@ public partial class ProfileViewModel : ViewModelBase
             }
 
             ApplyEmail(r.User!.Email);
+            if (_accounts.EmailConfirmed == false) _shell().ShowConfirmEmail(sendCode: true);
             CancelEmail();
             Info = $"Email saved. You can now sign in with {r.User.Email}.";
         }

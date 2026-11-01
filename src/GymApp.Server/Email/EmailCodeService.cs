@@ -4,6 +4,7 @@ using GymApp.Contracts;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace GymApp.Server.Email;
 
@@ -14,13 +15,13 @@ public class EmailCodeService(ServerDbContext db, IEmailSender sender, TimeProvi
 {
     public enum Outcome { Sent, TooSoon, NotSent }
 
-    /// <summary>Replaces any code of that purpose and emails the new one. <paramref name="force"/> skips the wait, for a
-    /// code nobody asked for twice (a new account, a changed email).</summary>
-    public async Task<Outcome> SendAsync(User user, EmailCodePurpose purpose, bool force = false)
+    /// <summary>Replaces any code of that purpose and emails the new one. If it doesn't go out the code is dropped, so the
+    /// wait for another one doesn't start. Two requests at once: the second counts as too soon.</summary>
+    public async Task<Outcome> SendAsync(User user, EmailCodePurpose purpose)
     {
         var now = clock.GetUtcNow().UtcDateTime;
         var row = await db.EmailCodes.FirstOrDefaultAsync(c => c.UserId == user.Id && c.Purpose == purpose);
-        if (!force && row is not null && now - row.CreatedAt < EmailCode.ResendAfter) return Outcome.TooSoon;
+        if (row is not null && now - row.CreatedAt < EmailCode.ResendAfter) return Outcome.TooSoon;
 
         var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D" + EmailCodeRules.Length);
         if (row is null)
@@ -32,7 +33,15 @@ public class EmailCodeService(ServerDbContext db, IEmailSender sender, TimeProvi
         row.Attempts = 0;
         row.CreatedAt = now;
         row.ExpiresAt = now + EmailCode.Lifetime;
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            db.Entry(row).State = EntityState.Detached;
+            return Outcome.TooSoon;
+        }
 
         var (subject, intro) = purpose == EmailCodePurpose.ConfirmEmail
             ? ("Confirm your GainStreak email", "Use this code to confirm your email:")
@@ -40,7 +49,10 @@ public class EmailCodeService(ServerDbContext db, IEmailSender sender, TimeProvi
         var minutes = (int)EmailCode.Lifetime.TotalMinutes;
         var body = $"Hi {user.Username},\n\n{intro}\n\n{code}\n\nIt works for {minutes} minutes. " +
                    "If this wasn't you, you can ignore this email.\n\nGainStreak";
-        return await sender.SendAsync(user.Email, subject, body) ? Outcome.Sent : Outcome.NotSent;
+        if (await sender.SendAsync(user.Email, subject, body)) return Outcome.Sent;
+        db.EmailCodes.Remove(row);
+        await db.SaveChangesAsync();
+        return Outcome.NotSent;
     }
 
     /// <summary>Whether the code is right. A right one is used up; a wrong one counts as a try.</summary>

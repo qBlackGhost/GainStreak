@@ -42,6 +42,17 @@ public class EmailScreensTests
         Assert.Equal(EmailCodeRules.WrongCodeMessage, vm.Error);
     }
 
+    [Fact] public async Task TheFirstCode_GoesOutWhenAsked_AndAFailureShows()
+    {
+        var vm = new ConfirmEmailViewModel(_accounts, new SessionService(), () => null!);
+        _accounts.Next = AccountResult.Fail(EmailCodeRules.NotSentMessage);
+
+        await vm.SendFirstCodeAsync();
+
+        Assert.Equal("send", Assert.Single(_accounts.Calls));
+        Assert.Equal(EmailCodeRules.NotSentMessage, vm.Error);
+    }
+
     [Fact] public async Task Resend_SaysItWentOut_OrWhyNot()
     {
         var vm = new ConfirmEmailViewModel(_accounts, new SessionService(), () => null!);
