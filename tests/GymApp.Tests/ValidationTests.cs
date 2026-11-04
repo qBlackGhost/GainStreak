@@ -230,8 +230,10 @@ public class ValidationTests : IDisposable
         Assert.Equal(FormField.Name, (await gyms.AddCustomGymAsync(alice, city, " ", null)).Field);
         Assert.Equal(FormField.Address,
             (await gyms.AddCustomGymAsync(alice, city, "Gym", new PickedAddress("Strada X", double.NaN, 21))).Field);
-        Assert.True((await gyms.AddCustomGymAsync(alice, city, "Gym", null)).Success);
-        Assert.Equal(FormField.Name, (await gyms.AddCustomGymAsync(alice, city, "gym", null)).Field);   // taken
+        Assert.Equal(FormField.Address, (await gyms.AddCustomGymAsync(alice, city, "Gym", null)).Field);   // required (18c)
+        var at = new PickedAddress("Strada X 1", 45.75, 21.22);
+        Assert.True((await gyms.AddCustomGymAsync(alice, city, "Gym", at)).Success);
+        Assert.Equal(FormField.Name, (await gyms.AddCustomGymAsync(alice, city, "gym", at)).Field);   // taken
     }
 
     [Fact] public async Task ModifyPr_EachLimit_IsOnItsField()

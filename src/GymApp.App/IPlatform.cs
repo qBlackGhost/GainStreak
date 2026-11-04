@@ -46,6 +46,13 @@ public interface IPlatform
     /// through <see cref="MainViewModel.RestartForUpdate"/>.</summary>
     void OnShellReady(MainViewModel shell, ErrorLog log);
 
+    /// <summary>Phones log workouts only through the live workout on Home (Phase 18); the desktop keeps the "I went
+    /// today" check-in. Decided by the head, never by the window's width.</summary>
+    bool HasLiveWorkout { get; }
+
     /// <summary>The reminders' local notifications (16g); the desktop's does nothing.</summary>
     INotificationScheduler CreateNotificationScheduler();
+
+    /// <summary>The position for "verified at gym" (18c); the desktop's has none (the TestBench's is a fake).</summary>
+    ILocationProvider CreateLocationProvider();
 }

@@ -68,8 +68,10 @@ public static class AppServices
         }
         // Reminders (16g): planned here, scheduled by the head
         sc.AddSingleton(_ => platform.CreateNotificationScheduler());
+        sc.AddSingleton(_ => platform.CreateLocationProvider());   // "verified at gym" (18c)
         sc.AddTransient(sp => new ReminderService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
         sc.AddSingleton<ReminderSync>();
+        sc.AddSingleton<LiveWorkoutWatcher>();   // the nudge, the return popup and the 4-hour stop (18b)
         sc.AddSingleton<MainViewModel>();
         sc.AddSingleton<Func<MainViewModel>>(sp => () => sp.GetRequiredService<MainViewModel>());
         sc.AddTransient<LoginViewModel>();
@@ -86,6 +88,7 @@ public static class AppServices
         sc.AddTransient<ExerciseService>();
         sc.AddTransient<DayExerciseService>();
         sc.AddTransient<SetService>();
+        sc.AddTransient<LiveWorkoutService>();
         sc.AddTransient<WorkoutMenuService>();
         sc.AddTransient<WorkoutsViewModel>();
         sc.AddTransient<DayViewModel>();

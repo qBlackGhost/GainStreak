@@ -176,6 +176,12 @@ It has its own data folder (`GymApp-TestBench/data` next to the real one), so it
 - **Local** (the default): accounts and friends on this computer only, as before the server existed, with the friend rules run locally. Needs no server. The clock moves freely and "Sign in as" works. Nothing is uploaded.
 - **Server**: the app's own wiring against the social server (start it first, see below). Sign in with a real account; "Sign in as" is off. Keep the clock within 2 days of today: the server refuses dates further off, so uploads made with a moved clock are rejected.
 
+**Logging: check-in / live workout.** The admin window's Logging switch (it restarts the TestBench, kept in `bench.json`) picks how Home logs workouts: the desktop's "I went today" check-in, or the phones' live workout (Phase 18), one set at a time with the nudge's return popup. The window going to the back stands in for the phone going to the background.
+
+**Location.** What the live workout's location reads (Phase 18c): **At gym** (pick one of the signed-in user's gyms that has a position: load a city's gyms in the app first), **Away** (nowhere near a gym), **Approximate** (precise location off) or **No permission** (location off). Like Android, it shows the note before the location prompt. It starts as Away at each start and isn't kept.
+
+**Shorter nudge.** Debug builds (the TestBench and Debug phone builds) read `GYMAPP_NUDGE_MINUTES`, e.g. `GYMAPP_NUDGE_MINUTES=1 dotnet run --project src/GymApp.TestBench`, so "Continue your workout?" comes after a minute instead of 12. On the iOS Simulator, launch with `SIMCTL_CHILD_GYMAPP_NUDGE_MINUTES=1 xcrun simctl launch booted com.gainstreak.app`.
+
 ## Releases for testers
 
 Releases are built with [Velopack](https://velopack.io): an installer for each system, and the app updates itself.

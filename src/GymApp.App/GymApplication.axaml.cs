@@ -67,6 +67,14 @@ public partial class GymApplication : Application
                 var window = Platform.CreateWindow(CreateShellView(), isStartupError: false);
                 desktop.MainWindow = window;
                 if (!LocalSocial) window.Activated += (_, _) => Services.GetRequiredService<SocialSync>().RequestSync();
+                if (Platform.HasLiveWorkout)
+                {
+                    // The TestBench's live workout: the window going to the back stands in for the phone's background
+                    var watcher = Services.GetRequiredService<LiveWorkoutWatcher>();
+                    window.Activated += (_, _) => _ = watcher.CameToForegroundAsync();
+                    window.Deactivated += (_, _) => _ = watcher.WentToBackgroundAsync();
+                    StartWorkoutTimer();
+                }
                 MainWindowCreated?.Invoke(window);
                 Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
             }
@@ -87,6 +95,7 @@ public partial class GymApplication : Application
                 host.Content = error is not null ? StartupErrorView(error) : CreateShellView();
                 if (error is null) Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
                 if (error is null) Services.GetRequiredService<ReminderSync>().RequestRefresh();
+                if (error is null) _ = Services.GetRequiredService<LiveWorkoutWatcher>().CameToForegroundAsync();   // a cold start
             }));
         }
 
@@ -114,22 +123,35 @@ public partial class GymApplication : Application
     }
 
     /// <summary>The phones: coming back to the front syncs and restarts the 15-minute timer; going to the background
-    /// stops it.</summary>
+    /// stops it. The live workout (18b) hears both: the nudge, the return popup, the 4-hour stop.</summary>
     private void WireForeground()
     {
-        if (LocalSocial || TryGetFeature(typeof(IActivatableLifetime)) is not IActivatableLifetime lifetime) return;
-        var sync = Services.GetRequiredService<SocialSync>();
+        if (TryGetFeature(typeof(IActivatableLifetime)) is not IActivatableLifetime lifetime) return;
+        var watcher = Services.GetRequiredService<LiveWorkoutWatcher>();
+        var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
         lifetime.Activated += (_, e) =>
         {
             if (e.Kind != ActivationKind.Background) return;
+            _ = watcher.CameToForegroundAsync();
+            if (sync is null) return;
             sync.StartTimer();
             sync.RequestSync();
             Services.GetRequiredService<ReminderSync>().RequestRefresh();   // a day may have passed (16g)
         };
         lifetime.Deactivated += (_, e) =>
         {
-            if (e.Kind == ActivationKind.Background) sync.StopTimer();
+            if (e.Kind != ActivationKind.Background) return;
+            _ = watcher.WentToBackgroundAsync();
+            sync?.StopTimer();
         };
+        StartWorkoutTimer();
+    }
+
+    /// <summary>Once a minute while the app runs: a live workout past 4 hours or midnight ends by itself (18b).</summary>
+    private void StartWorkoutTimer()
+    {
+        var watcher = Services.GetRequiredService<LiveWorkoutWatcher>();
+        new DispatcherTimer(TimeSpan.FromMinutes(1), DispatcherPriority.Background, (_, _) => _ = watcher.TickAsync()).Start();
     }
 
     /// <summary>A reminder was tapped (16g): Home, where the check-in and the missed-day card are. Called by the heads

@@ -24,6 +24,13 @@ public class StatsProjectionTests
         Assert.Equal(Enumerable.Range(0, 14).Select(D), stats.Select(s => s.Date));
     }
 
+    [Fact] public void APartialOrUnverifiedWorkout_ProjectsItsTwoPoints()
+    {
+        var stats = StatsProjection.Project([Mon], UpperLower, NoChoices, [], [], Mon, 1,
+            workouts: [new WorkoutRecord(Mon, 4, 4, Verified: false)]);
+        Assert.Equal(PointsCalculator.ReducedWorkoutPoints, stats[0].TotalPoints);
+    }
+
     [Fact] public void FewerThanOneDay_Throws() =>
         Assert.Throws<ArgumentOutOfRangeException>(() => Run([0], 0, 0));
 

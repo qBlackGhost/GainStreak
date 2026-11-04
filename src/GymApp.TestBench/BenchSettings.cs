@@ -18,6 +18,9 @@ public sealed class BenchSettings
     /// "sign in as" works. True: the app's own wiring against the social server (GYMAPP_SERVER_URL or localhost:5080).</summary>
     public bool ServerSocial { get; set; }
 
+    /// <summary>True: Home runs the phones' live workout instead of the "I went today" check-in (Phase 18).</summary>
+    public bool PhoneWorkout { get; set; }
+
     private static string LocalData => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
     public static string Root => Path.Combine(LocalData, "GymApp-TestBench");
     public static string DataDir => Path.Combine(Root, "data");

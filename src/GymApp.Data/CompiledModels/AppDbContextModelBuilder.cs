@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("46527d4b-eebc-40c6-8e4c-895c921ec636"), entityTypeCount: 22)
+            : base(skipDetectChanges: false, modelId: new Guid("e1dc5b81-b3a7-4cf2-a9f1-2d97116737ce"), entityTypeCount: 23)
         {
         }
 
@@ -23,6 +23,7 @@ namespace GymApp.Data.CompiledModels
             var exerciseBarSetting = ExerciseBarSettingEntityType.Create(this);
             var friendship = FriendshipEntityType.Create(this);
             var gym = GymEntityType.Create(this);
+            var liveWorkout = LiveWorkoutEntityType.Create(this);
             var missedDayChoice = MissedDayChoiceEntityType.Create(this);
             var pointsEntry = PointsEntryEntityType.Create(this);
             var prAdjustment = PrAdjustmentEntityType.Create(this);
@@ -48,6 +49,9 @@ namespace GymApp.Data.CompiledModels
             FriendshipEntityType.CreateForeignKey2(friendship, user);
             GymEntityType.CreateForeignKey1(gym, city);
             GymEntityType.CreateForeignKey2(gym, user);
+            LiveWorkoutEntityType.CreateForeignKey1(liveWorkout, splitDay);
+            LiveWorkoutEntityType.CreateForeignKey2(liveWorkout, user);
+            LiveWorkoutEntityType.CreateForeignKey3(liveWorkout, gym);
             MissedDayChoiceEntityType.CreateForeignKey1(missedDayChoice, user);
             PointsEntryEntityType.CreateForeignKey1(pointsEntry, user);
             PrAdjustmentEntityType.CreateForeignKey1(prAdjustment, exercise);
@@ -82,6 +86,7 @@ namespace GymApp.Data.CompiledModels
             ExerciseBarSettingEntityType.CreateAnnotations(exerciseBarSetting);
             FriendshipEntityType.CreateAnnotations(friendship);
             GymEntityType.CreateAnnotations(gym);
+            LiveWorkoutEntityType.CreateAnnotations(liveWorkout);
             MissedDayChoiceEntityType.CreateAnnotations(missedDayChoice);
             PointsEntryEntityType.CreateAnnotations(pointsEntry);
             PrAdjustmentEntityType.CreateAnnotations(prAdjustment);

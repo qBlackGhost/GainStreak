@@ -17,6 +17,8 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
 
     public override INotificationScheduler CreateNotificationScheduler() => new IosNotificationScheduler();
 
+    public override ILocationProvider CreateLocationProvider() => new IosLocationProvider();
+
     /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>
     public override bool CanOpenStorePage => BuiltSettings.AppStoreId.Length > 0;
 

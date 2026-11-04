@@ -9,6 +9,9 @@ namespace GymApp.TestBench;
 
 sealed class Program
 {
+    /// <summary>The fake location the admin window sets (18c).</summary>
+    public static readonly BenchLocation Location = new();
+
     [STAThread]
     public static void Main(string[] args)
     {
@@ -26,7 +29,7 @@ sealed class Program
         AppClock.Offset = TimeSpan.FromDays(settings.DayOffset);
         // Local accounts and friends by default: the server refuses a clock more than 2 days off
         GymApplication.LocalSocial = !settings.ServerSocial;
-        GymApplication.Platform = new DesktopPlatform();
+        GymApplication.Platform = new DesktopPlatform { HasLiveWorkout = settings.PhoneWorkout, Location = Location };
 
         GymApplication.MainWindowCreated = main =>
         {

@@ -149,7 +149,7 @@
                         BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0">
                     <WrapPanel ItemSpacing="16" LineSpacing="6">
                         <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
-                            <Run Text="Workout "/><Run Classes="rule" Text="{Binding WorkoutPoints}"/>
+                            <Run Text="Workout "/><Run Classes="rule" Text="{Binding WorkoutPoints}"/><Run Text=" (under 70% done or not verified "/><Run Classes="rule" Text="{Binding ReducedWorkoutPoints}"/><Run Text=")"/>
                         </TextBlock>
                         <TextBlock FontSize="12" Foreground="{DynamicResource Muted}">
                             <Run Text="Cardio "/><Run Classes="rule" Text="{Binding CardioPoints}"/>

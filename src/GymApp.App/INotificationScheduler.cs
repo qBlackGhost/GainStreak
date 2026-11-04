@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using GymApp.Services;
@@ -15,8 +16,16 @@ public interface INotificationScheduler
     /// now).</summary>
     Task<bool> RequestPermissionAsync();
 
-    /// <summary>Schedules exactly <paramref name="reminders"/>, cancelling whatever this app scheduled before.</summary>
+    /// <summary>Schedules exactly <paramref name="reminders"/>, cancelling the reminders scheduled before. Never touches
+    /// the workout nudge.</summary>
     void Replace(IReadOnlyList<PlannedReminder> reminders);
+
+    /// <summary>"Continue your workout?" at <paramref name="at"/> (Phase 18), replacing an earlier nudge. Its own
+    /// notification id, so it and the reminders never cancel each other. Tapping it opens Home.</summary>
+    void ScheduleWorkoutNudge(DateTimeOffset at, string title, string body);
+
+    /// <summary>Cancels the nudge, pending or already shown.</summary>
+    void CancelWorkoutNudge();
 }
 
 /// <summary>The desktop's (and the tests'): no notifications.</summary>
@@ -27,4 +36,6 @@ public sealed class NoNotificationScheduler : INotificationScheduler
     public bool IsSupported => false;
     public Task<bool> RequestPermissionAsync() => Task.FromResult(false);
     public void Replace(IReadOnlyList<PlannedReminder> reminders) { }
+    public void ScheduleWorkoutNudge(DateTimeOffset at, string title, string body) { }
+    public void CancelWorkoutNudge() { }
 }

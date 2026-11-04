@@ -24,6 +24,11 @@ public record UserItem(int Id, string Username)
     public override string ToString() => Username;
 }
 
+public record GymItem(int Id, string Name, double Latitude, double Longitude)
+{
+    public override string ToString() => Name;
+}
+
 /// <summary>
 /// The admin window. Every action works on the signed-in user, then reloads Home so the app shows the result
 /// (Home recalculates the streak and syncs points when it loads, like after a real overnight change).
@@ -50,7 +55,9 @@ public partial class AdminViewModel : ObservableObject
         _workouts = sp.GetRequiredService<WorkoutService>();
 
         _session.Changed += () => _ = RefreshStatusAsync();
+        _session.Changed += () => _ = LoadGymsAsync();
         _ = LoadUsersAsync();
+        _ = LoadGymsAsync();
         _ = RefreshStatusAsync();
     }
 
@@ -101,6 +108,66 @@ public partial class AdminViewModel : ObservableObject
 
     [RelayCommand]
     private void SwitchSocial() => Restart(() => _settings.ServerSocial = !_settings.ServerSocial);
+
+    // ===== Location (18c): what the live workout's location reads =====
+    public ObservableCollection<GymItem> Gyms { get; } = [];
+    [ObservableProperty] public partial GymItem? SelectedGym { get; set; }
+    [ObservableProperty] public partial string LocationText { get; set; } = "Away: nowhere near a gym.";
+
+    [RelayCommand] private Task ReloadGyms() => LoadGymsAsync();
+
+    /// <summary>The signed-in user's gyms that have a position: the ones a workout can be verified at.</summary>
+    private async Task LoadGymsAsync()
+    {
+        var userId = _session.CurrentUser?.Id;
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var gyms = await db.Gyms.AsNoTracking()
+            .Where(g => g.IsActive && g.Latitude != null && g.Longitude != null && (g.OwnerUserId == null || g.OwnerUserId == userId))
+            .OrderBy(g => g.Name)
+            .Select(g => new GymItem(g.Id, g.Name, g.Latitude!.Value, g.Longitude!.Value))
+            .ToListAsync();
+        Gyms.Clear();
+        foreach (var g in gyms) Gyms.Add(g);
+        SelectedGym ??= Gyms.FirstOrDefault();
+    }
+
+    [RelayCommand]
+    private void AtGym()
+    {
+        if (SelectedGym is not { } gym) { LocationText = "Pick a gym first (load a city's gyms in the app)."; return; }
+        Program.Location.SetAtGym(gym.Latitude, gym.Longitude);
+        LocationText = $"At {gym.Name}.";
+    }
+
+    [RelayCommand]
+    private void Away()
+    {
+        Program.Location.SetAway();
+        LocationText = "Away: nowhere near a gym.";
+    }
+
+    [RelayCommand]
+    private void Approximate()
+    {
+        Program.Location.SetApproximate();
+        LocationText = "Approximate: precise location is off.";
+    }
+
+    [RelayCommand]
+    private void NoPermission()
+    {
+        Program.Location.SetNoPermission();
+        LocationText = "No permission: location is off.";
+    }
+
+    // ===== Logging: the desktop's check-in or the phones' live workout =====
+    public string WorkoutModeText => _settings.PhoneWorkout
+        ? "Phone: Home runs the live workout, one set at a time, like the phones."
+        : "Desktop: Home has the \"I went today\" check-in.";
+    public string SwitchWorkoutLabel => _settings.PhoneWorkout ? "Switch to the check-in" : "Switch to the live workout";
+
+    [RelayCommand]
+    private void SwitchWorkout() => Restart(() => _settings.PhoneWorkout = !_settings.PhoneWorkout);
 
     [RelayCommand(CanExecute = nameof(IsLocalSocial))]
     private Task SignInAs() => RunAsync(async () =>

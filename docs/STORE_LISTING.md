@@ -33,7 +33,9 @@ The email address also receives codes, for confirming it and resetting the passw
 
 **Other services the phone talks to:** OpenStreetMap's map tiles, Nominatim (city search) and the Overpass API (the gyms in a city). They see the phone's IP address and the area asked for, nothing about the account.
 
-**Not collected:** location (the app never reads GPS; the map centres on the home city you pick), contacts, photos, health-platform data, advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
+**Used on the phone only (Phase 18):** precise location, during a live workout on Home. It's read at Start workout and after each set until the phone is found near one of the user's gyms, compared on the phone with the gyms already saved there, and then dropped. Only the result is kept, on the phone: the workout is verified, and at which gym. Positions aren't stored, logged, or sent to the server or OpenStreetMap. Foreground only: no background location permission on either platform. The desktop never reads it.
+
+**Not collected:** location (see above: it never leaves the phone; the map centres on the home city you pick), contacts, photos, health-platform data, advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
 
 ## Google Play: Data safety form
 
@@ -52,6 +54,7 @@ The email address also receives codes, for confirming it and resetting the passw
   - **Messages:**
     - Other in-app messages (feedback text, notes on reports about other users): collected; optional; used for developer communications and fraud prevention, security and compliance.
 - **Not collected:** location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files, device ids.
+- **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only) but **not collected and not shared**: Play's form only covers data sent off the device, and the position is used on the phone only. No background location, so no location permissions declaration is needed in the Play Console.
 
 ## App Store: App Privacy ("nutrition label")
 
@@ -61,9 +64,17 @@ The email address also receives codes, for confirming it and resetting the passw
   - User Content: Other User Content, meaning shared splits and workouts, check-ins, feedback and reports about other users (App Functionality).
   - Usage Data: Other Usage Data, meaning points, streak and level (App Functionality).
   - Diagnostics: Crash Data and Other Diagnostic Data, only when attached to feedback (App Functionality).
+- **Location (Phase 18):** **not collected.** Apple counts data as collected only when it's sent off the device, and the position never is. The permission prompt shows `NSLocationWhenInUseUsageDescription` from `Info.plist`: "GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone." When in use only, no "Always".
 - **Data used to track you:** none.
 - **Data not linked to the user:** none beyond the above.
 - **Export compliance:** `ITSAppUsesNonExemptEncryption` is false in `Info.plist` (HTTPS only), so no questions on upload.
+
+## Location: notes for the stores (Phase 18)
+
+- **A note before Android's prompt:** built. Android's prompt shows no word from the app, so a "Verify your workouts" note comes first, with Continue / Not now. Google asks for a prominent disclosure only when location is collected, which it isn't; the note is there to make the request clear.
+- **Approximate location:** built. With approximate only, the card says "Turn on precise location to verify your workouts" with Open Settings, instead of reading fixes too vague to count.
+- **Store descriptions.** The long description should mention it ("Workouts done at your gym are marked verified; your location stays on your phone"), so reviewers see why the app asks. Both reviews check that the prompt matches a visible feature.
+- **App Review notes (iOS).** Say where location is used (Start workout on Home) and that the review account's gyms are in Timișoara, so a reviewer elsewhere sees the "not at one of your gyms" path, which is expected.
 
 ## Deleting an account
 

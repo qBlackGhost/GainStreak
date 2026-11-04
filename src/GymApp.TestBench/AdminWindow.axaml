@@ -63,12 +63,42 @@
 
                 <Border Classes="section">
                     <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Location"/>
+                        <TextBlock FontWeight="SemiBold" Text="{Binding LocationText}"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                            <ComboBox ItemsSource="{Binding Gyms}" SelectedItem="{Binding SelectedGym}"
+                                      HorizontalAlignment="Stretch" PlaceholderText="No gyms with a position"/>
+                            <Button Grid.Column="1" Content="↻" Command="{Binding ReloadGymsCommand}" ToolTip.Tip="Reload the gyms"/>
+                        </Grid>
+                        <WrapPanel>
+                            <Button Content="At gym" Command="{Binding AtGymCommand}"/>
+                            <Button Content="Away" Command="{Binding AwayCommand}"/>
+                            <Button Content="Approximate" Command="{Binding ApproximateCommand}"/>
+                            <Button Content="No permission" Command="{Binding NoPermissionCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note" Text="What the live workout reads at Start and each Next (Logging must be the live workout)."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
                         <TextBlock Classes="header" Text="Social"/>
                         <TextBlock Classes="note" Text="{Binding SocialModeText}"/>
                         <WrapPanel>
                             <Button Content="{Binding SwitchSocialLabel}" Command="{Binding SwitchSocialCommand}"/>
                         </WrapPanel>
                         <TextBlock Classes="note" Text="Switching restarts the TestBench. Start the server first for Server mode (see the README)."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Logging"/>
+                        <TextBlock Classes="note" Text="{Binding WorkoutModeText}"/>
+                        <WrapPanel>
+                            <Button Content="{Binding SwitchWorkoutLabel}" Command="{Binding SwitchWorkoutCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note" Text="Switching restarts the TestBench."/>
                     </StackPanel>
                 </Border>
 

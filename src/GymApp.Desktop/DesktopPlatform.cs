@@ -34,10 +34,18 @@ public sealed class DesktopPlatform : IPlatform
 
     public bool CanOpenStorePage => false;
 
+    /// <summary>False: the check-in. The TestBench turns it on to try the phones' live workout.</summary>
+    public bool HasLiveWorkout { get; init; }
+
     public void OpenStorePage() { }
 
     // No reminders on the desktop (16g): Profile hides them
     public INotificationScheduler CreateNotificationScheduler() => NoNotificationScheduler.Instance;
+
+    /// <summary>None on the desktop; the TestBench passes its fake ("At gym…", "Away", "No permission").</summary>
+    public ILocationProvider Location { get; init; } = NoLocationProvider.Instance;
+
+    public ILocationProvider CreateLocationProvider() => Location;
 
     public void OnFrameworkReady() => MacDockIcon.Apply();
 

@@ -146,13 +146,14 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHo
 
     // ===== Custom gyms =====
 
-    /// <summary>Adds a gym OpenStreetMap doesn't have, in the picker's current city. With a picked address it gets that
-    /// position (so it has a distance); without one it has none. At most 10 active per user; names are unique per user
-    /// and city, ignoring case (two users may use the same name).</summary>
+    /// <summary>Adds a gym OpenStreetMap doesn't have, in the picker's current city, at a picked address and its position
+    /// (required since 18c, so workouts there can be verified; gyms added before keep working without one). At most 10
+    /// active per user; names are unique per user and city, ignoring case (two users may use the same name).</summary>
     public async Task<CustomGymResult> AddCustomGymAsync(int userId, int cityId, string name, PickedAddress? address)
     {
         var cleanName = CustomGyms.Clean(name);
         if (CustomGyms.CheckName(cleanName) is { } nameError) return new(false, nameError, Field: FormField.Name);
+        if (address is null) return new(false, CustomGyms.AddressRequired, Field: FormField.Address);
         if (CheckAddress(address) is { } addressError) return new(false, addressError, Field: FormField.Address);
 
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -182,14 +183,15 @@ public class GymService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHo
         return new(true, GymId: gym.Id, Reactivated: same is not null);
     }
 
-    /// <summary>Renames a custom gym or changes its address (null clears the address and position). With
-    /// keepAddress the current address and position stay as they are, whatever was passed. Owner only; the city
-    /// stays the same.</summary>
+    /// <summary>Renames a custom gym or changes its address. A new address is required (it can't be cleared, 18c); with
+    /// keepAddress the current address and position stay as they are, whatever was passed, so a gym from before
+    /// can still be renamed without one. Owner only; the city stays the same.</summary>
     public async Task<CustomGymResult> UpdateCustomGymAsync(int userId, int gymId, string name, PickedAddress? address,
         bool keepAddress = false)
     {
         var cleanName = CustomGyms.Clean(name);
         if (CustomGyms.CheckName(cleanName) is { } nameError) return new(false, nameError, Field: FormField.Name);
+        if (!keepAddress && address is null) return new(false, CustomGyms.AddressRequired, Field: FormField.Address);
         if (!keepAddress && CheckAddress(address) is { } addressError) return new(false, addressError, Field: FormField.Address);
 
         await using var db = await dbFactory.CreateDbContextAsync();

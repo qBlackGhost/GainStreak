@@ -6,9 +6,12 @@ using UserNotifications;
 namespace GymApp.iOS;
 
 /// <summary>The reminders (16g) as local notifications at a calendar date and time, so they keep their clock time
-/// across a daylight saving change. The app owns all its pending requests, so a new plan removes them all first.</summary>
+/// across a daylight saving change. A new plan removes the app's pending requests first, except the workout nudge
+/// (Phase 18), which has its own identifier.</summary>
 public sealed class IosNotificationScheduler : INotificationScheduler
 {
+    private const string NudgeId = "workout-nudge";
+
     public bool IsSupported => true;
 
     public async Task<bool> RequestPermissionAsync()
@@ -21,7 +24,16 @@ public sealed class IosNotificationScheduler : INotificationScheduler
     public void Replace(IReadOnlyList<PlannedReminder> reminders)
     {
         var center = UNUserNotificationCenter.Current;
-        center.RemoveAllPendingNotificationRequests();
+        center.GetPendingNotificationRequests(pending =>
+        {
+            var old = pending.Select(p => p.Identifier).Where(id => id != NudgeId).ToArray();
+            if (old.Length > 0) center.RemovePendingNotificationRequests(old);
+            Add(center, reminders);
+        });
+    }
+
+    private static void Add(UNUserNotificationCenter center, IReadOnlyList<PlannedReminder> reminders)
+    {
         foreach (var r in reminders)
         {
             if (r.LocalTime <= DateTime.Now) continue;
@@ -34,6 +46,22 @@ public sealed class IosNotificationScheduler : INotificationScheduler
                 UNCalendarNotificationTrigger.CreateTrigger(when, repeats: false));
             center.AddNotificationRequest(request, _ => { });
         }
+    }
+
+    public void ScheduleWorkoutNudge(DateTimeOffset at, string title, string body)
+    {
+        var seconds = Math.Max(1, (at - DateTimeOffset.Now).TotalSeconds);
+        var content = new UNMutableNotificationContent { Title = title, Body = body, Sound = UNNotificationSound.Default };
+        var request = UNNotificationRequest.FromIdentifier(NudgeId, content,
+            UNTimeIntervalNotificationTrigger.CreateTrigger(seconds, repeats: false));
+        UNUserNotificationCenter.Current.AddNotificationRequest(request, _ => { });   // the same id replaces an earlier nudge
+    }
+
+    public void CancelWorkoutNudge()
+    {
+        var center = UNUserNotificationCenter.Current;
+        center.RemovePendingNotificationRequests([NudgeId]);
+        center.RemoveDeliveredNotifications([NudgeId]);
     }
 }
 

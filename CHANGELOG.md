@@ -2,6 +2,30 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.18.0
+
+- **Live workouts on phones:** on a phone you now log at the gym, as you train. Tap **Start workout** on Home, and the card under the streak shows one exercise and one set at a time: type the weight and reps, then **Next**. The weight starts from your last set or last time.
+  - **Any order:** **Skip for now** moves an exercise to the end, and tapping an exercise in the list does it now, so a busy machine doesn't hold you up.
+  - **Changing a set:** tap a logged set to change its weight or reps.
+  - **Bar exercises:** a Total / Per side switch and the bar's weight, like the Exercise screen. It locks after an exercise's first set, so all its sets are typed the same way.
+  - **Focus:** while a workout runs, Home shows only the streak card and the workout. The semicircle fills as you finish exercises, and calories, PRs and friends come back when you're done.
+  - **Finish** appears once half the exercises are done. **End workout** stops early without logging; your sets are kept.
+  - **Not on the desktop:** the desktop keeps the "I went today" check-in. This is the first time phones and the desktop log differently.
+- **Verified at gym:** during a workout the phone checks whether you're at one of your gyms (within about 150 m, 250 m for your own gyms). If you are, the workout is verified there: "At Iron Gym ✓", and that gym is logged for you.
+  - **On the phone only:** your location never leaves it, and it's only read while a workout is open.
+  - **Saying no:** you can refuse location; your workouts still count.
+  - **Precise location:** it's needed to tell which gym you're at. Android explains this before it asks, and with approximate location the card asks you to turn precise on.
+  - **Not at a gym:** the card says so, with **Add this gym**.
+- **Points for a workout:** the full **+5** now needs a verified workout with at least 70% of its exercises done. Everything else that counts earns **+2**: under 70%, or not verified. That includes **every workout logged on the desktop**. Workouts from before 0.18.0 keep their +5. Week bonuses and cardio are unchanged.
+- **Points history:** workouts now read "Workout at Iron Gym", "Workout (not verified)" or "(partial)".
+- **The app pushes for the whole workout:** nothing during a workout says it already counts, and finishing early tells you what you'd miss ("do 1 more for full points"). The result appears after **Finish**.
+- **"Continue your workout?":** leave the app for 12 minutes with a set logged and you get a notification. Coming back shows **Continue** or **Finish workout early**, and says beforehand when finishing now wouldn't count or would earn half points. Notifications are asked for at your first workout.
+- **Workouts stop by themselves** after 4 hours or at midnight. Home tells you once how it went, or that it didn't count and your streak needs a workout today or tomorrow.
+- **Custom gyms need an address** now, picked from the search, so workouts there can be verified. Gyms you added before keep working, with a note to add one.
+- **Log in on phones:** the text at the bottom is smaller, so the whole screen fits without scrolling.
+- **Friends' leaderboard:** your points there follow the same rule. Older builds are turned away once 0.18.0 is out.
+- **Migration:** `LiveWorkouts` in the app's SQLite (a new `LiveWorkouts` table, and new `WorkoutLogs` and `Users` columns for live workouts and workout verification). The server doesn't change.
+
 ## 0.17.1
 
 - **Signing up and changing your email:** these no longer wait for the email to go out, so a slow mail server can't make them look offline. The code is sent when the **Confirm your email** screen opens, which now also opens after you change your email.

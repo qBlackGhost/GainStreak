@@ -37,7 +37,9 @@ public record ExerciseHistory(IReadOnlyList<SetEntry> Sets, IReadOnlyList<CorePr
 /// <summary>A PR for the dashboard: the set that beat the previous best.</summary>
 public record RecentPr(int ExerciseId, string ExerciseName, DateOnly Date, double WeightKg, int Reps);
 
-public class SetService(IDbContextFactory<AppDbContext> dbFactory)
+/// <param name="workouts">Keeps today's workout log's completion in line with the saved sets (Phase 18). Absent in
+/// tests that only check sets.</param>
+public class SetService(IDbContextFactory<AppDbContext> dbFactory, WorkoutService? workouts = null)
 {
     public const int MaxSetsPerExercisePerDay = 30;
     public const int MaxReps = 100;
@@ -98,6 +100,11 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory)
         {
             return new(false, "Could not save your sets.");
         }
+
+        // The sets are saved; a failed refresh only leaves the log's count for the next save
+        if (workouts is not null)
+            try { await workouts.RefreshCompletionAsync(userId, date); }
+            catch (Exception) { }
         return new(true);
     }
 

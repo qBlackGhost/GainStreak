@@ -39,7 +39,7 @@ public class CustomGymServiceTests : IDisposable
 
     private async Task<int> Add(string name, int? userId = null, int? cityId = null, PickedAddress? address = null)
     {
-        var r = await _svc.AddCustomGymAsync(userId ?? _alice, cityId ?? _timisoara, name, address);
+        var r = await _svc.AddCustomGymAsync(userId ?? _alice, cityId ?? _timisoara, name, address ?? At("Strada X 1"));
         Assert.True(r.Success, r.Error);
         return r.GymId!.Value;
     }
@@ -59,11 +59,12 @@ public class CustomGymServiceTests : IDisposable
 
     // ===== Add =====
 
-    [Fact] public async Task Add_WithoutAnAddress_HasNoPosition_AndSortsLast()
+    [Fact] public async Task Add_WithoutAnAddress_IsRefused_SoWorkoutsThereCanBeVerified()
     {
-        var id = await Add("No address");
-        Assert.Null(Gym(id)!.Latitude);
-        Assert.Null(Gym(id)!.Address);
+        var r = await _svc.AddCustomGymAsync(_alice, _timisoara, "No address", null);
+        Assert.False(r.Success);
+        Assert.Equal((CustomGyms.AddressRequired, FormField.Address), (r.Error, r.Field));
+        Assert.Empty((await _svc.GetGymsForCityAsync(_alice, _timisoara))!.Rows);
     }
 
     [Fact] public async Task Add_WithAPickedAddress_StoresItsPosition_SoItHasADistance()
@@ -104,23 +105,23 @@ public class CustomGymServiceTests : IDisposable
     [InlineData("")]
     [InlineData("   ")]
     public async Task Add_EmptyName_IsRejected(string name) =>
-        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, name, null)).Success);
+        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, name, At("Strada X 1"))).Success);
 
     [Fact] public async Task Add_NameOver60Characters_IsRejected_60IsFine()
     {
-        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, new string('a', 61), null)).Success);
-        Assert.True((await _svc.AddCustomGymAsync(_alice, _timisoara, new string('a', 60), null)).Success);
+        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, new string('a', 61), At("Strada X 1"))).Success);
+        Assert.True((await _svc.AddCustomGymAsync(_alice, _timisoara, new string('a', 60), At("Strada X 1"))).Success);
     }
 
     [Fact] public async Task Add_UnknownCity_IsRejected() =>
-        Assert.False((await _svc.AddCustomGymAsync(_alice, 999, "Gym", null)).Success);
+        Assert.False((await _svc.AddCustomGymAsync(_alice, 999, "Gym", At("Strada X 1"))).Success);
 
     [Fact] public async Task Add_AtMostTenPerUser_AcrossCities()
     {
         for (var i = 1; i <= 9; i++) await Add($"Gym {i}");
         await Add("Gym 10", cityId: _arad);
 
-        var r = await _svc.AddCustomGymAsync(_alice, _timisoara, "Gym 11", null);
+        var r = await _svc.AddCustomGymAsync(_alice, _timisoara, "Gym 11", At("Strada X 1"));
         Assert.False(r.Success);
         Assert.Contains("10", r.Error);
 
@@ -134,7 +135,7 @@ public class CustomGymServiceTests : IDisposable
         Log(_alice, Today, ids[0]);
 
         await _svc.DeleteCustomGymAsync(_alice, ids[0]);   // deactivated (used), no longer counts
-        Assert.True((await _svc.AddCustomGymAsync(_alice, _timisoara, "Gym 11", null)).Success);
+        Assert.True((await _svc.AddCustomGymAsync(_alice, _timisoara, "Gym 11", At("Strada X 1"))).Success);
     }
 
     [Theory]
@@ -144,7 +145,7 @@ public class CustomGymServiceTests : IDisposable
     public async Task Add_SameNameInTheSameCity_IgnoringCase_IsRejected(string again)
     {
         await Add("Home Gym");
-        var r = await _svc.AddCustomGymAsync(_alice, _timisoara, again, null);
+        var r = await _svc.AddCustomGymAsync(_alice, _timisoara, again, At("Strada X 1"));
         Assert.False(r.Success);
         Assert.Contains("already", r.Error);
     }
@@ -152,7 +153,7 @@ public class CustomGymServiceTests : IDisposable
     [Fact] public async Task Add_SameNameWithNonAsciiCase_IsRejected()
     {
         await Add("Știința");
-        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, "știința", null)).Success);
+        Assert.False((await _svc.AddCustomGymAsync(_alice, _timisoara, "știința", At("Strada X 1"))).Success);
     }
 
     [Fact] public async Task Add_SameName_InAnotherCity_OrByAnotherUser_IsFine()
@@ -180,16 +181,18 @@ public class CustomGymServiceTests : IDisposable
 
     // ===== Edit =====
 
-    [Fact] public async Task Edit_ChangesNameAndAddress_AndClearingTheAddressClearsThePosition()
+    [Fact] public async Task Edit_ChangesNameAndAddress_ButTheAddressCantBeCleared()
     {
         var id = await Add("Old", address: At("Somewhere"));
 
         Assert.True((await _svc.UpdateCustomGymAsync(_alice, id, "Old", At("Elsewhere 2", 45.70, 21.30))).Success);
         Assert.Equal(("Elsewhere 2", 45.70), (Gym(id)!.Address, Gym(id)!.Latitude));
 
-        Assert.True((await _svc.UpdateCustomGymAsync(_alice, id, " New  name ", null)).Success);
+        var cleared = await _svc.UpdateCustomGymAsync(_alice, id, " New  name ", null);
+        Assert.Equal((false, FormField.Address), (cleared.Success, cleared.Field));
+        Assert.True((await _svc.UpdateCustomGymAsync(_alice, id, " New  name ", null, keepAddress: true)).Success);
         var g = Gym(id)!;
-        Assert.Equal(("New name", null, null), (g.Name, g.Address, g.Latitude));
+        Assert.Equal(("New name", "Elsewhere 2", 45.70), (g.Name, g.Address, g.Latitude));
     }
 
     [Fact] public async Task Edit_KeepAddress_LeavesAnOlderHandTypedAddressAlone()
@@ -213,21 +216,21 @@ public class CustomGymServiceTests : IDisposable
     [Fact] public async Task Edit_ChangingOnlyTheCase_IsFine()
     {
         var id = await Add("home gym");
-        Assert.True((await _svc.UpdateCustomGymAsync(_alice, id, "Home Gym", null)).Success);
+        Assert.True((await _svc.UpdateCustomGymAsync(_alice, id, "Home Gym", null, keepAddress: true)).Success);
     }
 
     [Fact] public async Task Edit_ToAnotherOfMyNamesInThatCity_IsRejected()
     {
         await Add("A");
         var b = await Add("B");
-        Assert.False((await _svc.UpdateCustomGymAsync(_alice, b, "a", null)).Success);
+        Assert.False((await _svc.UpdateCustomGymAsync(_alice, b, "a", null, keepAddress: true)).Success);
         Assert.Equal("B", Gym(b)!.Name);
     }
 
     [Fact] public async Task Edit_SomeoneElsesGym_IsRejected()
     {
         var bobs = await Add("Bob's", userId: _bob);
-        Assert.False((await _svc.UpdateCustomGymAsync(_alice, bobs, "Mine now", null)).Success);
+        Assert.False((await _svc.UpdateCustomGymAsync(_alice, bobs, "Mine now", null, keepAddress: true)).Success);
         Assert.Equal("Bob's", Gym(bobs)!.Name);
     }
 
@@ -241,7 +244,7 @@ public class CustomGymServiceTests : IDisposable
             db.SaveChanges();
             osmId = g.Id;
         }
-        Assert.False((await _svc.UpdateCustomGymAsync(_alice, osmId, "Mine", null)).Success);
+        Assert.False((await _svc.UpdateCustomGymAsync(_alice, osmId, "Mine", null, keepAddress: true)).Success);
         Assert.False((await _svc.DeleteCustomGymAsync(_alice, osmId)).Success);
         Assert.True(Gym(osmId)!.IsActive);
     }
@@ -249,8 +252,8 @@ public class CustomGymServiceTests : IDisposable
     [Fact] public async Task Edit_InvalidName_IsRejected()
     {
         var id = await Add("A");
-        Assert.False((await _svc.UpdateCustomGymAsync(_alice, id, " ", null)).Success);
-        Assert.False((await _svc.UpdateCustomGymAsync(_alice, id, new string('x', 61), null)).Success);
+        Assert.False((await _svc.UpdateCustomGymAsync(_alice, id, " ", null, keepAddress: true)).Success);
+        Assert.False((await _svc.UpdateCustomGymAsync(_alice, id, new string('x', 61), null, keepAddress: true)).Success);
     }
 
     // ===== Delete =====

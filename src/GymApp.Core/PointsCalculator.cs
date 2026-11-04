@@ -15,11 +15,17 @@ public record CalorieRecord(DateOnly Date, int Consumed, int? Goal);
 /// <summary>The optional cardio minutes saved with a day's workout log.</summary>
 public record CardioRecord(DateOnly Date, int Minutes);
 
+/// <summary>How much of a day's workout was done, and whether it was done at one of the user's gyms. Nulls are
+/// workouts logged before 0.18.0, which earn the full points.</summary>
+public record WorkoutRecord(DateOnly Date, int? FilledExercises, int? TotalExercises, bool? Verified);
+
 /// <summary>Points rules. Points come only from "I went today" logs (and the cardio logged with them), full weeks
 /// and calorie targets, never from sets or PRs.</summary>
 public static class PointsCalculator
 {
     public const int WorkoutPoints = 5;
+    /// <summary>A workout that counts but isn't a verified one with 70% or more of its exercises.</summary>
+    public const int ReducedWorkoutPoints = 2;
     public const int WeekCompletePoints = 50;
     public const int WeekCompleteGracePoints = 25;
     public const int CalorieTargetPoints = 10;
@@ -29,6 +35,17 @@ public static class PointsCalculator
     public const int MaxCardioPoints = 3;
     /// <summary>The most cardio minutes one check-in accepts.</summary>
     public const int MaxCardioMinutes = 600;
+
+    /// <summary>
+    /// The points for one logged workout: the full 5 only when verified (or logged before 0.18.0) with at least
+    /// <see cref="CheckInRule.RequiredForFull"/> of its exercises filled; everything else that was logged earns 2.
+    /// </summary>
+    public static int WorkoutPointsFor(WorkoutRecord w) =>
+        w.Verified != false && IsComplete(w) ? WorkoutPoints : ReducedWorkoutPoints;
+
+    /// <summary>70% or more of the exercises filled; workouts from before 0.18.0 always are.</summary>
+    public static bool IsComplete(WorkoutRecord w) =>
+        w.FilledExercises is not { } filled || w.TotalExercises is not { } total || filled >= CheckInRule.RequiredForFull(total);
 
     public static int CardioPoints(int minutes) => Math.Min(MaxCardioPoints, Math.Max(0, minutes) / CardioMinutesPerPoint);
 
@@ -47,7 +64,8 @@ public static class PointsCalculator
     /// <summary>
     /// The entries that should exist from <paramref name="windowStart"/> to <paramref name="today"/>.
     /// Rules:
-    ///  - +5 for each day with a workout log.
+    ///  - For each day with a workout log, <see cref="WorkoutPointsFor"/> from its <paramref name="workouts"/> record:
+    ///    +5, or +2 below 70% of the exercises or when not verified. A day without a record earns +5.
     ///  - +1 per full 10 minutes of cardio saved with that day's log (see <see cref="CardioPoints"/>), at most +3; under 10 earns nothing.
     ///  - Weeks run Monday to Sunday and only count when the user had a schedule on all seven days
     ///    (Monday on or after <paramref name="scheduleStart"/>) and the week has a training day.
@@ -60,6 +78,7 @@ public static class PointsCalculator
     /// <param name="timeline">From <see cref="StreakCalculator.Timeline"/>, covering at least every day of every
     /// week in the window, including the rest of the current week.</param>
     /// <param name="scheduleStart">The first day the user had a schedule, or null if they never had one.</param>
+    /// <param name="workouts">Completion and verification of the logged days (see <see cref="WorkoutRecord"/>).</param>
     public static IReadOnlyList<PointsAward> Calculate(
         IEnumerable<DateOnly> workoutDates,
         IReadOnlyList<TrainingDayOutcome> timeline,
@@ -67,13 +86,16 @@ public static class PointsCalculator
         IEnumerable<CalorieRecord> calories,
         DateOnly today,
         DateOnly windowStart,
-        IEnumerable<CardioRecord>? cardio = null)
+        IEnumerable<CardioRecord>? cardio = null,
+        IEnumerable<WorkoutRecord>? workouts = null)
     {
         bool InWindow(DateOnly d) => d >= windowStart && d <= today;
         var awards = new List<PointsAward>();
+        var records = (workouts ?? []).DistinctBy(w => w.Date).ToDictionary(w => w.Date);
 
         foreach (var d in workoutDates.Where(InWindow).Distinct().Order())
-            awards.Add(new(PointsReason.Workout, WorkoutPoints, d, $"workout:{Key(d)}"));
+            awards.Add(new(PointsReason.Workout,
+                records.TryGetValue(d, out var w) ? WorkoutPointsFor(w) : WorkoutPoints, d, $"workout:{Key(d)}"));
 
         foreach (var c in (cardio ?? []).Where(c => InWindow(c.Date)).DistinctBy(c => c.Date).OrderBy(c => c.Date))
             if (CardioPoints(c.Minutes) is var p and > 0)

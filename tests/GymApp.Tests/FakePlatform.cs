@@ -30,9 +30,13 @@ public sealed class FakePlatform : IPlatform
     public int StorePageOpened { get; private set; }
     public void OpenStorePage() => StorePageOpened++;
 
+    public bool HasLiveWorkout { get; set; }
+
     /// <summary>The reminders' scheduler; none unless a test sets one.</summary>
     public INotificationScheduler Notifications { get; set; } = NoNotificationScheduler.Instance;
     public INotificationScheduler CreateNotificationScheduler() => Notifications;
+    public ILocationProvider Location { get; set; } = NoLocationProvider.Instance;
+    public ILocationProvider CreateLocationProvider() => Location;
     public void OnFrameworkReady() { }
     public Window CreateWindow(Control content, bool isStartupError) => throw new NotSupportedException();
     public void OnShellReady(MainViewModel shell, ErrorLog log) { }

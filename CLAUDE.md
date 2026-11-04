@@ -68,7 +68,11 @@ The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.
 
 `docs/PHASE_*.md` are specs written for Claude Code; follow the current one when working on its phase. Phase 16 (`docs/PHASE_16_MOBILE_APP.md`, the iOS and Android heads, with a shared `GymApp.App` library) is in progress; the 16a spike is done (its results are in the spec). Its ground rules include:
 - Do not commit or push.
-- Run `dotnet build` and `dotnet test` after each sub-phase.
 - The desktop app must look and behave exactly as in 0.15.x.
 
 For iOS, test EF Core changes with a Release build for the Simulator (full AOT). A Debug build JITs and hides runtime model-building failures.
+
+**Checks, for every phase** (this overrides a spec's own "after each sub-phase" checks, to save time and tokens):
+- After each sub-phase: `dotnet build` and the app tests (`dotnet test tests/GymApp.Tests`, which includes `CompiledModelTests`).
+- At the end of the phase: the full `dotnet test` (server tests, Docker), the Android build, the iOS Release build for the Simulator and running the heads.
+- Exception: a sub-phase that changes `GymApp.Contracts`, the server, or a head's own code also builds or tests that part right away.

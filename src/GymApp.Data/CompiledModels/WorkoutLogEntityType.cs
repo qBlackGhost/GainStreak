@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.WorkoutLog",
                 typeof(WorkoutLog),
                 baseEntityType,
-                propertyCount: 6,
+                propertyCount: 9,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -50,6 +50,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(WorkoutLog).GetField("<Date>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateOnly(1, 1, 1));
 
+            var filledExercises = runtimeEntityType.AddProperty(
+                "FilledExercises",
+                typeof(int?),
+                propertyInfo: typeof(WorkoutLog).GetProperty("FilledExercises", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(WorkoutLog).GetField("<FilledExercises>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
             var gymId = runtimeEntityType.AddProperty(
                 "GymId",
                 typeof(int?),
@@ -64,12 +71,26 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(WorkoutLog).GetField("<SplitDayId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
 
+            var totalExercises = runtimeEntityType.AddProperty(
+                "TotalExercises",
+                typeof(int?),
+                propertyInfo: typeof(WorkoutLog).GetProperty("TotalExercises", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(WorkoutLog).GetField("<TotalExercises>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
             var userId = runtimeEntityType.AddProperty(
                 "UserId",
                 typeof(int),
                 propertyInfo: typeof(WorkoutLog).GetProperty("UserId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(WorkoutLog).GetField("<UserId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0);
+
+            var verified = runtimeEntityType.AddProperty(
+                "Verified",
+                typeof(bool?),
+                propertyInfo: typeof(WorkoutLog).GetProperty("Verified", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(WorkoutLog).GetField("<Verified>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

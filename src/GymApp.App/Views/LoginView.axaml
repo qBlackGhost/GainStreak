@@ -13,7 +13,7 @@
     <!-- Phones: a soft lime glow behind the brand (the GainStreak Mobile canvas) -->
     <Ellipse Classes="authGlow phoneOnly"/>
     <ScrollViewer TextElement.Foreground="{DynamicResource Ink}">
-        <StackPanel Classes="authColumn" Spacing="20">
+        <StackPanel Classes="authColumn login">
             <!-- Phones: the brand large and centred, then Log in / Create account -->
             <StackPanel Classes="phoneOnly" Spacing="12" HorizontalAlignment="Center">
                 <Image Source="{StaticResource GainStreakLogo}" Width="72" Height="72" HorizontalAlignment="Center"/>
@@ -114,10 +114,10 @@
                                 Command="{Binding CancelMoveOnlineCommand}"/>
                     </StackPanel>
 
-                    <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,18,0,0" IsVisible="{Binding IsSigningIn}">
+                    <Border Classes="authFootRow" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" IsVisible="{Binding IsSigningIn}">
                         <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                            <TextBlock Text="New to GainStreak?" FontSize="14" Classes="muted" VerticalAlignment="Center"/>
-                            <Button Classes="link" Content="Create an account" FontSize="14" Command="{Binding GoToRegisterCommand}"
+                            <TextBlock Text="New to GainStreak?" Classes="muted authFoot" VerticalAlignment="Center"/>
+                            <Button Classes="link authFoot" Content="Create an account" Command="{Binding GoToRegisterCommand}"
                                     VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
@@ -127,7 +127,7 @@
             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
                 <TextBlock Classes="muted wideOnly" Text="Your workouts stay on this computer. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="380"/>
-                <TextBlock Classes="muted phoneOnly" Text="Your workouts stay on this phone. Only your username, points and streak are shared with friends." FontSize="12" TextWrapping="Wrap" MaxWidth="300"/>
+                <TextBlock Classes="muted phoneOnly" Text="Your workouts stay on this phone. Only your username, points and streak are shared with friends." FontSize="11" LineHeight="15" TextWrapping="Wrap" MaxWidth="320"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

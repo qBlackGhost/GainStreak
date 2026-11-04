@@ -27,6 +27,8 @@ public partial class GymRowViewModel(GymRow row, bool isCurrent, bool isHome, in
     public string AddressText => row.Gym.AddressIsApproximate ? $"Near {row.Gym.Address}" : row.Gym.Address ?? "";
     public string DistanceText => row.DistanceKm is { } km ? Geo.FormatDistance(km) : "";
     public bool IsCustom => row.Gym.IsCustom;
+    /// <summary>A custom gym from before 18c without an address: workouts there can't be verified until it has one.</summary>
+    public bool NeedsAddress => IsCustom && !HasPosition;
     public bool IsCurrent { get; } = isCurrent;
     public bool IsHome { get; } = isHome;
     public bool HasFriends => friendsHere > 0;
@@ -529,12 +531,6 @@ public partial class GymPickerViewModel : ViewModelBase
     [RelayCommand]
     private void ChangeFormAddress() => HasFormAddress = false;
 
-    [RelayCommand]
-    private void ClearFormAddress()
-    {
-        ResetFormAddress(null);
-        _addressChanged = true;
-    }
 
     /// <summary>The address to save: a newly picked one (with the typed house number), or none. Only used when
     /// the address changed; otherwise the gym keeps its current one.</summary>

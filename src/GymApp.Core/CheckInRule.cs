@@ -15,6 +15,10 @@ public static class CheckInRule
     /// <summary>Filled exercises needed out of <paramref name="total"/>: half, rounded up (1 → 1, 3 → 2, 4 → 2, 5 → 3).</summary>
     public static int RequiredFor(int total) => (int)Math.Ceiling(total * MinFilledShare);
 
+    /// <summary>Filled exercises a workout needs for full points: 70%, rounded up like <see cref="RequiredFor"/>
+    /// (3 → 3, 4 → 3, 5 → 4, 6 → 5). Whole numbers, so 0.7 never rounds 7 of 10 up to 8.</summary>
+    public static int RequiredForFull(int total) => (total * 7 + 9) / 10;
+
     /// <summary>An exercise is filled when it has at least its planned number of working sets today (and always at least one).
     /// Warm-ups don't count.</summary>
     public static bool IsFilled(CheckInExercise exercise) =>

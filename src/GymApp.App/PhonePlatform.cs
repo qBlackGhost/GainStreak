@@ -34,7 +34,11 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public virtual void OnShellReady(MainViewModel shell, ErrorLog log) { }
 
+    public bool HasLiveWorkout => true;
+
     public abstract INotificationScheduler CreateNotificationScheduler();
+
+    public abstract ILocationProvider CreateLocationProvider();
 
     /// <summary>Debug builds: point the server address at <paramref name="debugServerUrl"/> (the Mac as the emulator or
     /// Simulator sees it) through the same override the desktop's GYMAPP_SERVER_URL uses. Call before Avalonia starts.</summary>

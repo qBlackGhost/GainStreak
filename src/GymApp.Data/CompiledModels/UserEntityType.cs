@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 23,
+                propertyCount: 24,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -191,6 +191,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(User).GetProperty("Username", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(User).GetField("<Username>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 maxLength: 32);
+
+            var workoutNotificationsAsked = runtimeEntityType.AddProperty(
+                "WorkoutNotificationsAsked",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("WorkoutNotificationsAsked", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<WorkoutNotificationsAsked>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

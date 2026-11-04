@@ -111,6 +111,10 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     public void PickTodayWhenLoaded() => _pickTodayWhenLoaded = true;
 
     private bool _chooseCityWhenLoaded;
+
+    /// <summary>The live workout's "Add this gym" (18c): the gym picker with the add form open, once loaded.</summary>
+    public void AddGymWhenLoaded() => _addGymWhenLoaded = true;
+    private bool _addGymWhenLoaded;
     /// <summary>From the dashboard's "Choose your home city" step: open the city search once loaded, if there's no city yet.</summary>
     public void ChooseCityWhenLoaded() => _chooseCityWhenLoaded = true;
 
@@ -272,6 +276,16 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
             _pickTodayWhenLoaded = false;
             if (_chooseCityWhenLoaded && _homeCity is null) ChangeCity();
             _chooseCityWhenLoaded = false;
+            if (_addGymWhenLoaded)
+            {
+                if (_homeCity is null) ChangeCity();
+                else
+                {
+                    OpenHomeGymPicker();
+                    Picker.StartAddGymCommand.Execute(null);
+                }
+            }
+            _addGymWhenLoaded = false;
         }
         catch (Exception)
         {

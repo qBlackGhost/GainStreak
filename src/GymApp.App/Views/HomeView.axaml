@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:GymApp.App.ViewModels"
              xmlns:v="using:GymApp.App.Views"
+             xmlns:services="using:GymApp.Services"
              x:Class="GymApp.App.Views.HomeView"
              x:DataType="vm:HomeViewModel">
     <!-- The dashboard, after the "Gym App" design canvas (Dashboard artboard): black, one lime accent, the streak
@@ -296,7 +297,9 @@
         <StackPanel x:Name="Main" Classes="page">
 
             <!-- Header: date, greeting, headline, and the level pill -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16">
+            <!-- Hidden during a live workout (focus mode): the level card's points would show it already counts -->
+            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16"
+                  IsVisible="{Binding ShowDashboard}">
                 <StackPanel Spacing="6" VerticalAlignment="Bottom">
                     <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
                     <TextBlock Classes="greeting" Text="{Binding Greeting}" FontWeight="ExtraBold"/>
@@ -342,6 +345,28 @@
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+            <!-- Phones: once, after a workout stopped by itself at 4 hours or midnight (18b) -->
+            <Border Padding="14" CornerRadius="14" BorderThickness="1" Background="{DynamicResource Surface2}"
+                    BorderBrush="{DynamicResource Control}" Classes.bad="{Binding IsStopNoteBad}"
+                    IsVisible="{Binding StopNoteText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Border.Styles>
+                    <Style Selector="Border.bad">
+                        <Setter Property="Background" Value="{DynamicResource RedTint}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+                    </Style>
+                </Border.Styles>
+                <TextBlock Text="{Binding StopNoteText}" FontSize="14" FontWeight="SemiBold"/>
+            </Border>
+
+            <!-- Phones: after End workout below half -->
+            <Border Padding="14" CornerRadius="14" BorderBrush="{DynamicResource RedTintLine}" BorderThickness="1"
+                    Background="{DynamicResource RedTint}" IsVisible="{Binding ShowEndedNote}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Workout ended without logging" FontSize="14" FontWeight="Bold"/>
+                    <TextBlock Text="Your sets are kept. Finish a workout today or tomorrow to keep your streak." FontSize="13" Classes="soft"/>
+                </StackPanel>
+            </Border>
+
             <!-- Sets logged, no check-in yet -->
             <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1" Background="{DynamicResource Surface2}"
                     IsVisible="{Binding ShowSetsHint}">
@@ -355,7 +380,13 @@
             </Border>
 
             <!-- ===== Get set up: until the four first-time steps are done (a split and exercises for today unlock check-in) ===== -->
-            <Border Classes="card setupCard" IsVisible="{Binding ShowSetup}">
+            <Border Classes="card setupCard">
+                <Border.IsVisible>
+                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="ShowSetup"/>
+                        <Binding Path="ShowDashboard"/>
+                    </MultiBinding>
+                </Border.IsVisible>
                 <StackPanel Spacing="18">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="4">
@@ -539,15 +570,29 @@
                                         <!-- Training day, not done: a cold arc (it fades out under the fire) -->
                                         <Path Data="{StaticResource IcArc}" Stroke="{StaticResource ColdBrush}" StrokeThickness="28"
                                               StrokeLineCap="Round" Opacity="0.85"
-                                              IsVisible="{Binding !IsRestOpen}" Classes.coldFade="{Binding IsDone}"/>
+                                              IsVisible="{Binding ShowColdArc}" Classes.coldFade="{Binding IsDone}"/>
                                         <!-- Done: on fire -->
                                         <Path Data="{StaticResource IcArc}" Stroke="{StaticResource FireBrush}" StrokeThickness="28"
                                               StrokeLineCap="Round" StrokeDashArray="23,30"
-                                              IsVisible="{Binding IsDone}" Classes.fire="{Binding IsDone}">
+                                              IsVisible="{Binding ShowFireArc}" Classes.fire="{Binding ShowFireArc}">
                                             <Path.Effect>
                                                 <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="18" Color="#8CFF5A00"/>
                                             </Path.Effect>
                                         </Path>
+                                        <!-- Phones (Phase 18): the fire fills with the share of exercises done. The same circle
+                                             as IcArc (radius 200 around 240,240); Arc insets its box by half the stroke -->
+                                        <Arc Canvas.Left="26" Canvas.Top="26" Width="428" Height="428" StartAngle="180"
+                                             SweepAngle="{Binding ProgressSweep}" Stroke="{StaticResource FireBrush}"
+                                             StrokeThickness="28" StrokeLineCap="Round" IsVisible="{Binding IsArcHot}">
+                                            <Arc.Transitions>
+                                                <Transitions>
+                                                    <DoubleTransition Property="SweepAngle" Duration="0:0:0.7" Easing="CubicEaseInOut"/>
+                                                </Transitions>
+                                            </Arc.Transitions>
+                                            <Arc.Effect>
+                                                <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="18" Color="#8CFF5A00"/>
+                                            </Arc.Effect>
+                                        </Arc>
                                     </Canvas>
                                     <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Spacing="4" Margin="0,0,0,6">
                                         <TextBlock Text="{Binding GaugeKicker}" FontSize="15" FontWeight="SemiBold" LetterSpacing="2.4"
@@ -559,7 +604,7 @@
                                         <Viewbox StretchDirection="DownOnly" MaxWidth="330" HorizontalAlignment="Center">
                                             <TextBlock Text="{Binding GaugeTitle}" Classes="gaugeTitle" FontSize="76" FontWeight="Black"
                                                        LetterSpacing="1.5" LineHeight="76" TextWrapping="NoWrap"
-                                                       Classes.rest="{Binding IsRestOpen}" Classes.hot="{Binding IsDone}"/>
+                                                       Classes.rest="{Binding IsRestOpen}" Classes.hot="{Binding IsTitleHot}"/>
                                         </Viewbox>
                                         <TextBlock Text="{Binding GaugeSub}" FontSize="17" Classes="soft" HorizontalAlignment="Center"
                                                    TextAlignment="Center" MaxWidth="420"/>
@@ -567,7 +612,8 @@
                                 </Grid>
                             </Viewbox>
 
-                            <Border Padding="18,14" CornerRadius="12" BorderBrush="{DynamicResource Line}" BorderThickness="1">
+                            <Border Padding="18,14" CornerRadius="12" BorderBrush="{DynamicResource Line}" BorderThickness="1"
+                                    IsVisible="{Binding HasCheckIn}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding StatusText}" FontSize="14" Classes="light"/>
@@ -595,6 +641,82 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+
+                            <!-- Live workout (18c): verified at a gym, or why not -->
+                            <Panel IsVisible="{Binding IsLive}">
+                                <StackPanel Spacing="4" HorizontalAlignment="Center" DataContext="{Binding Live}"
+                                            x:DataType="vm:LiveWorkoutCardViewModel">
+                                    <Border Classes="pill" HorizontalAlignment="Center" Padding="12,6" Background="{DynamicResource LimeTint}"
+                                            BorderBrush="{DynamicResource LimeTintLineStrong}"
+                                            IsVisible="{Binding VerifiedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.4"
+                                                    Width="15" Height="15" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding VerifiedText}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <StackPanel Spacing="2" IsVisible="{Binding IsNotAtGym}">
+                                        <TextBlock Text="You're not at one of your gyms. This workout won't be verified." FontSize="13"
+                                                   Classes="soft" TextAlignment="Center" HorizontalAlignment="Center"/>
+                                        <Button Classes="link" FontSize="13" MinHeight="32" HorizontalAlignment="Center" Content="Add this gym"
+                                                Command="{Binding AddThisGymCommand}"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="2" IsVisible="{Binding IsLocationOff}">
+                                        <TextBlock Text="Location is off, so this workout can't be verified." FontSize="13"
+                                                   Classes="soft" TextAlignment="Center" HorizontalAlignment="Center"/>
+                                        <Button Classes="link" FontSize="13" MinHeight="32" HorizontalAlignment="Center" Content="Open Settings"
+                                                Command="{Binding OpenLocationSettingsCommand}"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="2" IsVisible="{Binding IsPreciseOff}">
+                                        <TextBlock Text="Turn on precise location to verify your workouts. Your location stays on your phone."
+                                                   FontSize="13" Classes="soft" TextAlignment="Center" HorizontalAlignment="Center"/>
+                                        <Button Classes="link" FontSize="13" MinHeight="32" HorizontalAlignment="Center" Content="Open Settings"
+                                                Command="{Binding OpenLocationSettingsCommand}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="Couldn't find your location yet. It's checked again with each set." FontSize="12"
+                                               Classes="muted" TextAlignment="Center" HorizontalAlignment="Center"
+                                               IsVisible="{Binding IsLocationPending}"/>
+                                </StackPanel>
+                            </Panel>
+
+                            <!-- Phones (Phase 18): Start workout before, the result and Undo after -->
+                            <StackPanel Spacing="12" IsVisible="{Binding ShowStartRow}">
+                                <TextBlock Text="{Binding StatusText}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+                                <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
+                                        Content="{Binding StartLabel}" Command="{Binding StartWorkoutCommand}" IsVisible="{Binding CanStart}"/>
+                                <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
+                                        Content="Pick a split" Command="{Binding ShowSplitsCommand}" IsVisible="{Binding ShowPickSplit}"/>
+                                <Button Classes="btn outline strong" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
+                                        Content="Build a workout" Command="{Binding ShowWorkoutsCommand}" IsVisible="{Binding ShowBuildWorkout}"/>
+                            </StackPanel>
+                            <StackPanel Spacing="12" IsVisible="{Binding ShowDoneRow}">
+                                <TextBlock Text="{Binding StatusText}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+                                <Border Classes="pill" HorizontalAlignment="Center" Background="{DynamicResource Fill}" BorderThickness="0"
+                                        Padding="12,4" IsVisible="{Binding ResultText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding ResultText}" Classes="mono" FontSize="13" FontWeight="Bold"
+                                               Foreground="{DynamicResource AccentInk}"/>
+                                </Border>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                                            IsVisible="{Binding TodayGymName, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock FontSize="12" Classes="muted" VerticalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="220">
+                                        <Run Text="at "/><Run Text="{Binding TodayGymName}"/><Run Text=" · "/>
+                                    </TextBlock>
+                                    <Button Classes="link" FontSize="12" Content="Change gym" Command="{Binding ChooseGymCommand}"/>
+                                </StackPanel>
+                                <Button Classes="link" FontSize="12" Content="Add gym" Command="{Binding ChooseGymCommand}"
+                                        HorizontalAlignment="Center" IsVisible="{Binding ShowAddGym}"/>
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Button Classes="btn outline logged" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
+                                            Content="Logged ✓" IsEnabled="False"/>
+                                    <Button Grid.Column="1" Classes="btn outline" MinHeight="52" Padding="18,0" FontSize="15"
+                                            Foreground="{DynamicResource Soft}" Content="Undo" Command="{Binding StartUndoCommand}"
+                                            IsVisible="{Binding CanUndo}"/>
+                                </Grid>
+                            </StackPanel>
+
                             <TextBlock Text="{Binding GymNotice}" FontSize="12" Classes="muted"
                                        IsVisible="{Binding GymNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
@@ -602,8 +724,16 @@
                 </Grid>
             </Border>
 
+            <!-- ===== The live workout (Phase 18, phones): right under the streak card, the rest of Home hidden ===== -->
+            <Border Classes="card" Padding="16" IsVisible="{Binding IsLive}">
+                <ContentControl Content="{Binding Live}"/>
+            </Border>
+            <TextBlock Text="Calories, PRs and friends come back when the workout ends." FontSize="12" Classes="faint"
+                       Foreground="{DynamicResource Faint}" HorizontalAlignment="Center" TextAlignment="Center"
+                       IsVisible="{Binding IsLive}"/>
+
             <!-- ===== This week ===== -->
-            <Border Classes="card weekCard" DataContext="{Binding Week}">
+            <Border Classes="card weekCard" DataContext="{Binding Week}" IsVisible="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).ShowDashboard}">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="14"
                       x:DataType="vm:WeekCardViewModel">
                         <TextBlock Classes="weekTitle" Text="This week" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -666,7 +796,7 @@
             </Border>
 
             <!-- ===== Cards: two columns, one when narrow (HomeView.axaml.cs sets ItemWidth) ===== -->
-            <WrapPanel x:Name="Cards">
+            <WrapPanel x:Name="Cards" IsVisible="{Binding ShowDashboard}">
 
                 <!-- Today's workout: the same plan as the check-in -->
                 <Border Classes="card" DataContext="{Binding TodayWorkout}">
@@ -925,6 +1055,131 @@
     <!-- Check-in popup over Home -->
     <Border Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="{Binding IsCheckingIn}" Padding="16">
         <ContentControl Content="{Binding CheckIn}"/>
+    </Border>
+
+    <!-- Live workout (Phase 18): Finish, with the cardio, pushing for the whole workout -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24"
+            IsVisible="{Binding Live.IsFinishOpen, FallbackValue=False}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" DataContext="{Binding Live}"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="12" x:DataType="vm:LiveWorkoutCardViewModel">
+                <TextBlock Text="{Binding FinishTitle}" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="{Binding FinishText}" FontSize="14" Classes="soft"/>
+                <StackPanel Spacing="6">
+                    <TextBlock Text="Cardio (minutes, optional)" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
+                    <TextBox Classes="kcal" Text="{Binding CardioText}" PlaceholderText="0" TextInputOptions.ContentType="Digits"
+                             AutomationProperties.Name="Cardio minutes"/>
+                    <TextBlock Text="{Binding CardioHint}" FontSize="12" Classes="muted"/>
+                </StackPanel>
+                <TextBlock Classes="error" Text="{Binding SheetError}"
+                           IsVisible="{Binding SheetError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,4,0,0" IsVisible="{Binding FinishPartial}">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Finish anyway"
+                            Command="{Binding FinishCommand}" IsEnabled="{Binding !IsSaving}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="Keep going" Command="{Binding CloseSheetCommand}"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,4,0,0" IsVisible="{Binding !FinishPartial}">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Back"
+                            Command="{Binding CloseSheetCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="Finish workout" Command="{Binding FinishCommand}" IsEnabled="{Binding !IsSaving}"/>
+                </Grid>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
+
+    <!-- Live workout: End without logging, below half -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24"
+            IsVisible="{Binding Live.IsEndOpen, FallbackValue=False}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" DataContext="{Binding Live}"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="10" x:DataType="vm:LiveWorkoutCardViewModel">
+                <TextBlock Text="End without logging?" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="Your sets are kept, but this workout won't count and earns no points." FontSize="14" Classes="soft"/>
+                <TextBlock Text="Your streak is at risk unless you finish a workout today or tomorrow." FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource ErrorText}"/>
+                <TextBlock Classes="error" Text="{Binding SheetError}"
+                           IsVisible="{Binding SheetError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,6,0,0">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="End workout"
+                            BorderBrush="{DynamicResource ErrorText}" Foreground="{DynamicResource ErrorText}"
+                            Command="{Binding EndCommand}" IsEnabled="{Binding !IsSaving}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="Keep going" Command="{Binding CloseSheetCommand}"/>
+                </Grid>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
+
+    <!-- Live workout: back after 12 minutes or more away (18b) -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsReturnOpen}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="10">
+                <TextBlock Text="Continue your workout?" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="{Binding ReturnText}" FontSize="14" Classes="soft"/>
+                <TextBlock Text="{Binding ReturnWarning}" FontSize="14" Classes="soft" Classes.bad="{Binding IsReturnWarningBad}"
+                           IsVisible="{Binding ReturnWarning, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <TextBlock.Styles>
+                        <Style Selector="TextBlock.bad"><Setter Property="Foreground" Value="{DynamicResource ErrorText}"/></Style>
+                    </TextBlock.Styles>
+                </TextBlock>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,6,0,0">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Finish workout early"
+                            Command="{Binding FinishEarlyCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="Continue" Command="{Binding ContinueWorkoutCommand}"/>
+                </Grid>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
+
+    <!-- Android, before its location prompt (which shows no word from the app): why GainStreak asks (18c) -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsLocationNoteOpen}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="10">
+                <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2" Width="28" Height="28"
+                        HorizontalAlignment="Left"/>
+                <TextBlock Text="Verify your workouts" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone."
+                           FontSize="14" Classes="soft"/>
+                <TextBlock Text="Pick Precise when your phone asks: approximate location can't tell which gym you're at."
+                           FontSize="13" Classes="muted"/>
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,6,0,0">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Not now"
+                            Command="{Binding LocationNoteNotNowCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="Continue" Command="{Binding LocationNoteContinueCommand}"/>
+                </Grid>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
+
+    <!-- Start workout anyway, on a rest day: which day -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsPickingDay}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="12">
+                <TextBlock Text="Which workout?" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="It's a rest day, so pick the day of your split you're doing." FontSize="14" Classes="soft"/>
+                <ItemsControl ItemsSource="{Binding PickableDays}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="services:CheckInDay">
+                            <Button Classes="option" MinHeight="50" Content="{Binding Name}" FontWeight="Bold"
+                                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).PickDayCommand}"
+                                    CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Content="Cancel"
+                        Command="{Binding CancelPickDayCommand}"/>
+            </StackPanel>
+        </v:Sheet>
     </Border>
 
     <!-- Undo today's check-in -->

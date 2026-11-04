@@ -16,8 +16,10 @@ public class MainActivity : AvaloniaMainActivity
     public const string FromReminderExtra = "fromReminder";
 
     private const int NotificationPermissionRequest = 1601;
+    private const int LocationPermissionRequest = 1801;
     private static WeakReference<MainActivity>? _current;
     private static TaskCompletionSource<bool>? _permission;
+    private static TaskCompletionSource<bool>? _location;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -47,10 +49,26 @@ public class MainActivity : AvaloniaMainActivity
         return _permission.Task;
     }
 
+    /// <summary>"Verified at gym" (18c): fine and coarse location together, as Android 12 and later require (the user may
+    /// pick approximate). True if either is allowed.</summary>
+    public static Task<bool> RequestLocationPermissionAsync(Context context)
+    {
+        if (AndroidLocationProvider.Allowed(context)) return Task.FromResult(true);
+        if (_current?.TryGetTarget(out var activity) != true) return Task.FromResult(false);
+
+        _location?.TrySetResult(false);
+        _location = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        activity!.RequestPermissions([Manifest.Permission.AccessFineLocation, Manifest.Permission.AccessCoarseLocation],
+            LocationPermissionRequest);
+        return _location.Task;
+    }
+
     public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
     {
         base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == NotificationPermissionRequest)
             _permission?.TrySetResult(grantResults.Length > 0 && grantResults[0] == Permission.Granted);
+        if (requestCode == LocationPermissionRequest)
+            _location?.TrySetResult(grantResults.Any(r => r == Permission.Granted));
     }
 }

@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
+    public DbSet<LiveWorkout> LiveWorkouts => Set<LiveWorkout>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -112,6 +113,17 @@ public class AppDbContext : DbContext
         // One workout entry and one calorie entry per user per day
         b.Entity<WorkoutLog>().HasIndex(w => new { w.UserId, w.Date }).IsUnique();
         b.Entity<CalorieLog>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
+
+        // Live workouts (Phase 18): at most one open per user; the ended ones stay until their user or day goes
+        b.Entity<LiveWorkout>().HasIndex(l => l.UserId).IsUnique().HasFilter("\"EndedAt\" IS NULL");
+        b.Entity<LiveWorkout>().HasOne(l => l.User).WithMany()
+            .HasForeignKey(l => l.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<LiveWorkout>().HasOne(l => l.SplitDay).WithMany()
+            .HasForeignKey(l => l.SplitDayId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<LiveWorkout>().Property(l => l.SkippedExerciseIds).HasMaxLength(400);
+        b.Entity<LiveWorkout>().Property(l => l.AutoStop).HasMaxLength(12);
+        b.Entity<LiveWorkout>().HasOne(l => l.VerifiedGym).WithMany()
+            .HasForeignKey(l => l.VerifiedGymId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<CalorieLog>().Property(c => c.GoalTypeAtTime).HasConversion<string>();
         
         b.Entity<UserSchedule>().HasIndex(s => new { s.UserId, s.EffectiveFrom }).IsUnique();

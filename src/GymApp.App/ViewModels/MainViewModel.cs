@@ -184,7 +184,13 @@ public partial class MainViewModel : ViewModelBase
     private async Task RefreshStreakAsync()
     {
         if (_session.CurrentUser is not { } user) return;
-        try { Streak = (await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today)).Current; }
+        // During a live workout today's log may already exist (it's written silently at half): the bar shows the streak
+        // without it until the workout ends
+        try
+        {
+            var live = await _sp.GetRequiredService<LiveWorkoutService>().IsOpenAsync(user.Id);
+            Streak = (await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today, beforeTodaysLog: live)).Current;
+        }
         catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "App bar streak"); }
         await RefreshAvatarAsync();
     }
@@ -260,7 +266,7 @@ public partial class MainViewModel : ViewModelBase
     public void ShowProfile() => Open(_sp.GetRequiredService<ProfileViewModel>, root: false);
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
-    public void ShowGyms(bool pickToday = false, bool chooseCity = false)
+    public void ShowGyms(bool pickToday = false, bool chooseCity = false, bool addGym = false)
     {
         var first = true;
         Open(() =>
@@ -269,6 +275,7 @@ public partial class MainViewModel : ViewModelBase
             // Only the first time; going back to the map doesn't open the picker again
             if (first && pickToday) vm.PickTodayWhenLoaded();
             if (first && chooseCity) vm.ChooseCityWhenLoaded();
+            if (first && addGym) vm.AddGymWhenLoaded();
             first = false;
             return vm;
         }, root: false);

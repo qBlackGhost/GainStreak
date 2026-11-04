@@ -749,6 +749,61 @@ namespace GymApp.Data.Migrations
                     b.ToTable("Gyms");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.LiveWorkout", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AutoStop")
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("CurrentExerciseId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastActiveAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SkippedExerciseIds")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SplitDayId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("StopNoteSeen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("VerifiedGymId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SplitDayId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAt\" IS NULL");
+
+                    b.HasIndex("VerifiedGymId");
+
+                    b.ToTable("LiveWorkouts");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.MissedDayChoice", b =>
                 {
                     b.Property<int>("Id")
@@ -1226,6 +1281,9 @@ namespace GymApp.Data.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<bool>("WorkoutNotificationsAsked")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
@@ -1420,13 +1478,22 @@ namespace GymApp.Data.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("FilledExercises")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int?>("GymId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("SplitDayId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("TotalExercises")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("Verified")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -1574,6 +1641,32 @@ namespace GymApp.Data.Migrations
                     b.Navigation("City");
 
                     b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.LiveWorkout", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.SplitDay", "SplitDay")
+                        .WithMany()
+                        .HasForeignKey("SplitDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.Gym", "VerifiedGym")
+                        .WithMany()
+                        .HasForeignKey("VerifiedGymId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("SplitDay");
+
+                    b.Navigation("User");
+
+                    b.Navigation("VerifiedGym");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.MissedDayChoice", b =>

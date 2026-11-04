@@ -18,6 +18,9 @@ public sealed class RemindersTests : IAsyncLifetime
         public bool IsSupported => true;
         public Task<bool> RequestPermissionAsync() { PermissionAsked++; return Task.FromResult(Allow); }
         public void Replace(IReadOnlyList<PlannedReminder> reminders) => Scheduled = reminders;
+        public int NudgeCalls { get; private set; }
+        public void ScheduleWorkoutNudge(DateTimeOffset at, string title, string body) => NudgeCalls++;
+        public void CancelWorkoutNudge() => NudgeCalls++;
     }
 
     private readonly TempDataDirectory _data = new();
@@ -68,6 +71,7 @@ public sealed class RemindersTests : IAsyncLifetime
         Assert.NotNull(_scheduler.Scheduled);
         Assert.NotEmpty(_scheduler.Scheduled!);   // a week of a split always has training days
         Assert.Null(vm.Note);
+        Assert.Equal(0, _scheduler.NudgeCalls);   // the reminders never touch the workout nudge (18b)
     }
 
     [Fact] public async Task ARefusal_TurnsTheSwitchBackOff_AndSaysWhere()

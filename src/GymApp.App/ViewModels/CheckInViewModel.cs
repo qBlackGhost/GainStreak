@@ -206,7 +206,7 @@ public partial class CheckInViewModel : ViewModelBase
     }
 
     /// <summary>"+2 pts" for 29 minutes, capped at +3; the rule itself while nothing valid is typed.</summary>
-    private static string CardioHintFor(int? minutes) => minutes switch
+    internal static string CardioHintFor(int? minutes) => minutes switch
     {
         null or 0 => $"+1 pt for every {PointsCalculator.CardioMinutesPerPoint} minutes, up to +{PointsCalculator.MaxCardioPoints}",
         var m when PointsCalculator.CardioPoints(m.Value) is var p and > 0 =>
@@ -215,7 +215,7 @@ public partial class CheckInViewModel : ViewModelBase
     };
 
     /// <summary>Empty is valid (no cardio, 0); otherwise a whole number of minutes in range.</summary>
-    private static bool ParseCardio(string? text, out int minutes)
+    internal static bool ParseCardio(string? text, out int minutes)
     {
         minutes = 0;
         if (string.IsNullOrWhiteSpace(text)) return true;

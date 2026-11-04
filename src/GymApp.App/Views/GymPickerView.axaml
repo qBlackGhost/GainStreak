@@ -181,12 +181,14 @@
                             <TextBox Classes="field" PlaceholderText="Name" Text="{Binding GymFormName}" MaxLength="{Binding MaxNameLength}"/>
                             <TextBlock Classes="fieldError" Text="{Binding GymFormNameError}"
                                        IsVisible="{Binding GymFormNameError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                            <TextBlock Text="Address (optional)" FontSize="12" Classes="muted"/>
+                            <TextBlock Text="Address" FontSize="12" Classes="muted"/>
+                            <TextBlock Text="Pick the gym's address so workouts there can be verified." FontSize="12" Classes="muted"
+                                       TextWrapping="Wrap" IsVisible="{Binding !HasFormAddress}"/>
                             <StackPanel Spacing="6" IsVisible="{Binding HasFormAddress}">
-                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                <!-- No Remove: a custom gym needs its address (18c) -->
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBlock Text="{Binding FormAddressText}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     <Button Grid.Column="1" Classes="link" FontSize="12" Content="Change" Command="{Binding ChangeFormAddressCommand}"/>
-                                    <Button Grid.Column="2" Classes="link" FontSize="12" Content="Remove" Command="{Binding ClearFormAddressCommand}"/>
                                 </Grid>
                                 <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowHouseNumber}">
                                     <TextBox Classes="field" Width="100" PlaceholderText="No." Text="{Binding FormHouseNumber}"
@@ -260,6 +262,8 @@
                                                             </WrapPanel>
                                                             <TextBlock Text="{Binding DetailText}" FontSize="12" Classes="muted"
                                                                        TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                            <TextBlock Text="Add an address so workouts here can be verified." FontSize="12"
+                                                                       Foreground="{DynamicResource Warn}" TextWrapping="Wrap" IsVisible="{Binding NeedsAddress}"/>
                                                         </StackPanel>
                                                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                             <!-- Custom gyms are always the user's own -->

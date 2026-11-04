@@ -13,10 +13,14 @@ namespace GymApp.App.ViewModels;
 
 public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 {
-    /// <summary>Back closes the check-in, the undo question or the points history first.</summary>
+    /// <summary>Back closes the check-in, the live workout's sheets, the undo question or the points history first.</summary>
     public bool CloseOnBack()
     {
         if (IsCheckingIn) { CheckIn = null; return true; }
+        if (IsPickingDay) { IsPickingDay = false; return true; }
+        if (IsLocationNoteOpen) { AnswerLocationNote(false); return true; }
+        if (IsReturnOpen) { _ = ContinueWorkoutAsync(); return true; }
+        if (Live?.CloseOnBack() == true) return true;
         if (IsConfirmingUndo) { IsConfirmingUndo = false; return true; }
         if (IsPointsHistoryOpen) { IsPointsHistoryOpen = false; return true; }
         return false;
@@ -35,6 +39,10 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     private readonly WorkoutMenuService _menu;
     private readonly MissedDayService _missedDays;
     private readonly GymSummaryService _gymSummary;
+    private readonly LiveWorkoutService _liveWorkouts;
+    private readonly LiveWorkoutWatcher _watcher;
+    private readonly INotificationScheduler _notifications;
+    private readonly ILocationProvider _location;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
@@ -42,9 +50,17 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                          ILeaderboardService leaderboard,
                          SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
                          GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory,
-                         InboxService inbox)
+                         InboxService inbox, IPlatform platform, LiveWorkoutService liveWorkouts,
+                         LiveWorkoutWatcher watcher, INotificationScheduler notifications, ILocationProvider location)
     {
+        _location = location;
         _inbox = inbox;
+        _liveWorkouts = liveWorkouts;
+        _watcher = watcher;
+        _notifications = notifications;
+        // The return popup and the 4-hour / midnight stop (18b) come from the watcher, on any thread
+        watcher.Listen(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = RefreshAsync()));
+        HasLiveWorkout = platform.HasLiveWorkout;
         PointsHistory = pointsHistory;
         _session = session;
         _accounts = accounts;
@@ -99,6 +115,56 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
     /// <summary>Sets were logged today, but no check-in yet.</summary>
     [ObservableProperty] public partial bool ShowSetsHint { get; set; }
+
+    // ===== Live workout (Phase 18, phones): Start workout, the card under the streak card, focus mode =====
+
+    /// <summary>The head logs through the live workout instead of "I went today" (phones; the TestBench can switch).</summary>
+    public bool HasLiveWorkout { get; }
+    public bool HasCheckIn => !HasLiveWorkout;
+
+    /// <summary>The open session's card. While it's open Home is in focus mode: only the streak card and the card.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsLive), nameof(ShowDashboard))]
+    public partial LiveWorkoutCardViewModel? Live { get; set; }
+
+    public bool IsLive => Live is not null;
+    public bool ShowDashboard => !IsLive;
+
+    /// <summary>The arc fills with the share of exercises done (phones, during and after a live workout).</summary>
+    [ObservableProperty] public partial bool ShowProgressArc { get; set; }
+    [ObservableProperty] public partial double ProgressSweep { get; set; }
+    /// <summary>Some of the arc is on fire: the cold dashes go and the day's name glows.</summary>
+    [ObservableProperty] public partial bool IsArcHot { get; set; }
+    [ObservableProperty] public partial bool ShowColdArc { get; set; }
+    [ObservableProperty] public partial bool ShowFireArc { get; set; }
+    [ObservableProperty] public partial bool IsTitleHot { get; set; }
+
+    /// <summary>Phones before a workout: Start workout (or why it can't start yet), and after one: the result and Undo.</summary>
+    [ObservableProperty] public partial bool ShowStartRow { get; set; }
+    [ObservableProperty] public partial bool ShowDoneRow { get; set; }
+    [ObservableProperty] public partial bool CanStart { get; set; }
+    [ObservableProperty] public partial string StartLabel { get; set; } = "Start workout";
+    [ObservableProperty] public partial bool ShowPickSplit { get; set; }
+    [ObservableProperty] public partial bool ShowBuildWorkout { get; set; }
+    [ObservableProperty] public partial string? ResultText { get; set; }
+
+    /// <summary>"Workout ended without logging": after End workout below half, until the next workout starts.</summary>
+    [ObservableProperty] public partial bool ShowEndedNote { get; set; }
+
+    /// <summary>"Continue your workout?" after 12 minutes or more away (18b).</summary>
+    [ObservableProperty] public partial bool IsReturnOpen { get; set; }
+    [ObservableProperty] public partial string ReturnText { get; set; } = "";
+    /// <summary>What finishing now means: no points below half, half points below 70%. Shown before choosing.</summary>
+    [ObservableProperty] public partial string? ReturnWarning { get; set; }
+    [ObservableProperty] public partial bool IsReturnWarningBad { get; set; }
+
+    /// <summary>"Your workout stopped after 4 hours. …": once, the next time Home shows after a session ended by itself.</summary>
+    [ObservableProperty] public partial string? StopNoteText { get; set; }
+    [ObservableProperty] public partial bool IsStopNoteBad { get; set; }
+
+    /// <summary>A rest day's Start workout anyway: which of the split's days.</summary>
+    [ObservableProperty] public partial bool IsPickingDay { get; set; }
+    [ObservableProperty] public partial IReadOnlyList<CheckInDay> PickableDays { get; set; } = [];
 
     // ===== Level pill =====
     [ObservableProperty] public partial int LevelNumber { get; set; } = 1;
@@ -229,19 +295,189 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             var points = await _points.SyncAsync(user.Id);   // catches a week that ended while the app was closed
             await RefreshMissedDayAsync(user.Id);
             _makeUpFor = await _streaks.MakeUpDayAsync(user.Id, today.Date);
-            Apply(today, streak);
+            var live = HasLiveWorkout ? await _liveWorkouts.GetOpenAsync(user.Id) : null;
+            Live = live is null ? null : Card(user.Id, live);
+            // Logged silently at half: the streak card shows the streak without today's log until the workout ends
+            Apply(today, live is { Logged: true } ? await _streaks.GetAsync(user.Id, today.Date, beforeTodaysLog: true) : streak);
             await RefreshStreakEndedAsync(user.Id, cached, streak);
             await RefreshDashboardAsync(user.Id);
             ApplyPoints(points);
             await RefreshGymAsync(user.Id);
             await RefreshCaloriesAsync(user.Id);
             await RefreshSetupAsync(user.Id);
+            await RefreshStartAsync(user.Id);
+            await RefreshStopNoteAsync(user.Id);
+            ShowReturnIfPending();
         }
         catch (Exception)
         {
             Error = "Could not load today's workout.";
         }
         await RefreshFriendsAsync(user.Id);
+    }
+
+    /// <summary>The one-time note about a session that stopped by itself.</summary>
+    private async Task RefreshStopNoteAsync(int userId)
+    {
+        if (!HasLiveWorkout || await _liveWorkouts.GetStopNoteAsync(userId) is not { } note) return;
+        var lead = note.AtMidnight ? "Your workout stopped at midnight." : "Your workout stopped after 4 hours.";
+        var done = $"You did {note.Filled} of {note.Total} exercise{(note.Total == 1 ? "" : "s")}";
+        StopNoteText = !note.Counted
+            ? $"{lead} It didn't count: fewer than half the exercises were filled. Finish a workout "
+              + (note.AtMidnight ? "today" : "today or tomorrow") + " to keep your streak."
+            : note.WorkoutPoints >= PointsCalculator.WorkoutPoints ? $"{lead} {done}: +{note.WorkoutPoints} pts."
+            : $"{lead} {done}: half points, +{note.WorkoutPoints} pts.";
+        IsStopNoteBad = !note.Counted;
+        await _liveWorkouts.MarkStopNoteSeenAsync(userId, note.Id);
+    }
+
+    /// <summary>The return popup, when the watcher says the user was away 12 minutes or more.</summary>
+    private void ShowReturnIfPending()
+    {
+        if (!_watcher.ReturnPending) return;
+        if (Live is not { } card) { _watcher.ClearReturn(); return; }
+        var next = card.NextExerciseName;
+        ReturnText = $"{card.Filled} of {card.Total} exercises done." + (next is null ? "" : $" {next} is next.");
+        var toFull = CheckInRule.RequiredForFull(card.Total) - card.Filled;
+        IsReturnWarningBad = !card.Info.Status.CanLog;
+        // Half points only matter for a verified workout: an unverified one earns the same either way
+        ReturnWarning = IsReturnWarningBad
+            ? "Finishing now won't count: fewer than half the exercises are done, so it earns no points. Your sets are "
+              + "kept. Your streak is at risk unless you finish a workout today or tomorrow."
+            : toFull > 0 && card.Info.IsVerified ? $"Finishing now earns half points. Do {toFull} more exercise{(toFull == 1 ? "" : "s")} for full points."
+            : null;
+        IsReturnOpen = true;
+    }
+
+    [RelayCommand]
+    private async Task ContinueWorkoutAsync()
+    {
+        IsReturnOpen = false;
+        try { await _watcher.ContinueAsync(); }
+        catch (Exception) { /* the clock restarts with the next set anyway */ }
+    }
+
+    /// <summary>"Finish workout early": with half or more, the Finish sheet (cardio, then the result); below half the
+    /// session ends without logging, as the popup said.</summary>
+    [RelayCommand]
+    private async Task FinishEarlyAsync()
+    {
+        IsReturnOpen = false;
+        _watcher.ClearReturn();
+        if (Live is not { } card) return;
+        if (card.Info.Status.CanLog) card.OpenFinishCommand.Execute(null);
+        else await card.EndCommand.ExecuteAsync(null);
+    }
+
+    private LiveWorkoutCardViewModel Card(int userId, LiveWorkoutInfo info) =>
+        new(_liveWorkouts, _sets, _location, userId, info, _ => UpdateHero(), LiveEndedAsync, () => _shell().ShowGyms(addGym: true));
+
+    /// <summary>Phones: whether Start workout can start, and the result line after a workout. The same messages and
+    /// buttons as the check-in when there's nothing to start.</summary>
+    private async Task RefreshStartAsync(int userId)
+    {
+        if (!HasLiveWorkout || _today is not { } today) return;
+        var c = await _workouts.GetCheckInAsync(userId);
+        ShowPickSplit = !c.HasSplit;
+        ShowBuildWorkout = c.HasSplit && (c.PlannedDay is not null ? c.Exercises.Count == 0 : c.PickableDays.Count == 0);
+        CanStart = c.HasSplit && !ShowBuildWorkout && !HasMissedDay && !today.Logged;
+        StartLabel = c.HasSplit && c.PlannedDay is null ? "Start workout anyway" : "Start workout";
+
+        ResultText = null;
+        if (today.Logged && !IsLive)
+        {
+            var lines = (await _points.GetAsync(userId))?.History
+                .Where(l => l.Date == today.Date && l.Reason is PointsReason.Workout or PointsReason.Cardio).ToList() ?? [];
+            var earned = lines.Sum(l => l.Amount);
+            var record = new WorkoutRecord(today.Date, today.FilledExercises, today.TotalExercises, today.Verified);
+            ResultText = today.Verified == false ? $"+{earned} pts · not verified"
+                : PointsCalculator.IsComplete(record) || today is not { FilledExercises: { } f, TotalExercises: { } t }
+                    ? $"+{earned} pts · full points"
+                    : $"+{earned} pts · half points, {f} of {t} exercises";
+        }
+    }
+
+    /// <summary>Start workout: today's planned day; on a rest day the user picks the day first.</summary>
+    [RelayCommand]
+    private Task StartWorkoutAsync() => StartAsync(null);
+
+    [RelayCommand]
+    private Task PickDayAsync(CheckInDay day) => StartAsync(day.SplitDayId);
+
+    private async Task StartAsync(int? splitDayId)
+    {
+        if (_session.CurrentUser is not { } user) return;
+        try
+        {
+            Error = null;
+            var r = await _liveWorkouts.StartAsync(user.Id, splitDayId);
+            if (r.NeedsDay)
+            {
+                PickableDays = r.PickableDays ?? [];
+                IsPickingDay = true;
+                return;
+            }
+            IsPickingDay = false;
+            if (!r.Success || r.Workout is null) { Error = r.Error; return; }
+            ShowEndedNote = false;
+            StopNoteText = null;
+            PointsNotice = null;
+            PointsLostNotice = null;
+            // The first Start asks to notify, for "Continue your workout?" (18b), then for location (18c), before the
+            // card reads it. Refused: no nudge, and the workout runs unverified ("Location is off")
+            if (await _liveWorkouts.FirstStartAsync(user.Id))
+            {
+                if (_notifications.IsSupported) await _notifications.RequestPermissionAsync();
+                if (_location.IsSupported && !_location.HasPermission && (!_location.NeedsNoteBeforePrompt || await AskLocationNoteAsync()))
+                    await _location.RequestPermissionAsync();
+            }
+            Live = Card(user.Id, r.Workout);
+            UpdateHero();
+        }
+        catch (Exception)
+        {
+            Error = "Could not start the workout.";
+        }
+    }
+
+    [RelayCommand] private void CancelPickDay() => IsPickingDay = false;
+
+    // ===== Android's location prompt has no word from the app, so a note comes first (18c) =====
+    [ObservableProperty] public partial bool IsLocationNoteOpen { get; set; }
+    private TaskCompletionSource<bool>? _locationNote;
+
+    /// <summary>Shows the note; true for Continue (then the system asks), false for Not now.</summary>
+    private Task<bool> AskLocationNoteAsync()
+    {
+        _locationNote?.TrySetResult(false);
+        _locationNote = new TaskCompletionSource<bool>();
+        IsLocationNoteOpen = true;
+        return _locationNote.Task;
+    }
+
+    [RelayCommand] private void LocationNoteContinue() => AnswerLocationNote(true);
+    [RelayCommand] private void LocationNoteNotNow() => AnswerLocationNote(false);
+
+    private void AnswerLocationNote(bool allow)
+    {
+        IsLocationNoteOpen = false;
+        _locationNote?.TrySetResult(allow);
+    }
+
+    /// <summary>Finish or End: the card goes, and Home shows the result (the first place it appears) or, ended below
+    /// half, the note that nothing was logged.</summary>
+    private async Task LiveEndedAsync(LiveEndResult result)
+    {
+        Live = null;
+        if (_session.CurrentUser is not { } user) return;
+        if (result.Log is { } log)
+        {
+            await CheckedInAsync(log);
+            await RefreshStartAsync(user.Id);
+            return;
+        }
+        ShowEndedNote = result.Outcome == LiveOutcome.NotCounted;
+        await RefreshAsync();
     }
 
     /// <summary>Today's workout, this week's row and recent PRs. They change with a check-in, an undo or a missed-day
@@ -264,7 +500,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             Week.Apply(chips, names);
 
             RecentPrs.Apply(await _sets.GetRecentPrsAsync(userId));
-            ShowSetsHint = _today is { Logged: false } && !HasMissedDay && await _sets.HasSetsTodayAsync(userId, today);
+            ShowSetsHint = HasCheckIn && _today is { Logged: false } && !HasMissedDay && await _sets.HasSetsTodayAsync(userId, today);
             GymsThisMonth = (await _gymSummary.GetMonthAsync(userId, today.Year, today.Month)).DistinctGyms
                 .ToString(CultureInfo.InvariantCulture);
             UpdateHero();
@@ -484,7 +720,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                   : "Rest day. You can still log an extra workout.";
         LogLabel = today.Logged ? "Logged ✓" : today is { HasSplit: true, IsTraining: false } ? "Log extra workout" : "I went today";
         CanLog = !today.Logged && !HasMissedDay;
-        CanUndo = today.Logged;   // today only: after midnight yesterday's log is read-only
+        CanUndo = today.Logged && !IsLive;   // today only: after midnight yesterday's log is read-only
         if (!today.Logged) IsConfirmingUndo = false;
 
         StreakText = $"{streak.Current} day streak · best {streak.Longest}";
@@ -503,7 +739,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
         StreakCurrent = streak.Current;
         BestStreakText = streak.Longest == 1 ? "1 day" : $"{streak.Longest} days";
-        if (today.Logged) ShowSetsHint = false;
+        if (today.Logged || HasLiveWorkout) ShowSetsHint = false;
         UpdateHero();
 
         // keep the in-memory session user in sync
@@ -519,10 +755,33 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     {
         if (_today is not { } today || _streak is not { } streak) return;
         var rest = today is { HasSplit: true, IsTraining: false };
-        IsDone = today.Logged;
+        var live = Live;
+        var logged = today.Logged && live is null;   // logged silently during a live workout: not done yet on screen
+        IsDone = logged;
         IsRestDay = rest;
-        IsTrainingOpen = !today.Logged && !rest;
-        IsRestOpen = !today.Logged && rest;
+        IsTrainingOpen = !logged && !rest && live is null;
+        IsRestOpen = !logged && rest && live is null;
+
+        // Phones: the arc shows the share of exercises done, live or after the workout (a log from before 0.18.0 is whole)
+        var share = live is not null ? live.Progress
+            : logged ? (today is { FilledExercises: { } f, TotalExercises: > 0 and var t } ? Math.Min(1, (double)f / t) : 1)
+            : 0;
+        ShowProgressArc = HasLiveWorkout && (live is not null || logged);
+        ProgressSweep = 180 * share;
+        IsArcHot = ShowProgressArc && share > 0;
+        ShowColdArc = !IsRestOpen && !IsArcHot;
+        ShowFireArc = HasCheckIn && logged;
+        IsTitleHot = HasLiveWorkout ? IsArcHot : logged;
+        ShowStartRow = HasLiveWorkout && live is null && !logged;
+        ShowDoneRow = HasLiveWorkout && live is null && logged;
+        if (live is not null)
+        {
+            IsMakeUpDay = false;
+            GaugeKicker = "WORKOUT IN PROGRESS";
+            GaugeTitle = live.Info.DayName.ToUpperInvariant();
+            GaugeSub = live.ProgressText;
+            return;
+        }
 
         IsMakeUpDay = _makeUpFor is not null;
         GaugeKicker = _makeUpFor is { } owed
@@ -535,12 +794,15 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
         var count = TodayWorkout.Exercises.Count;
         GaugeSub = !today.HasSplit ? "No split selected"
+                 : HasLiveWorkout && today is { Logged: true, FilledExercises: { } done, TotalExercises: { } all }
+                     ? $"{done} of {all} exercise{(all == 1 ? "" : "s")}"
                  : rest ? (today.Logged ? "Extra workout logged" : "Enjoy the rest. It counts toward your streak.")
                  : today.Logged ? "Done for today"
                  : count > 0 ? $"{count} exercise{(count == 1 ? "" : "s")} planned"
                  : "No exercises built yet";
 
-        StatusText = today.Logged
+        StatusText = ShowEndedNote && !today.Logged ? "Start again when you're back at the gym."
+            : today.Logged
             ? (rest ? "Extra workout logged. Nice." : $"{Capitalize(today.Title)} done. Streak is now {streak.Current} day{(streak.Current == 1 ? "" : "s")}.")
             : !today.HasSplit ? "Pick a split to get a weekly schedule."
             : rest ? "Rest day. Feel like training anyway?"

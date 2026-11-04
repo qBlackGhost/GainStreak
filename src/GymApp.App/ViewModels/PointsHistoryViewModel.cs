@@ -62,6 +62,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
 
     // The rules, for the footer
     public string WorkoutPoints { get; } = $"+{PointsCalculator.WorkoutPoints}";
+    public string ReducedWorkoutPoints { get; } = $"+{PointsCalculator.ReducedWorkoutPoints}";
     public string WeekPoints { get; } = $"+{PointsCalculator.WeekCompletePoints}";
     public string WeekGracePoints { get; } = $"+{PointsCalculator.WeekCompleteGracePoints}";
     public string CaloriePoints { get; } = $"+{PointsCalculator.CalorieTargetPoints}";
@@ -124,7 +125,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
         IsEmpty = Weeks.Count == 0;
         EmptyText = Filter switch
         {
-            PointsFilter.Workouts => $"Check in with \"I went today\" to earn {PointsCalculator.WorkoutPoints} points.",
+            PointsFilter.Workouts => $"Log a workout to earn up to {PointsCalculator.WorkoutPoints} points.",
             PointsFilter.Weeks => $"Train every planned day of a week to earn {PointsCalculator.WeekCompletePoints} points.",
             PointsFilter.Calories => $"Log what you ate and land in your target range to earn {PointsCalculator.CalorieTargetPoints} points.",
             _ => "Log a workout or hit your calorie target to earn some."
@@ -140,7 +141,7 @@ public partial class PointsHistoryViewModel : ViewModelBase
     };
 
     private static PointsRow ToRow(PointsLine l) => new(
-        PointsCalculator.DisplayName(l.Reason),
+        l.Label,
         l.Date.ToString("ddd d MMM", CultureInfo.InvariantCulture),
         Signed(l.Amount),
         l.Reason is PointsReason.Workout or PointsReason.Cardio,

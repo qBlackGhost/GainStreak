@@ -14,6 +14,8 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
 
     public override INotificationScheduler CreateNotificationScheduler() => new AndroidNotificationScheduler(context);
 
+    public override ILocationProvider CreateLocationProvider() => new AndroidLocationProvider(context);
+
     public override bool CanOpenStorePage => true;
 
     /// <summary>The Play Store app at this app's page; the web page where there's no store app (an emulator).</summary>

@@ -9,6 +9,9 @@ public static partial class CustomGyms
     public const int MaxNameLength = 60;
     public const int MaxAddressLength = 120;
 
+    /// <summary>Custom gyms need a picked address (18c), so workouts there can be verified.</summary>
+    public const string AddressRequired = "Pick the gym's address so workouts there can be verified.";
+
     /// <summary>Trims and collapses runs of spaces, so "  Iron   Gym " and "Iron Gym" are the same name.</summary>
     public static string Clean(string? text) => Spaces().Replace(text ?? "", " ").Trim();
 

@@ -36,6 +36,8 @@ public class User
 
     // Reminders on the phones (16g): off until the user turns them on in Profile
     public bool RemindersEnabled { get; set; }
+    /// <summary>Notification permission was asked at the first Start workout (Phase 18); Start never asks again.</summary>
+    public bool WorkoutNotificationsAsked { get; set; }
     public bool TrainingReminderEnabled { get; set; } = true;
     public TimeOnly TrainingReminderTime { get; set; } = new(18, 0);
     public bool MissedDayReminderEnabled { get; set; } = true;

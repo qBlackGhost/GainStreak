@@ -12,6 +12,9 @@ namespace GymApp.Android;
 public sealed class AndroidNotificationScheduler(Context context) : INotificationScheduler
 {
     public const string ChannelId = "reminders";
+    /// <summary>The workout nudge (Phase 18): its own channel and an id no reminder uses (theirs are 1,000,000 and up).</summary>
+    public const string WorkoutChannelId = "workout";
+    public const int NudgeId = 18;
     private const string Prefs = "gymapp_reminders", IdsKey = "ids";
 
     public bool IsSupported => true;
@@ -37,13 +40,27 @@ public sealed class AndroidNotificationScheduler(Context context) : INotificatio
         prefs.Edit()!.PutStringSet(IdsKey, ids)!.Apply();
     }
 
+    public void ScheduleWorkoutNudge(DateTimeOffset at, string title, string body)
+    {
+        var alarms = (AlarmManager)context.GetSystemService(Context.AlarmService)!;
+        alarms.SetAndAllowWhileIdle(AlarmType.RtcWakeup, at.ToUnixTimeMilliseconds(), Pending(NudgeId, title, body, WorkoutChannelId));
+    }
+
+    public void CancelWorkoutNudge()
+    {
+        ((AlarmManager)context.GetSystemService(Context.AlarmService)!).Cancel(Pending(NudgeId, null));
+        ((NotificationManager)context.GetSystemService(Context.NotificationService)!).Cancel(NudgeId);
+    }
+
     /// <summary>The alarm's intent; the same id gives the same PendingIntent, which is how it's cancelled.</summary>
-    private PendingIntent Pending(int id, PlannedReminder? r)
+    private PendingIntent Pending(int id, PlannedReminder? r) => Pending(id, r?.Title, r?.Body, ChannelId);
+
+    private PendingIntent Pending(int id, string? title, string? body, string channel)
     {
         var intent = new Intent(context, typeof(ReminderReceiver)).SetAction(ReminderReceiver.Action);
-        if (r is not null)
-            intent.PutExtra(ReminderReceiver.IdExtra, id).PutExtra(ReminderReceiver.TitleExtra, r.Title)
-                  .PutExtra(ReminderReceiver.BodyExtra, r.Body);
+        if (title is not null)
+            intent.PutExtra(ReminderReceiver.IdExtra, id).PutExtra(ReminderReceiver.TitleExtra, title)
+                  .PutExtra(ReminderReceiver.BodyExtra, body ?? "").PutExtra(ReminderReceiver.ChannelExtra, channel);
         return PendingIntent.GetBroadcast(context, id, intent, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent)!;
     }
 
@@ -51,11 +68,16 @@ public sealed class AndroidNotificationScheduler(Context context) : INotificatio
     public static void EnsureChannel(Context context)
     {
         var manager = (NotificationManager)context.GetSystemService(Context.NotificationService)!;
-        if (manager.GetNotificationChannel(ChannelId) is not null) return;
-        manager.CreateNotificationChannel(new NotificationChannel(ChannelId, "Reminders", NotificationImportance.Default)
-        {
-            Description = "Training-day and missed-day reminders"
-        });
+        if (manager.GetNotificationChannel(ChannelId) is null)
+            manager.CreateNotificationChannel(new NotificationChannel(ChannelId, "Reminders", NotificationImportance.Default)
+            {
+                Description = "Training-day and missed-day reminders"
+            });
+        if (manager.GetNotificationChannel(WorkoutChannelId) is null)
+            manager.CreateNotificationChannel(new NotificationChannel(WorkoutChannelId, "Workout in progress", NotificationImportance.High)
+            {
+                Description = "\"Continue your workout?\" when you leave the app during a workout"
+            });
     }
 }
 
@@ -64,7 +86,7 @@ public sealed class AndroidNotificationScheduler(Context context) : INotificatio
 public sealed class ReminderReceiver : BroadcastReceiver
 {
     public const string Action = "com.gainstreak.app.REMINDER";
-    public const string IdExtra = "id", TitleExtra = "title", BodyExtra = "body";
+    public const string IdExtra = "id", TitleExtra = "title", BodyExtra = "body", ChannelExtra = "channel";
 
     public override void OnReceive(Context? context, Intent? intent)
     {
@@ -79,7 +101,8 @@ public sealed class ReminderReceiver : BroadcastReceiver
             .AddFlags(ActivityFlags.NewTask | ActivityFlags.SingleTop | ActivityFlags.ClearTop);
         var tap = PendingIntent.GetActivity(context, id, open, PendingIntentFlags.Immutable | PendingIntentFlags.UpdateCurrent);
 
-        var notification = new Notification.Builder(context, AndroidNotificationScheduler.ChannelId)
+        var channel = intent.GetStringExtra(ChannelExtra) ?? AndroidNotificationScheduler.ChannelId;
+        var notification = new Notification.Builder(context, channel)
             .SetSmallIcon(Resource.Drawable.ic_notification)
             .SetContentTitle(title)
             .SetContentText(body)

@@ -261,7 +261,8 @@ public class WorkoutServiceTests : IDisposable
         var logged = await _svc.LogTodayAsync(_alice, today: Fri);
         Assert.Equal(5, logged.Streak!.Current);   // rest days count: Mon to Fri
         Assert.Contains(Entries(_alice), p => p.Reason == PointsReason.WeekComplete);
-        Assert.Equal(4 * 5 + 50, CachedPoints(_alice));
+        // The three older logs are from before 0.18.0 (+5 each); today's desktop check-in isn't verified (+2, 18c)
+        Assert.Equal(3 * 5 + PointsCalculator.ReducedWorkoutPoints + 50, CachedPoints(_alice));
 
         var undone = await _svc.UndoTodayAsync(_alice, Fri);
 
@@ -275,7 +276,7 @@ public class WorkoutServiceTests : IDisposable
         Assert.DoesNotContain(Entries(_alice), p => p.Reason == PointsReason.WeekComplete);
         Assert.Equal(3 * 5, CachedPoints(_alice));
         Assert.Equal(3 * 5, undone.Points!.NewTotal);
-        Assert.Equal([(PointsReason.Workout, 5), (PointsReason.WeekComplete, 50)],
+        Assert.Equal([(PointsReason.Workout, PointsCalculator.ReducedWorkoutPoints), (PointsReason.WeekComplete, 50)],
             undone.Points.Removed.Select(r => (r.Reason, r.Amount)).OrderBy(r => r.Reason));
     }
 
@@ -377,6 +378,6 @@ public class WorkoutServiceTests : IDisposable
 
         Assert.Single(Logs(_alice));
         Assert.Single(Entries(_alice), p => p.Reason == PointsReason.Workout && p.Date == Fri);
-        Assert.Equal(5, CachedPoints(_alice));
+        Assert.Equal(PointsCalculator.ReducedWorkoutPoints, CachedPoints(_alice));   // the desktop's check-ins aren't verified
     }
 }

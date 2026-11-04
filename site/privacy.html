@@ -17,13 +17,13 @@
   </nav>
 
   <h1>Privacy policy</h1>
-  <p class="updated">Last updated 1 November 2026</p>
+  <p class="updated">Last updated 5 November 2026</p>
 
   <p>GainStreak is a gym tracker with a small social side: friends, a leaderboard and a map of the gyms your friends train at. It's a student project made by Cristi Delamarian, who is responsible for the data described here. Questions go to <a href="mailto:gainstreak.app@gmail.com">gainstreak.app@gmail.com</a>.</p>
 
   <div class="note">
     <p><strong>In short:</strong> your workouts, sets, body data and calories stay on your device and are never sent anywhere. The server only holds your account and what your friends see: your username, points, level, streak and, if you turn it on, the gyms you check in at.</p>
-    <p>No ads, no analytics, no tracking, and the app never reads your location.</p>
+    <p>No ads, no analytics and no tracking. On a phone, during a workout, the app checks whether you're at one of your gyms; your location never leaves the phone.</p>
   </div>
 
   <h2>Kept only on your device</h2>
@@ -36,6 +36,16 @@
     <li>The app's error log, unless you choose to attach it to feedback</li>
   </ul>
   <p>Signing in on another device doesn't copy them: each device keeps its own. Uninstalling the app or deleting your account in it removes them from that device.</p>
+
+  <h2>Your location, during a workout</h2>
+  <p>On a phone, when you start a workout on Home, the app asks once for your location while you use it. It reads it at <strong>Start workout</strong> and after each set until it finds you near one of your gyms, then stops for that workout. That's all it's used for: marking the workout <strong>verified at gym</strong>, which earns it full points.</p>
+  <ul>
+    <li>It's read only while a workout is open on screen, never in the background, and the app doesn't have background location permission.</li>
+    <li>It's compared on the phone with the gyms already saved there (your cities' gyms and your own). Your position isn't stored, logged, or sent to the GainStreak server, OpenStreetMap or anyone else.</li>
+    <li>Only the result is kept on the phone: that the workout was verified, and at which gym.</li>
+    <li>You can say no, or turn it off later in the phone's settings. Workouts still count, with fewer points.</li>
+  </ul>
+  <p>The desktop app never reads your location.</p>
 
   <h2>Sent to the GainStreak server</h2>
   <p>The server runs on Google Cloud in Belgium, with its database at Neon in Frankfurt, both in the EU. Everything is sent over HTTPS.</p>
@@ -113,7 +123,7 @@
   <p>The companies that run the server for GainStreak, Google Cloud (hosting) and Neon (database), process the server data above on its behalf. Google also delivers the codes emailed to you for confirming your address and resetting your password. Discord receives the feedback and report notifications. None of them get it for their own use, and nothing is sold or shared for advertising.</p>
 
   <h2>What isn't collected</h2>
-  <p>Your location (the app never reads GPS: the map centres on the home city you pick), contacts, photos, files, health-platform data (Apple Health, Health Connect), advertising ids or device ids. There are no ads, no analytics and no tracking tools. Crashes aren't reported anywhere unless you send them yourself through Feedback.</p>
+  <p>Your location (it's only used on the phone during a workout, as described above, and the map centres on the home city you pick), contacts, photos, files, health-platform data (Apple Health, Health Connect), advertising ids or device ids. There are no ads, no analytics and no tracking tools. Crashes aren't reported anywhere unless you send them yourself through Feedback.</p>
 
   <h2>Your choices and rights</h2>
   <ul>

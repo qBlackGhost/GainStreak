@@ -1,0 +1,294 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.LiveWorkoutCardView"
+             x:DataType="vm:LiveWorkoutCardViewModel">
+    <!-- The live workout card under the streak card (Phase 18, the "Home during a workout" artboard): the exercise and
+         the set to do now, the set chips (tap a logged one to change it), weight and reps, Next, and the exercises to
+         pick from. Its Finish and End sheets are in HomeView, over the whole page. -->
+
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- Set chips: the state is only in the style -->
+        <Style Selector="Button.chip">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.chip.logged">
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLineStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.chip.now">
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.chip.nowDimmed">
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Soft}"/>
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="Button.chip.editing">
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Inverse}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+        </Style>
+        <Style Selector="Button.chip.later">
+            <Setter Property="Cursor" Value="Arrow"/>
+        </Style>
+        <Style Selector="Button.chip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Button.chip.editing:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource InverseHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+        </Style>
+        <Style Selector="Button.chip.later:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
+        </Style>
+
+        <!-- Weight and reps: big and monospaced, for a thumb at the gym -->
+        <Style Selector="TextBox.liveField">
+            <Setter Property="MinHeight" Value="56"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="14,0"/>
+        </Style>
+
+        <Style Selector="TextBox.barField">
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- The exercises to pick from -->
+        <Style Selector="Button.exRow">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.exRow.current">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Border.exDot">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="BorderThickness" Value="1.5"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+        </Style>
+        <Style Selector="Border.exDot.current">
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <Style Selector="Border.exDot.filled">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style Selector="TextBlock.exStatus">
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="TextBlock.exStatus.current">
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="TextBlock.exStatus.filled">
+            <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="14">
+
+        <!-- The exercise on the card -->
+        <StackPanel Spacing="14" IsVisible="{Binding HasCurrent}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="{Binding Kicker}" FontSize="11" FontWeight="SemiBold" LetterSpacing="1.5" Classes="muted"/>
+                    <TextBlock Text="{Binding ExerciseName}" FontSize="24" FontWeight="ExtraBold" LineHeight="27"/>
+                    <TextBlock FontSize="13" Classes="soft">
+                        <Run Text="{Binding SetLabel}" FontWeight="Bold" Foreground="{DynamicResource Ink}"/>
+                    </TextBlock>
+                    <TextBlock FontSize="13" Classes="soft"
+                               IsVisible="{Binding LastTimeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <Run Text="Last time "/><Run Text="{Binding LastTimeText}" FontFamily="{StaticResource Mono}"/>
+                    </TextBlock>
+                </StackPanel>
+                <Button Grid.Column="1" Classes="btn outline small" VerticalAlignment="Top" MinHeight="40"
+                        Foreground="{DynamicResource Soft}" Content="Skip for now"
+                        Command="{Binding SkipCommand}" IsVisible="{Binding CanSkip}"/>
+            </Grid>
+
+            <StackPanel Spacing="0">
+                <ItemsControl ItemsSource="{Binding Chips}" AutomationProperties.Name="Sets of this exercise. Tap a logged set to change it.">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LiveSetChipViewModel">
+                            <Button Classes="chip" Classes.logged="{Binding IsLogged}" Classes.now="{Binding IsNow}"
+                                    Classes.nowDimmed="{Binding IsNowWhileEditing}" Classes.editing="{Binding IsEditing}"
+                                    Classes.later="{Binding IsLater}" IsEnabled="{Binding IsTappable}"
+                                    Content="{Binding Text}" Command="{Binding TapCommand}"
+                                    AutomationProperties.Name="{Binding AccessibleName}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="Tap a logged set to change it." FontSize="12" Classes="muted" IsVisible="{Binding ShowChipHint}"/>
+            </StackPanel>
+
+            <!-- A finished exercise opened from the list -->
+            <StackPanel Spacing="10" IsVisible="{Binding ShowFocusDone}">
+                <TextBlock Text="Every set is logged. Tap one to change it." FontSize="14" Classes="soft"/>
+                <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
+                        Command="{Binding BackToPlanCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding BackLabel}" VerticalAlignment="Center"/>
+                        <v:Icon Data="{StaticResource IcArrowRight}" Stroke="Black" StrokeThickness="2.6" Width="18" Height="18"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <StackPanel Spacing="10" IsVisible="{Binding ShowInputs}">
+                <!-- Bar exercises: type the total, or what goes on each side plus the bar (saved per exercise). Chosen
+                     before the first set; after it the mode is fixed for the exercise, so every set is typed alike -->
+                <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowLockedBar}">
+                    <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="13" Height="13" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding LockedModeText}" FontSize="12" FontWeight="SemiBold" Classes="muted" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Spacing="6" IsVisible="{Binding CanChangeBar}">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Border Width="150" Padding="2" CornerRadius="9" Background="{DynamicResource Fill}" VerticalAlignment="Center">
+                            <v:SegmentedPill SelectedIndex="{Binding WeightModeIndex}" PillInset="0" PillCornerRadius="7">
+                                <Button Classes="seg" Classes.on="{Binding IsTotalMode}" MinHeight="34" Padding="0" FontSize="12"
+                                        CornerRadius="7" Content="Total" Command="{Binding SetTotalModeCommand}"/>
+                                <Button Classes="seg" Classes.on="{Binding IsPerSide}" MinHeight="34" Padding="0" FontSize="12"
+                                        CornerRadius="7" Content="Per side" Command="{Binding SetPerSideModeCommand}"/>
+                            </v:SegmentedPill>
+                        </Border>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsPerSide}">
+                            <TextBlock Text="Bar" FontSize="13" Classes="light" VerticalAlignment="Center"/>
+                            <TextBox TextInputOptions.ContentType="Number" Classes="barField" Width="68" MinHeight="38" FontSize="14"
+                                     PlaceholderText="kg" Text="{Binding BarText}" AutomationProperties.Name="Bar weight in kg, optional"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding BarError}" Classes="error" FontSize="13"
+                               IsVisible="{Binding BarError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="{Binding WeightLabel}" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
+                        <TextBox x:Name="WeightBox" Classes="liveField" Text="{Binding WeightText}" TextInputOptions.ContentType="Number"
+                                 AutomationProperties.Name="Weight in kilos"/>
+                        <TextBlock Text="{Binding TotalHint}" FontSize="12" Classes="muted mono"
+                                   IsVisible="{Binding TotalHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Text="Reps" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
+                        <TextBox x:Name="RepsBox" Classes="liveField" Text="{Binding RepsText}" PlaceholderText="{Binding RepsPlaceholder}"
+                                 TextInputOptions.ContentType="Digits" AutomationProperties.Name="Reps"/>
+                    </StackPanel>
+                </Grid>
+                <TextBlock Classes="fieldError" Text="{Binding Error}"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                <!-- Changing a logged set: "Logged ✓" until its numbers differ, then Cancel / Save set -->
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" IsVisible="{Binding EditChanged}">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="54" FontSize="15" Content="Cancel"
+                            Command="{Binding CancelEditCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
+                            Content="Save set" Command="{Binding SaveEditCommand}" IsEnabled="{Binding CanSave}"/>
+                </Grid>
+                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="54" FontSize="15" Content="Logged ✓"
+                        Command="{Binding CancelEditCommand}" IsVisible="{Binding EditUnchanged}"
+                        AutomationProperties.Name="Logged. Back to the current set"/>
+
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding NotEditing}">
+                    <Button Classes="btn outline" MinHeight="54" FontSize="15" Content="Finish"
+                            Command="{Binding OpenFinishCommand}" IsVisible="{Binding CanFinish}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
+                            Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="Next" VerticalAlignment="Center"/>
+                            <v:Icon Data="{StaticResource IcArrowRight}" Stroke="{Binding $parent[Button].Foreground}"
+                                    StrokeThickness="2.6" Width="18" Height="18"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Every exercise filled -->
+        <StackPanel Spacing="14" IsVisible="{Binding AllDone}">
+            <StackPanel Spacing="6" HorizontalAlignment="Center">
+                <TextBlock Text="Every exercise done" FontSize="24" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
+                <TextBlock Text="That's the whole workout." FontSize="14" Classes="soft" HorizontalAlignment="Center"/>
+            </StackPanel>
+            <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16" Content="Finish workout"
+                    Command="{Binding OpenFinishCommand}"/>
+        </StackPanel>
+
+        <!-- The exercises: tap one to do it now -->
+        <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,6,0,0">
+            <StackPanel Spacing="2">
+                <TextBlock Text="Tap an exercise to do it now." FontSize="12" Classes="muted" Margin="8,0,8,4"/>
+                <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LiveExerciseRowViewModel">
+                            <Button Classes="exRow" Classes.current="{Binding IsCurrent}" Command="{Binding PickCommand}"
+                                    AutomationProperties.Name="{Binding Name}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                    <Border Classes="exDot" Classes.current="{Binding IsCurrent}" Classes.filled="{Binding IsFilled}"
+                                            VerticalAlignment="Center">
+                                        <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="3" Width="11" Height="11"
+                                                IsVisible="{Binding IsFilled}"/>
+                                    </Border>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Status}" Classes="mono exStatus"
+                                               Classes.current="{Binding IsCurrent}" Classes.filled="{Binding IsFilled}"
+                                               FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <Button Classes="link" HorizontalAlignment="Center" MinHeight="40" FontSize="13" Foreground="{DynamicResource Muted}"
+                Content="End workout" Command="{Binding OpenEndCommand}" IsVisible="{Binding CanEnd}"/>
+    </StackPanel>
+</UserControl>

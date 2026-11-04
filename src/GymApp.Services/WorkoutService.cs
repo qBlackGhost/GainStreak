@@ -9,8 +9,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Services;
 
-/// <summary>What Home shows for today. Title is empty when the user has no split.</summary>
-public record TodayInfo(DateOnly Date, bool HasSplit, bool IsTraining, string Title, bool Logged);
+/// <summary>What Home shows for today. Title is empty when the user has no split. The exercise counts are today's
+/// log's (Phase 18), null without a log or for a log from before 0.18.0.</summary>
+public record TodayInfo(DateOnly Date, bool HasSplit, bool IsTraining, string Title, bool Logged,
+    int? FilledExercises = null, int? TotalExercises = null, bool? Verified = null);
 
 public record LogResult(bool Success, string? Error = null, StreakResult? Streak = null, PointsSync? Points = null);
 
@@ -50,12 +52,15 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         var today = date ?? Today();
         await using var db = await dbFactory.CreateDbContextAsync();
 
-        var logged = await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.Date == today);
+        var log = await db.WorkoutLogs.AsNoTracking().Where(w => w.UserId == userId && w.Date == today)
+            .Select(w => new { w.FilledExercises, w.TotalExercises, w.Verified }).FirstOrDefaultAsync();
+        var logged = log is not null;
         var plan = await PlanTodayAsync(db, userId, today);
 
         return plan is null
-            ? new TodayInfo(today, false, true, "", logged)
-            : new TodayInfo(today, true, plan.Workout.IsTraining, plan.Workout.Title, logged);
+            ? new TodayInfo(today, false, true, "", logged, log?.FilledExercises, log?.TotalExercises, log?.Verified)
+            : new TodayInfo(today, true, plan.Workout.IsTraining, plan.Workout.Title, logged, log?.FilledExercises, log?.TotalExercises,
+                log?.Verified);
     }
 
     public async Task<TodayWorkoutInfo> GetTodayWorkoutAsync(int userId, DateOnly? today = null)
@@ -109,8 +114,11 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     /// (<see cref="StreakStatus.NeedsChoice"/>).
     /// <paramref name="cardioMinutes"/> is the optional cardio done with the workout (null or 0 for none); it earns
     /// <see cref="PointsCalculator.CardioPoints"/> on top of the workout's points.
+    /// <paramref name="verifiedGymId"/>: the live workout found the phone at this gym (18c), so the log is verified and
+    /// gets that gym; without it the log is unverified (the desktop always) and gets the automatic gym.
     /// </summary>
-    public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null, int? cardioMinutes = null)
+    public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null, int? cardioMinutes = null,
+        int? verifiedGymId = null)
     {
         var date = today ?? Today();
         if (cardioMinutes is < 0 or > PointsCalculator.MaxCardioMinutes)
@@ -143,9 +151,13 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                     return new LogResult(false,
                         $"Fill in at least {status.Required} of {status.Total} exercises to log this workout.");
 
-                var gymId = await AutomaticGymAsync(db, userId);
+                if (verifiedGymId is { } v && !await GymService.Pickable(db, userId).AnyAsync(g => g.Id == v)) verifiedGymId = null;
+                var gymId = verifiedGymId ?? await AutomaticGymAsync(db, userId);
                 db.WorkoutLogs.Add(new WorkoutLog
-                    { UserId = userId, Date = date, SplitDayId = day.SplitDayId, GymId = gymId, CardioMinutes = cardioMinutes });
+                {
+                    UserId = userId, Date = date, SplitDayId = day.SplitDayId, GymId = gymId, CardioMinutes = cardioMinutes,
+                    Verified = verifiedGymId is not null, FilledExercises = status.Filled, TotalExercises = status.Total
+                });
                 try
                 {
                     await db.SaveChangesAsync();
@@ -163,6 +175,67 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         }
 
         return await RefreshAsync(userId, date);
+    }
+
+    /// <summary>
+    /// Brings today's log in line with today's sets: how many of its day's exercises are filled (Phase 18), so the
+    /// points follow when sets are added, changed or removed after logging. Today only; past days never change, and
+    /// nothing happens without a log. Recalculates points when the count changed. <see cref="SetService"/> calls it
+    /// after every save.
+    /// </summary>
+    public async Task<PointsSync?> RefreshCompletionAsync(int userId, DateOnly? today = null)
+    {
+        var date = today ?? Today();
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            var log = await db.WorkoutLogs.FirstOrDefaultAsync(w => w.UserId == userId && w.Date == date);
+            if (log?.SplitDayId is not { } dayId) return null;
+            var status = Status(await ExercisesAsync(db, userId, dayId, date));
+            if (log.FilledExercises == status.Filled && log.TotalExercises == status.Total) return null;
+            log.FilledExercises = status.Filled;
+            log.TotalExercises = status.Total;
+            await db.SaveChangesAsync();
+        }
+        return await points.SyncAsync(userId, date);
+    }
+
+    /// <summary>The live workout found the phone at <paramref name="gymId"/> after today's log was written (18c): the log
+    /// becomes verified, at that gym (so the gym question isn't asked and friends' check-ins show it), and points follow.
+    /// Nothing happens without a log.</summary>
+    public async Task<PointsSync?> MarkVerifiedAsync(int userId, int gymId, DateOnly? today = null)
+    {
+        var date = today ?? Today();
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            var log = await db.WorkoutLogs.FirstOrDefaultAsync(w => w.UserId == userId && w.Date == date);
+            if (log is null || !await GymService.Pickable(db, userId).AnyAsync(g => g.Id == gymId)) return null;
+            if (log is { Verified: true } && log.GymId == gymId) return null;
+            log.Verified = true;
+            log.GymId = gymId;
+            await db.SaveChangesAsync();
+        }
+        Hooks.MarkCheckInsDirty(userId);
+        return await points.SyncAsync(userId, date);
+    }
+
+    /// <summary>Saves the cardio done with today's workout onto its log (the live workout asks at Finish). Null or 0
+    /// clears it. Nothing happens without a log.</summary>
+    public async Task<LogResult> SetCardioForTodayAsync(int userId, int? cardioMinutes, DateOnly? today = null)
+    {
+        var date = today ?? Today();
+        if (cardioMinutes is < 0 or > PointsCalculator.MaxCardioMinutes)
+            return new LogResult(false, $"Cardio must be between 0 and {PointsCalculator.MaxCardioMinutes} minutes.");
+        if (cardioMinutes == 0) cardioMinutes = null;
+
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            var log = await db.WorkoutLogs.FirstOrDefaultAsync(w => w.UserId == userId && w.Date == date);
+            if (log is null) return new LogResult(false, "Log the workout first.");
+            if (log.CardioMinutes == cardioMinutes) return new LogResult(true, Points: await points.SyncAsync(userId, date));
+            log.CardioMinutes = cardioMinutes;
+            await db.SaveChangesAsync();
+        }
+        return new LogResult(true, Points: await points.SyncAsync(userId, date));
     }
 
     /// <summary>The gym a new check-in gets by itself: the user's gym when "Ask for gym" is off, as long as it's still
@@ -226,6 +299,14 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                 all.Where(s => s.Date == date).OrderBy(s => s.SetNumber).ToList(),
                 PrCalculator.LastSession(all, date));
         }).ToList();
+    }
+
+    /// <summary>The exercises of one split day in plan order, with the sets logged for them on <paramref name="date"/> and
+    /// the last earlier session (the live workout's card).</summary>
+    public async Task<IReadOnlyList<CheckInExerciseInfo>> GetDayExercisesAsync(int userId, int splitDayId, DateOnly date)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await ExercisesAsync(db, userId, splitDayId, date);
     }
 
     /// <summary>The selected split's days that have at least one exercise, for the rest-day picker.</summary>

@@ -17,8 +17,25 @@ public record PointsSync(int OldTotal, int NewTotal, LevelInfo OldLevel, LevelIn
     public bool LeveledUp => NewLevel.Number > OldLevel.Number;
 }
 
-/// <summary>One ledger line for the history screen.</summary>
-public record PointsLine(DateOnly Date, PointsReason Reason, int Amount);
+/// <summary>One ledger line for the history screen. <see cref="WorkoutLabel"/> names a workout from its log: "Workout at
+/// Iron Gym", "Workout (not verified)", with "partial" below 70% of its exercises.</summary>
+public record PointsLine(DateOnly Date, PointsReason Reason, int Amount, string? WorkoutLabel = null)
+{
+    public string Label => WorkoutLabel ?? PointsCalculator.DisplayName(Reason);
+
+    /// <summary>The workout line's name for a log; plain "Workout" for one from before 0.18.0.</summary>
+    public static string ForWorkout(WorkoutRecord w, string? gymName)
+    {
+        var partial = !PointsCalculator.IsComplete(w);
+        return w.Verified switch
+        {
+            true when gymName is not null => partial ? $"Workout at {gymName} (partial)" : $"Workout at {gymName}",
+            true => partial ? "Workout (verified, partial)" : "Workout (verified)",
+            false => partial ? "Workout (not verified, partial)" : "Workout (not verified)",
+            null => partial ? "Workout (partial)" : "Workout"
+        };
+    }
+}
 
 /// <summary>The user's total, level and ledger, newest first.</summary>
 public record PointsOverview(int Total, LevelInfo Level, IReadOnlyList<PointsLine> History);
@@ -37,8 +54,17 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
         var history = await db.PointsEntries.AsNoTracking()
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.Date).ThenByDescending(p => p.Id)
-            .Select(p => new PointsLine(p.Date, p.Reason, p.Amount))
+            .Select(p => new PointsLine(p.Date, p.Reason, p.Amount, null))
             .ToListAsync();
+
+        // A workout entry says where and how much, from its day's log
+        var logs = (await db.WorkoutLogs.AsNoTracking().Where(w => w.UserId == userId)
+                .Select(w => new { Record = new WorkoutRecord(w.Date, w.FilledExercises, w.TotalExercises, w.Verified), Gym = w.Gym!.Name })
+                .ToListAsync())
+            .ToDictionary(x => x.Record.Date);
+        history = history.Select(l => l.Reason == PointsReason.Workout && logs.TryGetValue(l.Date, out var log)
+            ? l with { WorkoutLabel = PointsLine.ForWorkout(log.Record, log.Record.Verified == true ? log.Gym : null) }
+            : l).ToList();
         return new PointsOverview(points, LevelCalculator.For(points), history);
     }
 
@@ -98,6 +124,12 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
     }
 
     /// <summary>The cardio minutes saved with workout logs from <paramref name="from"/> on.</summary>
+    /// <summary>Completion and verification of the workout logs from <paramref name="from"/> on.</summary>
+    internal static Task<List<WorkoutRecord>> WorkoutRecordsAsync(AppDbContext db, int userId, DateOnly from) =>
+        db.WorkoutLogs.Where(w => w.UserId == userId && w.Date >= from)
+            .Select(w => new WorkoutRecord(w.Date, w.FilledExercises, w.TotalExercises, w.Verified))
+            .ToListAsync();
+
     internal static Task<List<CardioRecord>> CardioAsync(AppDbContext db, int userId, DateOnly from) =>
         db.WorkoutLogs.Where(w => w.UserId == userId && w.Date >= from && w.CardioMinutes != null)
             .Select(w => new CardioRecord(w.Date, w.CardioMinutes!.Value))
@@ -118,12 +150,13 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
             .Select(c => new CalorieRecord(c.Date, c.CaloriesConsumed, c.GoalAtTime))
             .ToListAsync();
         var cardio = await CardioAsync(db, userId, windowStart);
+        var workouts = await WorkoutRecordsAsync(db, userId, windowStart);
 
         var choices = await StreakService.LoadChoicesAsync(db, userId);
         var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, today,
             windowStart, PointsCalculator.MondayOf(today).AddDays(6));
         DateOnly? scheduleStart = schedule.Count == 0 ? null : schedule[0].EffectiveFrom;
-        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart, cardio)
+        var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart, cardio, workouts)
             .ToDictionary(a => a.DedupKey);
 
         var oldTotal = user.Points;
