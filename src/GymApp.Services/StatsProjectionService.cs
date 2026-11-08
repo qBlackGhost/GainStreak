@@ -35,6 +35,7 @@ public class StatsProjectionService(IDbContextFactory<AppDbContext> dbFactory)
             .Select(p => new PointsAward(p.Reason, p.Amount, p.Date, p.DedupKey))
             .ToListAsync();
 
-        return StatsProjection.Project(workoutDates, schedule, choices, calories, ledger, day, days, cardio, workouts);
+        var restRule = await StreakService.LoadRestRuleAsync(db, userId, day);
+        return StatsProjection.Project(workoutDates, schedule, choices, calories, ledger, day, days, cardio, workouts, restRule);
     }
 }

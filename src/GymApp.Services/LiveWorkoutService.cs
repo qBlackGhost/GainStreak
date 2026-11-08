@@ -14,9 +14,12 @@ namespace GymApp.Services;
 /// the exercise the user picked and the ones skipped, the <see cref="CheckInRule"/> status and whether today's log
 /// already exists (it's written silently at half, so the card must never show this).
 /// </summary>
-public record LiveWorkoutInfo(int Id, DateOnly Date, int SplitDayId, string DayName, DateTime StartedAt, DateTime LastActiveAt,
+/// <param name="SplitDayId">The split day being done; null for a rest day's workout of hand-picked exercises
+/// (<paramref name="PickedExerciseIds"/>, 0.18.1).</param>
+public record LiveWorkoutInfo(int Id, DateOnly Date, int? SplitDayId, string DayName, DateTime StartedAt, DateTime LastActiveAt,
     int? CurrentExerciseId, IReadOnlyList<int> SkippedExerciseIds, IReadOnlyList<CheckInExerciseInfo> Exercises,
-    CheckInStatus Status, bool Logged, int? VerifiedGymId = null, string? VerifiedGymName = null)
+    CheckInStatus Status, bool Logged, int? VerifiedGymId = null, string? VerifiedGymName = null,
+    IReadOnlyList<int>? PickedExerciseIds = null)
 {
     /// <summary>The phone was found at one of the user's gyms during this workout (18c).</summary>
     public bool IsVerified => VerifiedGymId is not null;
@@ -119,7 +122,7 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
             if (l is null) return null;
             log = await db.WorkoutLogs.AsNoTracking().FirstOrDefaultAsync(w => w.UserId == userId && w.Date == l.Date);
         }
-        var exercises = await workouts.GetDayExercisesAsync(userId, l.SplitDayId, l.Date);
+        var exercises = await ExercisesAsync(l);
         var status = CheckInRule.Evaluate(exercises.Select(e => new CheckInExercise(e.ExerciseId, e.WorkingSets, e.TodaySets)));
         var (filled, total) = (log?.FilledExercises ?? status.Filled, log?.TotalExercises ?? status.Total);
         var points = log is null ? 0 : PointsCalculator.WorkoutPointsFor(new WorkoutRecord(l.Date, filled, total, log.Verified));
@@ -143,11 +146,11 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
 
     /// <summary>
     /// Starts today's live workout: the planned day, or on a rest day <paramref name="splitDayId"/>, one of the split's
-    /// days (without it, <see cref="LiveStartResult.NeedsDay"/>). An open session is returned as it is. Refused when
-    /// today is already logged, while yesterday's missed workout needs a choice, with no split, or when the day has
-    /// no exercises.
+    /// days, or <paramref name="exerciseIds"/>, exercises picked one by one (0.18.1; without either,
+    /// <see cref="LiveStartResult.NeedsDay"/>). An open session is returned as it is. Refused when today is already
+    /// logged, while yesterday's missed workout needs a choice, with no split, or when the day has no exercises.
     /// </summary>
-    public async Task<LiveStartResult> StartAsync(int userId, int? splitDayId = null)
+    public async Task<LiveStartResult> StartAsync(int userId, int? splitDayId = null, IReadOnlyList<int>? exerciseIds = null)
     {
         if (await GetOpenAsync(userId) is { } running) return new LiveStartResult(true, Workout: running);
 
@@ -157,22 +160,35 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
         if ((await streaks.GetAsync(userId, today)).Status == StreakStatus.NeedsChoice)
             return new LiveStartResult(false, WorkoutService.NeedsChoiceError);
         if (!checkIn.HasSplit) return new LiveStartResult(false, "Pick a split and build a workout first.");
+        if (exerciseIds is { Count: > 0 })
+        {
+            if (checkIn.PlannedDay is not null) return new LiveStartResult(false, "Pick exercises only on a rest day.");
+            if (exerciseIds.Distinct().Count() > WorkoutService.MaxPickedExercises)
+                return new LiveStartResult(false, $"Pick up to {WorkoutService.MaxPickedExercises} exercises.");
+            var picked = await workouts.GetPickedExercisesAsync(userId, exerciseIds, today);
+            if (picked.Count == 0) return new LiveStartResult(false, "Pick at least one exercise.");
+            return await OpenAsync(new LiveWorkout
+                { UserId = userId, Date = today, ExerciseIds = LiveWorkoutRules.FormatIds(picked.Select(e => e.ExerciseId)) });
+        }
+        // A rest day: the phone picks exercises (0.18.1); the split's built days are offered too
         if (checkIn.PlannedDay is null && splitDayId is null)
-            return checkIn.PickableDays.Count == 0
-                ? new LiveStartResult(false, "You haven't built any workouts yet.")
-                : new LiveStartResult(false, NeedsDay: true, PickableDays: checkIn.PickableDays);
+            return new LiveStartResult(false, NeedsDay: true, PickableDays: checkIn.PickableDays);
         if (checkIn.Day is not { } day) return new LiveStartResult(false, "That day isn't in your split.");
         if (checkIn.Exercises.Count == 0) return new LiveStartResult(false, $"You haven't built a workout for {day.Name} yet.");
 
-        var now = Now;
+        return await OpenAsync(new LiveWorkout { UserId = userId, Date = today, SplitDayId = day.SplitDayId });
+    }
+
+    private async Task<LiveStartResult> OpenAsync(LiveWorkout session)
+    {
+        session.StartedAt = session.LastActiveAt = Now;
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
-            db.LiveWorkouts.Add(new LiveWorkout
-                { UserId = userId, Date = today, SplitDayId = day.SplitDayId, StartedAt = now, LastActiveAt = now });
+            db.LiveWorkouts.Add(session);
             try { await db.SaveChangesAsync(); }
             catch (DbUpdateException) { /* another tap started one: the unique open-session index */ }
         }
-        return await GetOpenAsync(userId) is { } started
+        return await GetOpenAsync(session.UserId) is { } started
             ? new LiveStartResult(true, Workout: started)
             : new LiveStartResult(false, "Could not start the workout.");
     }
@@ -210,7 +226,8 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
 
         if (!after.Logged && after.Status.CanLog)
         {
-            var log = await workouts.LogTodayAsync(userId, after.SplitDayId, live.Date, verifiedGymId: after.VerifiedGymId);
+            var log = await workouts.LogTodayAsync(userId, after.SplitDayId, live.Date, verifiedGymId: after.VerifiedGymId,
+                pickedExerciseIds: after.PickedExerciseIds);
             if (!log.Success) return new LiveSaveResult(false, log.Error);
         }
         return new LiveSaveResult(true, Workout: await GetOpenAsync(userId));
@@ -250,7 +267,8 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
             return new LiveEndResult(false, $"Fill in at least {live.Status.Required} of {total} exercises to finish.",
                 LiveOutcome.NotCounted, filled, total, 0, 0, null);
 
-        var log = await workouts.LogTodayAsync(userId, live.SplitDayId, live.Date, cardioMinutes, live.VerifiedGymId);
+        var log = await workouts.LogTodayAsync(userId, live.SplitDayId, live.Date, cardioMinutes, live.VerifiedGymId,
+            live.PickedExerciseIds);
         if (!log.Success) return new LiveEndResult(false, log.Error, LiveOutcome.NotCounted, filled, total, 0, 0, null);
         var cardio = await workouts.SetCardioForTodayAsync(userId, cardioMinutes, live.Date);
         if (!cardio.Success) return new LiveEndResult(false, cardio.Error, LiveOutcome.NotCounted, filled, total, 0, 0, null);
@@ -296,15 +314,27 @@ public class LiveWorkoutService(IDbContextFactory<AppDbContext> dbFactory, Worko
         string? gymName = null;
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
-            dayName = await db.SplitDays.Where(d => d.Id == l.SplitDayId).Select(d => d.Name).FirstOrDefaultAsync() ?? "Workout";
+            dayName = l.SplitDayId is null ? PickedName
+                : await db.SplitDays.Where(d => d.Id == l.SplitDayId).Select(d => d.Name).FirstOrDefaultAsync() ?? "Workout";
             logged = await db.WorkoutLogs.AnyAsync(w => w.UserId == l.UserId && w.Date == l.Date);
             if (l.VerifiedGymId is { } gymId) gymName = await db.Gyms.Where(g => g.Id == gymId).Select(g => g.Name).FirstOrDefaultAsync();
         }
-        var exercises = await workouts.GetDayExercisesAsync(l.UserId, l.SplitDayId, l.Date);
+        var picked = l.SplitDayId is null ? LiveWorkoutRules.ParseIds(l.ExerciseIds) : null;
+        var exercises = await ExercisesAsync(l);
         var status = CheckInRule.Evaluate(exercises.Select(e => new CheckInExercise(e.ExerciseId, e.WorkingSets, e.TodaySets)));
         return new LiveWorkoutInfo(l.Id, l.Date, l.SplitDayId, dayName, l.StartedAt, l.LastActiveAt, l.CurrentExerciseId,
-            LiveWorkoutRules.ParseIds(l.SkippedExerciseIds), exercises, status, logged, gymName is null ? null : l.VerifiedGymId, gymName);
+            LiveWorkoutRules.ParseIds(l.SkippedExerciseIds), exercises, status, logged, gymName is null ? null : l.VerifiedGymId, gymName,
+            picked);
     }
+
+    /// <summary>The session's exercises with today's sets: its split day's, or the hand-picked ones (0.18.1).</summary>
+    private Task<IReadOnlyList<CheckInExerciseInfo>> ExercisesAsync(LiveWorkout l) =>
+        l.SplitDayId is { } dayId
+            ? workouts.GetDayExercisesAsync(l.UserId, dayId, l.Date)
+            : workouts.GetPickedExercisesAsync(l.UserId, LiveWorkoutRules.ParseIds(l.ExerciseIds), l.Date);
+
+    /// <summary>The name a rest day's workout of hand-picked exercises goes by on the card.</summary>
+    public const string PickedName = "Extra workout";
 
     // ===== Verified at gym (18c) =====
 

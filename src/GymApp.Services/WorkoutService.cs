@@ -19,6 +19,10 @@ public record LogResult(bool Success, string? Error = null, StreakResult? Streak
 /// <summary>A split day that can be checked in.</summary>
 public record CheckInDay(int SplitDayId, string Name);
 
+/// <summary>One exercise in the rest day's picker (0.18.1): its muscle group ("Custom" for the user's own), and the top
+/// working set of the last time it was done (null if never), for the Recent list.</summary>
+public record PickableExercise(int ExerciseId, string Name, string Group, DateOnly? LastDate, string? LastText);
+
 /// <summary>One exercise in the check-in popup, with the sets already logged for it today and the sets of the most
 /// recent earlier session (empty when there is none).</summary>
 public record CheckInExerciseInfo(int ExerciseId, string Name, int WarmupSets, int WorkingSets, IReadOnlyList<SetEntry> TodaySets,
@@ -118,7 +122,7 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     /// gets that gym; without it the log is unverified (the desktop always) and gets the automatic gym.
     /// </summary>
     public async Task<LogResult> LogTodayAsync(int userId, int? splitDayId = null, DateOnly? today = null, int? cardioMinutes = null,
-        int? verifiedGymId = null)
+        int? verifiedGymId = null, IReadOnlyList<int>? pickedExerciseIds = null)
     {
         var date = today ?? Today();
         if (cardioMinutes is < 0 or > PointsCalculator.MaxCardioMinutes)
@@ -136,6 +140,28 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
                 if (plan is null) return new LogResult(false, "Pick a split and build a workout first.");
 
                 CheckInDay? day = plan.Day is { } p ? new CheckInDay(p.Id, p.Name) : null;
+                if (pickedExerciseIds is { Count: > 0 })
+                {
+                    // A rest day's workout of hand-picked exercises (0.18.1): no split day, the list is kept on the log
+                    if (day is not null) return new LogResult(false, "Pick exercises only on a rest day.");
+                    var picked = await PickedExercisesAsync(db, userId, pickedExerciseIds, date);
+                    if (picked.Count == 0) return new LogResult(false, "Pick at least one exercise.");
+                    var pickedStatus = Status(picked);
+                    if (!pickedStatus.CanLog)
+                        return new LogResult(false,
+                            $"Fill in at least {pickedStatus.Required} of {pickedStatus.Total} exercises to log this workout.");
+                    if (verifiedGymId is { } pv && !await GymService.Pickable(db, userId).AnyAsync(g => g.Id == pv)) verifiedGymId = null;
+                    var pickedGym = verifiedGymId ?? await AutomaticGymAsync(db, userId);
+                    db.WorkoutLogs.Add(new WorkoutLog
+                    {
+                        UserId = userId, Date = date, ExerciseIds = LiveWorkoutRules.FormatIds(picked.Select(e => e.ExerciseId)),
+                        GymId = pickedGym, CardioMinutes = cardioMinutes, Verified = verifiedGymId is not null,
+                        FilledExercises = pickedStatus.Filled, TotalExercises = pickedStatus.Total
+                    });
+                    if (!await TrySaveLogAsync(db, userId, date)) return new LogResult(false, "Could not save your workout.");
+                    if (pickedGym is not null) Hooks.MarkCheckInsDirty(userId);
+                    return await RefreshAsync(userId, date);
+                }
                 if (day is null)
                 {
                     if (splitDayId is not { } picked) return new LogResult(false, "Pick the day you trained.");
@@ -189,8 +215,12 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         await using (var db = await dbFactory.CreateDbContextAsync())
         {
             var log = await db.WorkoutLogs.FirstOrDefaultAsync(w => w.UserId == userId && w.Date == date);
-            if (log?.SplitDayId is not { } dayId) return null;
-            var status = Status(await ExercisesAsync(db, userId, dayId, date));
+            if (log is null) return null;
+            CheckInStatus status;
+            if (log.SplitDayId is { } dayId) status = Status(await ExercisesAsync(db, userId, dayId, date));
+            else if (log.ExerciseIds is { Length: > 0 } picked)   // a rest day's hand-picked workout (0.18.1)
+                status = Status(await PickedExercisesAsync(db, userId, LiveWorkoutRules.ParseIds(picked), date));
+            else return null;
             if (log.FilledExercises == status.Filled && log.TotalExercises == status.Total) return null;
             log.FilledExercises = status.Filled;
             log.TotalExercises = status.Total;
@@ -215,6 +245,7 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
             await db.SaveChangesAsync();
         }
         Hooks.MarkCheckInsDirty(userId);
+        await streaks.RecalculateAsync(userId, date);   // a verified workout on a rest day adds to the streak (0.18.1)
         return await points.SyncAsync(userId, date);
     }
 
@@ -274,6 +305,100 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
     private static DateOnly Today() => AppClock.Today;
 
     private ISocialSyncHooks Hooks => sync ?? NoSocialSync.Instance;
+
+    /// <summary>Saves a new log; false when it didn't save and no log for the day exists either (a second tap that
+    /// already logged it counts as saved, like the unique (user, date) index intends).</summary>
+    private static async Task<bool> TrySaveLogAsync(AppDbContext db, int userId, DateOnly date)
+    {
+        try { await db.SaveChangesAsync(); return true; }
+        catch (DbUpdateException)
+        {
+            db.ChangeTracker.Clear();
+            return await db.WorkoutLogs.AnyAsync(w => w.UserId == userId && w.Date == date);
+        }
+    }
+
+    /// <summary>The most exercises a rest day's hand-picked workout may have.</summary>
+    public const int MaxPickedExercises = 12;
+
+    /// <summary>
+    /// Hand-picked exercises (a rest day's workout, 0.18.1) in the order given, like a split day's: each with its planned
+    /// sets (from the first of the user's days that has it, else none and 3 working sets), today's sets and the last
+    /// earlier session. Ids the user can't see, and repeats, are left out.
+    /// </summary>
+    private static async Task<IReadOnlyList<CheckInExerciseInfo>> PickedExercisesAsync(
+        AppDbContext db, int userId, IReadOnlyList<int> exerciseIds, DateOnly date)
+    {
+        var ids = exerciseIds.Distinct().Take(MaxPickedExercises).ToList();
+        var names = await db.Exercises.AsNoTracking()
+            .Where(e => ids.Contains(e.Id) && (e.OwnerUserId == null || e.OwnerUserId == userId))
+            .ToDictionaryAsync(e => e.Id, e => e.Name);
+        var planned = (await db.UserDayExercises.AsNoTracking()
+                .Where(x => x.UserId == userId && ids.Contains(x.ExerciseId))
+                .OrderBy(x => x.SplitDayId).ThenBy(x => x.Order)
+                .Select(x => new { x.ExerciseId, x.WarmupSets, x.WorkingSets })
+                .ToListAsync())
+            .GroupBy(x => x.ExerciseId).ToDictionary(g => g.Key, g => g.First());
+        var sets = await db.SetLogs.AsNoTracking()
+            .Where(s => s.UserId == userId && s.Date <= date && ids.Contains(s.ExerciseId))
+            .ToListAsync();
+        var byExercise = sets.ToLookup(s => s.ExerciseId, s => new SetEntry(s.Date, s.SetNumber, s.Kind, s.Reps, s.WeightKg));
+
+        return ids.Where(names.ContainsKey).Select(id =>
+        {
+            var all = byExercise[id].ToList();
+            var plan = planned.GetValueOrDefault(id);
+            return new CheckInExerciseInfo(id, names[id], plan?.WarmupSets ?? 0, plan?.WorkingSets ?? DefaultPickedSets,
+                all.Where(s => s.Date == date).OrderBy(s => s.SetNumber).ToList(),
+                PrCalculator.LastSession(all, date));
+        }).ToList();
+    }
+
+    /// <summary>Working sets of a picked exercise that isn't in any of the user's days.</summary>
+    public const int DefaultPickedSets = 3;
+
+    /// <summary>Hand-picked exercises with today's sets (the live workout's card for a rest day's own workout).</summary>
+    public async Task<IReadOnlyList<CheckInExerciseInfo>> GetPickedExercisesAsync(int userId, IReadOnlyList<int> exerciseIds, DateOnly date)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await PickedExercisesAsync(db, userId, exerciseIds, date);
+    }
+
+    /// <summary>
+    /// The rest day's exercise picker (0.18.1): every exercise the user can do, with the top working set of the last
+    /// time it was done before <paramref name="today"/>. Most recently done first, then the rest by muscle group and name.
+    /// </summary>
+    public async Task<IReadOnlyList<PickableExercise>> GetPickerChoicesAsync(int userId, DateOnly? today = null)
+    {
+        var date = today ?? Today();
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var exercises = await db.Exercises.AsNoTracking()
+            .Where(e => e.OwnerUserId == null || e.OwnerUserId == userId)
+            .ToListAsync();
+        var sets = await db.SetLogs.AsNoTracking()
+            .Where(s => s.UserId == userId && s.Date < date && s.Kind == SetKind.Working && s.Reps >= 1)
+            .Select(s => new { s.ExerciseId, s.Date, s.Reps, s.WeightKg })
+            .ToListAsync();
+        var last = sets.GroupBy(s => s.ExerciseId).ToDictionary(g => g.Key, g =>
+        {
+            var day = g.Max(s => s.Date);
+            var top = g.Where(s => s.Date == day).OrderByDescending(s => s.WeightKg).ThenByDescending(s => s.Reps).First();
+            return (day, text: top.WeightKg > 0
+                ? $"{top.WeightKg.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)} kg × {top.Reps}"
+                : $"BW × {top.Reps}");
+        });
+
+        // Most recent first (never done last), then the muscle groups in their usual order with custom exercises after
+        return exercises
+            .Select(e => (e, has: last.TryGetValue(e.Id, out var l), l))
+            .OrderByDescending(x => x.has ? x.l.day : DateOnly.MinValue)
+            .ThenBy(x => x.e.OwnerUserId is null ? (int)x.e.MuscleGroup : int.MaxValue)
+            .ThenBy(x => x.e.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(x => new PickableExercise(x.e.Id, x.e.Name, GroupName(x.e), x.has ? x.l.day : null, x.has ? x.l.text : null))
+            .ToList();
+
+        static string GroupName(Exercise e) => e.OwnerUserId is null ? e.MuscleGroup.ToString() : "Custom";
+    }
 
     private static CheckInStatus Status(IReadOnlyList<CheckInExerciseInfo> exercises) =>
         CheckInRule.Evaluate(exercises.Select(e => new CheckInExercise(e.ExerciseId, e.WorkingSets, e.TodaySets)));

@@ -6,7 +6,7 @@ public sealed record ProjectedStats(DateOnly Date, int TotalPoints, int WeekPoin
 
 /// <summary>
 /// The user's public stats for today and the next days, assuming no more workouts or calorie logs. A server can't
-/// replay a friend's logs, yet a streak grows on rest days and breaks after a missed day without the app being
+/// replay a friend's logs, yet a streak breaks after a missed day (and grew on rest days before 0.18.1) without the app being
 /// opened, and a grace week's bonus is paid once the week ends. So the phone uploads this list and the server shows
 /// the entry for the viewer's day.
 /// </summary>
@@ -35,7 +35,8 @@ public static class StatsProjection
         DateOnly today,
         int days = DefaultDays,
         IReadOnlyCollection<CardioRecord>? cardio = null,
-        IReadOnlyCollection<WorkoutRecord>? workouts = null)
+        IReadOnlyCollection<WorkoutRecord>? workouts = null,
+        RestDayRule? restRule = null)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(days, 1);
 
@@ -45,12 +46,12 @@ public static class StatsProjection
 
         for (var day = today; day < today.AddDays(days); day = day.AddDays(1))
         {
-            entries = Sync(entries, workoutDates, schedule, choices, calories, cardio ?? [], workouts ?? [], scheduleStart, day);
+            entries = Sync(entries, workoutDates, schedule, choices, calories, cardio ?? [], workouts ?? [], scheduleStart, day, restRule);
 
             var monday = PointsCalculator.MondayOf(day);
             var sunday = monday.AddDays(6);
             var week = entries.Where(e => e.Date >= monday && e.Date <= sunday).Sum(e => e.Amount);
-            var streak = StreakCalculator.Calculate(workoutDates, schedule, choices, day).Current;
+            var streak = StreakCalculator.Calculate(workoutDates, schedule, choices, day, restRule).Current;
             result.Add(new ProjectedStats(day, entries.Sum(e => e.Amount), week, streak));
         }
         return result;
@@ -60,11 +61,12 @@ public static class StatsProjection
     private static List<PointsAward> Sync(
         List<PointsAward> entries, IReadOnlyCollection<DateOnly> workoutDates, IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices, IReadOnlyCollection<CalorieRecord> calories,
-        IReadOnlyCollection<CardioRecord> cardio, IReadOnlyCollection<WorkoutRecord> workouts, DateOnly? scheduleStart, DateOnly day)
+        IReadOnlyCollection<CardioRecord> cardio, IReadOnlyCollection<WorkoutRecord> workouts, DateOnly? scheduleStart, DateOnly day,
+        RestDayRule? restRule)
     {
         var windowStart = PointsCalculator.MondayOf(day).AddDays(-7);   // PointsService.WindowStart
         var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, day,
-            windowStart, PointsCalculator.MondayOf(day).AddDays(6));
+            windowStart, PointsCalculator.MondayOf(day).AddDays(6), restRule);
         var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, day, windowStart, cardio, workouts);
 
         return entries

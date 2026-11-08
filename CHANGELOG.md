@@ -2,6 +2,24 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.18.1
+
+- **Rest days keep your streak, they don't grow it:** a rest day no longer adds a day. Your streak is kept but frozen until your next workout.
+  - **On ice:** on a rest day the streak turns cold blue instead of fire: the flame and number on Home, the arc, the app bar and Profile. It's back on fire with your next workout.
+  - **Training on a rest day:** a workout verified at one of your gyms (phones) adds a day as before. A workout that isn't verified, including every workout logged on the desktop, doesn't add one, and on its own doesn't start a new streak.
+  - **Making up a missed day:** a rest day still pays for a missed training day, so the streak is kept, but it only adds a day when the workout is verified.
+  - **Nothing taken away:** rest days before you update keep their +1, so your streak doesn't drop. The new rule starts the first day you open 0.18.1. Best streaks are unchanged.
+  - **Friends** see your streak under the same rule. Points don't change.
+- **Pick your own exercises on a rest day (phones):** **Start workout anyway** now opens a list of every exercise instead of asking which day of your split you're doing. Pick as many as you like, up to 12, and start.
+  - **Finding them:** search by name, or use the chips: **Recent** (what you did lately, with your top set last time), **All**, or a muscle group.
+  - **Your picks** show in a tray at the bottom in the order you picked them, and the workout follows that order.
+  - **Sets:** an exercise that's in one of your days keeps its planned sets; any other gets 3 working sets.
+  - **Same rules as any workout:** it counts once half the exercises are done, and full points need 70% and the gym. Verified at your gym, it adds a day to your streak.
+  - **No split day needed:** you don't have to build a workout first to train on a rest day. The desktop keeps the "I went today" check-in.
+- **Live workout card on phones:** during a workout, the card under the streak showed a line of code instead of the exercise and its sets. It shows the card again.
+- **First workout on iPhone:** after answering the location question at your first **Start workout**, the workout didn't open until you restarted the app. It opens straight away now.
+- **Migration:** `StreakRestRule` and `PickedRestDayExercises` in the app's SQLite (a new `Users` column, the day the rest-day rule started for you; new `ExerciseIds` columns on `LiveWorkouts` and `WorkoutLogs`, and a live workout's split day can now be empty). The server doesn't change.
+
 ## 0.18.0
 
 - **Live workouts on phones:** on a phone you now log at the gym, as you train. Tap **Start workout** on Home, and the card under the streak shows one exercise and one set at a time: type the weight and reps, then **Next**. The weight starts from your last set or last time.

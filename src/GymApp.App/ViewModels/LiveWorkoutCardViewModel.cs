@@ -48,7 +48,7 @@ public partial class LiveExerciseRowViewModel(string name, string status, bool i
 /// says the workout already counts or mentions points while it runs (it's logged silently at half); the Finish sheet
 /// pushes for the whole workout. The service does the saving; this keeps only what's being typed.
 /// </summary>
-public partial class LiveWorkoutCardViewModel : ObservableObject
+public partial class LiveWorkoutCardViewModel : ViewModelBase
 {
     private readonly LiveWorkoutService _service;
     private readonly SetService _sets;

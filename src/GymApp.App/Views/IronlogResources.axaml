@@ -67,6 +67,10 @@
                 <SolidColorBrush x:Key="FlameHot" Color="#FF7A00"/>
                 <SolidColorBrush x:Key="Warn" Color="#E8C15A"/>
                 <SolidColorBrush x:Key="ColdText" Color="#B9C8D6"/>
+                <!-- A streak on ice: a rest day that didn't add to it (0.18.1) -->
+                <SolidColorBrush x:Key="Ice" Color="#5CB8FF"/>
+                <SolidColorBrush x:Key="IceText" Color="#8FD0FF"/>
+                <SolidColorBrush x:Key="IceTintLine" Color="#1E3F5C"/>
                 <!-- Lime-tinted backgrounds -->
                 <SolidColorBrush x:Key="LimeTint" Color="#10140A"/>
                 <SolidColorBrush x:Key="LimeTintLine" Color="#2E3A12"/>
@@ -124,6 +128,9 @@
                 <SolidColorBrush x:Key="FlameHot" Color="#C25100"/>
                 <SolidColorBrush x:Key="Warn" Color="#8A6400"/>
                 <SolidColorBrush x:Key="ColdText" Color="#3E5568"/>
+                <SolidColorBrush x:Key="Ice" Color="#1C7ED6"/>
+                <SolidColorBrush x:Key="IceText" Color="#1668B3"/>
+                <SolidColorBrush x:Key="IceTintLine" Color="#A9D2F5"/>
                 <SolidColorBrush x:Key="LimeTint" Color="#EFF7D6"/>
                 <SolidColorBrush x:Key="LimeTintLine" Color="#C9DD8E"/>
                 <SolidColorBrush x:Key="LimeTintLineStrong" Color="#B9D27A"/>
@@ -142,6 +149,30 @@
             <GradientStop Offset="0" Color="#3E4C59"/>
             <GradientStop Offset="0.5" Color="#7D93A8"/>
             <GradientStop Offset="1" Color="#B9C8D6"/>
+        </LinearGradientBrush>
+        <!-- The streak flame on ice: deep blue at the base to frost at the tip -->
+        <LinearGradientBrush x:Key="IceFlameBrush" StartPoint="0%,100%" EndPoint="0%,0%">
+            <GradientStop Offset="0" Color="#1F6FD1"/>
+            <GradientStop Offset="0.6" Color="#5CB8FF"/>
+            <GradientStop Offset="1" Color="#D4F0FF"/>
+        </LinearGradientBrush>
+        <!-- The icy flame (option E): the flame filled with ice and a white glint. An Image scales it as one piece -->
+        <DrawingImage x:Key="IcyFlame">
+            <DrawingGroup>
+                <GeometryDrawing Brush="{StaticResource IceFlameBrush}"
+                                 Geometry="M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z"/>
+                <GeometryDrawing Geometry="M9 15.5l1.6-2.2">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="White" Thickness="1.8" LineCap="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingImage>
+        <LinearGradientBrush x:Key="IceBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Offset="0" Color="#1F6FD1"/>
+            <GradientStop Offset="0.45" Color="#3FA2F2"/>
+            <GradientStop Offset="0.8" Color="#8ED3FF"/>
+            <GradientStop Offset="1" Color="#D4F0FF"/>
         </LinearGradientBrush>
         <LinearGradientBrush x:Key="FireBrush" StartPoint="0%,0%" EndPoint="100%,0%">
             <GradientStop Offset="0" Color="#C81D00"/>

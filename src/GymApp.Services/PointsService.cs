@@ -154,7 +154,7 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
 
         var choices = await StreakService.LoadChoicesAsync(db, userId);
         var timeline = StreakCalculator.Timeline(workoutDates, schedule, choices, today,
-            windowStart, PointsCalculator.MondayOf(today).AddDays(6));
+            windowStart, PointsCalculator.MondayOf(today).AddDays(6), await StreakService.LoadRestRuleAsync(db, userId, today));
         DateOnly? scheduleStart = schedule.Count == 0 ? null : schedule[0].EffectiveFrom;
         var wanted = PointsCalculator.Calculate(workoutDates, timeline, scheduleStart, calories, today, windowStart, cardio, workouts)
             .ToDictionary(a => a.DedupKey);

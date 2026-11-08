@@ -17,7 +17,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     public bool CloseOnBack()
     {
         if (IsCheckingIn) { CheckIn = null; return true; }
-        if (IsPickingDay) { IsPickingDay = false; return true; }
+        if (Picker is not null) { Picker = null; return true; }
         if (IsLocationNoteOpen) { AnswerLocationNote(false); return true; }
         if (IsReturnOpen) { _ = ContinueWorkoutAsync(); return true; }
         if (Live?.CloseOnBack() == true) return true;
@@ -76,7 +76,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         _menu = menu;
         _missedDays = missedDays;
         _gymSummary = gymSummary;
-        TodayWorkout = new TodayWorkoutCardViewModel(shell);
+        TodayWorkout = new TodayWorkoutCardViewModel(shell, canVerify: HasLiveWorkout);
         _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
     }
 
@@ -138,6 +138,10 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial bool ShowColdArc { get; set; }
     [ObservableProperty] public partial bool ShowFireArc { get; set; }
     [ObservableProperty] public partial bool IsTitleHot { get; set; }
+    /// <summary>Today is a rest day that didn't add to the streak (0.18.1): the streak is kept but frozen, so the flame,
+    /// the number and the arc turn to ice instead of fire. Not during a live workout.</summary>
+    [ObservableProperty] public partial bool IsStreakStale { get; set; }
+    [ObservableProperty] public partial bool ShowRestArc { get; set; }
 
     /// <summary>Phones before a workout: Start workout (or why it can't start yet), and after one: the result and Undo.</summary>
     [ObservableProperty] public partial bool ShowStartRow { get; set; }
@@ -162,9 +166,12 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string? StopNoteText { get; set; }
     [ObservableProperty] public partial bool IsStopNoteBad { get; set; }
 
-    /// <summary>A rest day's Start workout anyway: which of the split's days.</summary>
-    [ObservableProperty] public partial bool IsPickingDay { get; set; }
-    [ObservableProperty] public partial IReadOnlyList<CheckInDay> PickableDays { get; set; } = [];
+    /// <summary>A rest day's Start workout anyway (0.18.1): the sheet to pick any exercises, while it's open.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsPicking))]
+    public partial RestDayPickerViewModel? Picker { get; set; }
+
+    public bool IsPicking => Picker is not null;
 
     // ===== Level pill =====
     [ObservableProperty] public partial int LevelNumber { get; set; } = 1;
@@ -379,7 +386,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         if (!HasLiveWorkout || _today is not { } today) return;
         var c = await _workouts.GetCheckInAsync(userId);
         ShowPickSplit = !c.HasSplit;
-        ShowBuildWorkout = c.HasSplit && (c.PlannedDay is not null ? c.Exercises.Count == 0 : c.PickableDays.Count == 0);
+        // A rest day needs nothing built: its workout is picked exercise by exercise
+        ShowBuildWorkout = c.HasSplit && c.PlannedDay is not null && c.Exercises.Count == 0;
         CanStart = c.HasSplit && !ShowBuildWorkout && !HasMissedDay && !today.Logged;
         StartLabel = c.HasSplit && c.PlannedDay is null ? "Start workout anyway" : "Start workout";
 
@@ -397,28 +405,29 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         }
     }
 
-    /// <summary>Start workout: today's planned day; on a rest day the user picks the day first.</summary>
+    /// <summary>Start workout: today's planned day; on a rest day the user picks the exercises first.</summary>
     [RelayCommand]
     private Task StartWorkoutAsync() => StartAsync(null);
 
-    [RelayCommand]
-    private Task PickDayAsync(CheckInDay day) => StartAsync(day.SplitDayId);
-
-    private async Task StartAsync(int? splitDayId)
+    private async Task StartAsync(IReadOnlyList<int>? exerciseIds)
     {
         if (_session.CurrentUser is not { } user) return;
         try
         {
             Error = null;
-            var r = await _liveWorkouts.StartAsync(user.Id, splitDayId);
+            var r = await _liveWorkouts.StartAsync(user.Id, exerciseIds: exerciseIds);
             if (r.NeedsDay)
             {
-                PickableDays = r.PickableDays ?? [];
-                IsPickingDay = true;
+                var choices = await _workouts.GetPickerChoicesAsync(user.Id);
+                Picker = new RestDayPickerViewModel(choices, StartAsync, () => Picker = null);
                 return;
             }
-            IsPickingDay = false;
-            if (!r.Success || r.Workout is null) { Error = r.Error; return; }
+            if (!r.Success || r.Workout is null)
+            {
+                if (Picker is not null) Picker.Error = r.Error; else Error = r.Error;
+                return;
+            }
+            Picker = null;
             ShowEndedNote = false;
             StopNoteText = null;
             PointsNotice = null;
@@ -440,7 +449,6 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         }
     }
 
-    [RelayCommand] private void CancelPickDay() => IsPickingDay = false;
 
     // ===== Android's location prompt has no word from the app, so a note comes first (18c) =====
     [ObservableProperty] public partial bool IsLocationNoteOpen { get; set; }
@@ -727,6 +735,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         StreakNote = streak.Status switch
         {
             StreakStatus.NotStarted => "Log your first workout to start a streak.",
+            StreakStatus.Active when streak.Stale => "Rest day: your streak is on ice. It's kept, but only a workout adds to it.",
             StreakStatus.Active => "Streak alive, nice.",
             StreakStatus.PendingToday => "Log today's workout to keep your streak.",
             StreakStatus.NeedsChoice => "You missed yesterday. Choose what to do to keep your streak.",
@@ -768,10 +777,12 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             : 0;
         ShowProgressArc = HasLiveWorkout && (live is not null || logged);
         ProgressSweep = 180 * share;
-        IsArcHot = ShowProgressArc && share > 0;
-        ShowColdArc = !IsRestOpen && !IsArcHot;
-        ShowFireArc = HasCheckIn && logged;
-        IsTitleHot = HasLiveWorkout ? IsArcHot : logged;
+        IsStreakStale = streak.Stale && live is null;
+        IsArcHot = ShowProgressArc && share > 0 && !IsStreakStale;
+        ShowRestArc = IsRestOpen && !IsStreakStale;
+        ShowColdArc = !IsRestOpen && !IsArcHot && !IsStreakStale;
+        ShowFireArc = HasCheckIn && logged && !IsStreakStale;
+        IsTitleHot = !IsStreakStale && (HasLiveWorkout ? IsArcHot : logged);
         ShowStartRow = HasLiveWorkout && live is null && !logged;
         ShowDoneRow = HasLiveWorkout && live is null && logged;
         if (live is not null)
@@ -796,14 +807,19 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         GaugeSub = !today.HasSplit ? "No split selected"
                  : HasLiveWorkout && today is { Logged: true, FilledExercises: { } done, TotalExercises: { } all }
                      ? $"{done} of {all} exercise{(all == 1 ? "" : "s")}"
-                 : rest ? (today.Logged ? "Extra workout logged" : "Enjoy the rest. It counts toward your streak.")
+                 : rest ? (today.Logged ? (streak.Stale ? "Extra workout · streak on ice" : "Extra workout logged")
+                           : !streak.Stale ? "Enjoy the rest."
+                           : HasLiveWorkout ? "On ice. A gym workout adds a day."
+                           : "Rest up. Your streak is on ice.")
                  : today.Logged ? "Done for today"
                  : count > 0 ? $"{count} exercise{(count == 1 ? "" : "s")} planned"
                  : "No exercises built yet";
 
         StatusText = ShowEndedNote && !today.Logged ? "Start again when you're back at the gym."
             : today.Logged
-            ? (rest ? "Extra workout logged. Nice." : $"{Capitalize(today.Title)} done. Streak is now {streak.Current} day{(streak.Current == 1 ? "" : "s")}.")
+            ? (rest && streak.Stale ? "Extra workout logged. Rest days keep your streak without adding to it."
+               : rest ? $"Extra workout logged. Streak is now {streak.Current} day{(streak.Current == 1 ? "" : "s")}."
+               : $"{Capitalize(today.Title)} done. Streak is now {streak.Current} day{(streak.Current == 1 ? "" : "s")}.")
             : !today.HasSplit ? "Pick a split to get a weekly schedule."
             : rest ? "Rest day. Feel like training anyway?"
             : _makeUpFor is { } d ? $"Train today to make up {d.ToString("dddd", CultureInfo.InvariantCulture)} and keep your streak."

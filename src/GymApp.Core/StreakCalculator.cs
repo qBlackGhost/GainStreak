@@ -16,7 +16,25 @@ public enum StreakStatus
 }
 
 /// <param name="OwedDay">The training day the open debt is for, or null when nothing is owed.</param>
-public record StreakResult(int Current, int Longest, StreakStatus Status, DateOnly? OwedDay = null);
+/// <param name="Stale">Today is a rest day that didn't add to the streak (0.18.1): the streak is kept but not growing,
+/// and the app shows it cold (ice) instead of on fire. Only with Status Active.</param>
+public record StreakResult(int Current, int Longest, StreakStatus Status, DateOnly? OwedDay = null, bool Stale = false);
+
+/// <summary>
+/// The rest-day rule from 0.18.1: from <see cref="From"/> on, a rest day keeps the streak alive without adding to it,
+/// unless a verified workout (done at one of the user's gyms, <see cref="Verified"/>) is logged on it. Rest days
+/// before <see cref="From"/> still count +1, so nobody's streak dropped with the update.
+/// </summary>
+/// <param name="From">The first day under the rule: the day this user first ran 0.18.1 (User.StreakRestRuleFrom).</param>
+/// <param name="Verified">The dates of the user's verified workout logs.</param>
+public record RestDayRule(DateOnly From, IReadOnlySet<DateOnly> Verified)
+{
+    /// <summary>What rest day <paramref name="d"/> adds with no debt open, or when it pays one.</summary>
+    internal bool Counts(DateOnly d, bool worked) => d < From || (worked && Verified.Contains(d));
+
+    /// <summary>Whether rest day <paramref name="d"/> falls under the rule (it no longer counts by itself).</summary>
+    internal bool Applies(DateOnly d) => d >= From;
+}
 
 /// <summary>How one scheduled training day turned out under the grace rule.</summary>
 public enum DayOutcome
@@ -55,8 +73,9 @@ public static class StreakCalculator
         IEnumerable<DateOnly> workoutDates,
         IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
-        DateOnly today) =>
-        Replay(workoutDates, schedule, choices, today, null, null);
+        DateOnly today,
+        RestDayRule? restRule = null) =>
+        Replay(workoutDates, schedule, choices, today, restRule, null, null);
 
     /// <summary>
     /// The outcome of every training day from <paramref name="from"/> to <paramref name="until"/>, from the
@@ -72,10 +91,11 @@ public static class StreakCalculator
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
         DateOnly today,
         DateOnly from,
-        DateOnly until)
+        DateOnly until,
+        RestDayRule? restRule = null)
     {
         var settled = new Dictionary<DateOnly, DayOutcome>();
-        Replay(workoutDates, schedule, choices, today, settled, null);
+        Replay(workoutDates, schedule, choices, today, restRule, settled, null);
 
         var ordered = schedule.OrderBy(s => s.EffectiveFrom).ToList();
         var result = new List<TrainingDayOutcome>();
@@ -95,10 +115,11 @@ public static class StreakCalculator
         IEnumerable<DateOnly> workoutDates,
         IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
-        DateOnly today)
+        DateOnly today,
+        RestDayRule? restRule = null)
     {
         DateOnly? last = null;
-        Replay(workoutDates, schedule, choices, today, null, d => last = d);
+        Replay(workoutDates, schedule, choices, today, restRule, null, d => last = d);
         return last;
     }
 
@@ -109,6 +130,7 @@ public static class StreakCalculator
         IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
         DateOnly today,
+        RestDayRule? restRule,
         Dictionary<DateOnly, DayOutcome>? outcomes,
         Action<DateOnly>? onBreak)
     {
@@ -126,6 +148,9 @@ public static class StreakCalculator
         var owed = default(DateOnly);   // the training day the open debt is for
         var fresh = false;              // the owed day was missed with no debt open (not a day owed inside a chain)
         var longest = 0;
+        var countBeforeToday = 0;
+        var paidToday = false;          // today's workout made up an owed day: not frozen, even if the count didn't grow
+        var everCounted = false;        // under the rest-day rule an unverified rest-day workout doesn't start a streak
         StreakStatus? stopped = null;
 
         for (var d = logged.Min(); d <= today; d = d.AddDays(1))
@@ -133,6 +158,8 @@ public static class StreakCalculator
             while (idx + 1 < ordered.Count && ordered[idx + 1].EffectiveFrom <= d) idx++;
             var isTraining = ordered.Count == 0 || WeekPattern.IsTrainingDay(ordered[idx].WeekPattern, d.DayOfWeek);
             var worked = logged.Contains(d);
+            var restCounts = restRule?.Counts(d, worked) ?? true;   // a rest day adds +1 (always, before the rule)
+            if (d == today) countBeforeToday = count;
             MissChoice? choice = debt && fresh && choices.TryGetValue(owed, out var c) ? c : null;
 
             if (choice == MissChoice.Continue)                                      // skipped: break before d
@@ -147,7 +174,8 @@ public static class StreakCalculator
             {
                 if (worked)                                                         // paid
                 {
-                    count++;
+                    if (isTraining || restCounts) count++;                          // a rest day that pays adds only if it counts
+                    if (d == today) paidToday = true;
                     Set(outcomes, owed, DayOutcome.Graced);
                     if (choice == MissChoice.ShiftWeek)                             // the schedule moved; d is the missed workout's new home
                     {
@@ -182,7 +210,13 @@ public static class StreakCalculator
                 else if (count == 0) Set(outcomes, d, DayOutcome.Missed);           // no streak, nothing to save
                 else { count++; debt = true; owed = d; fresh = true; }              // provisional
             }
+            else if (restRule is not null && restRule.Applies(d))                   // rest day under the 0.18.1 rule
+            {
+                if (restCounts) count++;                                            // only a verified workout adds (or restarts)
+            }
             else if (count > 0 || worked) count++;                                  // rest day; after a break only a workout restarts
+
+            if (count > 0) everCounted = true;
 
             if (!debt) longest = Math.Max(longest, count);
         }
@@ -190,9 +224,12 @@ public static class StreakCalculator
         if (debt) Set(outcomes, owed, DayOutcome.Pending);
 
         longest = Math.Max(longest, count);
+        if (!everCounted) return new StreakResult(0, 0, StreakStatus.NotStarted);   // only unverified rest-day workouts
         var status = count == 0 ? StreakStatus.Broken
                    : stopped ?? (debt ? StreakStatus.Shifted : StreakStatus.Active);
-        return new StreakResult(count, longest, status, debt ? owed : null);
+        var stale = status == StreakStatus.Active && restRule is not null && restRule.Applies(today)
+                    && !IsTraining(ordered, today) && count == countBeforeToday && !paidToday;
+        return new StreakResult(count, longest, status, debt ? owed : null, stale);
     }
 
     private static void Set(Dictionary<DateOnly, DayOutcome>? outcomes, DateOnly day, DayOutcome outcome)

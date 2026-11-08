@@ -65,14 +65,15 @@ public static class ReminderPlanner
         IReadOnlyList<ScheduleChange> schedule,
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
         DateTime now,
-        Func<DateOnly, string?> dayName)
+        Func<DateOnly, string?> dayName,
+        RestDayRule? restRule = null)
     {
         if (!settings.Enabled || (!settings.TrainingDay && !settings.MissedDay)) return [];
 
         var today = DateOnly.FromDateTime(now);
         var clock = TimeOnly.FromDateTime(now);
         var dates = workoutDates.ToHashSet();
-        var streak = StreakCalculator.Calculate(dates, schedule, choices, today);
+        var streak = StreakCalculator.Calculate(dates, schedule, choices, today, restRule);
         var loggedToday = dates.Contains(today);
         var result = new List<PlannedReminder>();
 
@@ -101,10 +102,11 @@ public static class ReminderPlanner
                     result.Add(Missed(day.AddDays(1), day, count, _ => name));
             }
 
-            // The day ends: a planned workout adds one; a rest day adds one while there's a streak
+            // The day ends: a planned workout adds one; a rest day adds one while there's a streak, until the
+            // rest-day rule (0.18.1) starts: then it keeps the streak without adding (a verified workout can't be planned)
             if (i == 0 && todayCounted) continue;
             if (training) count++;
-            else if (count > 0) count++;
+            else if (count > 0 && (restRule is null || day < restRule.From)) count++;
         }
 
         return result.OrderBy(r => r.LocalTime).ToList();

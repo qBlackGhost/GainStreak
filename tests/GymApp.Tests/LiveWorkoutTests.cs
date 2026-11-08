@@ -455,6 +455,88 @@ public class LiveWorkoutServiceTests : IDisposable
         _clock.Now = new DateTime(2026, 10, 6, 0, 1, 0);
         Assert.Null(await _svc.GetOpenAsync(_alice));
     }
+
+    // ===== A rest day's workout of hand-picked exercises (0.18.1) =====
+
+    private static readonly DateOnly Tue = Mon.AddDays(1);
+
+    /// <summary>A built-in exercise that's in none of Alice's days.</summary>
+    private int Unplanned()
+    {
+        using var db = _db.CreateDbContext();
+        var planned = db.UserDayExercises.Where(x => x.UserId == _alice).Select(x => x.ExerciseId).ToList();
+        return db.Exercises.Where(e => e.OwnerUserId == null && !planned.Contains(e.Id)).OrderBy(e => e.Id).First().Id;
+    }
+
+    [Fact] public async Task Picked_OnARestDay_StartsThoseExercises_InTheOrderPicked()
+    {
+        _clock.Now = new DateTime(2026, 10, 6, 18, 0, 0);
+        var other = Unplanned();
+        var r = await _svc.StartAsync(_alice, exerciseIds: [other, _ex[2]]);
+        Assert.True(r.Success, r.Error);
+        var live = r.Workout!;
+        Assert.Null(live.SplitDayId);
+        Assert.Equal(LiveWorkoutService.PickedName, live.DayName);
+        Assert.Equal([other, _ex[2]], live.Exercises.Select(e => e.ExerciseId));
+        // Planned sets from the day that has the exercise, else the default
+        Assert.Equal([WorkoutService.DefaultPickedSets, 2], live.Exercises.Select(e => e.WorkingSets));
+    }
+
+    [Fact] public async Task Picked_OnATrainingDay_IsRefused()
+    {
+        var r = await _svc.StartAsync(_alice, exerciseIds: [_ex[0]]);
+        Assert.False(r.Success);
+        Assert.Equal("Pick exercises only on a rest day.", r.Error);
+    }
+
+    [Fact] public async Task Picked_TooMany_IsRefused()
+    {
+        _clock.Now = new DateTime(2026, 10, 6, 18, 0, 0);
+        using (var db = _db.CreateDbContext())
+        {
+            var ids = db.Exercises.Where(e => e.OwnerUserId == null).OrderBy(e => e.Id)
+                .Take(WorkoutService.MaxPickedExercises + 1).Select(e => e.Id).ToList();
+            var r = await _svc.StartAsync(_alice, exerciseIds: ids);
+            Assert.False(r.Success);
+        }
+    }
+
+    [Fact] public async Task Picked_LogsAtHalf_KeepingTheListOnTheLog_AndFollowsLaterSets()
+    {
+        _clock.Now = new DateTime(2026, 10, 6, 18, 0, 0);
+        var other = Unplanned();
+        Assert.True((await _svc.StartAsync(_alice, exerciseIds: [_ex[2], other])).Success);
+
+        // Ex 2 has two working sets planned: filling it is half of two, so today is logged
+        for (var i = 0; i < 2; i++) Assert.True((await _svc.SaveSetAsync(_alice, _ex[2], Work())).Success);
+        var log = Assert.Single(Logs());
+        Assert.Equal(Tue, log.Date);
+        Assert.Null(log.SplitDayId);
+        Assert.Equal($"{_ex[2]},{other}", log.ExerciseIds);
+        Assert.Equal((1, 2), (log.FilledExercises, log.TotalExercises));
+
+        for (var i = 0; i < WorkoutService.DefaultPickedSets; i++)
+            Assert.True((await _svc.SaveSetAsync(_alice, other, Work())).Success);
+        log = Assert.Single(Logs());
+        Assert.Equal((2, 2), (log.FilledExercises, log.TotalExercises));
+
+        var done = await _svc.FinishAsync(_alice);
+        Assert.True(done.Success, done.Error);
+        Assert.Null(await _svc.GetOpenAsync(_alice));
+    }
+
+    [Fact] public async Task PickerChoices_RecentFirst_WithTheirTopSet()
+    {
+        Assert.True((await _sets.SaveDayAsync(_alice, _ex[1], [Work(70, 5), Work(80, 3)], Mon)).Success);
+        var choices = await _workouts.GetPickerChoicesAsync(_alice, Tue);
+        Assert.Equal(_ex[1], choices[0].ExerciseId);
+        Assert.Equal(Mon, choices[0].LastDate);
+        Assert.Equal("80 kg × 3", choices[0].LastText);
+        Assert.All(choices.Skip(1), c => Assert.Null(c.LastText));
+
+        using var db = _db.CreateDbContext();
+        Assert.Equal(db.Exercises.Count(e => e.OwnerUserId == null || e.OwnerUserId == _alice), choices.Count);
+    }
 }
 
 /// <summary>Today's log follows today's sets wherever they're saved: the Day and Exercise screens, the desktop check-in.</summary>

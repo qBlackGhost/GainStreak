@@ -304,4 +304,57 @@ public class StreakCalculatorTests
         Assert.Equal([WeekChipKind.Done, WeekChipKind.Missed, WeekChipKind.Rest, WeekChipKind.Missed, WeekChipKind.Missed,
                       WeekChipKind.Rest, WeekChipKind.Rest],
             WeekRow.Build(StreakCalculator.Timeline([D(0)], UpperLower, NoChoices, D(6), D(0), D(6)), D(6)).Select(c => c.Kind));
+
+    // Rest days under the 0.18.1 rule: they keep the streak without adding, unless a verified workout is logged
+
+    private static RestDayRule Rule(int from, params int[] verified) => new(D(from), verified.Select(D).ToHashSet());
+
+    private static StreakResult RunRule(int[] logged, int today, RestDayRule rule, IReadOnlyList<ScheduleChange>? schedule = null) =>
+        StreakCalculator.Calculate(logged.Select(D), schedule ?? UpperLower, NoChoices, D(today), rule);
+
+    [Fact] public void RestRule_RestDayKeepsTheStreak_WithoutAdding_AndIsStale() =>
+        // Mon, Tue logged, today Wed (rest): still 2, on ice
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.Active, Stale: true), RunRule([0, 1], 2, Rule(0)));
+
+    [Fact] public void RestRule_RestDaysBeforeTheRule_StillCount() =>
+        // the rule starts Fri: Wed (rest) counts, Sat and Sun don't -> Mon, Tue, Wed, Thu, Fri = 5 on Sun
+        Assert.Equal(new StreakResult(5, 5, StreakStatus.Active, Stale: true), RunRule([0, 1, 3, 4], 6, Rule(4)));
+
+    [Fact] public void RestRule_UnverifiedWorkoutOnARestDay_DoesNotAdd() =>
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.Active, Stale: true), RunRule([0, 1, 2], 2, Rule(0)));
+
+    [Fact] public void RestRule_VerifiedWorkoutOnARestDay_Adds_AndIsNotStale() =>
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), RunRule([0, 1, 2], 2, Rule(0, 2)));
+
+    [Fact] public void RestRule_VerifiedTrainingDayWorkouts_CountAsBefore() =>
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.Active), RunRule([0, 1], 1, Rule(0, 0, 1)));
+
+    [Fact] public void RestRule_TrainingDayAfterRest_ContinuesFromTheFrozenCount() =>
+        // Mon, Tue, Wed rest (no add), Thu logged -> 3
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), RunRule([0, 1, 3], 3, Rule(0)));
+
+    [Fact] public void RestRule_PendingTrainingDayAfterRest_IsNotStale() =>
+        Assert.Equal(new StreakResult(2, 2, StreakStatus.PendingToday), RunRule([0, 1], 3, Rule(0)));
+
+    [Fact] public void RestRule_MissStillBreaksOnAnUnloggedRestDay() =>
+        // Mon = 1, Tue missed (debt), Wed rest not logged -> break
+        Assert.Equal(new StreakResult(0, 1, StreakStatus.Broken), RunRule([0], 3, Rule(0)));
+
+    [Fact] public void RestRule_RestDayThatPaysADebt_KeepsTheStreak_NotStale() =>
+        // PPL: Mon = 1, Tue missed (2, provisional), Wed pays it (3, Wed owed), Thu rest pays Wed: 3, not on ice
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), RunRule([0, 2, 3], 3, Rule(0), Ppl));
+
+    [Fact] public void RestRule_VerifiedRestDayThatPaysADebt_Adds() =>
+        Assert.Equal(new StreakResult(4, 4, StreakStatus.Active), RunRule([0, 2, 3], 3, Rule(0, 3), Ppl));
+
+    [Fact] public void RestRule_UnverifiedRestDayWorkoutAlone_DoesNotStartAStreak() =>
+        // the only workout is an unverified one on Wed (rest), today Wed
+        Assert.Equal(new StreakResult(0, 0, StreakStatus.NotStarted), RunRule([2], 2, Rule(0)));
+
+    [Fact] public void RestRule_VerifiedRestDayWorkout_StartsAStreak() =>
+        Assert.Equal(new StreakResult(1, 1, StreakStatus.Active), RunRule([2], 2, Rule(0, 2)));
+
+    [Fact] public void RestRule_RestDaysAfterABreak_StayAtZero_NotStale() =>
+        // Mon, Tue, Wed(rest, +1 before the rule), Thu = 4, Fri missed, Sat rest not logged -> break; Sun 0, not stale
+        Assert.Equal(new StreakResult(0, 4, StreakStatus.Broken), RunRule([0, 1, 3], 6, Rule(5)));
 }

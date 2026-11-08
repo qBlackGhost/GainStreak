@@ -45,8 +45,10 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
             }
         }
 
+        // The rest-day rule (0.18.1) starts on the first recalculation under it; rest days before still count
+        user.StreakRestRuleFrom ??= day;
         var choices = await LoadChoicesAsync(db, userId);
-        var result = StreakCalculator.Calculate(dates, schedule, choices, day);
+        var result = StreakCalculator.Calculate(dates, schedule, choices, day, await LoadRestRuleAsync(db, userId, day));
 
         // The cached values still describe the streak with today's log in it
         var todayWasBest = undoneToday && user.LongestStreak <= user.CurrentStreak;
@@ -64,9 +66,9 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<StreakResult> GetAsync(int userId, DateOnly today, bool beforeTodaysLog = false)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
         if (beforeTodaysLog) dates.Remove(today);
-        return StreakCalculator.Calculate(dates, schedule, choices, today);
+        return StreakCalculator.Calculate(dates, schedule, choices, today, rule);
     }
 
     /// <summary>
@@ -78,9 +80,9 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<DateOnly?> MakeUpDayAsync(int userId, DateOnly today)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
         dates.Remove(today);
-        var before = StreakCalculator.Calculate(dates, schedule, choices, today);
+        var before = StreakCalculator.Calculate(dates, schedule, choices, today, rule);
         var yesterday = today.AddDays(-1);
         return before is { Status: StreakStatus.AtRisk, OwedDay: { } owed } && owed == yesterday
                && (!choices.TryGetValue(owed, out var c) || c != MissChoice.ShiftWeek)
@@ -92,28 +94,37 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
     public async Task<IReadOnlyList<WeekChip>> GetWeekAsync(int userId, DateOnly today)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var (dates, schedule, choices) = await LoadAsync(db, userId);
+        var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
         var monday = PointsCalculator.MondayOf(today);
-        return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6)), today);
+        return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6), rule), today);
     }
 
     /// <summary>The missed day the streak last broke on, or null if it never broke.</summary>
     public async Task<DateOnly?> LastBreakAsync(int userId, DateOnly today)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var (dates, schedule, choices) = await LoadAsync(db, userId);
-        return StreakCalculator.LastBreak(dates, schedule, choices, today);
+        var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
+        return StreakCalculator.LastBreak(dates, schedule, choices, today, rule);
     }
 
-    internal static async Task<(List<DateOnly> Dates, List<ScheduleChange> Schedule, Dictionary<DateOnly, MissChoice> Choices)>
-        LoadAsync(AppDbContext db, int userId)
+    internal static async Task<(List<DateOnly> Dates, List<ScheduleChange> Schedule, Dictionary<DateOnly, MissChoice> Choices, RestDayRule Rule)>
+        LoadAsync(AppDbContext db, int userId, DateOnly today)
     {
         var dates = await db.WorkoutLogs.Where(w => w.UserId == userId).Select(w => w.Date).ToListAsync();
         var schedule = await db.UserSchedules.Where(s => s.UserId == userId)
             .OrderBy(s => s.EffectiveFrom)
             .Select(s => new ScheduleChange(s.EffectiveFrom, s.WeekPattern))
             .ToListAsync();
-        return (dates, schedule, await LoadChoicesAsync(db, userId));
+        return (dates, schedule, await LoadChoicesAsync(db, userId), await LoadRestRuleAsync(db, userId, today));
+    }
+
+    /// <summary>The rest-day rule (0.18.1) as the calculator takes it: from the user's stored start day (today when it
+    /// isn't stored yet, as <see cref="RecalculateAsync"/> will store it), with the dates of their verified workouts.</summary>
+    internal static async Task<RestDayRule> LoadRestRuleAsync(AppDbContext db, int userId, DateOnly today)
+    {
+        var from = await db.Users.Where(u => u.Id == userId).Select(u => u.StreakRestRuleFrom).FirstOrDefaultAsync() ?? today;
+        var verified = await db.WorkoutLogs.Where(w => w.UserId == userId && w.Verified == true).Select(w => w.Date).ToListAsync();
+        return new RestDayRule(from, verified.ToHashSet());
     }
 
     /// <summary>The user's missed-day choices, keyed by the missed date, as the calculator takes them.</summary>

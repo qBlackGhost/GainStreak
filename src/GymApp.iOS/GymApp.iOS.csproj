@@ -23,6 +23,10 @@
     <MtouchLink>SdkOnly</MtouchLink>
     <!-- Keychain access (KeychainTokenStore); without it the Keychain refuses every write -->
     <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+    <!-- .NET for iOS 27.1 (the newest workload, Nov 2026) asks for Xcode 27.1 and refuses to build with this Mac's 27.2.
+         A point release apart builds and runs fine (checked in 0.18.1 on the Simulator, Debug and Release). Drop this
+         once a workload for Xcode 27.2 ships; -p:ValidateXcodeVersion=true turns the check back on for one build -->
+    <ValidateXcodeVersion Condition="'$(ValidateXcodeVersion)' == ''">false</ValidateXcodeVersion>
   </PropertyGroup>
 
   <!-- Entitlements need a signed app. The Simulator takes an ad-hoc signature, so it needs no Apple certificate; device

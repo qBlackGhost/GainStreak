@@ -20,7 +20,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.LiveWorkout",
                 typeof(LiveWorkout),
                 baseEntityType,
-                propertyCount: 12,
+                propertyCount: 13,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -64,6 +64,14 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(LiveWorkout).GetField("<EndedAt>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
 
+            var exerciseIds = runtimeEntityType.AddProperty(
+                "ExerciseIds",
+                typeof(string),
+                propertyInfo: typeof(LiveWorkout).GetProperty("ExerciseIds", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(LiveWorkout).GetField("<ExerciseIds>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true,
+                maxLength: 400);
+
             var lastActiveAt = runtimeEntityType.AddProperty(
                 "LastActiveAt",
                 typeof(DateTime),
@@ -80,10 +88,10 @@ namespace GymApp.Data.CompiledModels
 
             var splitDayId = runtimeEntityType.AddProperty(
                 "SplitDayId",
-                typeof(int),
+                typeof(int?),
                 propertyInfo: typeof(LiveWorkout).GetProperty("SplitDayId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(LiveWorkout).GetField("<SplitDayId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
-                sentinel: 0);
+                nullable: true);
 
             var startedAt = runtimeEntityType.AddProperty(
                 "StartedAt",
@@ -136,8 +144,7 @@ namespace GymApp.Data.CompiledModels
             var runtimeForeignKey = declaringEntityType.AddForeignKey(new[] { declaringEntityType.FindProperty("SplitDayId") },
                 principalEntityType.FindKey(new[] { principalEntityType.FindProperty("Id") }),
                 principalEntityType,
-                deleteBehavior: DeleteBehavior.Cascade,
-                required: true);
+                deleteBehavior: DeleteBehavior.Cascade);
 
             var splitDay = declaringEntityType.AddNavigation("SplitDay",
                 runtimeForeignKey,

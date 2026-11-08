@@ -121,6 +121,8 @@ public class AppDbContext : DbContext
         b.Entity<LiveWorkout>().HasOne(l => l.SplitDay).WithMany()
             .HasForeignKey(l => l.SplitDayId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<LiveWorkout>().Property(l => l.SkippedExerciseIds).HasMaxLength(400);
+        b.Entity<LiveWorkout>().Property(l => l.ExerciseIds).HasMaxLength(400);
+        b.Entity<WorkoutLog>().Property(w => w.ExerciseIds).HasMaxLength(400);
         b.Entity<LiveWorkout>().Property(l => l.AutoStop).HasMaxLength(12);
         b.Entity<LiveWorkout>().HasOne(l => l.VerifiedGym).WithMany()
             .HasForeignKey(l => l.VerifiedGymId).OnDelete(DeleteBehavior.SetNull);

@@ -33,10 +33,19 @@
                 </Button>
                 <Border Height="26" Padding="8,0" CornerRadius="13" Background="{DynamicResource Fill}" VerticalAlignment="Center"
                         AutomationProperties.Name="{Binding Streak, StringFormat='{}{0} day streak'}">
-                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
-                        <Path Data="{StaticResource IcFlame}" Fill="#FF8A2A" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding Streak}" Classes="mono" FontSize="13" FontWeight="Bold" Foreground="#FF8A2A"
-                                   VerticalAlignment="Center"/>
+                    <!-- On ice (cold blue) on a rest day that didn't add to the streak -->
+                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center"
+                                Classes="streak" Classes.ice="{Binding IsStreakStale}">
+                        <StackPanel.Styles>
+                            <Style Selector="StackPanel.streak > Path"><Setter Property="Fill" Value="#FF8A2A"/></Style>
+                            <Style Selector="StackPanel.streak > TextBlock"><Setter Property="Foreground" Value="#FF8A2A"/></Style>
+                            <Style Selector="StackPanel.streak.ice > TextBlock"><Setter Property="Foreground" Value="{DynamicResource IceText}"/></Style>
+                        </StackPanel.Styles>
+                        <Path Data="{StaticResource IcFlame}" Width="13" Height="13" Stretch="Uniform" VerticalAlignment="Center"
+                              IsVisible="{Binding !IsStreakStale}"/>
+                        <Image Source="{StaticResource IcyFlame}" Width="17" Height="17" VerticalAlignment="Center"
+                               IsVisible="{Binding IsStreakStale}"/>
+                        <TextBlock Text="{Binding Streak}" Classes="mono" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </StackPanel>

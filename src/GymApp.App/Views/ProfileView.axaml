@@ -7,6 +7,19 @@
     <!-- After the "Gym App" design canvas (Profile artboard): body data and weight on the left, home city, account and
          appearance on the right. Below 880 px of content the right column goes under the left (ProfileView.axaml.cs). -->
     <UserControl.Styles>
+        <!-- The streak: orange, or on ice (cold blue) on a rest day that didn't add to it (0.18.1) -->
+        <Style Selector="StackPanel.streak > Path"><Setter Property="Fill" Value="{DynamicResource FlameText}"/></Style>
+        <Style Selector="StackPanel.streak > TextBlock"><Setter Property="Foreground" Value="{DynamicResource FlameText}"/></Style>
+        <Style Selector="StackPanel.streak.ice > TextBlock"><Setter Property="Foreground" Value="{DynamicResource IceText}"/></Style>
+        <Style Selector="Border.pill.streak">
+            <Setter Property="BorderBrush" Value="{DynamicResource OrangeTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource FlameText}"/>
+        </Style>
+        <Style Selector="Border.pill.streak Path"><Setter Property="Fill" Value="{DynamicResource FlameText}"/></Style>
+        <Style Selector="Border.pill.streak.ice">
+            <Setter Property="BorderBrush" Value="{DynamicResource IceTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource IceText}"/>
+        </Style>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
         <StyleInclude Source="/Views/IronlogStyles.axaml"/>
         <Style Selector="TextBlock">
@@ -156,10 +169,12 @@
                         <Border Classes="statTile">
                             <StackPanel Spacing="2">
                                 <TextBlock Text="Streak" FontSize="12" Classes="muted"/>
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <Path Data="{StaticResource IcFlame}" Fill="{DynamicResource FlameText}" Width="15" Height="15" Stretch="Uniform"
-                                          VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding CurrentStreak}" FontSize="20" FontWeight="ExtraBold" Foreground="{DynamicResource FlameText}"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Classes="streak" Classes.ice="{Binding IsStreakStale}">
+                                    <Path Data="{StaticResource IcFlame}" Width="15" Height="15" Stretch="Uniform"
+                                          VerticalAlignment="Center" IsVisible="{Binding !IsStreakStale}"/>
+                                    <Image Source="{StaticResource IcyFlame}" Width="20" Height="20" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsStreakStale}"/>
+                                    <TextBlock Text="{Binding CurrentStreak}" FontSize="20" FontWeight="ExtraBold"/>
                                 </StackPanel>
                             </StackPanel>
                         </Border>
@@ -208,10 +223,12 @@
                                     <TextBlock Text="{Binding SplitText}" FontSize="13" FontWeight="SemiBold"/>
                                 </Border>
                             </Button>
-                            <Border Classes="pill" BorderBrush="{DynamicResource OrangeTintLine}" Padding="12,5" TextElement.Foreground="{DynamicResource FlameText}">
+                            <Border Classes="pill streak" Classes.ice="{Binding IsStreakStale}" Padding="12,5">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <Path Data="{StaticResource IcFlame}" Fill="{DynamicResource FlameText}" Width="13" Height="13" Stretch="Uniform"
-                                          VerticalAlignment="Center"/>
+                                    <Path Data="{StaticResource IcFlame}" Width="13" Height="13" Stretch="Uniform"
+                                          VerticalAlignment="Center" IsVisible="{Binding !IsStreakStale}"/>
+                                    <Image Source="{StaticResource IcyFlame}" Width="17" Height="17" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsStreakStale}"/>
                                     <TextBlock FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center">
                                         <Run Text="{Binding CurrentStreak}" FontFamily="{StaticResource Mono}"/><Run Text=" day streak · best "/><Run
                                              Text="{Binding BestStreak}" FontFamily="{StaticResource Mono}"/>

@@ -106,6 +106,8 @@ public partial class ProfileViewModel : ViewModelBase
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string CurrentStreak { get; set; } = "0";
     [ObservableProperty] public partial string BestStreak { get; set; } = "0";
+    /// <summary>A rest day that didn't add to the streak: the flame goes cold (ice) until the next workout.</summary>
+    [ObservableProperty] public partial bool IsStreakStale { get; set; }
     [ObservableProperty] public partial string LevelText { get; set; } = "";
     // The phones' header tiles
     [ObservableProperty] public partial string LevelNumber { get; set; } = "";
@@ -284,6 +286,7 @@ public partial class ProfileViewModel : ViewModelBase
             StreakText = $"{s.CurrentStreak} day streak · best {s.LongestStreak}";
             CurrentStreak = s.CurrentStreak.ToString(CultureInfo.InvariantCulture);
             BestStreak = s.LongestStreak.ToString(CultureInfo.InvariantCulture);
+            IsStreakStale = s.StreakStale;
             var level = LevelCalculator.For(_session.CurrentUser?.Points ?? 0);
             AvatarLevel = level.Number;
             LevelText = $"Level {level.Number} · {level.Name}";

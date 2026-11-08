@@ -768,6 +768,10 @@ namespace GymApp.Data.Migrations
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ExerciseIds")
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("LastActiveAt")
                         .HasColumnType("TEXT");
 
@@ -776,7 +780,7 @@ namespace GymApp.Data.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("SplitDayId")
+                    b.Property<int?>("SplitDayId")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("StartedAt")
@@ -1265,6 +1269,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("SplitStartDay")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateOnly?>("StreakRestRuleFrom")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ThemePreference")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1478,6 +1485,10 @@ namespace GymApp.Data.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ExerciseIds")
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("FilledExercises")
                         .HasColumnType("INTEGER");
 
@@ -1648,8 +1659,7 @@ namespace GymApp.Data.Migrations
                     b.HasOne("GymApp.Data.Models.SplitDay", "SplitDay")
                         .WithMany()
                         .HasForeignKey("SplitDayId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("GymApp.Data.Models.User", "User")
                         .WithMany()

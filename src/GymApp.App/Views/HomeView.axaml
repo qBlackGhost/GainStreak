@@ -108,6 +108,21 @@
         <Style Selector="TextBlock.gaugeTitle.rest">
             <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
         </Style>
+        <Style Selector="TextBlock.gaugeTitle.ice">
+            <Setter Property="Foreground" Value="{DynamicResource IceText}"/>
+        </Style>
+        <!-- A streak on ice (a rest day that didn't add to it): the hero's flame and number go cold blue.
+             Their colours are set here, not on the elements, so the ice class can win over them. -->
+        <Style Selector="v|Icon.streakFlame">
+            <Setter Property="Stroke" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+        </Style>
+        <Style Selector="v|Icon.streakFlame.ice">
+            <Setter Property="Stroke" Value="{StaticResource IceFlameBrush}"/>
+            <Setter Property="Width" Value="26"/>
+            <Setter Property="Height" Value="26"/>
+        </Style>
         <Style Selector="TextBlock.gaugeTitle.hot">
             <Setter Property="Foreground" Value="{DynamicResource FlameHot}"/>
             <Setter Property="Effect">
@@ -457,15 +472,17 @@
                     <Panel x:Name="HeroLeft" VerticalAlignment="Center">
                         <StackPanel Spacing="18">
                             <StackPanel Orientation="Horizontal" Spacing="10">
-                                <v:Icon Data="{StaticResource IcFlame}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2"
-                                        Width="22" Height="22"/>
+                                <v:Icon Data="{StaticResource IcFlame}" StrokeThickness="2.2"
+                                        Classes="streakFlame" Classes.ice="{Binding IsStreakStale}"/>
                                 <TextBlock Text="GYM STREAK" Classes="label" VerticalAlignment="Center"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="14">
                                 <TextBlock x:Name="StreakNumber" Text="{Binding StreakCurrent}" FontWeight="Black"
-                                           Foreground="{DynamicResource AccentInk}" TextWrapping="NoWrap"
+                                           TextWrapping="NoWrap" Classes.ice="{Binding IsStreakStale}"
                                            Classes.zero="{Binding !StreakCurrent}">
                                     <TextBlock.Styles>
+                                        <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
+                                        <Style Selector="TextBlock.ice"><Setter Property="Foreground" Value="{DynamicResource IceText}"/></Style>
                                         <Style Selector="TextBlock.zero"><Setter Property="Foreground" Value="{DynamicResource Ghost}"/></Style>
                                     </TextBlock.Styles>
                                 </TextBlock>
@@ -566,7 +583,14 @@
                                         <Path Data="{StaticResource IcArc}" Stroke="{DynamicResource Fill2}" StrokeThickness="28" StrokeLineCap="Round"/>
                                         <!-- Rest day: a plain grey arc -->
                                         <Path Data="{StaticResource IcArc}" Stroke="{DynamicResource TrackStrong}" StrokeThickness="28" StrokeLineCap="Round"
-                                              IsVisible="{Binding IsRestOpen}"/>
+                                              IsVisible="{Binding ShowRestArc}"/>
+                                        <!-- Streak on ice (0.18.1): a rest day that didn't add to it, logged or not -->
+                                        <Path Data="{StaticResource IcArc}" Stroke="{StaticResource IceBrush}" StrokeThickness="28"
+                                              StrokeLineCap="Round" IsVisible="{Binding IsStreakStale}">
+                                            <Path.Effect>
+                                                <DropShadowEffect OffsetX="0" OffsetY="0" BlurRadius="18" Color="#7040A8F5"/>
+                                            </Path.Effect>
+                                        </Path>
                                         <!-- Training day, not done: a cold arc (it fades out under the fire) -->
                                         <Path Data="{StaticResource IcArc}" Stroke="{StaticResource ColdBrush}" StrokeThickness="28"
                                               StrokeLineCap="Round" Opacity="0.85"
@@ -604,7 +628,8 @@
                                         <Viewbox StretchDirection="DownOnly" MaxWidth="330" HorizontalAlignment="Center">
                                             <TextBlock Text="{Binding GaugeTitle}" Classes="gaugeTitle" FontSize="76" FontWeight="Black"
                                                        LetterSpacing="1.5" LineHeight="76" TextWrapping="NoWrap"
-                                                       Classes.rest="{Binding IsRestOpen}" Classes.hot="{Binding IsTitleHot}"/>
+                                                       Classes.rest="{Binding IsRestOpen}" Classes.hot="{Binding IsTitleHot}"
+                                                       Classes.ice="{Binding IsStreakStale}"/>
                                         </Viewbox>
                                         <TextBlock Text="{Binding GaugeSub}" FontSize="17" Classes="soft" HorizontalAlignment="Center"
                                                    TextAlignment="Center" MaxWidth="420"/>
@@ -1157,28 +1182,166 @@
         </v:Sheet>
     </Border>
 
-    <!-- Start workout anyway, on a rest day: which day -->
-    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsPickingDay}">
-        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
-                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
-            <StackPanel Spacing="12">
-                <TextBlock Text="Which workout?" FontSize="22" FontWeight="ExtraBold"/>
-                <TextBlock Text="It's a rest day, so pick the day of your split you're doing." FontSize="14" Classes="soft"/>
-                <ItemsControl ItemsSource="{Binding PickableDays}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="services:CheckInDay">
-                            <Button Classes="option" MinHeight="50" Content="{Binding Name}" FontWeight="Bold"
-                                    Command="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).PickDayCommand}"
-                                    CommandParameter="{Binding}"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Content="Cancel"
-                        Command="{Binding CancelPickDayCommand}"/>
-            </StackPanel>
+    <!-- Start workout anyway, on a rest day (0.18.1, option B of the GainStreak Mobile canvas): pick any exercises.
+         A sheet over most of the screen on phones; search, Recent and muscle group chips, the picks in a tray -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsPicking}">
+        <Border.Styles>
+            <Style Selector="Button.pchip">
+                <Setter Property="MinHeight" Value="34"/>
+                <Setter Property="Padding" Value="14,0"/>
+                <Setter Property="CornerRadius" Value="999"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Line2}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource Light}"/>
+            </Style>
+            <Style Selector="Button.pchip.on">
+                <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+            </Style>
+            <Style Selector="Button.pchip.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+                <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+            </Style>
+            <Style Selector="Button.pickRow">
+                <Setter Property="MinHeight" Value="52"/>
+                <Setter Property="Padding" Value="12,0"/>
+                <Setter Property="CornerRadius" Value="12"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            </Style>
+            <Style Selector="Button.pickRow.on">
+                <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+            </Style>
+            <Style Selector="Border.pickBox">
+                <Setter Property="Width" Value="22"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="BorderThickness" Value="1.5"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ControlStrong}"/>
+            </Style>
+            <Style Selector="Border.pickBox.on">
+                <Setter Property="Background" Value="{DynamicResource Accent}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+            </Style>
+            <Style Selector="TextBox.pfield">
+                <Setter Property="MinHeight" Value="44"/>
+                <Setter Property="CornerRadius" Value="10"/>
+                <Setter Property="FontSize" Value="14"/>
+                <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Padding" Value="40,0,14,0"/>
+            </Style>
+        </Border.Styles>
+        <v:Sheet Width="480" MaxHeight="680" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Padding="20,18,20,24" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <Panel DataContext="{Binding Picker}">
+            <DockPanel x:DataType="vm:RestDayPickerViewModel">
+                <StackPanel DockPanel.Dock="Top" Spacing="12" Margin="0,0,0,12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Pick exercises" FontSize="22" FontWeight="ExtraBold"/>
+                            <TextBlock Text="It's a rest day, so train whatever you like." FontSize="13" Classes="soft"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="btn outline" Padding="0" Width="44" MinHeight="44" VerticalAlignment="Top"
+                                Command="{Binding CancelCommand}" AutomationProperties.Name="Close">
+                            <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4" Width="16" Height="16"/>
+                        </Button>
+                    </Grid>
+                    <Panel>
+                        <TextBox Classes="pfield" PlaceholderText="Search exercises" Text="{Binding Search}"
+                                 AutomationProperties.Name="Search exercises"/>
+                        <v:Icon Data="{StaticResource IcSearch}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2"
+                                Width="16" Height="16" HorizontalAlignment="Left" Margin="14,0,0,0" IsHitTestVisible="False"/>
+                    </Panel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding Filters}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RestDayPickFilter">
+                                    <Button Classes="pchip" Classes.on="{Binding IsSelected}" Content="{Binding Label}"
+                                            Command="{Binding $parent[ItemsControl].((vm:RestDayPickerViewModel)DataContext).SelectFilterCommand}"
+                                            CommandParameter="{Binding}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,12,0,0">
+                    <!-- The picks, in the order picked -->
+                    <Border CornerRadius="12" Background="{DynamicResource Fill}" Padding="12,10" IsVisible="{Binding HasPicks}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <TextBlock Text="{Binding PickedCount}" Classes="mono" FontWeight="Bold" FontSize="15"
+                                       Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding PickedText}" FontSize="13" Classes="soft"
+                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <v:Icon Data="{StaticResource IcFlame}" Stroke="{DynamicResource Ice}" StrokeThickness="2.2" Width="14" Height="14"/>
+                        <TextBlock Text="At your gym, this adds a day to your streak" FontSize="12" Foreground="{DynamicResource IceText}"
+                                   VerticalAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" Content="{Binding StartLabel}"
+                            Command="{Binding StartCommand}" IsEnabled="{Binding !IsBusy}"/>
+                </StackPanel>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <!-- Room on the right for the scroll bar, so it never covers the last sets -->
+                    <StackPanel Spacing="16" Margin="0,0,12,0">
+                        <TextBlock Text="No exercises match." FontSize="14" Classes="muted" IsVisible="{Binding NoResults}"/>
+                        <ItemsControl ItemsSource="{Binding Groups}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Spacing="16"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RestDayPickGroup">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Bold" LetterSpacing="1.2" Classes="muted"/>
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:RestDayPickItem">
+                                                    <Button Classes="pickRow" Classes.on="{Binding IsSelected}" Command="{Binding ToggleCommand}">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                            <Border Classes="pickBox" Classes.on="{Binding IsSelected}" VerticalAlignment="Center">
+                                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="Black" StrokeThickness="2.8"
+                                                                        Width="14" Height="14" IsVisible="{Binding IsSelected}"/>
+                                                            </Border>
+                                                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                            <TextBlock Grid.Column="2" Text="{Binding LastText}" Classes="mono muted" FontSize="12"
+                                                                       VerticalAlignment="Center" IsVisible="{Binding HasLast}"/>
+                                                        </Grid>
+                                                    </Button>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+            </Panel>
         </v:Sheet>
     </Border>
 

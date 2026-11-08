@@ -10,8 +10,12 @@ public class LiveWorkout
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     public DateOnly Date { get; set; }
-    public int SplitDayId { get; set; }
-    public SplitDay SplitDay { get; set; } = null!;
+    /// <summary>The split day being done; null for a workout of hand-picked exercises (<see cref="ExerciseIds"/>).</summary>
+    public int? SplitDayId { get; set; }
+    public SplitDay? SplitDay { get; set; }
+    /// <summary>A rest day's workout of hand-picked exercises (0.18.1), in the order picked: exercise ids separated by
+    /// commas. Null for a split day's workout.</summary>
+    public string? ExerciseIds { get; set; }
     /// <summary>AppClock time, like the rest of the app's day logic.</summary>
     public DateTime StartedAt { get; set; }
     public DateTime LastActiveAt { get; set; }

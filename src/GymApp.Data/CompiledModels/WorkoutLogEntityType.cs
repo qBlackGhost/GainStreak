@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.WorkoutLog",
                 typeof(WorkoutLog),
                 baseEntityType,
-                propertyCount: 9,
+                propertyCount: 10,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -49,6 +49,14 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(WorkoutLog).GetProperty("Date", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(WorkoutLog).GetField("<Date>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateOnly(1, 1, 1));
+
+            var exerciseIds = runtimeEntityType.AddProperty(
+                "ExerciseIds",
+                typeof(string),
+                propertyInfo: typeof(WorkoutLog).GetProperty("ExerciseIds", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(WorkoutLog).GetField("<ExerciseIds>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true,
+                maxLength: 400);
 
             var filledExercises = runtimeEntityType.AddProperty(
                 "FilledExercises",

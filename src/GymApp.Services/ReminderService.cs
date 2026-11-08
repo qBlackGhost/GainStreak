@@ -42,8 +42,8 @@ public class ReminderService(IDbContextFactory<AppDbContext> dbFactory)
         var settings = new ReminderSettings(user.RemindersEnabled, user.TrainingReminderEnabled, user.TrainingReminderTime,
             user.MissedDayReminderEnabled);
 
-        var (dates, schedule, choices) = await StreakService.LoadAsync(db, userId);
-        return ReminderPlanner.Plan(settings, dates, schedule, choices, now, await DayNamesAsync(db, user));
+        var (dates, schedule, choices, rule) = await StreakService.LoadAsync(db, userId, DateOnly.FromDateTime(now));
+        return ReminderPlanner.Plan(settings, dates, schedule, choices, now, await DayNamesAsync(db, user), rule);
     }
 
     /// <summary>The planned workout's name on a day ("Push"), from the selected split; null on its rest days or with

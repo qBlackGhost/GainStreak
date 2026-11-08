@@ -15,6 +15,7 @@ A missed training day is forgiven only if a workout is logged the next day. If t
 ## 2. What stays the same
 
 - Rest days count toward the streak (+1 each), whether or not a workout is logged on them.
+  > **Changed in 0.18.1.** From the day a user first runs 0.18.1 (`User.StreakRestRuleFrom`, passed to the calculator as a `RestDayRule`), a rest day keeps the streak without adding to it, unless a **verified** workout is logged on it. That applies in rows 2 and 8: a rest day that pays a debt keeps the streak but adds only if verified, and after a break only a verified rest-day workout starts a new streak. A rest day today that added nothing (and paid nothing) returns `Stale`, shown as a streak on ice. Rest days before the start day still count +1.
 - Whether a day is a training day or a rest day is decided by the **schedule active on that date** (existing schedule history). This applies to every day in the walk, including days inside a shift chain.
 - Workout logging is today-only. Past days can never change, so a result computed for a past date is stable.
 - Exercise set logs (SetLog) do **not** count. Only the "I went today" WorkoutLog counts.

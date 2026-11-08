@@ -297,7 +297,9 @@ public class MissedDayServiceTests : IDisposable
         var thu = await _workouts.GetCheckInAsync(_alice, today: D(3));
         Assert.Equal(Legs, thu.PlannedDay!.SplitDayId);
         Assert.Empty(thu.PickableDays);
-        Assert.Equal(new StreakResult(4, 4, StreakStatus.Active), (await CheckIn(3)).Streak);
+        // Rest days stopped adding in 0.18.1 (the rule starts on the first check-in here): the unverified make-up on
+        // the rest day keeps the streak at 3 (Mon, Tue and Wed, both made up), and isn't shown on ice
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), (await CheckIn(3)).Streak);
 
         // Fri: back to normal
         Assert.Equal(Push, (await _workouts.GetCheckInAsync(_alice, today: D(4))).PlannedDay!.SplitDayId);

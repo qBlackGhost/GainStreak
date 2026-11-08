@@ -28,7 +28,8 @@ public record ProfileSummary(
     UserProfile Profile,
     WeightLog? CurrentWeight,
     IReadOnlyList<WeightLog> RecentWeights,
-    MaintenanceEstimate Maintenance);
+    MaintenanceEstimate Maintenance,
+    bool StreakStale = false);
 
 public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyncHooks? sync = null)
 {
@@ -64,8 +65,12 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
             : user.SelectedVariant is null ? user.SelectedSplit.Name
             : $"{user.SelectedSplit.Name} ({user.SelectedVariant.Name})";
 
+        // A rest day that didn't add to the streak shows it cold (0.18.1)
+        var (dates, schedule, choices, rule) = await StreakService.LoadAsync(db, userId, day);
+        var stale = StreakCalculator.Calculate(dates, schedule, choices, day, rule).Stale;
+
         return new ProfileSummary(user.Username, user.Email, splitName, user.CurrentStreak, user.LongestStreak,
-            profile, current, recent, Estimate(profile, current?.WeightKg, day));
+            profile, current, recent, Estimate(profile, current?.WeightKg, day), stale);
     }
 
     /// <summary>Creates or updates the user's profile. Filled-in fields must be in range.</summary>

@@ -125,6 +125,8 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>The app bar's streak, refreshed whenever the screen changes.</summary>
     [ObservableProperty] public partial int Streak { get; private set; }
+    /// <summary>A rest day that didn't add to the streak: the app bar's flame goes cold (ice).</summary>
+    [ObservableProperty] public partial bool IsStreakStale { get; private set; }
 
     /// <summary>The user's own avatar, for the app bar and sidebar; the level is for its ring.</summary>
     [ObservableProperty] public partial string? OwnAvatar { get; private set; }
@@ -189,7 +191,9 @@ public partial class MainViewModel : ViewModelBase
         try
         {
             var live = await _sp.GetRequiredService<LiveWorkoutService>().IsOpenAsync(user.Id);
-            Streak = (await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today, beforeTodaysLog: live)).Current;
+            var streak = await _sp.GetRequiredService<StreakService>().GetAsync(user.Id, AppClock.Today, beforeTodaysLog: live);
+            Streak = streak.Current;
+            IsStreakStale = streak.Stale;
         }
         catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "App bar streak"); }
         await RefreshAvatarAsync();

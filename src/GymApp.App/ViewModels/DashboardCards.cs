@@ -58,7 +58,8 @@ public class TodayExerciseViewModel(TodayExercise e)
 }
 
 /// <summary>The "Today's workout" card: the planned day and its exercises, or why there's nothing to show.</summary>
-public partial class TodayWorkoutCardViewModel(Func<MainViewModel> shell) : ObservableObject
+/// <param name="canVerify">Phones, where a workout can be verified at a gym, so a rest day's workout adds a day.</param>
+public partial class TodayWorkoutCardViewModel(Func<MainViewModel> shell, bool canVerify = false) : ObservableObject
 {
     [ObservableProperty] public partial string Title { get; set; } = "";
     [ObservableProperty] public partial string? EmptyText { get; set; }
@@ -76,7 +77,7 @@ public partial class TodayWorkoutCardViewModel(Func<MainViewModel> shell) : Obse
         ShowPickSplit = !info.HasSplit;
         ShowBuildLink = info.DayName is not null && info.Exercises.Count == 0;
         EmptyText = !info.HasSplit ? "Pick a split to get a weekly schedule."
-                  : info.DayName is null ? "Enjoy the rest. You can still log an extra workout."
+                  : info.DayName is null ? (canVerify ? "Enjoy the rest. A gym workout adds a day." : "Enjoy the rest.")
                   : info.Exercises.Count == 0 ? $"You haven't built a workout for {info.DayName} yet."
                   : null;
     }

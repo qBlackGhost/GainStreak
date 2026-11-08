@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 24,
+                propertyCount: 25,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -161,6 +161,13 @@ namespace GymApp.Data.CompiledModels
                 typeof(DayOfWeek?),
                 propertyInfo: typeof(User).GetProperty("SplitStartDay", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(User).GetField("<SplitStartDay>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var streakRestRuleFrom = runtimeEntityType.AddProperty(
+                "StreakRestRuleFrom",
+                typeof(DateOnly?),
+                propertyInfo: typeof(User).GetProperty("StreakRestRuleFrom", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<StreakRestRuleFrom>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
 
             var themePreference = runtimeEntityType.AddProperty(

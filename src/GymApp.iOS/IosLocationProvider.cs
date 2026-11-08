@@ -22,6 +22,8 @@ public sealed class IosLocationProvider : ILocationProvider
         {
             if (_manager is not null) return _manager;
             _manager = new CLLocationManager { DesiredAccuracy = CLLocation.AccuracyNearestTenMeters };
+            // iOS 14 and later answer through DidChangeAuthorization; the older AuthorizationChanged may no longer come
+            _manager.DidChangeAuthorization += (_, _) => _permission?.TrySetResult(HasPermission);
             _manager.AuthorizationChanged += (_, _) => _permission?.TrySetResult(HasPermission);
             _manager.LocationsUpdated += (_, e) =>
             {
@@ -48,14 +50,19 @@ public sealed class IosLocationProvider : ILocationProvider
         if (Manager.AuthorizationStatus != CLAuthorizationStatus.NotDetermined) return HasPermission;
         _permission = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         Manager.RequestWhenInUseAuthorization();
-        // The delegate can also fire with "not determined" before the user answers: wait for a real answer
+        // Wait for a real answer: the delegate can also fire with "not determined" before the user answers, and if no
+        // callback comes at all the status is read again every half second (0.18.1: without that, the first Start
+        // workout never opened the workout after the location prompt)
         while (Manager.AuthorizationStatus == CLAuthorizationStatus.NotDetermined)
         {
-            await _permission.Task;
-            _permission = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            await Task.WhenAny(_permission.Task, Task.Delay(PermissionPoll));
+            if (_permission.Task.IsCompleted)
+                _permission = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         }
         return HasPermission;
     }
+
+    private static readonly TimeSpan PermissionPoll = TimeSpan.FromMilliseconds(500);
 
     public async Task<LocationFix?> GetFixAsync(TimeSpan timeout)
     {

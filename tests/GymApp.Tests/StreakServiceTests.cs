@@ -90,4 +90,40 @@ public class StreakServiceTests : IDisposable
         var week = db.PointsEntries.Single(p => p.UserId == _alice && p.DedupKey == "week:2026-10-05");
         Assert.Equal(PointsReason.WeekCompleteGrace, week.Reason);
     }
+
+    // ===== Rest-day rule (0.18.1) =====
+
+    private DateOnly? RuleFrom()
+    {
+        using var db = _db.CreateDbContext();
+        return db.Users.AsNoTracking().Single(u => u.Id == _alice).StreakRestRuleFrom;
+    }
+
+    [Fact] public async Task RestRule_StartsOnTheFirstRecalculation_AndKeepsThatDay()
+    {
+        Assert.Null(RuleFrom());
+        await _svc.RecalculateAsync(_alice, D(2));
+        Assert.Equal(D(2), RuleFrom());
+        await _svc.RecalculateAsync(_alice, D(3));
+        Assert.Equal(D(2), RuleFrom());
+    }
+
+    [Fact] public async Task RestRule_RestDayAfterTheRule_IsStale_UntilAVerifiedWorkout()
+    {
+        await _svc.RecalculateAsync(_alice, D(2));   // the rule starts Wed: Mon 1, Tue 2 (provisional), Wed pays it -> 3
+        // Thu (rest) pays Wed's shifted day with an unverified workout: kept at 3
+        Seed(db => db.WorkoutLogs.Add(new WorkoutLog { UserId = _alice, Date = D(3) }));
+        Assert.Equal(new StreakResult(3, 3, StreakStatus.Active), await _svc.RecalculateAsync(_alice, D(3)));
+
+        // Next Thu (rest) after a full week: on ice, until a verified workout adds a day
+        Seed(db => db.WorkoutLogs.AddRange(new[] { 4, 5, 6, 7, 8, 9 }.Select(n => new WorkoutLog { UserId = _alice, Date = D(n) })));
+        var thu = await _svc.RecalculateAsync(_alice, D(10));
+        Assert.True(thu.Stale);
+        Assert.Equal(9, thu.Current);
+
+        Seed(db => db.WorkoutLogs.Add(new WorkoutLog { UserId = _alice, Date = D(10), Verified = true }));
+        var verified = await _svc.RecalculateAsync(_alice, D(10));
+        Assert.False(verified.Stale);
+        Assert.Equal(10, verified.Current);
+    }
 }

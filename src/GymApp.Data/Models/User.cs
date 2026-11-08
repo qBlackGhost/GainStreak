@@ -27,6 +27,9 @@ public class User
     public bool PointsBackfilled { get; set; }        // the one-time full points rebuild has run
     public int CurrentStreak { get; set; }
     public int LongestStreak { get; set; }
+    /// <summary>The first day rest days stopped adding to the streak by themselves (0.18.1): the day this user's app
+    /// first recalculated the streak on that version. Null until then. Rest days before it still count +1.</summary>
+    public DateOnly? StreakRestRuleFrom { get; set; }
 
     public int? DailyCalorieGoal { get; set; }
     public GoalType GoalType { get; set; } = GoalType.Maintain;
