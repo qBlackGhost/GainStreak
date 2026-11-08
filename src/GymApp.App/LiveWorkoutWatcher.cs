@@ -32,6 +32,11 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
     /// a new Home replaces the last one.</summary>
     public void Listen(Action changed) => _listener = changed;
 
+    private Action? _foreground;
+    /// <summary>The Home on screen hears every return to the front, for the cardio timer's position check (0.18.2).
+    /// One at a time, like <see cref="Listen"/>.</summary>
+    public void ListenForeground(Action cameBack) => _foreground = cameBack;
+
     private int? UserId => platform.HasLiveWorkout ? session.CurrentUser?.Id : null;
 
     public async Task WentToBackgroundAsync()
@@ -55,6 +60,7 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
     public async Task CameToForegroundAsync()
     {
         scheduler.CancelWorkoutNudge();
+        _foreground?.Invoke();
         if (UserId is not { } userId) return;
         try
         {

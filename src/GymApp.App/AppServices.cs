@@ -89,6 +89,7 @@ public static class AppServices
         sc.AddTransient<DayExerciseService>();
         sc.AddTransient<SetService>();
         sc.AddTransient<LiveWorkoutService>();
+        sc.AddTransient<CardioService>();   // the cardio timer after a workout (0.18.2)
         sc.AddTransient<WorkoutMenuService>();
         sc.AddTransient<WorkoutsViewModel>();
         sc.AddTransient<DayViewModel>();

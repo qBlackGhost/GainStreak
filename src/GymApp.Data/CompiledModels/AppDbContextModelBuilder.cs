@@ -11,13 +11,14 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("2d4e2fc3-7293-4840-b63a-bfac380bf63b"), entityTypeCount: 23)
+            : base(skipDetectChanges: false, modelId: new Guid("368e67f7-0bea-49c9-8393-7ec51e15fce0"), entityTypeCount: 24)
         {
         }
 
         partial void Initialize()
         {
             var calorieLog = CalorieLogEntityType.Create(this);
+            var cardioSession = CardioSessionEntityType.Create(this);
             var city = CityEntityType.Create(this);
             var exercise = ExerciseEntityType.Create(this);
             var exerciseBarSetting = ExerciseBarSettingEntityType.Create(this);
@@ -42,6 +43,8 @@ namespace GymApp.Data.CompiledModels
             var workoutSplit = WorkoutSplitEntityType.Create(this);
 
             CalorieLogEntityType.CreateForeignKey1(calorieLog, user);
+            CardioSessionEntityType.CreateForeignKey1(cardioSession, gym);
+            CardioSessionEntityType.CreateForeignKey2(cardioSession, user);
             ExerciseEntityType.CreateForeignKey1(exercise, user);
             ExerciseBarSettingEntityType.CreateForeignKey1(exerciseBarSetting, exercise);
             ExerciseBarSettingEntityType.CreateForeignKey2(exerciseBarSetting, user);
@@ -81,6 +84,7 @@ namespace GymApp.Data.CompiledModels
             WorkoutSplitEntityType.CreateForeignKey1(workoutSplit, user);
 
             CalorieLogEntityType.CreateAnnotations(calorieLog);
+            CardioSessionEntityType.CreateAnnotations(cardioSession);
             CityEntityType.CreateAnnotations(city);
             ExerciseEntityType.CreateAnnotations(exercise);
             ExerciseBarSettingEntityType.CreateAnnotations(exerciseBarSetting);

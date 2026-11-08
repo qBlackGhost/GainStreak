@@ -46,6 +46,54 @@ namespace GymApp.Data.Migrations
                     b.ToTable("CalorieLogs");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.CardioSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("CountedSeconds")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("GymId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastAtGymAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PauseReason")
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RunningSince")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SavedMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GymId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasFilter("\"EndedAt\" IS NULL");
+
+                    b.ToTable("CardioSessions");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.City", b =>
                 {
                     b.Property<int>("Id")
@@ -1584,6 +1632,24 @@ namespace GymApp.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.CardioSession", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Gym", "Gym")
+                        .WithMany()
+                        .HasForeignKey("GymId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Gym");
 
                     b.Navigation("User");
                 });

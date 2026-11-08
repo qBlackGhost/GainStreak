@@ -224,15 +224,7 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
     [ObservableProperty] public partial string FinishTitle { get; set; } = "";
     [ObservableProperty] public partial string FinishText { get; set; } = "";
     [ObservableProperty] public partial bool FinishPartial { get; set; }
-    [ObservableProperty] public partial string CardioText { get; set; } = "";
-    [ObservableProperty] public partial string CardioHint { get; set; } = CheckInViewModel.CardioHintFor(null);
     [ObservableProperty] public partial string? SheetError { get; set; }
-
-    partial void OnCardioTextChanged(string value)
-    {
-        SheetError = null;
-        CardioHint = CheckInViewModel.CardioHintFor(CheckInViewModel.ParseCardio(value, out var m) ? m : null);
-    }
 
     public int Filled => Info.Status.Filled;
     public int Total => Info.Status.Total;
@@ -622,7 +614,7 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
         var verified = Info.IsVerified;
         FinishPartial = left > 0;
         FinishTitle = left == 0 ? "Finish workout" : "Finish early?";
-        FinishText = left == 0 ? "Every exercise is done. Add cardio if you did some."
+        FinishText = left == 0 ? "Every exercise is done."
             : verified && toFull > 0
                 ? $"You've done {Filled} of {Total} exercises. Finish now for half points, or do {toFull} more for full points."
                 : $"{left} exercise{(left == 1 ? "" : "s")} left. Finish {(left == 1 ? "it" : "them")} before you go?";
@@ -642,15 +634,11 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
     [RelayCommand]
     private async Task FinishAsync()
     {
-        if (!CheckInViewModel.ParseCardio(CardioText, out var cardio))
-        {
-            SheetError = $"Cardio: enter whole minutes, up to {PointsCalculator.MaxCardioMinutes}, or leave it empty.";
-            return;
-        }
         IsSaving = true;
         try
         {
-            var r = await _service.FinishAsync(_userId, cardio);
+            // Cardio is timed after the workout (0.18.2): Home asks once it's finished
+            var r = await _service.FinishAsync(_userId);
             if (!r.Success) { SheetError = r.Error; return; }
             CloseSheet();
             await _ended(r);

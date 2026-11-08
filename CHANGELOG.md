@@ -2,6 +2,19 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.18.2
+
+- **Time your cardio after a workout (phones):** when you finish a workout, GainStreak asks **Continue with a cardio session?** Tap **Continue with cardio** and a timer starts on Home, under the streak card. **Skip** if you're done for the day.
+  - **The ring** fills toward your next point and the time counts up in the middle. Cardio earns the same as before: +1 point for every 10 minutes, up to +3 at 30 minutes.
+  - **Pause and Resume** any time. **Finish cardio** saves the whole minutes onto today's workout and adds the points. Under a minute saves nothing.
+  - **Stay at the gym:** when your workout was verified at a gym, the timer checks once a minute that you're still there. Leave, and it pauses and offers to save what you did; come back and it goes on by itself.
+  - **Locked phone:** your phone can't be checked while it's locked. When you open the app again at the gym, the whole time counts. Opened somewhere else, the timer pauses at the last check that found you at the gym.
+  - **Not verified:** after a workout that wasn't verified at a gym (location off, or not at one of your gyms), the timer runs without checks and says so.
+  - **Stops by itself** after 4 hours or at midnight, like a workout, and saves what it counted.
+  - **Finish** no longer asks you to type cardio minutes. The desktop's "I went today" keeps its cardio box.
+  - **Undo** for today's workout is hidden while the timer runs, since the minutes go onto it.
+- **Migration:** `CardioTimer` in the app's SQLite (a new `CardioSessions` table: the timer's times and the gym it checks, never a position). The server doesn't change.
+
 ## 0.18.1
 
 - **Rest days keep your streak, they don't grow it:** a rest day no longer adds a day. Your streak is kept but frozen until your next workout.

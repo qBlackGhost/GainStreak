@@ -1,0 +1,83 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.CardioCardView"
+             x:DataType="vm:CardioCardViewModel">
+    <!-- The cardio timer on Home (0.18.2): the ring fills toward the next point; Pause / Resume and Finish cardio. Away
+         from the gym it pauses and offers to save what was done. -->
+
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="12">
+        <!-- Cardio, and where it's checked -->
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="CARDIO" FontSize="12" FontWeight="SemiBold" LetterSpacing="1.6" Classes="muted" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                <v:Icon Data="{StaticResource IcPin}" Width="13" Height="13" StrokeThickness="2.2"
+                        Stroke="{DynamicResource AccentInk}" IsVisible="{Binding IsChecked}"/>
+                <TextBlock Text="{Binding PlaceText}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource AccentInk}" IsVisible="{Binding IsChecked}"/>
+                <TextBlock Text="{Binding PlaceText}" FontSize="12" Classes="muted" IsVisible="{Binding !IsChecked}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- The ring: the track, then the share of the way to the next point; the time in the middle -->
+        <Panel Width="180" Height="180" HorizontalAlignment="Center">
+            <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="10"/>
+            <Arc Width="180" Height="180" StartAngle="-90" SweepAngle="{Binding Sweep}" StrokeThickness="10"
+                 StrokeLineCap="Round" Stroke="{DynamicResource Accent}" IsVisible="{Binding !HasLeftGym}"/>
+            <Arc Width="180" Height="180" StartAngle="-90" SweepAngle="{Binding Sweep}" StrokeThickness="10"
+                 StrokeLineCap="Round" Stroke="{DynamicResource Tone4}" IsVisible="{Binding HasLeftGym}"/>
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding TimeText}" Classes="mono" FontSize="34" FontWeight="Bold" HorizontalAlignment="Center"
+                           Classes.paused="{Binding !IsRunning}">
+                    <TextBlock.Styles>
+                        <Style Selector="TextBlock.paused"><Setter Property="Foreground" Value="{DynamicResource Faint}"/></Style>
+                    </TextBlock.Styles>
+                </TextBlock>
+                <TextBlock Text="Paused" FontSize="12" Classes="muted" HorizontalAlignment="Center" IsVisible="{Binding !IsRunning}"/>
+                <TextBlock Text="{Binding NextText}" FontSize="12" Classes="muted" HorizontalAlignment="Center"
+                           TextAlignment="Center" IsVisible="{Binding IsRunning}"/>
+            </StackPanel>
+        </Panel>
+
+        <TextBlock Text="{Binding EarnedText}" Classes="mono" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center"
+                   Foreground="{DynamicResource AccentInk}" IsVisible="{Binding HasEarned}"/>
+        <TextBlock Text="{Binding EarnedText}" Classes="mono muted" FontSize="13" HorizontalAlignment="Center"
+                   IsVisible="{Binding !HasEarned}"/>
+
+        <TextBlock Classes="error" Text="{Binding Error}"
+                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <!-- Running, or paused by the user -->
+        <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" IsVisible="{Binding ShowControls}">
+            <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Pause"
+                    Command="{Binding PauseCommand}" IsVisible="{Binding IsRunning}"/>
+            <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Resume"
+                    Command="{Binding ResumeCommand}" IsVisible="{Binding !IsRunning}"/>
+            <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                    Content="Finish cardio" Command="{Binding FinishCommand}" IsEnabled="{Binding !IsSaving}"/>
+        </Grid>
+
+        <!-- Left the gym: paused; back at the gym it goes on by itself -->
+        <Border Padding="14" CornerRadius="12" Background="{DynamicResource OrangeTint}" BorderBrush="{DynamicResource OrangeTintLine}"
+                BorderThickness="1" IsVisible="{Binding HasLeftGym}">
+            <StackPanel Spacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <v:Icon Data="{StaticResource IcPin}" Width="14" Height="14" StrokeThickness="2.2" Stroke="{DynamicResource FlameText}"
+                            VerticalAlignment="Center"/>
+                    <TextBlock Text="You've left the gym" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource FlameText}"/>
+                </StackPanel>
+                <TextBlock Text="{Binding LeftText}" FontSize="13" Classes="soft"/>
+                <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                        Content="{Binding SaveText}" Command="{Binding FinishCommand}" IsEnabled="{Binding !IsSaving}"/>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</UserControl>

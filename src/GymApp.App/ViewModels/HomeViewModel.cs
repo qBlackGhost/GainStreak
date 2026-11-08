@@ -20,6 +20,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         if (Picker is not null) { Picker = null; return true; }
         if (IsLocationNoteOpen) { AnswerLocationNote(false); return true; }
         if (IsReturnOpen) { _ = ContinueWorkoutAsync(); return true; }
+        if (IsCardioPromptOpen) { SkipCardio(); return true; }
         if (Live?.CloseOnBack() == true) return true;
         if (IsConfirmingUndo) { IsConfirmingUndo = false; return true; }
         if (IsPointsHistoryOpen) { IsPointsHistoryOpen = false; return true; }
@@ -43,6 +44,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     private readonly LiveWorkoutWatcher _watcher;
     private readonly INotificationScheduler _notifications;
     private readonly ILocationProvider _location;
+    private readonly CardioService _cardio;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
@@ -51,15 +53,22 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                          SetService sets, WorkoutMenuService menu, MissedDayService missedDays,
                          GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory,
                          InboxService inbox, IPlatform platform, LiveWorkoutService liveWorkouts,
-                         LiveWorkoutWatcher watcher, INotificationScheduler notifications, ILocationProvider location)
+                         LiveWorkoutWatcher watcher, INotificationScheduler notifications, ILocationProvider location,
+                         CardioService cardio)
     {
         _location = location;
+        _cardio = cardio;
         _inbox = inbox;
         _liveWorkouts = liveWorkouts;
         _watcher = watcher;
         _notifications = notifications;
         // The return popup and the 4-hour / midnight stop (18b) come from the watcher, on any thread
         watcher.Listen(() => Avalonia.Threading.Dispatcher.UIThread.Post(() => _ = RefreshAsync()));
+        // Back from a locked phone: the cardio timer checks the gym straight away (0.18.2)
+        watcher.ListenForeground(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (Cardio is { } c) _ = c.CheckNowAsync();
+        }));
         HasLiveWorkout = platform.HasLiveWorkout;
         PointsHistory = pointsHistory;
         _session = session;
@@ -129,6 +138,57 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
     public bool IsLive => Live is not null;
     public bool ShowDashboard => !IsLive;
+
+    // ===== Cardio after a workout (0.18.2, phones): the prompt after Finish, then the timer card =====
+
+    /// <summary>The open cardio timer's card, under the streak card. Home stays as it is around it.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCardio))]
+    public partial CardioCardViewModel? Cardio { get; set; }
+
+    public bool IsCardio => Cardio is not null;
+
+    /// <summary>"Continue with a cardio session?", right after Finish.</summary>
+    [ObservableProperty] public partial bool IsCardioPromptOpen { get; set; }
+    [ObservableProperty] public partial string? CardioPromptError { get; set; }
+
+    private CardioCardViewModel CardioCard(int userId, CardioInfo info) =>
+        new(_cardio, _location, userId, info, CardioEndedAsync);
+
+    [RelayCommand]
+    private async Task StartCardioAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        CardioPromptError = null;
+        try
+        {
+            var (info, error) = await _cardio.StartAsync(user.Id);
+            if (info is null) { CardioPromptError = error ?? "Could not start the timer."; return; }
+            IsCardioPromptOpen = false;
+            Cardio = CardioCard(user.Id, info);
+            CanUndo = false;   // the minutes go onto today's log
+        }
+        catch (Exception)
+        {
+            CardioPromptError = "Could not start the timer.";
+        }
+    }
+
+    [RelayCommand]
+    private void SkipCardio()
+    {
+        IsCardioPromptOpen = false;
+        CardioPromptError = null;
+    }
+
+    /// <summary>Finish cardio, or the timer stopped by itself: the card goes and Home shows the day's points with it.</summary>
+    private async Task CardioEndedAsync(CardioEndResult? result)
+    {
+        if (Cardio is null) return;
+        Cardio = null;
+        if (result is { Log.Points: { } points }) ApplyPoints(points);
+        await RefreshAsync();
+    }
 
     /// <summary>The arc fills with the share of exercises done (phones, during and after a live workout).</summary>
     [ObservableProperty] public partial bool ShowProgressArc { get; set; }
@@ -304,6 +364,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             _makeUpFor = await _streaks.MakeUpDayAsync(user.Id, today.Date);
             var live = HasLiveWorkout ? await _liveWorkouts.GetOpenAsync(user.Id) : null;
             Live = live is null ? null : Card(user.Id, live);
+            var cardio = HasLiveWorkout && live is null ? await _cardio.GetOpenAsync(user.Id) : null;
+            Cardio = cardio is null ? null : CardioCard(user.Id, cardio);
             // Logged silently at half: the streak card shows the streak without today's log until the workout ends
             Apply(today, live is { Logged: true } ? await _streaks.GetAsync(user.Id, today.Date, beforeTodaysLog: true) : streak);
             await RefreshStreakEndedAsync(user.Id, cached, streak);
@@ -482,6 +544,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         {
             await CheckedInAsync(log);
             await RefreshStartAsync(user.Id);
+            CardioPromptError = null;
+            IsCardioPromptOpen = result.Success;   // "Continue with a cardio session?"
             return;
         }
         ShowEndedNote = result.Outcome == LiveOutcome.NotCounted;
@@ -728,7 +792,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                   : "Rest day. You can still log an extra workout.";
         LogLabel = today.Logged ? "Logged ✓" : today is { HasSplit: true, IsTraining: false } ? "Log extra workout" : "I went today";
         CanLog = !today.Logged && !HasMissedDay;
-        CanUndo = today.Logged && !IsLive;   // today only: after midnight yesterday's log is read-only
+        CanUndo = today.Logged && !IsLive && !IsCardio;   // today only: after midnight yesterday's log is read-only
         if (!today.Logged) IsConfirmingUndo = false;
 
         StreakText = $"{streak.Current} day streak · best {streak.Longest}";

@@ -31,6 +31,7 @@ public class AppDbContext : DbContext
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
     public DbSet<LiveWorkout> LiveWorkouts => Set<LiveWorkout>();
+    public DbSet<CardioSession> CardioSessions => Set<CardioSession>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -126,6 +127,13 @@ public class AppDbContext : DbContext
         b.Entity<LiveWorkout>().Property(l => l.AutoStop).HasMaxLength(12);
         b.Entity<LiveWorkout>().HasOne(l => l.VerifiedGym).WithMany()
             .HasForeignKey(l => l.VerifiedGymId).OnDelete(DeleteBehavior.SetNull);
+        // Cardio timer after a live workout (0.18.2): one open per user
+        b.Entity<CardioSession>().HasIndex(c => c.UserId).IsUnique().HasFilter("\"EndedAt\" IS NULL");
+        b.Entity<CardioSession>().HasOne(c => c.User).WithMany()
+            .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<CardioSession>().HasOne(c => c.Gym).WithMany()
+            .HasForeignKey(c => c.GymId).OnDelete(DeleteBehavior.SetNull);
+        b.Entity<CardioSession>().Property(c => c.PauseReason).HasMaxLength(12);
         b.Entity<CalorieLog>().Property(c => c.GoalTypeAtTime).HasConversion<string>();
         
         b.Entity<UserSchedule>().HasIndex(s => new { s.UserId, s.EffectiveFrom }).IsUnique();

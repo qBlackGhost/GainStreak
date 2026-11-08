@@ -757,6 +757,11 @@
                        Foreground="{DynamicResource Faint}" HorizontalAlignment="Center" TextAlignment="Center"
                        IsVisible="{Binding IsLive}"/>
 
+            <!-- ===== The cardio timer after a workout (0.18.2, phones): under the streak card ===== -->
+            <Border Classes="card" Padding="16" BorderBrush="{DynamicResource LimeTintLineStrong}" IsVisible="{Binding IsCardio}">
+                <ContentControl Content="{Binding Cardio}"/>
+            </Border>
+
             <!-- ===== This week ===== -->
             <Border Classes="card weekCard" DataContext="{Binding Week}" IsVisible="{Binding $parent[UserControl].((vm:HomeViewModel)DataContext).ShowDashboard}">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="14"
@@ -1082,7 +1087,7 @@
         <ContentControl Content="{Binding CheckIn}"/>
     </Border>
 
-    <!-- Live workout (Phase 18): Finish, with the cardio, pushing for the whole workout -->
+    <!-- Live workout (Phase 18): Finish, pushing for the whole workout. Cardio is timed after it (0.18.2) -->
     <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24"
             IsVisible="{Binding Live.IsFinishOpen, FallbackValue=False}">
         <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" DataContext="{Binding Live}"
@@ -1090,12 +1095,6 @@
             <StackPanel Spacing="12" x:DataType="vm:LiveWorkoutCardViewModel">
                 <TextBlock Text="{Binding FinishTitle}" FontSize="22" FontWeight="ExtraBold"/>
                 <TextBlock Text="{Binding FinishText}" FontSize="14" Classes="soft"/>
-                <StackPanel Spacing="6">
-                    <TextBlock Text="Cardio (minutes, optional)" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
-                    <TextBox Classes="kcal" Text="{Binding CardioText}" PlaceholderText="0" TextInputOptions.ContentType="Digits"
-                             AutomationProperties.Name="Cardio minutes"/>
-                    <TextBlock Text="{Binding CardioHint}" FontSize="12" Classes="muted"/>
-                </StackPanel>
                 <TextBlock Classes="error" Text="{Binding SheetError}"
                            IsVisible="{Binding SheetError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,4,0,0" IsVisible="{Binding FinishPartial}">
@@ -1112,6 +1111,46 @@
                 </Grid>
             </StackPanel>
         </v:Sheet>
+    </Border>
+
+    <!-- Cardio after a workout (0.18.2): right after Finish, over the whole page -->
+    <Border Background="{DynamicResource PageBg}" Padding="24" IsVisible="{Binding IsCardioPromptOpen}">
+        <StackPanel Width="360" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="0">
+            <Border Width="76" Height="76" CornerRadius="38" HorizontalAlignment="Center"
+                    Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLineStrong}" BorderThickness="1">
+                <v:Icon Data="{StaticResource IcHeart}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2" Width="34" Height="34"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Text="Nice work" FontSize="26" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,18,0,6"/>
+            <TextBlock Text="Continue with a cardio session?" FontSize="15" Classes="soft" HorizontalAlignment="Center"
+                       TextAlignment="Center" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,18,0,8">
+                <StackPanel.Styles>
+                    <Style Selector="Border.pts">
+                        <Setter Property="CornerRadius" Value="99"/>
+                        <Setter Property="Padding" Value="10,5"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLine}"/>
+                    </Style>
+                    <Style Selector="Border.pts > TextBlock">
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
+                        <Setter Property="Foreground" Value="{DynamicResource AccentInk}"/>
+                    </Style>
+                </StackPanel.Styles>
+                <Border Classes="pts"><TextBlock Classes="mono" Text="10 min +1"/></Border>
+                <Border Classes="pts"><TextBlock Classes="mono" Text="20 +2"/></Border>
+                <Border Classes="pts"><TextBlock Classes="mono" Text="30 +3"/></Border>
+            </StackPanel>
+            <TextBlock Text="A timer runs on Home. At your gym, it pauses if you leave." FontSize="12" Classes="muted"
+                       HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,22"/>
+            <TextBlock Classes="error" Text="{Binding CardioPromptError}" Margin="0,0,0,10"
+                       IsVisible="{Binding CardioPromptError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
+                    Content="Continue with cardio" Command="{Binding StartCardioCommand}"/>
+            <Button Classes="btn link" HorizontalAlignment="Center" Margin="0,14,0,0" Content="Skip"
+                    Command="{Binding SkipCardioCommand}"/>
+        </StackPanel>
     </Border>
 
     <!-- Live workout: End without logging, below half -->
