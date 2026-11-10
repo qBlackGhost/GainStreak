@@ -44,5 +44,47 @@
     <ProjectReference Include="..\GymApp.App\GymApp.App.csproj" />
   </ItemGroup>
 
+  <!-- The live workout's Live Activity (0.20.0): Swift from src/GymApp.iOS.LiveActivity, built by its build.sh before
+       this project builds. The bridge framework is what IosLiveActivity calls; the widget extension draws the Dynamic
+       Island. Device builds for TestFlight also need the extension's own App Store profile (App ID
+       com.gainstreak.app.LiveActivity): -p:LiveActivityProvisioningProfile=<path to its .mobileprovision> -->
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LiveActivityDir>$([MSBuild]::NormalizeDirectory($(MSBuildThisFileDirectory), '..', 'GymApp.iOS.LiveActivity'))</LiveActivityDir>
+    <LiveActivitySdk Condition="$(RuntimeIdentifier.StartsWith('iossimulator'))">iphonesimulator</LiveActivitySdk>
+    <LiveActivitySdk Condition="'$(LiveActivitySdk)' == ''">iphoneos</LiveActivitySdk>
+    <LiveActivityOut>$([MSBuild]::NormalizePath($(MSBuildProjectDirectory), 'obj', 'liveactivity', $(Configuration), $(LiveActivitySdk)))</LiveActivityOut>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LiveActivitySource Include="$(LiveActivityDir)**\*.swift;$(LiveActivityDir)build.sh" />
+    <NativeReference Include="$(LiveActivityOut)/GainStreakLiveActivityBridge.framework">
+      <Kind>Framework</Kind>
+      <SmartLink>false</SmartLink>
+    </NativeReference>
+    <AdditionalAppExtensions Include="$(LiveActivityOut)">
+      <Name>GainStreakLiveActivity</Name>
+      <BuildOutput>.</BuildOutput>
+      <CodesignWarnIfNoEntitlements>false</CodesignWarnIfNoEntitlements>
+    </AdditionalAppExtensions>
+  </ItemGroup>
+
+  <!-- What the Swift build stamps into the bundles: a change rebuilds it -->
+  <Target Name="WriteLiveActivitySettings">
+    <PropertyGroup>
+      <LiveActivitySettings>$(LiveActivityOut).settings</LiveActivitySettings>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(LiveActivityOut)))" />
+    <WriteLinesToFile File="$(LiveActivitySettings)" Overwrite="true" WriteOnlyWhenDifferent="true"
+                      Lines="$(ApplicationDisplayVersion);$(ApplicationVersion);$(ApplicationId);$(LiveActivityProvisioningProfile)" />
+  </Target>
+
+  <Target Name="BuildLiveActivity" BeforeTargets="PrepareForBuild" DependsOnTargets="WriteLiveActivitySettings"
+          Inputs="@(LiveActivitySource);$(LiveActivitySettings)" Outputs="$(LiveActivityOut)/GainStreakLiveActivity.appex/Info.plist">
+    <Error Condition="'$(LiveActivitySdk)' == 'iphoneos' and '$(CodesignProvision)' != '' and '$(LiveActivityProvisioningProfile)' == ''"
+           Text="A signed device build needs the Live Activity extension's own profile: -p:LiveActivityProvisioningProfile=&lt;path to the com.gainstreak.app.LiveActivity .mobileprovision&gt;" />
+    <Exec Command="&quot;$(LiveActivityDir)build.sh&quot; $(LiveActivitySdk) &quot;$(LiveActivityOut)&quot; &quot;$(ApplicationDisplayVersion)&quot; &quot;$(ApplicationVersion)&quot; &quot;$(ApplicationId)&quot; &quot;$(LiveActivityProvisioningProfile)&quot;" />
+  </Target>
+
   <Import Project="..\MobileHead.targets" />
 </Project>

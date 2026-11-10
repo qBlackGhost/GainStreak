@@ -37,7 +37,9 @@ The email address also receives codes, for confirming it and resetting the passw
 
 **Phase 19 (vacation):** two more uses, both foreground only. (1) **Noticing a trip:** when Home appears, at most every 6 hours and only if location is already allowed and precise, one fix is compared on the phone with the home city's box and dropped; only the time of the check is stored. (2) **Show me gyms near me:** on the user's tap, one fix is rounded to 2 decimals (about 1 km) and sent to OpenStreetMap's Nominatim, at city level, to name the city; the city is kept on the phone. This is the only position that leaves the phone, and it never reaches the GainStreak server.
 
-**Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health-platform data, advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
+**Apple Health (Phase 20, iPhone):** off until turned on in Profile. It saves the app's own workouts, cardio sessions and weigh-ins to Health and reads weight, height, birth date, sex and daily steps from it. Everything read stays on the phone: it fills the body data on the phone, never reaches the server, earns no points and isn't used for ads.
+
+**Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health data (Apple Health is read and written on the phone only), advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
 
 ## Google Play: Data safety form
 
@@ -72,6 +74,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Location (Phase 18):** precise location is **not collected.** Apple counts data as collected only when it's sent off the device, and the precise position never is (for the rounded one, see Phase 19 below). The permission prompt shows `NSLocationWhenInUseUsageDescription` from `Info.plist`: "GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone." When in use only, no "Always".
 - **Coarse Location (Phase 19), decided:** declared under "Data not linked to the user" below: the rounded position sent to Nominatim for "Show me gyms near me". Apple counts data as collected when it leaves the device and a party can keep it longer than the request needs, and OpenStreetMap's servers keep request logs for a while. Precise location stays not collected. Enter it in App Store Connect before 0.19.0 goes to the store.
 - **The prompt (Phase 19):** `NSLocationWhenInUseUsageDescription` now reads "GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you." Android's note before its prompt says the same.
+- **Health & Fitness (Phase 20):** **not collected.** What's read from Apple Health and what's saved there never leaves the phone (same reasoning as precise location). Nothing to declare; Apple's HealthKit rules still apply: no ads or marketing use, no iCloud storage of Health data (the app keeps it in its local database only), and a privacy policy that says how it's used (`site/privacy.html`, "Apple Health").
 - **Data used to track you:** none.
 - **Data not linked to the user:**
   - Location: Coarse Location (App Functionality), from 0.19.0. Not used for tracking.
@@ -82,6 +85,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **A note before Android's prompt:** built. Android's prompt shows no word from the app, so a "Verify your workouts" note comes first, with Continue / Not now. Google asks for a prominent disclosure only when location is collected, which it isn't; the note is there to make the request clear.
 - **Approximate location:** built. With approximate only, the card says "Turn on precise location to verify your workouts" with Open Settings, instead of reading fixes too vague to count.
 - **Store descriptions.** The long description should mention it ("Workouts done at your gym are marked verified; your location stays on your phone"), so reviewers see why the app asks. Both reviews check that the prompt matches a visible feature.
+- **App Review notes (iOS), Apple Health (Phase 20).** Apple asks that HealthKit be clearly visible in the app. Say: "Apple Health is in Profile → Apple Health. Turning it on shows the permission sheet; GainStreak saves finished workouts, cardio sessions and weigh-ins, and reads weight, height, birth date, sex and steps to fill in the profile and suggest an activity level. Health data never leaves the phone." The review account can turn it on; Health on a review device is usually empty, so expect the step suggestion to stay hidden.
 - **App Review notes (iOS).** Say where location is used (Start workout on Home) and that the review account's gyms are in Timișoara, so a reviewer elsewhere sees the "not at one of your gyms" path, which is expected.
 
 ## Deleting an account
@@ -97,6 +101,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - [x] **Support URL or email** (App Store): https://qblackghost.github.io/GainStreak-releases/ (names `gainstreak.app@gmail.com`).
 - [ ] **Content rating questionnaire** (Play) and **age rating** (App Store). There's no violence, gambling or purchases. Other people see usernames (to friends and in username search) and the names in what friends share. Users can report and block each other.
 - [ ] **Screenshots** (see below).
+- [ ] **HealthKit capability (Phase 20):** on developer.apple.com, App ID `com.gainstreak.app` → Capabilities → HealthKit, then make the App Store profile again and download it. A signed build fails without it, since the app's entitlements now include HealthKit.
 - [ ] **Test account for App Review:** Apple's reviewers need to sign in. Make a review account with a few friends and some check-ins, and give its username and password in App Store Connect, not in this repo.
 
 ## Public pages (`site/`)

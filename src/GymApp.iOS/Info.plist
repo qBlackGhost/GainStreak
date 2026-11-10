@@ -23,6 +23,14 @@
 		<key>UIImageName</key>
 		<string>LaunchIcon</string>
 	</dict>
+	<!-- The live workout's Live Activity (0.20.0): the Dynamic Island and the Lock Screen show the percent done -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<!-- Apple Health's permission texts (Phase 20); HealthKit throws without them -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>GainStreak reads your weight, height, birth date, sex and steps to fill in your profile and suggest your activity level. It stays on your phone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>GainStreak saves your workouts, cardio sessions and weigh-ins to Health.</string>
 	<!-- HTTPS only, so no export-compliance questions on upload -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you.</string>

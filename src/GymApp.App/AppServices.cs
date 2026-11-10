@@ -69,6 +69,14 @@ public static class AppServices
         // Reminders (16g): planned here, scheduled by the head
         sc.AddSingleton(_ => platform.CreateNotificationScheduler());
         sc.AddSingleton(_ => platform.CreateLocationProvider());   // "verified at gym" (18c)
+        sc.AddSingleton(_ => platform.CreateLiveActivity());   // the workout's Dynamic Island on iOS (0.20.0)
+        sc.AddSingleton(_ => platform.CreateHealthStore());   // Apple Health (Phase 20)
+        sc.AddTransient<HealthExportService>();
+        sc.AddSingleton<IHealthSetting>(sp => new ProfileHealthSetting(sp.GetRequiredService<ProfileService>()));
+        sc.AddTransient<HealthImportService>();
+        sc.AddSingleton(sp => new HealthSync(sp.GetRequiredService<IHealthStore>(), sp.GetRequiredService<HealthExportService>(),
+            sp.GetRequiredService<SessionService>(), sp.GetRequiredService<IHealthSetting>(), sp.GetRequiredService<ErrorLog>(),
+            import: sp.GetRequiredService<HealthImportService>()));
         sc.AddTransient(sp => new ReminderService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
         sc.AddSingleton<ReminderSync>();
         sc.AddSingleton<LiveWorkoutWatcher>();   // the nudge, the return popup and the 4-hour stop (18b)

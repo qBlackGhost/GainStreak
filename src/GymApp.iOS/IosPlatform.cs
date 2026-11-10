@@ -19,6 +19,10 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
 
     public override ILocationProvider CreateLocationProvider() => new IosLocationProvider();
 
+    public override ILiveActivity CreateLiveActivity() => new IosLiveActivity();
+
+    public override IHealthStore CreateHealthStore() => new IosHealthStore();   // Apple Health (Phase 20)
+
     /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>
     public override bool CanOpenStorePage => BuiltSettings.AppStoreId.Length > 0;
 

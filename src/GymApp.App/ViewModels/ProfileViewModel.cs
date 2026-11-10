@@ -72,12 +72,15 @@ public partial class ProfileViewModel : ViewModelBase
     public ProfileViewModel(ProfileService profiles, IAccountService accounts, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell,
         ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync,
-        VacationService vacations)
+        VacationService vacations, IHealthStore healthStore, HealthSync healthSync, HealthImportService healthImport)
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         Reminders = new RemindersViewModel(reminders, notifications, reminderSync, () => session.CurrentUser?.Id);
         _ = Reminders.LoadAsync();
+        Health = new HealthViewModel(healthStore, profiles, healthSync, () => session.CurrentUser?.Id, healthImport,
+            () => SelectedUnits, () => _ = ReloadAsync(refillForm: !IsDirty));   // keep unsaved edits
+        _ = Health.LoadAsync();
         Vacation = new VacationCardViewModel(vacations, () => session.CurrentUser?.Id, async () =>
         {
             await ReloadAsync(refillForm: false);   // the streak on ice, or not
@@ -93,6 +96,9 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Reminders (16g): the phones only.</summary>
     public RemindersViewModel Reminders { get; }
+
+    /// <summary>Apple Health (Phase 20): the iPhone only.</summary>
+    public HealthViewModel Health { get; }
 
     /// <summary>Vacation (0.19.0): every head.</summary>
     public VacationCardViewModel Vacation { get; }
@@ -521,6 +527,7 @@ public partial class ProfileViewModel : ViewModelBase
 
             WeightInput = "";
             Info = "Weight saved for today.";
+            Health.Changed();
             await ReloadAsync(refillForm: false);   // keep any unsaved edits in the form
 
         }
@@ -541,6 +548,7 @@ public partial class ProfileViewModel : ViewModelBase
             }
             Error = null;
             Info = "Weigh-in deleted.";
+            Health.Changed();
             await ReloadAsync(refillForm: false);
 
         }

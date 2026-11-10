@@ -11,7 +11,10 @@
 #   Android: GAINSTREAK_ANDROID_KEYSTORE (path to the upload keystore), GAINSTREAK_ANDROID_KEY_ALIAS,
 #            GAINSTREAK_ANDROID_KEYSTORE_PASS, and GAINSTREAK_ANDROID_KEY_PASS when the key's password differs
 #   iOS:     GAINSTREAK_IOS_SIGN_IDENTITY (the "Apple Distribution: Name (TEAMID)" certificate in the keychain) and
-#            GAINSTREAK_IOS_PROVISIONING_PROFILE (the App Store profile's name, installed in Xcode)
+#            GAINSTREAK_IOS_PROVISIONING_PROFILE (the App Store profile's name, installed in Xcode; from 0.20.0 its App ID
+#            needs the HealthKit capability, so a profile made before that must be made again), and
+#            GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE (path to the App Store .mobileprovision for the Live Activity
+#            extension, App ID com.gainstreak.app.LiveActivity, 0.20.0)
 #
 # The version is Directory.Build.props' Version; the build number, which the stores need to only go up, is the
 # commit count. So commit before building, and build each commit once per store.
@@ -59,13 +62,14 @@ if (( android )); then
 fi
 
 if (( ios )); then
-  need GAINSTREAK_IOS_SIGN_IDENTITY GAINSTREAK_IOS_PROVISIONING_PROFILE
+  need GAINSTREAK_IOS_SIGN_IDENTITY GAINSTREAK_IOS_PROVISIONING_PROFILE GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE
   # ArchiveOnBuild also leaves an .xcarchive in Xcode's Organizer
   dotnet publish src/GymApp.iOS -c Release -r ios-arm64 -o publish/ios \
     -p:ApplicationVersion="$build" \
     -p:ArchiveOnBuild=true \
     -p:CodesignKey="$GAINSTREAK_IOS_SIGN_IDENTITY" \
     -p:CodesignProvision="$GAINSTREAK_IOS_PROVISIONING_PROFILE" \
+    -p:LiveActivityProvisioningProfile="$GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE" \
     "$@"
   mkdir -p "$out"
   cp publish/ios/*.ipa "$out/GainStreak-$version-$build.ipa"

@@ -38,5 +38,23 @@ public class UserProfile
     /// <summary>The last time Home looked for a trip away from the home city (0.19.0), at most every 6 hours.</summary>
     public DateTime? LastAwayCheckAt { get; set; }
 
+    /// <summary>Apple Health on (Phase 20, iPhone): the app writes its workouts, cardio and weigh-ins there and reads
+    /// from it. Off until the user turns it on in Profile.</summary>
+    public bool HealthEnabled { get; set; }
+
+    /// <summary>When Apple Health was last turned on; the weigh-in import (20c) reaches back 90 days from it.</summary>
+    public DateTime? HealthEnabledAt { get; set; }
+
+    /// <summary>The activity level Health's steps last suggested and the user answered (20c), so it's asked again only
+    /// when the suggestion changes.</summary>
+    public ActivityLevel? HealthStepsSuggestionSeen { get; set; }
+
+    /// <summary>The Health profile values the user answered "Keep mine" to (20c), so the same offer isn't made again.
+    /// <see cref="Core.HealthImport.OfferKey"/>.</summary>
+    public string? HealthProfileDismissed { get; set; }
+
+    /// <summary>Where the last weigh-in import from Health stopped (an archived HKQueryAnchor, 20c).</summary>
+    public byte[]? HealthWeightAnchor { get; set; }
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -55,4 +55,10 @@ public interface IPlatform
 
     /// <summary>The position for "verified at gym" (18c); the desktop's has none (the TestBench's is a fake).</summary>
     ILocationProvider CreateLocationProvider();
+
+    /// <summary>The workout's Live Activity on iOS (0.20.0); every other head shows none.</summary>
+    ILiveActivity CreateLiveActivity() => new NoLiveActivity();
+
+    /// <summary>Apple Health on iOS (Phase 20); every other head has none.</summary>
+    IHealthStore CreateHealthStore() => new NoHealthStore();
 }

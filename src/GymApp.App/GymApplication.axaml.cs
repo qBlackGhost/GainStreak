@@ -128,11 +128,13 @@ public partial class GymApplication : Application
     {
         if (TryGetFeature(typeof(IActivatableLifetime)) is not IActivatableLifetime lifetime) return;
         var watcher = Services.GetRequiredService<LiveWorkoutWatcher>();
+        var health = Services.GetRequiredService<HealthSync>();
         var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
         lifetime.Activated += (_, e) =>
         {
             if (e.Kind != ActivationKind.Background) return;
             _ = watcher.CameToForegroundAsync();
+            health.RequestSync();   // Apple Health (Phase 20)
             if (sync is null) return;
             sync.StartTimer();
             sync.RequestSync();
@@ -142,6 +144,7 @@ public partial class GymApplication : Application
         {
             if (e.Kind != ActivationKind.Background) return;
             _ = watcher.WentToBackgroundAsync();
+            health.RequestSync();   // a workout, cardio or weigh-in from this visit goes to Health
             sync?.StopTimer();
         };
         StartWorkoutTimer();

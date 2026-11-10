@@ -41,6 +41,17 @@ public sealed class LiveWorkoutWatcherTests : IDisposable
     private readonly string _logDir = Directory.CreateTempSubdirectory("gymapp-watcher-").FullName;
     private readonly Clock _clock = new(new DateTime(2026, 10, 5, 18, 0, 0));
     private readonly RecordingScheduler _scheduler = new();
+
+    /// <summary>The last state shown, and every call (0.20.0).</summary>
+    private sealed class RecordingActivity : ILiveActivity
+    {
+        public List<string> Calls { get; } = [];
+        public LiveActivityState? Shown { get; private set; }
+        public void Show(LiveActivityState state) { Calls.Add("show"); Shown = state; }
+        public void End() { Calls.Add("end"); Shown = null; }
+    }
+
+    private readonly RecordingActivity _activity = new();
     private readonly LiveWorkoutService _live;
     private readonly int _alice;
     private readonly List<int> _ex;
@@ -65,7 +76,8 @@ public sealed class LiveWorkoutWatcherTests : IDisposable
     {
         var session = new SessionService();
         using (var db = _db.CreateDbContext()) session.SignIn(db.Users.Single(u => u.Id == _alice));
-        var w = new LiveWorkoutWatcher(_live, _scheduler, session, new FakePlatform { HasLiveWorkout = phone }, new ErrorLog(_logDir));
+        var w = new LiveWorkoutWatcher(_live, _scheduler, session, new FakePlatform { HasLiveWorkout = phone }, new ErrorLog(_logDir),
+            _activity);
         w.Listen(() => _heard++);
         return w;
     }
@@ -208,5 +220,54 @@ public sealed class LiveWorkoutWatcherTests : IDisposable
     {
         Assert.True(await _live.FirstStartAsync(_alice));
         Assert.False(await _live.FirstStartAsync(_alice));
+    }
+
+    // ===== The Live Activity (0.20.0) =====
+
+    [Fact] public async Task Activity_ShowsThePercentOfWorkingSets_AndTheNextExercise()
+    {
+        var w = Watcher();
+        await Start();
+        await Set(_ex[0]);
+        await w.WentToBackgroundAsync();
+
+        var shown = _activity.Shown;
+        Assert.NotNull(shown);
+        Assert.Equal((25, 1, 4), (shown.Percent, shown.DoneSets, shown.PlannedSets));   // 1 of 4 single-set exercises
+        Assert.NotNull(shown.NextExercise);
+        Assert.Equal(_clock.Now.AddHours(4), shown.EndsAt);
+    }
+
+    [Fact] public async Task Activity_Ends_WhenTheSessionStopsByItself()
+    {
+        var w = Watcher();
+        await Start();
+        await w.CameToForegroundAsync();
+        Assert.NotNull(_activity.Shown);
+
+        _clock.Now = _clock.Now.AddHours(4);
+        await w.TickAsync();
+        Assert.Null(_activity.Shown);
+        Assert.Equal("end", _activity.Calls[^1]);
+    }
+
+    [Fact] public async Task Activity_Ends_WithNoOpenWorkout_AndNeverShowsOnTheDesktop()
+    {
+        await Start();
+        await Watcher(phone: false).CameToForegroundAsync();
+        Assert.DoesNotContain("show", _activity.Calls);
+
+        var w = Watcher();
+        w.ShowActivity(null);
+        Assert.Equal("end", _activity.Calls[^1]);
+    }
+
+    [Fact] public void ActivityState_AllDone_HasNoNextExercise()
+    {
+        var info = new LiveWorkoutInfo(1, Mon, null, "Legs", _clock.Now, _clock.Now, null, [],
+            [], new CheckInStatus(0, 0, 0, false), false);
+        var state = LiveWorkoutWatcher.ActivityState(info);
+        Assert.Null(state.NextExercise);
+        Assert.Equal(0, state.Percent);
     }
 }

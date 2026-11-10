@@ -20,7 +20,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.WeightLog",
                 typeof(WeightLog),
                 baseEntityType,
-                propertyCount: 4,
+                propertyCount: 5,
                 navigationCount: 1,
                 foreignKeyCount: 1,
                 unnamedIndexCount: 1,
@@ -41,6 +41,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(WeightLog).GetProperty("Date", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(WeightLog).GetField("<Date>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: new DateOnly(1, 1, 1));
+
+            var fromHealth = runtimeEntityType.AddProperty(
+                "FromHealth",
+                typeof(bool),
+                propertyInfo: typeof(WeightLog).GetProperty("FromHealth", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(WeightLog).GetField("<FromHealth>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var userId = runtimeEntityType.AddProperty(
                 "UserId",

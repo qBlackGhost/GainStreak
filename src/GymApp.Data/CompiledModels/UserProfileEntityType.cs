@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.UserProfile",
                 typeof(UserProfile),
                 baseEntityType,
-                propertyCount: 15,
+                propertyCount: 20,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -65,6 +65,41 @@ namespace GymApp.Data.CompiledModels
                 typeof(DateOnly?),
                 propertyInfo: typeof(UserProfile).GetProperty("BirthDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(UserProfile).GetField("<BirthDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var healthEnabled = runtimeEntityType.AddProperty(
+                "HealthEnabled",
+                typeof(bool),
+                propertyInfo: typeof(UserProfile).GetProperty("HealthEnabled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<HealthEnabled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var healthEnabledAt = runtimeEntityType.AddProperty(
+                "HealthEnabledAt",
+                typeof(DateTime?),
+                propertyInfo: typeof(UserProfile).GetProperty("HealthEnabledAt", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<HealthEnabledAt>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var healthProfileDismissed = runtimeEntityType.AddProperty(
+                "HealthProfileDismissed",
+                typeof(string),
+                propertyInfo: typeof(UserProfile).GetProperty("HealthProfileDismissed", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<HealthProfileDismissed>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var healthStepsSuggestionSeen = runtimeEntityType.AddProperty(
+                "HealthStepsSuggestionSeen",
+                typeof(ActivityLevel?),
+                propertyInfo: typeof(UserProfile).GetProperty("HealthStepsSuggestionSeen", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<HealthStepsSuggestionSeen>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var healthWeightAnchor = runtimeEntityType.AddProperty(
+                "HealthWeightAnchor",
+                typeof(byte[]),
+                propertyInfo: typeof(UserProfile).GetProperty("HealthWeightAnchor", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<HealthWeightAnchor>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
 
             var heightCm = runtimeEntityType.AddProperty(

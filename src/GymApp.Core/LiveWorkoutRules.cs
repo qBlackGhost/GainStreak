@@ -78,6 +78,19 @@ public static class LiveWorkoutRules
     public static bool StopsAtMidnight(DateTime startedAt, DateOnly date) =>
         StopAt(startedAt, date) == date.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
+    /// <summary>
+    /// Working sets done out of the planned ones, for the iPhone's Live Activity (0.20.0): each exercise counts up to
+    /// its planned working sets, counted the way <see cref="CheckInRule.IsFilled"/> does (a rep or more). Warm-ups and
+    /// extra sets don't count, so a filled exercise counts exactly its plan.
+    /// </summary>
+    public static (int Done, int Planned) SetProgress(IReadOnlyList<LiveExercise> plan) => (
+        plan.Sum(e => Math.Min(e.TodaySets.Count(s => s.Kind == SetKind.Working && s.Reps >= 1), e.PlannedWorking)),
+        plan.Sum(e => e.PlannedWorking));
+
+    /// <summary>The whole percent of <paramref name="done"/> out of <paramref name="planned"/>, rounded down, so 100 means
+    /// every set is done.</summary>
+    public static int Percent(int done, int planned) => planned <= 0 ? 0 : Math.Clamp(done * 100 / planned, 0, 100);
+
     public static LiveOutcome Outcome(int filled, int total) =>
         total == 0 || filled < CheckInRule.RequiredFor(total) ? LiveOutcome.NotCounted
         : filled >= CheckInRule.RequiredForFull(total) ? LiveOutcome.Full

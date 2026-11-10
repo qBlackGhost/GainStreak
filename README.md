@@ -239,9 +239,10 @@ The build number is the commit count (`git rev-list --count HEAD`), because both
   Then set `GAINSTREAK_ANDROID_KEYSTORE` (the keystore's path), `GAINSTREAK_ANDROID_KEY_ALIAS` and `GAINSTREAK_ANDROID_KEYSTORE_PASS`, plus `GAINSTREAK_ANDROID_KEY_PASS` if the key's password differs. The script passes the passwords as `env:` references, so they don't show in the build log.
 - **iOS:**
   1. In Xcode → Settings → Accounts, add the Apple ID and download an **Apple Distribution** certificate, which goes into the keychain.
-  2. On developer.apple.com, register the App ID `com.gainstreak.app` and make an **App Store** provisioning profile for it, then open the profile to install it.
+  2. On developer.apple.com, register the App ID `com.gainstreak.app` with the **HealthKit** capability (Apple Health, 0.20.0), and make an **App Store** provisioning profile for it, then open the profile to install it. A profile made before HealthKit was added doesn't have it: make it again, or signing fails.
   3. Set `GAINSTREAK_IOS_SIGN_IDENTITY` to the certificate's name, e.g. `Apple Distribution: Your Name (TEAMID)`. The team id is the part in brackets.
   4. Set `GAINSTREAK_IOS_PROVISIONING_PROFILE` to the profile's name.
+  5. The workout's Live Activity (0.20.0) is an app extension with its own App ID: register `com.gainstreak.app.LiveActivity`, make an **App Store** profile for it too, download it, and set `GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE` to the downloaded `.mobileprovision` file's path.
 
 Then:
 

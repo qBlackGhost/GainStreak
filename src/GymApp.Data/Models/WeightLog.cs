@@ -8,4 +8,7 @@ public class WeightLog
     public User User { get; set; } = null!;
     public DateOnly Date { get; set; }
     public double WeightKg { get; set; }
+
+    /// <summary>Imported from Apple Health (Phase 20c): never written back there.</summary>
+    public bool FromHealth { get; set; }
 }

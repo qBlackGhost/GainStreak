@@ -876,6 +876,45 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- ===== Apple Health (Phase 20): the iPhone only; off until turned on, which shows iOS's permission sheet ===== -->
+                    <Border Classes="card" IsVisible="{Binding Health.IsSupported}">
+                        <StackPanel Spacing="14" DataContext="{Binding Health}" x:DataType="vm:HealthViewModel">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Apple Health" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="Saves your workouts, cardio and weigh-ins to this iPhone's Health app, and reads your weight, height, birth date and steps from it." FontSize="12"
+                                               Classes="muted" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn}" OnContent="" OffContent=""
+                                              VerticalAlignment="Center" AutomationProperties.Name="Apple Health"/>
+                            </Grid>
+                            <StackPanel Spacing="8" IsVisible="{Binding Problem, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding Problem}" Classes="error" FontSize="13" TextWrapping="Wrap"/>
+                                <Button Content="Open Settings" Classes="btn outline small" Command="{Binding OpenSettingsCommand}" IsVisible="{Binding CanOpenSettings}"
+                                        HorizontalAlignment="Left"/>
+                            </StackPanel>
+                            <!-- 20c: Health's values where they differ from typed ones, and a level from steps; each answered once -->
+                            <StackPanel Spacing="8" IsVisible="{Binding OfferText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Border Height="1" Background="{DynamicResource Divider}"/>
+                                <TextBlock Text="{Binding OfferText}" FontSize="14" Classes="light" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Use Health's" Classes="btn primary small" Command="{Binding UseHealthProfileCommand}"/>
+                                    <Button Content="Keep mine" Classes="btn outline small" Command="{Binding KeepMyProfileCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Spacing="8" IsVisible="{Binding StepsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <Border Height="1" Background="{DynamicResource Divider}"/>
+                                <TextBlock Text="{Binding StepsText}" FontSize="14" Classes="light" TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="Use it" Classes="btn primary small" Command="{Binding UseStepsLevelCommand}"/>
+                                    <Button Content="Not now" Classes="btn outline small" Command="{Binding NotNowStepsCommand}"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Note}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                       IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ===== Appearance: the Theme setting, applied at once ===== -->
                     <Border Classes="card">
                         <StackPanel Spacing="14">

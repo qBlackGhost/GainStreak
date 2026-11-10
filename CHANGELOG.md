@@ -2,6 +2,20 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.20.0
+
+- **Your workout in the Dynamic Island (iPhone):** leave the app during a workout and the Dynamic Island shows how much of it you've done, as a ring and a percent. Touch and hold it for the day, the next exercise, your sets so far and a running timer. iPhones without a Dynamic Island show the same on the Lock Screen.
+  - **The percent counts working sets:** 7 of 15 planned sets is 47%, so it moves with every set. Warm-ups and extra sets don't count.
+  - **It goes away** when you finish or end the workout, or when it stops by itself after 4 hours or at midnight.
+  - Needs iOS 16.2 or later, with Live Activities allowed for GainStreak in Settings.
+- **Apple Health (iPhone):** turn it on in **Profile → Apple Health**, and choose in iOS's sheet what GainStreak may use. It's off until you do.
+  - **Saved to Health:** your finished workouts (with the day's name), your cardio sessions and the weigh-ins you log. Fix a weigh-in or undo a workout and Health follows; the last 30 days are kept in step.
+  - **Read from Health:** weigh-ins from a smart scale or another app fill the days you haven't logged; height, birth date and gender fill empty body data, and where Health says something different, the card asks **Use Health's** or **Keep mine**; your steps of the last 30 days suggest an activity level (**Use it** / **Not now**).
+  - **Your typed values win:** nothing you entered is overwritten without asking, and a weigh-in you type replaces the one from Health that day.
+  - **Nothing from Health earns points** or changes your streak, and it never leaves your phone.
+  - **Turning it off** stops reading and saving; what's already in Health stays there.
+- **Migration:** `AppleHealth` in the app's SQLite (`UserProfiles` gets the Apple Health setting, when it was turned on, and what was last suggested or kept from Health; `WeightLogs` gets whether a weigh-in came from Health). The server doesn't change.
+
 ## 0.19.0
 
 - **Vacation mode:** going away? Put your streak on vacation and it stays frozen until you're back, instead of breaking.

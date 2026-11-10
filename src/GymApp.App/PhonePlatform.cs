@@ -40,6 +40,12 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public abstract ILocationProvider CreateLocationProvider();
 
+    /// <summary>iOS's Live Activity (0.20.0); Android has none yet.</summary>
+    public virtual ILiveActivity CreateLiveActivity() => new NoLiveActivity();
+
+    /// <summary>Apple Health on iOS (Phase 20); Android's Health Connect comes later.</summary>
+    public virtual IHealthStore CreateHealthStore() => new NoHealthStore();
+
     /// <summary>Debug builds: point the server address at <paramref name="debugServerUrl"/> (the Mac as the emulator or
     /// Simulator sees it) through the same override the desktop's GYMAPP_SERVER_URL uses. Call before Avalonia starts.</summary>
     public static void UseDebugServer(string debugServerUrl)

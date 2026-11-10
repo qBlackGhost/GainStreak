@@ -8,5 +8,15 @@
 	<array>
 		<string>$(AppIdentifierPrefix)com.gainstreak.app</string>
 	</array>
+	<!-- Apple Health (Phase 20). Signed builds need the App ID com.gainstreak.app to have the HealthKit capability,
+	     and a profile made after it was added -->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+	<!-- A Simulator build is signed ad hoc and .NET leaves this out, so HealthKit refused everything (found in 20a).
+	     Device builds get the same value from the profile -->
+	<key>application-identifier</key>
+	<string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
 </dict>
 </plist>

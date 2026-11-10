@@ -224,6 +224,28 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
         return new(true);
     }
 
+    /// <summary>Whether the user turned Apple Health on (Phase 20). False without a profile.</summary>
+    public async Task<bool> IsHealthEnabledAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.UserProfiles.AsNoTracking().AnyAsync(p => p.UserId == userId && p.HealthEnabled);
+    }
+
+    /// <summary>Turns Apple Health on or off (Phase 20). Turning it on stamps <see cref="UserProfile.HealthEnabledAt"/>.</summary>
+    public async Task<ProfileResult> SetHealthEnabledAsync(int userId, bool enabled)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var profile = await ProfileForWriteAsync(db, userId);
+        if (profile is null) return new(false, "User not found.");
+        if (enabled && !profile.HealthEnabled) profile.HealthEnabledAt = AppClock.Now;
+        profile.HealthEnabled = enabled;
+        profile.UpdatedAt = DateTime.UtcNow;
+
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, "Could not save that setting."); }
+        return new(true);
+    }
+
     /// <summary>The user's profile row, tracked, created (not yet saved) when there is none. Null if the user doesn't exist.</summary>
     internal static async Task<UserProfile?> ProfileForWriteAsync(AppDbContext db, int userId)
     {
@@ -253,6 +275,7 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
             db.WeightLogs.Add(entry);
         }
         entry.WeightKg = Math.Round(weightKg, 2);
+        entry.FromHealth = false;   // typed over a weigh-in from Health: now the user's, and it goes to Health (Phase 20)
 
         try { await db.SaveChangesAsync(); }
         catch (DbUpdateException) { return new(false, "Could not save your weight."); }

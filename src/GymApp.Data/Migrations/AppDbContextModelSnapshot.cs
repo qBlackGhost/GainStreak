@@ -1431,6 +1431,21 @@ namespace GymApp.Data.Migrations
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("HealthEnabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("HealthEnabledAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HealthProfileDismissed")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("HealthStepsSuggestionSeen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("HealthWeightAnchor")
+                        .HasColumnType("BLOB");
+
                     b.Property<double?>("HeightCm")
                         .HasColumnType("REAL");
 
@@ -1548,6 +1563,9 @@ namespace GymApp.Data.Migrations
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("FromHealth")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");

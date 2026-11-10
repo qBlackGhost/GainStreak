@@ -27,6 +27,30 @@ public class LiveWorkoutRulesTests
     [Fact] public void NextSet_FilledWithoutItsWarmups_IsDone() =>
         Assert.Null(LiveWorkoutRules.NextSet(Ex(1, 1, 3, loggedWorking: 3)));
 
+    [Fact] public void SetProgress_CountsWorkingSets_UpToThePlan()
+    {
+        // 3 + 1 (of 3) + 0 (of 2, warm-ups only) + 1 (of 1, an extra set ignored) = 5 of 9
+        var plan = new[] { Ex(1, 1, 3, 1, 3), Ex(2, 0, 3, loggedWorking: 1), Ex(3, 2, 2, loggedWarmups: 2), Ex(4, 0, 1, loggedWorking: 2) };
+        Assert.Equal((5, 9), LiveWorkoutRules.SetProgress(plan));
+        Assert.Equal(55, LiveWorkoutRules.Percent(5, 9));
+    }
+
+    [Fact] public void SetProgress_SetWithoutReps_DoesNotCount_LikeIsFilled()
+    {
+        var ex = new LiveExercise(1, 0, 2, [new SetEntry(Day, 1, SetKind.Working, 0, 60), new SetEntry(Day, 2, SetKind.Working, 8, 60)]);
+        Assert.Equal((1, 2), LiveWorkoutRules.SetProgress([ex]));
+    }
+
+    [Fact] public void SetProgress_NoWorkingSetsPlanned_CountsOne() =>
+        Assert.Equal((0, 1), LiveWorkoutRules.SetProgress([Ex(1, 0, 0)]));
+
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(14, 15, 93)]   // rounded down: 100 only when every set is done
+    [InlineData(15, 15, 100)]
+    public void Percent_RoundsDown(int done, int planned, int percent) =>
+        Assert.Equal(percent, LiveWorkoutRules.Percent(done, planned));
+
     [Fact] public void NextSet_NoWorkingSetsPlanned_StillAsksForOne() =>
         Assert.Equal(new LiveSet(SetKind.Working, 1), LiveWorkoutRules.NextSet(Ex(1, 0, 0)));
 

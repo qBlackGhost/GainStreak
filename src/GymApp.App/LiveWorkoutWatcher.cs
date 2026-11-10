@@ -12,11 +12,14 @@ namespace GymApp.App;
 /// schedules "Continue your workout?" for 12 minutes later; coming back cancels it and, after 12 minutes or more away,
 /// asks Home for the return popup. A session past 4 hours or midnight is ended on coming back and once a minute while
 /// the app is open (<see cref="TickAsync"/>), and Home shows the one-time note. Everything lives in the database, so it
-/// all works after the phone kills the app. Nothing happens where there's no live workout (the desktop).
+/// all works after the phone kills the app. Nothing happens where there's no live workout (the desktop). It also keeps
+/// the iPhone's Live Activity (0.20.0) in step with the open workout, and ends it when the workout goes.
 /// </summary>
 public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationScheduler scheduler, SessionService session,
-    IPlatform platform, ErrorLog log)
+    IPlatform platform, ErrorLog log, ILiveActivity? activity = null)
 {
+    private readonly ILiveActivity _activity = activity ?? new NoLiveActivity();
+
     public const string NudgeTitle = "Continue your workout?";
 
     /// <summary>How long away before the nudge and the popup. Debug builds read GYMAPP_NUDGE_MINUTES (e.g. 1) to check
@@ -44,7 +47,9 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
         if (UserId is not { } userId) return;
         try
         {
-            if (await live.GetOpenAsync(userId) is not { } open) return;
+            var open = await live.GetOpenAsync(userId);
+            ShowActivity(open);
+            if (open is null) return;
             await live.TouchAsync(userId);   // away from now
             if (!open.Exercises.Any(e => e.TodaySets.Count > 0)) return;
             var next = LiveWorkoutRules.Current(open.Plan, open.CurrentExerciseId, open.SkippedExerciseIds) is { } c
@@ -61,10 +66,11 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
     {
         scheduler.CancelWorkoutNudge();
         _foreground?.Invoke();
-        if (UserId is not { } userId) return;
+        if (UserId is not { } userId) { _activity.End(); return; }   // signed out
         try
         {
-            if (await live.StopIfDueAsync(userId)) { ReturnPending = false; _listener?.Invoke(); return; }
+            if (await live.StopIfDueAsync(userId)) { ReturnPending = false; _activity.End(); _listener?.Invoke(); return; }
+            ShowActivity(await live.GetOpenAsync(userId));
             if (await live.AwayForAsync(userId) is { } away && away >= NudgeAfter)
             {
                 ReturnPending = true;
@@ -80,7 +86,7 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
         if (UserId is not { } userId) return;
         try
         {
-            if (await live.StopIfDueAsync(userId)) { ReturnPending = false; _listener?.Invoke(); }
+            if (await live.StopIfDueAsync(userId)) { ReturnPending = false; _activity.End(); _listener?.Invoke(); }
         }
         catch (Exception e) { log.Write(e, "Live workout (timer)"); }
     }
@@ -94,6 +100,31 @@ public sealed class LiveWorkoutWatcher(LiveWorkoutService live, INotificationSch
 
     /// <summary>The popup was answered another way (Finish workout early), or the workout ended.</summary>
     public void ClearReturn() => ReturnPending = false;
+
+    /// <summary>The Live Activity shows <paramref name="open"/>, or ends when there's none. Home calls it as the card
+    /// changes; the watcher on every trip to the background and back.</summary>
+    public void ShowActivity(LiveWorkoutInfo? open)
+    {
+        try
+        {
+            if (open is null || !platform.HasLiveWorkout) { _activity.End(); return; }
+            _activity.Show(ActivityState(open));
+        }
+        catch (Exception e) { log.Write(e, "Live workout (Live Activity)"); }
+    }
+
+    public static LiveActivityState ActivityState(LiveWorkoutInfo open)
+    {
+        var plan = open.Plan;
+        var (done, planned) = LiveWorkoutRules.SetProgress(plan);
+        // The card's exercise, or, while a filled one is open to change its sets, the next one still to do
+        var current = LiveWorkoutRules.Current(plan, open.CurrentExerciseId, open.SkippedExerciseIds) is { IsFilled: false } c
+            ? c
+            : LiveWorkoutRules.Order(plan, open.SkippedExerciseIds).FirstOrDefault(e => !e.IsFilled);
+        var next = current is null ? null : open.Exercises.First(e => e.ExerciseId == current.ExerciseId).Name;
+        return new LiveActivityState(open.DayName, LiveWorkoutRules.Percent(done, planned), done, planned, next,
+            open.StartedAt, LiveWorkoutRules.StopAt(open.StartedAt, open.Date));
+    }
 
     private static TimeSpan? DebugNudgeAfter()
     {

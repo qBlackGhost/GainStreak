@@ -143,6 +143,9 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [NotifyPropertyChangedFor(nameof(IsLive), nameof(ShowDashboard))]
     public partial LiveWorkoutCardViewModel? Live { get; set; }
 
+    /// <summary>The iPhone's Live Activity follows the card: shown while it's open, ended when it goes (0.20.0).</summary>
+    partial void OnLiveChanged(LiveWorkoutCardViewModel? value) => _watcher.ShowActivity(value?.Info);
+
     public bool IsLive => Live is not null;
     public bool ShowDashboard => !IsLive;
 
@@ -527,7 +530,11 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     }
 
     private LiveWorkoutCardViewModel Card(int userId, LiveWorkoutInfo info) =>
-        new(_liveWorkouts, _sets, _location, userId, info, _ => UpdateHero(), LiveEndedAsync, () => _shell().ShowGyms(addGym: true));
+        new(_liveWorkouts, _sets, _location, userId, info, changed =>
+        {
+            UpdateHero();
+            _watcher.ShowActivity(changed);   // each set moves the island's percent
+        }, LiveEndedAsync, () => _shell().ShowGyms(addGym: true));
 
     /// <summary>Phones: whether Start workout can start, and the result line after a workout. The same messages and
     /// buttons as the check-in when there's nothing to start.</summary>
