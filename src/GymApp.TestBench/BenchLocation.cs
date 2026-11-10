@@ -9,7 +9,10 @@ namespace GymApp.TestBench;
 /// position, 20 m accurate), away (nowhere near), approximate (precise location off) or no permission. Not kept across restarts: it starts away.</summary>
 public sealed class BenchLocation : ILocationProvider
 {
-    public enum Mode { Away, AtGym, NoPermission, Approximate }
+    public enum Mode { Away, AtGym, NoPermission, Approximate, InAnotherCity }
+
+    /// <summary>"In another city" (19c): central Rome, far from any home city the TestBench is likely to use.</summary>
+    public static readonly (double Lat, double Lon) AnotherCity = (41.9028, 12.4964);
 
     public Mode Current { get; private set; } = Mode.Away;
     private (double Lat, double Lon)? _gym;
@@ -21,12 +24,13 @@ public sealed class BenchLocation : ILocationProvider
     }
 
     public void SetAway() => Current = Mode.Away;
+    public void SetInAnotherCity() => Current = Mode.InAnotherCity;
     public void SetNoPermission() => Current = Mode.NoPermission;
     public void SetApproximate() => Current = Mode.Approximate;
 
     public bool IsSupported => true;
     public bool HasPermission => Current != Mode.NoPermission;
-    public bool IsPrecise => Current is Mode.Away or Mode.AtGym;
+    public bool IsPrecise => Current is Mode.Away or Mode.AtGym or Mode.InAnotherCity;
     public bool NeedsNoteBeforePrompt => true;   // like Android, so the note can be tried here
     public Task<bool> RequestPermissionAsync() => Task.FromResult(HasPermission);
 
@@ -35,6 +39,7 @@ public sealed class BenchLocation : ILocationProvider
     {
         Mode.AtGym when _gym is { } g => new LocationFix(g.Lat, g.Lon, 20),
         Mode.Away => new LocationFix(30, -40, 20),
+        Mode.InAnotherCity => new LocationFix(AnotherCity.Lat, AnotherCity.Lon, 30),
         Mode.Approximate => new LocationFix(30, -40, 1500),
         _ => null
     });

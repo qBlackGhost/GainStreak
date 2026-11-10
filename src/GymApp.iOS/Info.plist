@@ -25,7 +25,7 @@
 	</dict>
 	<!-- HTTPS only, so no export-compliance questions on upload -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone.</string>
+	<string>GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIRequiredDeviceCapabilities</key>

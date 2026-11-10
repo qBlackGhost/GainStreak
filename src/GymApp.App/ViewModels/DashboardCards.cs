@@ -20,12 +20,16 @@ public class WeekChipViewModel(WeekChip chip, string name)
         WeekChipKind.MadeUp => "Made up",
         WeekChipKind.Missed => "Missed",
         WeekChipKind.Rest => "Rest day",
+        WeekChipKind.Vacation => "Vacation",
         _ => "Upcoming"
     };
 
     // Today has its own look (open or done), so the other kinds only describe the other days
     public bool IsTodayDone { get; } = chip.IsToday && chip.Kind == WeekChipKind.Done;
-    public bool IsTodayOpen { get; } = chip.IsToday && chip.Kind != WeekChipKind.Done;
+    public bool IsTodayOpen { get; } = chip.IsToday && chip.Kind is not (WeekChipKind.Done or WeekChipKind.Vacation);
+    public bool IsToday { get; } = chip.IsToday;
+    /// <summary>A vacation day (0.19.0), today included: neither done nor missed.</summary>
+    public bool IsVacation { get; } = chip.Kind == WeekChipKind.Vacation;
     public bool IsDone { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Done;
     public bool IsMadeUp { get; } = !chip.IsToday && chip.Kind == WeekChipKind.MadeUp;
     public bool IsMissed { get; } = !chip.IsToday && chip.Kind == WeekChipKind.Missed;
@@ -39,8 +43,14 @@ public partial class WeekCardViewModel : ObservableObject
     [ObservableProperty] public partial IReadOnlyList<WeekChipViewModel> Chips { get; set; } = [];
 
     /// <summary><paramref name="names"/>: the planned day's name per date ("Push", "Rest"); a missing date shows no name.</summary>
-    public void Apply(IReadOnlyList<WeekChip> chips, IReadOnlyDictionary<DateOnly, string> names) =>
+    /// <summary>The week has a vacation day (0.19.0): the legend explains the moon.</summary>
+    [ObservableProperty] public partial bool HasVacation { get; set; }
+
+    public void Apply(IReadOnlyList<WeekChip> chips, IReadOnlyDictionary<DateOnly, string> names)
+    {
         Chips = chips.Select(c => new WeekChipViewModel(c, names.GetValueOrDefault(c.Date, ""))).ToList();
+        HasVacation = chips.Any(c => c.Kind == WeekChipKind.Vacation);
+    }
 }
 
 /// <summary>One exercise on the "Today's workout" card.</summary>

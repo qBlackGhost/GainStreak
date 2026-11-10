@@ -27,6 +27,9 @@ public record AddressSearchResult(bool Success, IReadOnlyList<AddressCandidate> 
 /// <summary>Success with a null Address means Nominatim had no street there; the lookup still counts as done.</summary>
 public record ReverseResult(bool Success, string? Address = null, string? Error = null);
 
+/// <param name="City">Null with Success when the point isn't in a city, town or village.</param>
+public record ReverseCityResult(bool Success, CityCandidate? City = null, string? Error = null);
+
 /// <summary>City search, address search and reverse lookups through Nominatim. All share one limit of one request
 /// per second, as the usage policy asks, so register it as a singleton. Searches run on button press, never per
 /// keystroke (the policy forbids autocomplete). Never throws for network trouble.</summary>
@@ -82,6 +85,18 @@ public class GeocodingService
         var (address, error) = await GetAsync(url, json => new Box<string?>(Addresses.ParseReverse(json)), "Address lookup", ct);
         return address is null ? new ReverseResult(false, Error: error) : new ReverseResult(true, address.Value);
     }
+
+    /// <summary>The city, town or village at a point (19d, "Show me gyms near me"), at city level (zoom=10). Only a
+    /// rounded position is sent (<see cref="Nominatim.Coarse"/>, about 1 km).</summary>
+    public async Task<ReverseCityResult> ReverseCityAsync(double latitude, double longitude, CancellationToken ct = default)
+    {
+        var url = ReverseCityUrl(latitude, longitude);
+        var (city, error) = await GetAsync(url, json => new Box<CityCandidate?>(Nominatim.ParseReverseCity(json)), "City lookup", ct);
+        return city is null ? new ReverseCityResult(false, Error: error) : new ReverseCityResult(true, city.Value);
+    }
+
+    public static string ReverseCityUrl(double latitude, double longitude) => string.Create(CultureInfo.InvariantCulture,
+        $"{BaseUrl}/reverse?lat={Nominatim.Coarse(latitude):0.00}&lon={Nominatim.Coarse(longitude):0.00}&format=jsonv2&zoom=10");
 
     private sealed record Box<T>(T Value);   // so "found nothing" (null inside) differs from "failed" (null box)
 

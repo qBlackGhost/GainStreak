@@ -18,7 +18,9 @@ public enum StreakStatus
 /// <param name="OwedDay">The training day the open debt is for, or null when nothing is owed.</param>
 /// <param name="Stale">Today is a rest day that didn't add to the streak (0.18.1): the streak is kept but not growing,
 /// and the app shows it cold (ice) instead of on fire. Only with Status Active.</param>
-public record StreakResult(int Current, int Longest, StreakStatus Status, DateOnly? OwedDay = null, bool Stale = false);
+/// <param name="VacationUntil">Today is a vacation day (0.19.0): the return date, the first normal day again.</param>
+public record StreakResult(int Current, int Longest, StreakStatus Status, DateOnly? OwedDay = null, bool Stale = false,
+    DateOnly? VacationUntil = null);
 
 /// <summary>
 /// The rest-day rule from 0.18.1: from <see cref="From"/> on, a rest day keeps the streak alive without adding to it,
@@ -27,8 +29,13 @@ public record StreakResult(int Current, int Longest, StreakStatus Status, DateOn
 /// </summary>
 /// <param name="From">The first day under the rule: the day this user first ran 0.18.1 (User.StreakRestRuleFrom).</param>
 /// <param name="Verified">The dates of the user's verified workout logs.</param>
-public record RestDayRule(DateOnly From, IReadOnlySet<DateOnly> Verified)
+/// <param name="Frozen">The user's vacation days (0.19.0, <see cref="VacationRules"/>). On one the streak neither grows nor
+/// breaks, unless a verified workout is logged that day (+1); a debt still open is closed (the owed day is Graced).</param>
+public record RestDayRule(DateOnly From, IReadOnlySet<DateOnly> Verified, IReadOnlySet<DateOnly>? Frozen = null)
 {
+    /// <summary>Whether <paramref name="d"/> is a vacation day.</summary>
+    public bool IsFrozen(DateOnly d) => Frozen?.Contains(d) == true;
+
     /// <summary>What rest day <paramref name="d"/> adds with no debt open, or when it pays one.</summary>
     internal bool Counts(DateOnly d, bool worked) => d < From || (worked && Verified.Contains(d));
 
@@ -42,7 +49,8 @@ public enum DayOutcome
     Done,     // logged on its date
     Graced,   // missed, but paid by a later workout (shift rule)
     Missed,   // not paid, the streak broke on it (or it came before the first workout)
-    Pending   // not settled yet: today or later, or still owed
+    Pending,  // not settled yet: today or later, or still owed
+    Frozen    // a vacation day (0.19.0) without a verified workout: neither done nor missed
 }
 
 public record TrainingDayOutcome(DateOnly Date, DayOutcome Outcome);
@@ -67,6 +75,8 @@ public static class StreakCalculator
     ///  - Each day uses the schedule that was in force on that day. The first schedule entry also
     ///    covers days before its date. With no schedule at all, every day counts as a training day.
     ///  - Longest only takes settled counts (no debt open), plus the current count.
+    ///  - A vacation day (<see cref="RestDayRule.Frozen"/>, 0.19.0) closes an open debt (Graced) and adds only for a
+    ///    verified workout; otherwise nothing changes. A frozen today is Active and Stale, with VacationUntil set.
     /// </summary>
     /// <param name="choices">The user's missed-day choices, keyed by the missed date.</param>
     public static StreakResult Calculate(
@@ -103,6 +113,7 @@ public static class StreakCalculator
         {
             if (!IsTraining(ordered, d)) continue;
             var outcome = settled.TryGetValue(d, out var o) ? o
+                        : restRule?.IsFrozen(d) == true ? DayOutcome.Frozen
                         : d < today ? DayOutcome.Missed : DayOutcome.Pending;
             result.Add(new TrainingDayOutcome(d, outcome));
         }
@@ -170,6 +181,24 @@ public static class StreakCalculator
                 onBreak?.Invoke(owed);
             }
 
+            if (restRule?.IsFrozen(d) == true)                                      // vacation (0.19.0): kept, not growing
+            {
+                if (debt)                                                           // the first frozen day closes a chain
+                {
+                    Set(outcomes, owed, DayOutcome.Graced);
+                    debt = false;
+                }
+                if (worked && restRule.Verified.Contains(d))                        // a verified workout still adds (or restarts)
+                {
+                    count++;
+                    if (isTraining) Set(outcomes, d, DayOutcome.Done);
+                }
+                else if (isTraining) Set(outcomes, d, DayOutcome.Frozen);
+                if (count > 0) everCounted = true;
+                longest = Math.Max(longest, count);
+                continue;
+            }
+
             if (debt)
             {
                 if (worked)                                                         // paid
@@ -227,9 +256,19 @@ public static class StreakCalculator
         if (!everCounted) return new StreakResult(0, 0, StreakStatus.NotStarted);   // only unverified rest-day workouts
         var status = count == 0 ? StreakStatus.Broken
                    : stopped ?? (debt ? StreakStatus.Shifted : StreakStatus.Active);
-        var stale = status == StreakStatus.Active && restRule is not null && restRule.Applies(today)
-                    && !IsTraining(ordered, today) && count == countBeforeToday && !paidToday;
-        return new StreakResult(count, longest, status, debt ? owed : null, stale);
+        var frozenToday = restRule?.IsFrozen(today) == true;
+        var stale = status == StreakStatus.Active && restRule is not null && count == countBeforeToday && !paidToday
+                    && (frozenToday || (restRule.Applies(today) && !IsTraining(ordered, today)));
+        return new StreakResult(count, longest, status, debt ? owed : null, stale,
+            frozenToday ? ReturnDate(restRule!, today) : null);
+    }
+
+    /// <summary>The first day after <paramref name="today"/> that isn't frozen.</summary>
+    private static DateOnly ReturnDate(RestDayRule rule, DateOnly today)
+    {
+        var d = today.AddDays(1);
+        while (rule.IsFrozen(d)) d = d.AddDays(1);
+        return d;
     }
 
     private static void Set(Dictionary<DateOnly, DayOutcome>? outcomes, DateOnly day, DayOutcome outcome)

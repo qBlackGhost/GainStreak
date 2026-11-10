@@ -67,6 +67,22 @@ public static class Nominatim
             c.CenterLatitude >= o.South && c.CenterLatitude <= o.North &&
             c.CenterLongitude >= o.West && c.CenterLongitude <= o.East);
 
+    /// <summary>Parses a Nominatim /reverse answer at city level (zoom=10) into the city, town or village there; null
+    /// when the point isn't in one (a county or the sea comes back instead), or for Nominatim's {"error": ...}.</summary>
+    /// <exception cref="JsonException">The text is not a JSON object.</exception>
+    public static CityCandidate? ParseReverseCity(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.ValueKind != JsonValueKind.Object) throw new JsonException("Expected a JSON object.");
+        if (doc.RootElement.TryGetProperty("error", out _)) return null;
+        // TryParse lets an entry without an addresstype through (searches are filtered by featureType); here it must say
+        return Str(doc.RootElement, "addresstype") is { } kind && SettlementTypes.Contains(kind) ? TryParse(doc.RootElement) : null;
+    }
+
+    /// <summary>A coordinate as sent to Nominatim to find the city (19d): 2 decimals, about a kilometre, so the
+    /// lookup never carries the exact position.</summary>
+    public static double Coarse(double degrees) => Math.Round(degrees, 2, MidpointRounding.AwayFromZero);
+
     public static OsmElementType? ParseOsmType(string? type) => type?.ToLowerInvariant() switch
     {
         "node" or "n" => OsmElementType.Node,

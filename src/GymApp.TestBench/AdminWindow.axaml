@@ -73,10 +73,13 @@
                         <WrapPanel>
                             <Button Content="At gym" Command="{Binding AtGymCommand}"/>
                             <Button Content="Away" Command="{Binding AwayCommand}"/>
+                            <Button Content="In another city" Command="{Binding InAnotherCityCommand}"/>
                             <Button Content="Approximate" Command="{Binding ApproximateCommand}"/>
                             <Button Content="No permission" Command="{Binding NoPermissionCommand}"/>
                         </WrapPanel>
-                        <TextBlock Classes="note" Text="What the live workout reads at Start and each Next (Logging must be the live workout)."/>
+                        <TextBlock Classes="note" Text="What the live workout reads at Start and each Next (Logging must be the live workout), and what Home reads to notice a trip (Away and In another city both count as away)."/>
+                        <Button Content="Look for a trip now" Command="{Binding LookForTripCommand}"
+                                ToolTip.Tip="Home looks at most every 6 hours; this forgets the last look and reloads Home"/>
                     </StackPanel>
                 </Border>
 
@@ -130,6 +133,21 @@
                         </WrapPanel>
                         <TextBlock Classes="note"
                                    Text="Check-in here skips the sets rule. To test a missed day, just move the clock past a training day without checking in. Forgetting choices brings the missed-day card back (a schedule shift stays)."/>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="section" IsEnabled="{Binding IsSignedIn}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Vacation"/>
+                        <NumericUpDown Value="{Binding VacationDays}" Minimum="1" Maximum="7" Increment="1" FormatString="0"
+                                       HorizontalAlignment="Stretch" ToolTip.Tip="Days frozen"/>
+                        <WrapPanel>
+                            <Button Content="Start vacation" Command="{Binding StartVacationCommand}"/>
+                            <Button Content="End vacation" Command="{Binding EndVacationCommand}"/>
+                            <Button Content="Clear vacations" Command="{Binding ClearVacationsCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Starts today (tomorrow if today is logged). Clear vacations lifts the 60-day cooldown, and the frozen days go with them. Move the clock to the return date for Welcome back."/>
                     </StackPanel>
                 </Border>
 

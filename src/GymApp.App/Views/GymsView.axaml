@@ -283,6 +283,43 @@
                     <v:Icon Data="{StaticResource IcSliders}" Width="18" Height="18"/>
                 </Button>
             </Grid>
+            <!-- On vacation (19d): the city being visited, and the way back to the home city -->
+            <Border Padding="12,10,8,10" CornerRadius="14" BorderThickness="1" Background="{DynamicResource Surface2}"
+                    BorderBrush="{DynamicResource IceTintLine}" IsVisible="{Binding IsVisiting}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <Border Width="34" Height="34" CornerRadius="10" Background="{DynamicResource IceTint}">
+                        <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource IceText}" StrokeThickness="2.2" Width="17" Height="17"/>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding VisitingTitle}" FontSize="14" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding VisitingSub}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                    <Button Grid.Column="2" Classes="btn outline small" MinHeight="36" Padding="10,0" FontSize="12"
+                            Content="{Binding VisitingButton}" Command="{Binding ToggleVisitingCommand}"/>
+                </Grid>
+            </Border>
+            <Border Padding="14,12" CornerRadius="14" BorderThickness="1" Background="{DynamicResource Surface2}"
+                    BorderBrush="{DynamicResource Line}" IsVisible="{Binding IsFindingNearby}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Finding gyms near you…" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="Only a rough position (about 1 km) is sent to find the city you're in." FontSize="12"
+                               Classes="muted" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+            <Border Padding="14" CornerRadius="14" BorderThickness="1" Background="{DynamicResource Surface2}"
+                    BorderBrush="{DynamicResource Control}"
+                    IsVisible="{Binding NearbyError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="Couldn't find where you are" FontSize="15" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding NearbyError}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                    <Grid ColumnDefinitions="*,1.5*" ColumnSpacing="8">
+                        <Button Classes="btn outline small" HorizontalAlignment="Stretch" MinHeight="44" Content="Try again"
+                                Command="{Binding FindNearbyCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary small" HorizontalAlignment="Stretch" MinHeight="44"
+                                Content="Search for the city instead" Command="{Binding SearchVisitingCityCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
             <Panel x:Name="PhonePills"/>
         </StackPanel>
         <Border x:Name="PhoneSheet" IsVisible="False" VerticalAlignment="Bottom" CornerRadius="22,22,0,0" ClipToBounds="True"

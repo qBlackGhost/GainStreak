@@ -98,6 +98,17 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     private readonly Func<MainViewModel> _shell;
 
     private City? _homeCity;
+    private City? _visitingCity;          // on vacation, "Show me gyms near me" (19d)
+    private bool _showHome;               // "Back to Timișoara" while visiting
+    private readonly VacationService? _vacations;
+    private readonly NearbyCityFinder? _nearby;
+    private bool _findNearbyWhenLoaded;
+
+    /// <summary>The city on the map: the one being visited, unless "Back to …" asked for home.</summary>
+    private City? ShownCity => _visitingCity is { } v && !_showHome ? v : _homeCity;
+
+    /// <summary>Home's "Show me gyms near me" (19d): find the city here once the screen has loaded.</summary>
+    public void FindNearbyWhenLoaded() => _findNearbyWhenLoaded = true;
     private GymListItem? _homeGym;
     private TodayGymInfo? _today;
     private IReadOnlyList<GymRow> _cityGyms = [];
@@ -119,8 +130,10 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     public void ChooseCityWhenLoaded() => _chooseCityWhenLoaded = true;
 
     public GymsViewModel(GymService gyms, ProfileService profiles, FriendMapService friendMap, GymSummaryService summaries,
-        GymPickerViewModel picker, SessionService session, Func<MainViewModel> shell)
+        GymPickerViewModel picker, SessionService session, Func<MainViewModel> shell,
+        VacationService? vacations = null, NearbyCityFinder? nearby = null)
     {
+        _vacations = vacations; _nearby = nearby;
         _gyms = gyms; _profiles = profiles; _friendMap = friendMap; _summaries = summaries;
         Picker = picker; _session = session; _shell = shell;
         (Year, Month) = (Today.Year, Today.Month);
@@ -261,9 +274,10 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
             AskForGym = s.Profile.AskForGymAfterCheckIn;
             _loading = false;
 
-            HasCity = _homeCity is not null;
-            CityName = _homeCity?.Name ?? "No home city";
-            Bounds = _homeCity is { } c ? new MapBounds(c.South, c.West, c.North, c.East) : null;
+            await LoadVisitingAsync();
+            HasCity = ShownCity is not null;
+            CityName = ShownCity?.Name ?? "No home city";
+            Bounds = ShownCity is { } c ? new MapBounds(c.South, c.West, c.North, c.East) : null;
             _homeGym = s.Profile.HomeGymId is { } id ? await _gyms.GetPickableGymAsync(UserId, id) : null;
             _today = await _gyms.GetTodayAsync(UserId);
             _cityGyms = await CityGymsAsync();
@@ -286,6 +300,7 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
                 }
             }
             _addGymWhenLoaded = false;
+            if (_findNearbyWhenLoaded) { _findNearbyWhenLoaded = false; _ = FindNearbyAsync(); }
         }
         catch (Exception)
         {
@@ -298,12 +313,96 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     }
 
     private async Task<IReadOnlyList<GymRow>> CityGymsAsync() =>
-        _homeCity is { } city ? (await _gyms.GetGymsForCityAsync(UserId, city.Id))?.Rows ?? [] : [];
+        ShownCity is { } city ? (await _gyms.GetGymsForCityAsync(UserId, city.Id))?.Rows ?? [] : [];
 
-    /// <summary>Where distances are measured from: your gym if it has a position, else the city's centre.</summary>
+    /// <summary>Where distances are measured from: your gym if it has a position, else the city's centre. While
+    /// visiting another city, its centre: your gym is back home.</summary>
     private (double, double)? Origin =>
-        _homeGym is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon)
+        ShownCity?.Id != _homeCity?.Id && ShownCity is { } v ? (v.CenterLatitude, v.CenterLongitude)
+        : _homeGym is { Latitude: { } lat, Longitude: { } lon } ? (lat, lon)
         : _homeCity is { } c ? (c.CenterLatitude, c.CenterLongitude) : null;
+
+    // ===== Visiting a city on vacation (19d) =====
+
+    /// <summary>A visiting city is set: the banner shows ("Visiting Rome · On vacation until Fri 13 Nov").</summary>
+    [ObservableProperty] public partial bool IsVisiting { get; set; }
+    [ObservableProperty] public partial string VisitingTitle { get; set; } = "";
+    [ObservableProperty] public partial string VisitingSub { get; set; } = "";
+    [ObservableProperty] public partial string VisitingButton { get; set; } = "";
+
+    /// <summary>"Finding gyms near you…" while the finder works.</summary>
+    [ObservableProperty] public partial bool IsFindingNearby { get; set; }
+
+    /// <summary>Why the finder found no city, with Try again and Search for the city instead.</summary>
+    [ObservableProperty] public partial string? NearbyError { get; set; }
+
+    private async Task LoadVisitingAsync()
+    {
+        _visitingCity = null;
+        IsVisiting = false;
+        if (_vacations is null) return;
+        _visitingCity = await _vacations.GetVisitingCityAsync(UserId);
+        IsVisiting = _visitingCity is not null;
+        if (_visitingCity is not { } v) return;
+        var back = await _vacations.GetCurrentAsync(UserId) is { } trip ? VacationRules.BackOn(trip) : (DateOnly?)null;
+        VisitingTitle = _showHome ? (_homeCity?.Name ?? "Home") : "Visiting " + v.Name;
+        VisitingSub = _showHome ? "Your home city · you're in " + v.Name
+            : back is { } b ? "On vacation until " + b.ToString("ddd d MMM", CultureInfo.InvariantCulture) : "On vacation";
+        VisitingButton = _showHome ? "Show " + v.Name : "Back to " + (_homeCity?.Name ?? "home");
+    }
+
+    /// <summary>The banner's button: the home city, or back to the one being visited.</summary>
+    [RelayCommand]
+    private async Task ToggleVisitingAsync()
+    {
+        _showHome = !_showHome;
+        SelectedGymId = null;
+        await LoadAsync();
+    }
+
+    [RelayCommand]
+    private async Task FindNearbyAsync()
+    {
+        if (_nearby is null || IsFindingNearby) return;
+        NearbyError = null;
+        IsFindingNearby = true;
+        try
+        {
+            var r = await _nearby.FindAsync(UserId);
+            if (r.City is null) { NearbyError = r.Error ?? NearbyCityFinder.NoFixText; return; }
+            _showHome = false;
+            await LoadAsync();
+            if (r.GymsError is { } e) Error = "Couldn't load the gyms here: " + e;
+        }
+        catch (Exception) { NearbyError = NearbyCityFinder.NoFixText; }
+        finally { IsFindingNearby = false; }
+    }
+
+    [RelayCommand] private void DismissNearbyError() => NearbyError = null;
+
+    /// <summary>"Search for the city instead": the city search, keeping the result as the visiting city, not home.</summary>
+    [RelayCommand]
+    private void SearchVisitingCity()
+    {
+        NearbyError = null;
+        Error = null;
+        Picker.Open(PickerMode.City, _visitingCity ?? _homeCity, _homeGym?.Id, _today?.Gym?.Id, _homeGym?.Name, FriendsAtGym(),
+            (_, _) => Task.CompletedTask, ChooseVisitingCityAsync, ClosePicker);
+        IsPickerOpen = true;
+    }
+
+    private async Task ChooseVisitingCityAsync(City city)
+    {
+        if (_vacations is null || !await _vacations.SetVisitingCityAsync(UserId, city.Id))
+        {
+            Picker.ShowError("Visiting cities are for vacations. Start one on Home or in Profile first.");
+            return;
+        }
+        ClosePicker();
+        _showHome = false;
+        SelectedGymId = null;
+        await LoadAsync();
+    }
 
     private async Task LoadFriendMapAsync()
     {
@@ -612,8 +711,9 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     private void OpenPicker(PickerMode mode, Func<GymListItem?, bool, Task> chosen)
     {
         Error = null;
-        Picker.Open(mode, _homeCity, _homeGym?.Id, _today?.Gym?.Id, _homeGym?.Name, FriendsAtGym(), chosen,
-            ChooseHomeCityAsync, ClosePicker);
+        // Today's gym can be in the city being visited; your gym and the home city stay home
+        Picker.Open(mode, mode == PickerMode.Today ? ShownCity : _homeCity, _homeGym?.Id, _today?.Gym?.Id, _homeGym?.Name,
+            FriendsAtGym(), chosen, ChooseHomeCityAsync, ClosePicker);
         IsPickerOpen = true;
     }
 

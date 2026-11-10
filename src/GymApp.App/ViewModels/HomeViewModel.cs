@@ -20,6 +20,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         if (Picker is not null) { Picker = null; return true; }
         if (IsLocationNoteOpen) { AnswerLocationNote(false); return true; }
         if (IsReturnOpen) { _ = ContinueWorkoutAsync(); return true; }
+        if (Vacation.CloseOnBack()) return true;
         if (IsCardioPromptOpen) { SkipCardio(); return true; }
         if (Live?.CloseOnBack() == true) return true;
         if (IsConfirmingUndo) { IsConfirmingUndo = false; return true; }
@@ -45,6 +46,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     private readonly INotificationScheduler _notifications;
     private readonly ILocationProvider _location;
     private readonly CardioService _cardio;
+    private readonly VacationService _vacations;
+    private readonly AwayWatcher _away;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
@@ -54,8 +57,11 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                          GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory,
                          InboxService inbox, IPlatform platform, LiveWorkoutService liveWorkouts,
                          LiveWorkoutWatcher watcher, INotificationScheduler notifications, ILocationProvider location,
-                         CardioService cardio)
+                         CardioService cardio, VacationService vacations, AwayWatcher away)
     {
+        _vacations = vacations;
+        _away = away;
+        Vacation = new VacationCardViewModel(vacations, () => _session.CurrentUser?.Id, VacationChangedAsync);
         _location = location;
         _cardio = cardio;
         _inbox = inbox;
@@ -68,6 +74,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         watcher.ListenForeground(() => Avalonia.Threading.Dispatcher.UIThread.Post(() =>
         {
             if (Cardio is { } c) _ = c.CheckNowAsync();
+            _ = CheckAwayAsync();   // back in front: maybe on a trip now (19c)
         }));
         HasLiveWorkout = platform.HasLiveWorkout;
         PointsHistory = pointsHistory;
@@ -351,11 +358,91 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     private StreakResult? _streak;
     private DateOnly? _makeUpFor;
 
+    // ===== Vacation (0.19.0) =====
+
+    /// <summary>Where vacation mode stands, I'm back and its question; in 19c also the away prompt.</summary>
+    public VacationCardViewModel Vacation { get; }
+
+    /// <summary>Today is a vacation day: the streak card says so (FROZEN, back on ...).</summary>
+    [ObservableProperty] public partial bool IsOnVacation { get; set; }
+
+    /// <summary>"I'm back" under the streak card: a vacation in progress or starting tomorrow, no live workout.</summary>
+    [ObservableProperty] public partial bool ShowImBack { get; set; }
+
+    /// <summary>"Welcome back!", "Vacation ended…" or "Vacation cancelled.", until dismissed.</summary>
+    [ObservableProperty] public partial string? VacationNote { get; set; }
+
+    [RelayCommand] private void DismissVacationNote() => VacationNote = null;
+
+    /// <summary>On vacation, on phones: "Show me gyms near me" leads the streak card (19d, approved on the canvas).</summary>
+    [ObservableProperty] public partial bool ShowNearbyGyms { get; set; }
+
+    [RelayCommand] private void ShowGymsNearMe() => _shell().ShowGyms(nearMe: true);
+
+    /// <summary>The home city, while Home asks "Away from …? On vacation?" (19c).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAwayPrompt), nameof(AwayTitle))]
+    public partial string? AwayCity { get; set; }
+
+    public bool ShowAwayPrompt => AwayCity is not null && Live is null && !Vacation.HasVacation;
+    public string AwayTitle => $"Away from {AwayCity}?";
+
+    /// <summary>A missed day must be settled first: the card says so and offers only Not now.</summary>
+    public bool IsAwayBlocked => Vacation.RefusalText is not null;
+
+    /// <summary>Looks for a trip when it's due (at most every 6 hours, phones only) and shows the prompt.</summary>
+    private async Task CheckAwayAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        try
+        {
+            var city = await _away.CheckAsync(user.Id);
+            if (city is not null) await Vacation.LoadAsync();   // whether it can start, or a missed day comes first
+            ApplyAway(city);
+        }
+        catch (Exception) { /* no prompt this time */ }
+    }
+
+    private void ApplyAway(string? city)
+    {
+        AwayCity = city;
+        OnPropertyChanged(nameof(IsAwayBlocked));
+        OnPropertyChanged(nameof(ShowAwayPrompt));
+    }
+
+    [RelayCommand] private Task AwayYesAsync() => Vacation.PlanCommand.ExecuteAsync(null);
+
+    [RelayCommand]
+    private async Task AwayNoAsync()
+    {
+        if (_session.CurrentUser is not { } user) return;
+        ApplyAway(null);
+        await _away.DismissAsync(user.Id);
+    }
+
+    [RelayCommand]
+    private void AwayNotNow()
+    {
+        if (_session.CurrentUser is { } user) _away.Clear(user.Id);
+        ApplyAway(null);
+    }
+
+    private async Task VacationChangedAsync()
+    {
+        if (_session.CurrentUser is { } u && Vacation.HasVacation) { _away.Clear(u.Id); ApplyAway(null); }
+        VacationNote = Vacation.LastChange;
+        await RefreshAsync();
+        await _shell().RefreshStreakAsync();
+    }
+
     private async Task RefreshAsync()
     {
         if (_session.CurrentUser is not { } user) return;
         try
         {
+            await Vacation.LoadAsync();
+            ApplyAway(_away.Pending(user.Id));
+            if (await _vacations.TakeWelcomeBackAsync(user.Id)) VacationNote = "Welcome back! Your streak counts again from today.";
             var cached = user.CurrentStreak;   // before the recalculation, to notice a streak that broke overnight
             var today = await _workouts.GetTodayAsync(user.Id);
             var streak = await _streaks.RecalculateAsync(user.Id);
@@ -383,6 +470,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             Error = "Could not load today's workout.";
         }
         await RefreshFriendsAsync(user.Id);
+        await CheckAwayAsync();
     }
 
     /// <summary>The one-time note about a session that stopped by itself.</summary>
@@ -799,6 +887,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         StreakNote = streak.Status switch
         {
             StreakStatus.NotStarted => "Log your first workout to start a streak.",
+            StreakStatus.Active when streak.VacationUntil is { } back =>
+                $"On vacation until {back.ToString("ddd d MMM", CultureInfo.InvariantCulture)}: your streak is frozen.",
             StreakStatus.Active when streak.Stale => "Rest day: your streak is on ice. It's kept, but only a workout adds to it.",
             StreakStatus.Active => "Streak alive, nice.",
             StreakStatus.PendingToday => "Log today's workout to keep your streak.",
@@ -852,6 +942,9 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         if (live is not null)
         {
             IsMakeUpDay = false;
+            IsOnVacation = false;
+            ShowImBack = false;
+            ShowNearbyGyms = false;
             GaugeKicker = "WORKOUT IN PROGRESS";
             GaugeTitle = live.Info.DayName.ToUpperInvariant();
             GaugeSub = live.ProgressText;
@@ -890,6 +983,28 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             : streak.Status is StreakStatus.Broken or StreakStatus.NotStarted || streak.Current == 0
                 ? "Today starts a new streak."
                 : $"Not done yet. Go to reach {streak.Current + 1} days.";
+
+        ApplyVacation(today, streak, logged);
+    }
+
+    /// <summary>A vacation day (0.19.0, the GainStreak Mobile canvas's Home on vacation): the card says FROZEN and when
+    /// the user is back. A verified workout still adds a day, so after one the card reads as usual.</summary>
+    private void ApplyVacation(TodayInfo today, StreakResult streak, bool logged)
+    {
+        ShowImBack = Vacation.CanEnd && Live is null;
+        IsOnVacation = streak.VacationUntil is not null && Live is null;
+        ShowNearbyGyms = IsOnVacation && _location.IsSupported;
+        if (!IsOnVacation || streak.VacationUntil is not { } back) return;
+        if (logged && !streak.Stale) return;                                   // a verified workout: it added a day
+
+        IsMakeUpDay = false;
+        GaugeKicker = "ON VACATION";
+        GaugeTitle = "FROZEN";
+        GaugeSub = "Back on " + back.ToString("dddd, d MMM", CultureInfo.InvariantCulture);
+        StatusText = logged
+            ? "Workout logged. On vacation, only a workout at a gym adds a day."
+            : HasLiveWorkout ? "Your streak is frozen until you're back. A workout at a gym still adds a day."
+            : "Your streak is frozen until you're back.";
     }
 
     private static string Capitalize(string s) =>

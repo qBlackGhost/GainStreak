@@ -72,6 +72,7 @@ public static class PointsCalculator
     ///    All training days Done: +50, dated the last training day, even before Sunday.
     ///    All Done or Graced with at least one Graced: +25, dated Sunday, only once the week has ended.
     ///    Anything Missed or still Pending: nothing (yet). Both bonuses share one key, so a week earns one of them.
+    ///    Frozen (vacation) days are left out; a week with only Frozen training days earns nothing.
     ///  - +10 for each calorie log within the leeway of its goal (see <see cref="CalorieGoals.HitTarget"/>).
     ///    The goal is the one saved with the log.
     /// </summary>
@@ -120,7 +121,8 @@ public static class PointsCalculator
         if (scheduleStart is not { } start || start > monday) return null;   // partial first week
 
         var sunday = monday.AddDays(6);
-        var days = timeline.Where(t => t.Date >= monday && t.Date <= sunday).ToList();
+        // Vacation days (0.19.0) are neither done nor missed: the week is judged on its other training days
+        var days = timeline.Where(t => t.Date >= monday && t.Date <= sunday && t.Outcome != DayOutcome.Frozen).ToList();
         if (days.Count == 0) return null;
 
         var key = $"week:{Key(monday)}";

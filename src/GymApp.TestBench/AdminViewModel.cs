@@ -42,6 +42,7 @@ public partial class AdminViewModel : ObservableObject
     private readonly StreakService _streaks;
     private readonly PointsService _points;
     private readonly WorkoutService _workouts;
+    private readonly VacationService _vacations;
 
     public AdminViewModel(BenchSettings settings)
     {
@@ -53,6 +54,7 @@ public partial class AdminViewModel : ObservableObject
         _streaks = sp.GetRequiredService<StreakService>();
         _points = sp.GetRequiredService<PointsService>();
         _workouts = sp.GetRequiredService<WorkoutService>();
+        _vacations = sp.GetRequiredService<VacationService>();
 
         _session.Changed += () => _ = RefreshStatusAsync();
         _session.Changed += () => _ = LoadGymsAsync();
@@ -145,6 +147,25 @@ public partial class AdminViewModel : ObservableObject
         Program.Location.SetAway();
         LocationText = "Away: nowhere near a gym.";
     }
+
+    [RelayCommand]
+    private void InAnotherCity()
+    {
+        Program.Location.SetInAnotherCity();
+        LocationText = "In another city: Rome, far from home.";
+    }
+
+    /// <summary>Home looks for a trip at most every 6 hours (19c): forget the last look and reload Home, so it looks now.</summary>
+    [RelayCommand]
+    private Task LookForTrip() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        await using (var db = await _dbFactory.CreateDbContextAsync())
+            await db.UserProfiles.Where(p => p.UserId == user.Id)
+                .ExecuteUpdateAsync(u => u.SetProperty(p => p.LastAwayCheckAt, (DateTime?)null));
+        GymApplication.Services.GetRequiredService<AwayWatcher>().Clear(user.Id);
+        return "Home looks for a trip now (if location is allowed and there's a streak and a home city).";
+    });
 
     [RelayCommand]
     private void Approximate()
@@ -257,6 +278,41 @@ public partial class AdminViewModel : ObservableObject
             deleted = await db.MissedDayChoices.Where(c => c.UserId == user.Id && c.Date >= from).ExecuteDeleteAsync();
         await _streaks.RecalculateAsync(user.Id, AppClock.Today);
         return $"Forgot {deleted} missed-day choice(s).";
+    });
+
+    // ===== Vacation (0.19.0) =====
+    [ObservableProperty] public partial decimal? VacationDays { get; set; } = 3;
+
+    /// <summary>Starts a vacation now (today, or tomorrow if today is logged), the given number of days long. The
+    /// cooldown applies: clear it first to start another.</summary>
+    [RelayCommand]
+    private Task StartVacation() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        var days = (int)Math.Clamp(VacationDays ?? 3, 1, VacationRules.MaxDays);
+        var start = await _vacations.StartDateAsync(user.Id);
+        var r = await _vacations.StartAsync(user.Id, start.AddDays(days));
+        return r.Success ? $"On vacation {start:ddd d MMM}, back on {start.AddDays(days):ddd d MMM}." : $"Refused: {r.Message}";
+    });
+
+    [RelayCommand]
+    private Task EndVacation() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        var r = await _vacations.EndEarlyAsync(user.Id);
+        return r.Success ? "Vacation ended (or cancelled before it started)." : $"Refused: {r.Message}";
+    });
+
+    /// <summary>Deletes every vacation, so the 60 days don't hold the next one back. Frozen days go with them.</summary>
+    [RelayCommand]
+    private Task ClearVacations() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        int deleted;
+        await using (var db = await _dbFactory.CreateDbContextAsync())
+            deleted = await db.Vacations.Where(v => v.UserId == user.Id).ExecuteDeleteAsync();
+        await _streaks.RecalculateAsync(user.Id, AppClock.Today);
+        return $"Deleted {deleted} vacation(s); the cooldown is clear.";
     });
 
     // ===== Points =====

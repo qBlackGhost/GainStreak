@@ -30,6 +30,7 @@ public class AppDbContext : DbContext
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
+    public DbSet<Vacation> Vacations => Set<Vacation>();
     public DbSet<LiveWorkout> LiveWorkouts => Set<LiveWorkout>();
     public DbSet<CardioSession> CardioSessions => Set<CardioSession>();
     public AppDbContext() { }
@@ -246,6 +247,13 @@ public class AppDbContext : DbContext
         b.Entity<MissedDayChoice>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
         b.Entity<MissedDayChoice>().HasOne(c => c.User).WithMany()
             .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
+
+        // Vacations (0.19.0): a few rows per user, read whole
+        b.Entity<Vacation>().HasIndex(v => new { v.UserId, v.StartDate });
+        b.Entity<Vacation>().HasOne(v => v.User).WithMany()
+            .HasForeignKey(v => v.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Vacation>().HasOne(v => v.VisitingCity).WithMany()
+            .HasForeignKey(v => v.VisitingCityId).OnDelete(DeleteBehavior.SetNull);
 
         SeedExercises(b);
         SeedSplits(b);

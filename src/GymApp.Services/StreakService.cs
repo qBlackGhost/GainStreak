@@ -96,7 +96,8 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
         await using var db = await dbFactory.CreateDbContextAsync();
         var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
         var monday = PointsCalculator.MondayOf(today);
-        return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6), rule), today);
+        return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6), rule), today,
+            rule.Frozen);
     }
 
     /// <summary>The missed day the streak last broke on, or null if it never broke.</summary>
@@ -119,13 +120,21 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
     }
 
     /// <summary>The rest-day rule (0.18.1) as the calculator takes it: from the user's stored start day (today when it
-    /// isn't stored yet, as <see cref="RecalculateAsync"/> will store it), with the dates of their verified workouts.</summary>
+    /// isn't stored yet, as <see cref="RecalculateAsync"/> will store it), with the dates of their verified workouts
+    /// and their vacation days (0.19.0).</summary>
     internal static async Task<RestDayRule> LoadRestRuleAsync(AppDbContext db, int userId, DateOnly today)
     {
         var from = await db.Users.Where(u => u.Id == userId).Select(u => u.StreakRestRuleFrom).FirstOrDefaultAsync() ?? today;
         var verified = await db.WorkoutLogs.Where(w => w.UserId == userId && w.Verified == true).Select(w => w.Date).ToListAsync();
-        return new RestDayRule(from, verified.ToHashSet());
+        var vacations = await LoadVacationsAsync(db, userId);
+        return new RestDayRule(from, verified.ToHashSet(), vacations.Count == 0 ? null : VacationRules.FrozenDays(vacations));
     }
+
+    /// <summary>The user's vacations (0.19.0), oldest first, as the rules take them.</summary>
+    internal static async Task<List<VacationPeriod>> LoadVacationsAsync(AppDbContext db, int userId) =>
+        await db.Vacations.Where(v => v.UserId == userId).OrderBy(v => v.StartDate)
+            .Select(v => new VacationPeriod(v.StartDate, v.ReturnDate, v.EndedEarlyOn))
+            .ToListAsync();
 
     /// <summary>The user's missed-day choices, keyed by the missed date, as the calculator takes them.</summary>
     internal static async Task<Dictionary<DateOnly, MissChoice>> LoadChoicesAsync(AppDbContext db, int userId) =>

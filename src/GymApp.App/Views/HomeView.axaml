@@ -168,6 +168,16 @@
             <Setter Property="BorderThickness" Value="2"/>
             <Setter Property="TextElement.Foreground" Value="{DynamicResource ColdText}"/>
         </Style>
+        <Style Selector="Border.tile.vacation">
+            <Setter Property="Background" Value="{DynamicResource IceTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource IceTintLine}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource IceText}"/>
+        </Style>
+        <Style Selector="Border.tile.vacation.today">
+            <Setter Property="BorderBrush" Value="{DynamicResource IceText}"/>
+            <Setter Property="BorderThickness" Value="2"/>
+        </Style>
         <Style Selector="Border.tile.todayDone">
             <Setter Property="Background" Value="{StaticResource TodayDoneBrush}"/>
             <Setter Property="TextElement.Foreground" Value="Black"/>
@@ -359,6 +369,49 @@
 
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- Vacation (19c): away from the home city, on a phone. "Yes" opens the return-date sheet -->
+            <Border Padding="16" CornerRadius="18" BorderThickness="1" Background="{DynamicResource IceTint}"
+                    BorderBrush="{DynamicResource IceTintLine}" IsVisible="{Binding ShowAwayPrompt}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Width="40" Height="40" CornerRadius="12" Background="{DynamicResource IceText}" VerticalAlignment="Top">
+                            <v:Icon Data="{StaticResource IcPlane}" Stroke="{DynamicResource OnInverse}" StrokeThickness="2.2"
+                                    Width="20" Height="20"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Text="{Binding AwayTitle}" FontSize="18" FontWeight="ExtraBold"/>
+                            <TextBlock Text="Looks like you're travelling. Put your streak on vacation and it stays frozen until you're back, for up to 7 days."
+                                       FontSize="14" Classes="soft" TextWrapping="Wrap" IsVisible="{Binding !IsAwayBlocked}"/>
+                            <TextBlock Text="{Binding Vacation.RefusalText}" FontSize="14" Classes="soft" TextWrapping="Wrap"
+                                       IsVisible="{Binding IsAwayBlocked}"/>
+                        </StackPanel>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,1.3*" ColumnSpacing="10" IsVisible="{Binding !IsAwayBlocked}">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" FontSize="14"
+                                Content="Not on vacation" Command="{Binding AwayNoCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="48" FontSize="14"
+                                Content="Yes, freeze my streak" Command="{Binding AwayYesCommand}"/>
+                    </Grid>
+                    <Button Classes="btn outline small" MinHeight="40" HorizontalAlignment="Left" Content="Not now"
+                            Command="{Binding AwayNotNowCommand}" IsVisible="{Binding IsAwayBlocked}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Vacation (0.19.0): "Welcome back!" on the first normal day, or what I'm back just did -->
+            <Border Padding="14,10,8,10" CornerRadius="14" BorderThickness="1" Background="{DynamicResource LimeTint}"
+                    BorderBrush="{DynamicResource LimeTintLineStrong}"
+                    IsVisible="{Binding VacationNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.6"
+                            Width="18" Height="18" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{Binding VacationNote}" FontSize="14" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Classes="bare" Width="36" Height="36" Command="{Binding DismissVacationNoteCommand}"
+                            AutomationProperties.Name="Dismiss">
+                        <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource Soft}" StrokeThickness="2.6" Width="14" Height="14"/>
+                    </Button>
+                </Grid>
+            </Border>
 
             <!-- Phones: once, after a workout stopped by itself at 4 hours or midnight (18b) -->
             <Border Padding="14" CornerRadius="14" BorderThickness="1" Background="{DynamicResource Surface2}"
@@ -708,7 +761,17 @@
                             <StackPanel Spacing="12" IsVisible="{Binding ShowStartRow}">
                                 <TextBlock Text="{Binding StatusText}" FontSize="14" FontWeight="SemiBold" TextAlignment="Center"
                                            HorizontalAlignment="Center"/>
+                                <!-- On vacation (19d): the gyms here lead, Start workout follows -->
                                 <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
+                                        Command="{Binding ShowGymsNearMeCommand}" IsVisible="{Binding ShowNearbyGyms}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                                        <v:Icon Data="{StaticResource IcPin}" Stroke="Black" StrokeThickness="2.4"
+                                                Width="18" Height="18" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Show me gyms near me" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="btn" Classes.primary="{Binding !ShowNearbyGyms}" Classes.outline="{Binding ShowNearbyGyms}"
+                                        Classes.strong="{Binding ShowNearbyGyms}" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
                                         Content="{Binding StartLabel}" Command="{Binding StartWorkoutCommand}" IsVisible="{Binding CanStart}"/>
                                 <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
                                         Content="Pick a split" Command="{Binding ShowSplitsCommand}" IsVisible="{Binding ShowPickSplit}"/>
@@ -744,6 +807,11 @@
 
                             <TextBlock Text="{Binding GymNotice}" FontSize="12" Classes="muted"
                                        IsVisible="{Binding GymNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                            <!-- Vacation (0.19.0): end it early, or cancel one that starts tomorrow -->
+                            <Button Classes="link" FontSize="13" MinHeight="40" HorizontalAlignment="Center"
+                                    Content="{Binding Vacation.EndLabel}" Command="{Binding Vacation.AskEndCommand}"
+                                    IsVisible="{Binding ShowImBack}"/>
                         </StackPanel>
                     </Panel>
                 </Grid>
@@ -791,6 +859,12 @@
                                 <Border Width="10" Height="10" CornerRadius="3" BorderBrush="{DynamicResource Faint}" BorderThickness="1" VerticalAlignment="Center"/>
                                 <TextBlock Text="Upcoming"/>
                             </StackPanel>
+                            <!-- Only in a week with vacation days (0.19.0) -->
+                            <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding HasVacation}">
+                                <v:Icon Data="{StaticResource IcMoon}" Stroke="{DynamicResource IceText}" StrokeThickness="2.4"
+                                        Width="12" Height="12" VerticalAlignment="Center"/>
+                                <TextBlock Text="Vacation"/>
+                            </StackPanel>
                         </WrapPanel>
                     <ItemsControl x:Name="WeekTiles" Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding Chips}">
                         <ItemsControl.ItemsPanel>
@@ -800,7 +874,8 @@
                             <DataTemplate x:DataType="vm:WeekChipViewModel">
                                 <Border Classes="tile" Classes.rest="{Binding IsRest}" Classes.missed="{Binding IsMissed}"
                                         Classes.upcoming="{Binding IsUpcoming}" Classes.todayOpen="{Binding IsTodayOpen}"
-                                        Classes.todayDone="{Binding IsTodayDone}" ToolTip.Tip="{Binding Tip}">
+                                        Classes.todayDone="{Binding IsTodayDone}" Classes.vacation="{Binding IsVacation}"
+                                        Classes.today="{Binding IsToday}" ToolTip.Tip="{Binding Tip}">
                                     <StackPanel Spacing="6" VerticalAlignment="Center">
                                         <!-- Phones: the day over its mark, so a 360 px row of seven fits -->
                                         <v:PhoneGrid ColumnDefinitions="*,Auto" MinHeight="16" PhoneStack="True" PhoneStackSpacing="2">
@@ -813,6 +888,8 @@
                                                         Width="14" Height="14" IsVisible="{Binding IsMadeUp}"/>
                                                 <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource MissRed}" StrokeThickness="3"
                                                         Width="14" Height="14" IsVisible="{Binding IsMissed}"/>
+                                                <v:Icon Data="{StaticResource IcMoon}" Stroke="{DynamicResource IceText}" StrokeThickness="2.4"
+                                                        Width="13" Height="13" IsVisible="{Binding IsVacation}"/>
                                             </Panel>
                                         </v:PhoneGrid>
                                         <TextBlock Classes="tileName" Text="{Binding Name}" FontWeight="Bold"
@@ -1176,6 +1253,34 @@
         </v:Sheet>
     </Border>
 
+    <!-- Vacation (19c): "Going away?", the return date, from the away prompt -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding Vacation.IsSheetOpen}">
+        <v:Sheet Width="460" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ContentControl Content="{Binding Vacation.Sheet}"/>
+        </v:Sheet>
+    </Border>
+
+    <!-- Vacation (0.19.0): I'm back asks first -->
+    <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding Vacation.IsConfirmingEnd}">
+        <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center" DataContext="{Binding Vacation}"
+                 x:DataType="vm:VacationCardViewModel"
+                 Padding="20,20,20,28" CornerRadius="18" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <StackPanel Spacing="10">
+                <TextBlock Text="{Binding EndTitle}" FontSize="22" FontWeight="ExtraBold"/>
+                <TextBlock Text="{Binding EndText}" FontSize="14" Classes="soft" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding Error}" FontSize="13" Classes="error" TextWrapping="Wrap"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,6,0,0">
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Keep it"
+                            Command="{Binding KeepVacationCommand}"/>
+                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                            Content="{Binding EndButton}" Command="{Binding EndCommand}"/>
+                </Grid>
+            </StackPanel>
+        </v:Sheet>
+    </Border>
+
     <!-- Live workout: back after 12 minutes or more away (18b) -->
     <Border Classes="scrim" Background="{DynamicResource Scrim}" Padding="24" IsVisible="{Binding IsReturnOpen}">
         <v:Sheet Width="420" HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -1207,7 +1312,7 @@
                 <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.2" Width="28" Height="28"
                         HorizontalAlignment="Left"/>
                 <TextBlock Text="Verify your workouts" FontSize="22" FontWeight="ExtraBold"/>
-                <TextBlock Text="GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone."
+                <TextBlock Text="GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you."
                            FontSize="14" Classes="soft"/>
                 <TextBlock Text="Pick Precise when your phone asks: approximate location can't tell which gym you're at."
                            FontSize="13" Classes="muted"/>

@@ -1440,6 +1440,9 @@ namespace GymApp.Data.Migrations
                     b.Property<int?>("HomeGymId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastAwayCheckAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Sex")
                         .HasColumnType("TEXT");
 
@@ -1455,6 +1458,9 @@ namespace GymApp.Data.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("VacationPromptDismissedAt")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -1496,6 +1502,42 @@ namespace GymApp.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("UserSchedules");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.Vacation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("EndedEarlyOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("ReturnDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("VisitingCityId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("WelcomeShown")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VisitingCityId");
+
+                    b.HasIndex("UserId", "StartDate");
+
+                    b.ToTable("Vacations");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.WeightLog", b =>
@@ -1953,6 +1995,24 @@ namespace GymApp.Data.Migrations
                     b.Navigation("Split");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.Vacation", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Data.Models.City", "VisitingCity")
+                        .WithMany()
+                        .HasForeignKey("VisitingCityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+
+                    b.Navigation("VisitingCity");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.WeightLog", b =>

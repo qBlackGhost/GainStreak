@@ -787,6 +787,58 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- ===== Vacation (0.19.0): freeze the streak for up to 7 days, once every 2 months ===== -->
+                    <Border Classes="card">
+                        <StackPanel Spacing="14" DataContext="{Binding Vacation}" x:DataType="vm:VacationCardViewModel">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Vacation" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="{x:Static vm:VacationCardViewModel.Blurb}" FontSize="12" Classes="muted" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <v:Icon Data="{StaticResource IcMoon}" Stroke="{DynamicResource IceText}" StrokeThickness="2.2"
+                                            Width="14" Height="14" IsVisible="{Binding HasVacation}"/>
+                                    <TextBlock Text="{Binding StateText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="{Binding RefusalText}" FontSize="13" Classes="soft" TextWrapping="Wrap"
+                                       IsVisible="{Binding RefusalText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <Button Classes="btn outline small" MinHeight="40" HorizontalAlignment="Left" Content="Plan a vacation"
+                                    Command="{Binding PlanCommand}">
+                                <Button.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="CanPlan"/>
+                                        <Binding Path="!IsSheetOpen"/>
+                                    </MultiBinding>
+                                </Button.IsVisible>
+                            </Button>
+                            <Button Classes="btn outline small" MinHeight="40" HorizontalAlignment="Left" Content="{Binding EndLabel}"
+                                    Command="{Binding AskEndCommand}">
+                                <Button.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="CanEnd"/>
+                                        <Binding Path="!IsConfirmingEnd"/>
+                                    </MultiBinding>
+                                </Button.IsVisible>
+                            </Button>
+                            <ContentControl Content="{Binding Sheet}" IsVisible="{Binding IsSheetOpen}"/>
+                            <Border IsVisible="{Binding IsConfirmingEnd}" Padding="14" CornerRadius="12"
+                                    Background="{DynamicResource Fill3}">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Text="{Binding EndTitle}" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{Binding EndText}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding Error}" FontSize="13" Classes="error" TextWrapping="Wrap"
+                                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                                        <Button Classes="btn outline small" MinHeight="40" Content="Keep it" Command="{Binding KeepVacationCommand}"/>
+                                        <Button Classes="btn primary small" MinHeight="40" Padding="18,0" Content="{Binding EndButton}"
+                                                Command="{Binding EndCommand}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
                     <!-- ===== Reminders (16g): the phones only; off until turned on, which asks to notify ===== -->
                     <Border Classes="card" IsVisible="{Binding Reminders.IsSupported}">
                         <StackPanel Spacing="14" DataContext="{Binding Reminders}" x:DataType="vm:RemindersViewModel">

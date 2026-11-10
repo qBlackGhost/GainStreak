@@ -2,6 +2,27 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.19.0
+
+- **Vacation mode:** going away? Put your streak on vacation and it stays frozen until you're back, instead of breaking.
+  - **Up to 7 days, once every 2 months:** pick the day you're back, at most 7 days away. The 2 months count from when a vacation starts, and ending one early still uses it up.
+  - **Frozen, not growing:** on vacation days the streak neither grows nor breaks, and no day is missed. Home shows it on ice: **ON VACATION · FROZEN · Back on …**, with a moon on those days in This week.
+  - **Training on vacation:** a workout verified at a gym still adds a day. One that isn't verified, including any workout logged on the desktop, is logged and earns its points but doesn't add a day.
+  - **Today already logged?** Then the vacation starts tomorrow, so today's workout keeps counting.
+  - **A missed day comes first:** if yesterday's missed day still needs a choice, or a day is owed, settle that before the vacation can start.
+  - **Where:** Profile has a new **Vacation** card on every device: when you're back, or when the next one is available, and **Plan a vacation**.
+  - **I'm back:** end it early from Home or Profile. Today stays frozen and your streak counts again from tomorrow. A vacation that hasn't started yet is cancelled instead, and doesn't use anything up.
+  - **Welcome back!** on the first normal day, on Home and as a 9:00 reminder (with Reminders on). No training-day or missed-day reminders while you're away.
+  - **The week bonus** is judged on your other training days; a week that's all vacation earns none.
+- **"Away from Timișoara? On vacation?" (phones):** when you open the app far from your home city (more than 40 km outside it), Home asks. **Yes, freeze my streak** picks the day you're back; **Not on vacation** isn't asked again on this trip.
+  - **When:** at most every 6 hours, only if location is already allowed and precise; the app never asks for location for this. There's no check without a home city, without a streak to keep, on vacation, or within 2 months of the last one.
+  - **Your location stays on your phone:** it's compared there with your home city and dropped.
+- **Gyms near you, on vacation (phones):** **Show me gyms near me** on Home finds the city you're in and shows its gyms on the map, with **Back to Timișoara** to see home. A workout at one of them is verified and adds a day.
+  - **What's sent:** only your position rounded to about 1 km, to OpenStreetMap, to name the city, and only when you tap. If that doesn't work, or you'd rather not, **Search for the city instead**.
+  - **The city stays** on the map until the vacation ends. Your home city, your gym and your friends' map don't change.
+- **The location prompt** now also mentions noticing trips and gyms near you. The privacy policy says the same.
+- **Migration:** `Vacations` in the app's SQLite (a new `Vacations` table: the dates, the city being visited and whether Welcome back was shown; and two `UserProfiles` columns, the time of the last look for a trip and "Not on vacation"). The server doesn't change.
+
 ## 0.18.2
 
 - **Time your cardio after a workout (phones):** when you finish a workout, GainStreak asks **Continue with a cardio session?** Tap **Continue with cardio** and a timer starts on Home, under the streak card. **Skip** if you're done for the day.

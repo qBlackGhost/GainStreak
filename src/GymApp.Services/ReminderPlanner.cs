@@ -10,14 +10,17 @@ public enum ReminderKind
     /// <summary>A training day with no check-in yet, at the user's time.</summary>
     TrainingDay,
     /// <summary>The morning after a missed training day: the missed-day choice is waiting.</summary>
-    MissedDay
+    MissedDay,
+    /// <summary>The first morning after a vacation (0.19.0): the streak counts again.</summary>
+    WelcomeBack
 }
 
 /// <summary>One local notification: at <see cref="Date"/> <see cref="Time"/> on the phone's clock (so 18:00 stays 18:00
 /// across a daylight saving change). <see cref="Id"/> is the same for the same kind and day, every time it's planned.</summary>
 public record PlannedReminder(ReminderKind Kind, DateOnly Date, TimeOnly Time, string Title, string Body)
 {
-    public int Id => (Kind == ReminderKind.TrainingDay ? 1 : 2) * 1_000_000 + Date.DayNumber % 1_000_000;
+    public int Id => Kind switch { ReminderKind.TrainingDay => 1, ReminderKind.MissedDay => 2, _ => 3 } * 1_000_000
+                     + Date.DayNumber % 1_000_000;
 
     public DateTime LocalTime => Date.ToDateTime(Time);
 
@@ -50,6 +53,8 @@ public record ReminderSettings(bool Enabled, bool TrainingDay, TimeOnly Training
 /// <item><b>Missed day</b>, at 09:00: this morning, while yesterday's miss waits for its choice; and the morning after
 /// each training day planned above, while a streak would be at stake. The phone can't know ahead of time that a day
 /// will be missed, so it plans for it: the check-in replans and drops it.</item>
+/// <item><b>Vacation</b> (0.19.0): nothing on vacation days (<see cref="RestDayRule.Frozen"/>); "Welcome back" at 09:00
+/// on the first normal day after one.</item>
 /// </list>
 /// The streak in a text is the one the user will have that day if they keep to the plan until then.
 /// </summary>
@@ -88,6 +93,9 @@ public static class ReminderPlanner
         for (var i = 0; i < Days; i++)
         {
             var day = today.AddDays(i);
+            if (restRule?.IsFrozen(day) == true) continue;                  // on vacation: kept, nothing planned or added
+            if (restRule?.IsFrozen(day.AddDays(-1)) == true && (i > 0 || clock < ReminderSettings.MissedDayTime))
+                result.Add(WelcomeBack(day));
             var owedToday = i == 0 && !loggedToday && streak.Status is StreakStatus.AtRisk or StreakStatus.NeedsChoice;
             var owedTomorrow = i == 1 && streak.Status == StreakStatus.Shifted;
             var training = owedToday || owedTomorrow
@@ -98,7 +106,7 @@ public static class ReminderPlanner
                 var name = i == 0 && streak.Status is StreakStatus.AtRisk && streak.OwedDay is { } o ? dayName(o) : dayName(day);
                 if (settings.TrainingDay && (i > 0 || clock < settings.TrainingTime))
                     result.Add(Training(day, settings.TrainingTime, name, count));
-                if (settings.MissedDay && count > 0 && i < Days - 1)
+                if (settings.MissedDay && count > 0 && i < Days - 1 && restRule?.IsFrozen(day.AddDays(1)) != true)
                     result.Add(Missed(day.AddDays(1), day, count, _ => name));
             }
 
@@ -118,6 +126,10 @@ public static class ReminderPlanner
         streak > 0
             ? $"Check in when you've trained to keep your {StreakDays(streak)} streak."
             : "Check in when you've trained to start your streak.");
+
+    private static PlannedReminder WelcomeBack(DateOnly day) => new(
+        ReminderKind.WelcomeBack, day, ReminderSettings.MissedDayTime,
+        "Welcome back!", "Your vacation is over, so your streak counts again from today.");
 
     private static PlannedReminder Missed(DateOnly on, DateOnly missed, int streak, Func<DateOnly, string?> dayName) => new(
         ReminderKind.MissedDay, on, ReminderSettings.MissedDayTime,

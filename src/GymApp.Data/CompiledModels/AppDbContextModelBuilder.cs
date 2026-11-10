@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("368e67f7-0bea-49c9-8393-7ec51e15fce0"), entityTypeCount: 24)
+            : base(skipDetectChanges: false, modelId: new Guid("a8074a27-f601-4110-b88c-c7cfe0c26368"), entityTypeCount: 25)
         {
         }
 
@@ -38,6 +38,7 @@ namespace GymApp.Data.CompiledModels
             var userDayExercise = UserDayExerciseEntityType.Create(this);
             var userProfile = UserProfileEntityType.Create(this);
             var userSchedule = UserScheduleEntityType.Create(this);
+            var vacation = VacationEntityType.Create(this);
             var weightLog = WeightLogEntityType.Create(this);
             var workoutLog = WorkoutLogEntityType.Create(this);
             var workoutSplit = WorkoutSplitEntityType.Create(this);
@@ -77,6 +78,8 @@ namespace GymApp.Data.CompiledModels
             UserProfileEntityType.CreateForeignKey3(userProfile, user);
             UserScheduleEntityType.CreateForeignKey1(userSchedule, workoutSplit);
             UserScheduleEntityType.CreateForeignKey2(userSchedule, user);
+            VacationEntityType.CreateForeignKey1(vacation, user);
+            VacationEntityType.CreateForeignKey2(vacation, city);
             WeightLogEntityType.CreateForeignKey1(weightLog, user);
             WorkoutLogEntityType.CreateForeignKey1(workoutLog, gym);
             WorkoutLogEntityType.CreateForeignKey2(workoutLog, splitDay);
@@ -104,6 +107,7 @@ namespace GymApp.Data.CompiledModels
             UserDayExerciseEntityType.CreateAnnotations(userDayExercise);
             UserProfileEntityType.CreateAnnotations(userProfile);
             UserScheduleEntityType.CreateAnnotations(userSchedule);
+            VacationEntityType.CreateAnnotations(vacation);
             WeightLogEntityType.CreateAnnotations(weightLog);
             WorkoutLogEntityType.CreateAnnotations(workoutLog);
             WorkoutSplitEntityType.CreateAnnotations(workoutSplit);

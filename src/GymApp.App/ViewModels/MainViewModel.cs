@@ -183,7 +183,8 @@ public partial class MainViewModel : ViewModelBase
         _sp.GetService<ReminderSync>()?.RequestRefresh();   // a screen change may follow a choice or a new split (16g)
     }
 
-    private async Task RefreshStreakAsync()
+    /// <summary>The app bar's streak, again: after a screen change, or a vacation starting or ending (0.19.0).</summary>
+    public async Task RefreshStreakAsync()
     {
         if (_session.CurrentUser is not { } user) return;
         // During a live workout today's log may already exist (it's written silently at half): the bar shows the streak
@@ -270,7 +271,7 @@ public partial class MainViewModel : ViewModelBase
     public void ShowProfile() => Open(_sp.GetRequiredService<ProfileViewModel>, root: false);
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
-    public void ShowGyms(bool pickToday = false, bool chooseCity = false, bool addGym = false)
+    public void ShowGyms(bool pickToday = false, bool chooseCity = false, bool addGym = false, bool nearMe = false)
     {
         var first = true;
         Open(() =>
@@ -280,6 +281,7 @@ public partial class MainViewModel : ViewModelBase
             if (first && pickToday) vm.PickTodayWhenLoaded();
             if (first && chooseCity) vm.ChooseCityWhenLoaded();
             if (first && addGym) vm.AddGymWhenLoaded();
+            if (first && nearMe) vm.FindNearbyWhenLoaded();   // on vacation: the city here and its gyms (19d)
             first = false;
             return vm;
         }, root: false);

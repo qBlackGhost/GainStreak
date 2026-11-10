@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.VacationSheetView"
+             x:DataType="vm:VacationSheetViewModel">
+    <!-- "Going away?" (0.19.0, the GainStreak Mobile canvas's Home on vacation): seven return dates, the frozen days
+         they give, and Start vacation. Hosted by Profile's Vacation card and (19c) Home's away prompt. -->
+
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Button.day">
+            <Setter Property="MinHeight" Value="60"/>
+            <Setter Property="Margin" Value="2.5"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.day.range">
+            <Setter Property="Background" Value="{DynamicResource IceTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource IceTintLine}"/>
+        </Style>
+        <Style Selector="Button.day.on">
+            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+        </Style>
+        <Style Selector="Button.day.on:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource InverseHover}"/>
+            <Setter Property="Foreground" Value="{DynamicResource OnInverse}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Spacing="14">
+        <StackPanel Spacing="4">
+            <TextBlock Text="Going away?" FontSize="22" FontWeight="ExtraBold"/>
+            <TextBlock Text="When are you back?" FontSize="14" Classes="soft"/>
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding Days}" Margin="-2.5">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:VacationDayViewModel">
+                    <Button Classes="day" Classes.on="{Binding IsSelected}" Classes.range="{Binding IsInRange}"
+                            Command="{Binding PickCommand}" AutomationProperties.Name="{Binding Label}">
+                        <StackPanel Spacing="2" HorizontalAlignment="Center">
+                            <TextBlock Text="{Binding Weekday}" FontSize="10" FontWeight="SemiBold" Opacity="0.8" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding Number}" FontSize="18" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Border Padding="14,12" CornerRadius="12" Background="{DynamicResource IceTint}"
+                BorderBrush="{DynamicResource IceTintLine}" BorderThickness="1">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <v:Icon Data="{StaticResource IcMoon}" Stroke="{DynamicResource IceText}" StrokeThickness="2.2"
+                        Width="18" Height="18" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Spacing="1">
+                    <TextBlock Text="{Binding FrozenRange}" FontSize="14" FontWeight="Bold"/>
+                    <TextBlock Text="{Binding FrozenDetail}" FontSize="12" Classes="soft"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TextBlock Text="{Binding StartsTomorrowNote}" FontSize="13" Classes="soft"
+                   IsVisible="{Binding StartsTomorrowNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+        <TextBlock Text="Your streak stays frozen until you're back. A workout at a gym still adds a day."
+                   FontSize="14" Classes="soft"/>
+        <TextBlock Text="{Binding NextAvailable}" FontSize="12" Classes="muted"/>
+        <TextBlock Text="{Binding Error}" FontSize="13" Classes="error"
+                   IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+        <Grid ColumnDefinitions="*,1.4*" ColumnSpacing="10" Margin="0,2,0,0">
+            <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15" Content="Cancel"
+                    Command="{Binding CancelCommand}"/>
+            <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="50" FontSize="15"
+                    Content="Start vacation" Command="{Binding StartCommand}" IsEnabled="{Binding !IsBusy}"/>
+        </Grid>
+    </StackPanel>
+</UserControl>

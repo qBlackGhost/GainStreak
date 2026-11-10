@@ -71,12 +71,19 @@ public partial class ProfileViewModel : ViewModelBase
 
     public ProfileViewModel(ProfileService profiles, IAccountService accounts, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell,
-        ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync)
+        ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync,
+        VacationService vacations)
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         Reminders = new RemindersViewModel(reminders, notifications, reminderSync, () => session.CurrentUser?.Id);
         _ = Reminders.LoadAsync();
+        Vacation = new VacationCardViewModel(vacations, () => session.CurrentUser?.Id, async () =>
+        {
+            await ReloadAsync(refillForm: false);   // the streak on ice, or not
+            await _shell().RefreshStreakAsync();
+        });
+        _ = Vacation.LoadAsync();
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
         ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
         _ = ReloadAsync();
@@ -86,6 +93,9 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Reminders (16g): the phones only.</summary>
     public RemindersViewModel Reminders { get; }
+
+    /// <summary>Vacation (0.19.0): every head.</summary>
+    public VacationCardViewModel Vacation { get; }
     private static DateOnly Today => AppClock.Today;
 
     public IReadOnlyList<Sex> Sexes { get; } = Enum.GetValues<Sex>();

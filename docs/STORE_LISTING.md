@@ -31,11 +31,13 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 
 The email address also receives codes, for confirming it and resetting the password, sent through Google's mail servers.
 
-**Other services the phone talks to:** OpenStreetMap's map tiles, Nominatim (city search) and the Overpass API (the gyms in a city). They see the phone's IP address and the area asked for, nothing about the account.
+**Other services the phone talks to:** OpenStreetMap's map tiles, Nominatim (city search, and the city at a rounded position for "Show me gyms near me", Phase 19) and the Overpass API (the gyms in a city). They see the phone's IP address and the area asked for, nothing about the account.
 
 **Used on the phone only (Phase 18):** precise location, during a live workout on Home. It's read at Start workout and after each set until the phone is found near one of the user's gyms, compared on the phone with the gyms already saved there, and then dropped. Only the result is kept, on the phone: the workout is verified, and at which gym. Positions aren't stored, logged, or sent to the server or OpenStreetMap. Foreground only: no background location permission on either platform. The desktop never reads it.
 
-**Not collected:** location (see above: it never leaves the phone; the map centres on the home city you pick), contacts, photos, health-platform data, advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
+**Phase 19 (vacation):** two more uses, both foreground only. (1) **Noticing a trip:** when Home appears, at most every 6 hours and only if location is already allowed and precise, one fix is compared on the phone with the home city's box and dropped; only the time of the check is stored. (2) **Show me gyms near me:** on the user's tap, one fix is rounded to 2 decimals (about 1 km) and sent to OpenStreetMap's Nominatim, at city level, to name the city; the city is kept on the phone. This is the only position that leaves the phone, and it never reaches the GainStreak server.
+
+**Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health-platform data, advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
 
 ## Google Play: Data safety form
 
@@ -53,8 +55,11 @@ The email address also receives codes, for confirming it and resetting the passw
     - Crash logs and diagnostics: collected only when the user attaches them to feedback; optional; used for analytics (bug fixing).
   - **Messages:**
     - Other in-app messages (feedback text, notes on reports about other users): collected; optional; used for developer communications and fraud prevention, security and compliance.
-- **Not collected:** location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files, device ids.
-- **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only) but **not collected and not shared**: Play's form only covers data sent off the device, and the position is used on the phone only. No background location, so no location permissions declaration is needed in the Play Console.
+  - **Location (from 0.19.0):**
+    - Approximate location: collected; shared; processed ephemerally; optional; used for app functionality. Only the rounded position (about 1 km) sent to OpenStreetMap's Nominatim when the user taps "Show me gyms near me" on vacation.
+- **Not collected:** precise location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files, device ids.
+- **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only). The precise position is **not collected and not shared**: it's used on the phone only (for the rounded one, see Phase 19 below). No background location, so no location permissions declaration is needed in the Play Console.
+- **Approximate location (Phase 19), decided:** declared as above. "Show me gyms near me" sends a rounded position (about 1 km) to Nominatim, a third party (OpenStreetMap), on the user's tap; Play counts data sent off the device as collected, and sent to a third party that isn't the developer's service provider as shared. Ephemeral: GainStreak doesn't keep it, and it isn't used for anything but naming the city. Enter it in Play Console before 0.19.0 goes to the store.
 
 ## App Store: App Privacy ("nutrition label")
 
@@ -64,9 +69,12 @@ The email address also receives codes, for confirming it and resetting the passw
   - User Content: Other User Content, meaning shared splits and workouts, check-ins, feedback and reports about other users (App Functionality).
   - Usage Data: Other Usage Data, meaning points, streak and level (App Functionality).
   - Diagnostics: Crash Data and Other Diagnostic Data, only when attached to feedback (App Functionality).
-- **Location (Phase 18):** **not collected.** Apple counts data as collected only when it's sent off the device, and the position never is. The permission prompt shows `NSLocationWhenInUseUsageDescription` from `Info.plist`: "GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone." When in use only, no "Always".
+- **Location (Phase 18):** precise location is **not collected.** Apple counts data as collected only when it's sent off the device, and the precise position never is (for the rounded one, see Phase 19 below). The permission prompt shows `NSLocationWhenInUseUsageDescription` from `Info.plist`: "GainStreak checks that you're at one of your gyms during a workout. Your location stays on your phone." When in use only, no "Always".
+- **Coarse Location (Phase 19), decided:** declared under "Data not linked to the user" below: the rounded position sent to Nominatim for "Show me gyms near me". Apple counts data as collected when it leaves the device and a party can keep it longer than the request needs, and OpenStreetMap's servers keep request logs for a while. Precise location stays not collected. Enter it in App Store Connect before 0.19.0 goes to the store.
+- **The prompt (Phase 19):** `NSLocationWhenInUseUsageDescription` now reads "GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you." Android's note before its prompt says the same.
 - **Data used to track you:** none.
-- **Data not linked to the user:** none beyond the above.
+- **Data not linked to the user:**
+  - Location: Coarse Location (App Functionality), from 0.19.0. Not used for tracking.
 - **Export compliance:** `ITSAppUsesNonExemptEncryption` is false in `Info.plist` (HTTPS only), so no questions on upload.
 
 ## Location: notes for the stores (Phase 18)

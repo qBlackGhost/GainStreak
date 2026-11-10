@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.UserProfile",
                 typeof(UserProfile),
                 baseEntityType,
-                propertyCount: 13,
+                propertyCount: 15,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -88,6 +88,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(UserProfile).GetField("<HomeGymId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
 
+            var lastAwayCheckAt = runtimeEntityType.AddProperty(
+                "LastAwayCheckAt",
+                typeof(DateTime?),
+                propertyInfo: typeof(UserProfile).GetProperty("LastAwayCheckAt", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<LastAwayCheckAt>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
             var sex = runtimeEntityType.AddProperty(
                 "Sex",
                 typeof(Sex?),
@@ -124,6 +131,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(UserProfile).GetProperty("UserId", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(UserProfile).GetField("<UserId>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0);
+
+            var vacationPromptDismissedAt = runtimeEntityType.AddProperty(
+                "VacationPromptDismissedAt",
+                typeof(DateTime?),
+                propertyInfo: typeof(UserProfile).GetProperty("VacationPromptDismissedAt", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<VacationPromptDismissedAt>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var key = runtimeEntityType.AddKey(
                 new[] { id });

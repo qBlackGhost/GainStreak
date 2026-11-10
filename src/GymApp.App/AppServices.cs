@@ -72,6 +72,8 @@ public static class AppServices
         sc.AddTransient(sp => new ReminderService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
         sc.AddSingleton<ReminderSync>();
         sc.AddSingleton<LiveWorkoutWatcher>();   // the nudge, the return popup and the 4-hour stop (18b)
+        sc.AddSingleton<AwayWatcher>();   // notices a trip away from the home city (0.19.0)
+        sc.AddTransient<NearbyCityFinder>();   // "Show me gyms near me" on vacation (0.19.0)
         sc.AddSingleton<MainViewModel>();
         sc.AddSingleton<Func<MainViewModel>>(sp => () => sp.GetRequiredService<MainViewModel>());
         sc.AddTransient<LoginViewModel>();
@@ -85,6 +87,7 @@ public static class AppServices
         sc.AddTransient<PointsService>();
         sc.AddTransient<WorkoutService>();
         sc.AddTransient<MissedDayService>();
+        sc.AddTransient<VacationService>();
         sc.AddTransient<ExerciseService>();
         sc.AddTransient<DayExerciseService>();
         sc.AddTransient<SetService>();

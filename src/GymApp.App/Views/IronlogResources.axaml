@@ -71,6 +71,7 @@
                 <SolidColorBrush x:Key="Ice" Color="#5CB8FF"/>
                 <SolidColorBrush x:Key="IceText" Color="#8FD0FF"/>
                 <SolidColorBrush x:Key="IceTintLine" Color="#1E3F5C"/>
+                <SolidColorBrush x:Key="IceTint" Color="#0A1520"/>
                 <!-- Lime-tinted backgrounds -->
                 <SolidColorBrush x:Key="LimeTint" Color="#10140A"/>
                 <SolidColorBrush x:Key="LimeTintLine" Color="#2E3A12"/>
@@ -131,6 +132,7 @@
                 <SolidColorBrush x:Key="Ice" Color="#1C7ED6"/>
                 <SolidColorBrush x:Key="IceText" Color="#1668B3"/>
                 <SolidColorBrush x:Key="IceTintLine" Color="#A9D2F5"/>
+                <SolidColorBrush x:Key="IceTint" Color="#EAF4FD"/>
                 <SolidColorBrush x:Key="LimeTint" Color="#EFF7D6"/>
                 <SolidColorBrush x:Key="LimeTintLine" Color="#C9DD8E"/>
                 <SolidColorBrush x:Key="LimeTintLineStrong" Color="#B9D27A"/>
@@ -245,6 +247,7 @@
         <StreamGeometry x:Key="IcChevronRight">M9 6l6 6-6 6</StreamGeometry>
         <StreamGeometry x:Key="IcChevronDown">M6 9l6 6 6-6</StreamGeometry>
         <StreamGeometry x:Key="IcMoon">M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z</StreamGeometry>
+        <StreamGeometry x:Key="IcPlane">M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z</StreamGeometry>
         <!-- Filled, for a Path rather than an Icon -->
         <StreamGeometry x:Key="IcStar">M12 2l3 7 7 0.6-5.3 4.7L18.3 22 12 18l-6.3 4 1.6-7.7L2 9.6 9 9z</StreamGeometry>
         <StreamGeometry x:Key="IcBolt">M13 3L5 14h6l-1 7 8-11h-6z</StreamGeometry>

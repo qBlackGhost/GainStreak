@@ -32,5 +32,11 @@ public class UserProfile
     public int? HomeGymId { get; set; }
     public Gym? HomeGym { get; set; }
 
+    /// <summary>"Not on vacation" on the away prompt (0.19.0): not asked again until a fix sees the user back home.</summary>
+    public DateTime? VacationPromptDismissedAt { get; set; }
+
+    /// <summary>The last time Home looked for a trip away from the home city (0.19.0), at most every 6 hours.</summary>
+    public DateTime? LastAwayCheckAt { get; set; }
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }
