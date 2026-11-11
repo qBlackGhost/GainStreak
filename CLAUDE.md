@@ -64,7 +64,7 @@ The production server never migrates on start: `docker run ... gymapp-server mig
 
 ## Versioning and changelog
 
-The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.<fix>`: the phase number matches the implementation plan in `docs/`. New features and migrations open a new phase (`0.N.0`); `0.N.x` is fixes with no schema changes. Every user-visible change gets an entry in `CHANGELOG.md` in the existing style: bold lead-ins, written for testers, ending with a `**Migration:**` line naming the database when there is one. Commit subjects start with the version, e.g. `0.15.6: ...`.
+The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.<fix>`: the phase number matches the phase spec `docs/PHASE_<N>_*.md` (the original plan, `docs/GymApp_Implementation_Plan.docx`, covers Phases 0 to 12 and is no longer updated). New features and migrations open a new phase (`0.N.0`); `0.N.x` is fixes with no schema changes. Every user-visible change gets an entry in `CHANGELOG.md` in the existing style: bold lead-ins, written for testers, ending with a `**Migration:**` line naming the database when there is one. Commit subjects start with the version, e.g. `0.15.6: ...`.
 
 ## Phase specs
 

@@ -384,7 +384,7 @@ The version is set once in `Directory.Build.props` and shown at the bottom of Pr
 
 Before the first public release the version is **0.&lt;phase&gt;.&lt;fix&gt;**:
 
-- **0.&lt;phase&gt;.0**: the implementation plan's phase is done (0.14.0 is Phase 14). New features and migrations come with a new phase.
+- **0.&lt;phase&gt;.0**: the phase's spec in `docs/PHASE_<N>_*.md` is done (0.14.0 is Phase 14). New features and migrations come with a new phase.
 - **0.&lt;phase&gt;.x**: fixes and small changes within that phase, with no schema changes.
 - **1.0.0**: the first public release. After it, 1.0.x is bug fixes only, 1.x.0 new features (migrations allowed) and 2.0.0 a breaking change, such as a migration that can't carry existing data forward or a change to seeded ids.
 
