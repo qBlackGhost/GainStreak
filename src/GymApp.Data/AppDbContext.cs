@@ -29,6 +29,7 @@ public class AppDbContext : DbContext
     public DbSet<SyncState> SyncStates => Set<SyncState>();
     public DbSet<Friendship> Friendships => Set<Friendship>();
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
+    public DbSet<FriendInvite> FriendInvites => Set<FriendInvite>();
     public DbSet<MissedDayChoice> MissedDayChoices => Set<MissedDayChoice>();
     public DbSet<Vacation> Vacations => Set<Vacation>();
     public DbSet<LiveWorkout> LiveWorkouts => Set<LiveWorkout>();
@@ -242,6 +243,13 @@ public class AppDbContext : DbContext
             .HasForeignKey(x => x.BlockerId).OnDelete(DeleteBehavior.Cascade);
         b.Entity<UserBlock>().HasOne(x => x.Blocked).WithMany()
             .HasForeignKey(x => x.BlockedId).OnDelete(DeleteBehavior.Cascade);
+
+        // Friend invite codes (0.21.0): one per user, unique; deleting the user removes it
+        b.Entity<FriendInvite>().HasKey(x => x.UserId);
+        b.Entity<FriendInvite>().Property(x => x.Code).HasMaxLength(10);
+        b.Entity<FriendInvite>().HasIndex(x => x.Code).IsUnique();
+        b.Entity<FriendInvite>().HasOne(x => x.User).WithMany()
+            .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
 
         // Missed-day choices: one per missed day, keyed by the missed date. Choice is stored as an int
         b.Entity<MissedDayChoice>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();

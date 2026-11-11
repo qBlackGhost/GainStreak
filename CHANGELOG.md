@@ -2,6 +2,18 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.21.0
+
+- **Add friends with a QR code:** in **Friends → Add friends**, tap **Show my QR code**. A friend scans it with their phone's camera, and GainStreak opens on their Friends tab with **"yourname wants to be your friend"**. They tap **Accept** and you're friends at once, with no request to wait on.
+  - **No app yet?** The link takes them to the App Store or Google Play first. Once they have the app, they scan again.
+  - **Copy link or Share** to send it in a message instead. The link works the same as the code. On a computer, the link shows the QR code to scan with a phone.
+  - **Reset link** makes a new code and link; the old ones stop working. Use it if a link got somewhere it shouldn't.
+  - **Offline:** the sheet shows your saved link. Opening someone's link offline says so, with **Try again**.
+  - **Opened before you've signed in?** Sign in first, and Friends opens with the invite.
+  - **The usual rules hold:** 50 friends at most, and a code from someone you blocked, or who blocked you, doesn't work. Your username isn't in the link.
+- **The privacy policy** has a row for the invite code.
+- **Migration:** `FriendInvites` on the server (a new `FriendInvites` table: one code per account, deleted with it) and in the app's SQLite (the same table, for the TestBench's local mode).
+
 ## 0.20.0
 
 - **Your workout in the Dynamic Island (iPhone):** leave the app during a workout and the Dynamic Island shows how much of it you've done, as a ring and a percent. Touch and hold it for the day, the next exercise, your sets so far and a running timer. iPhones without a Dynamic Island show the same on the Lock Screen.

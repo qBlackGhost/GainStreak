@@ -104,6 +104,31 @@
         </Style>
         <Style Selector="TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Username (at least 3 letters)"/></Style>
         <Style Selector=".phone TextBox#SearchBox"><Setter Property="PlaceholderText" Value="Add friend by username"/></Style>
+        <!-- Phase 21: "Show my QR code" in Add friends, and the invite card's message icon -->
+        <Style Selector="Button.qrRow">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="MinHeight" Value="58"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLine}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.qrRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLineStrong}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Border.inviteIcon">
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Soft}"/>
+        </Style>
+        <Style Selector="Border.inviteIcon.good">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextElement.Foreground" Value="Black"/>
+        </Style>
     </UserControl.Styles>
     <Grid>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
@@ -131,6 +156,61 @@
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
             <TextBlock Text="{Binding StaleNotice}" Classes="muted" TextWrapping="Wrap"
                        IsVisible="{Binding StaleNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+            <!-- A friend invite from a scanned QR code or an opened link (Phase 21, the canvas's Friends · Invite from a QR code) -->
+            <Border Padding="14" CornerRadius="18" Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}"
+                    BorderThickness="1" IsVisible="{Binding HasInvite}">
+                <StackPanel Spacing="12">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <v:Icon Data="{StaticResource IcQr}" Width="14" Height="14" StrokeThickness="2.2" Stroke="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                        <TextBlock Text="FRIEND INVITE" FontSize="11" FontWeight="Bold" LetterSpacing="0.8" Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="12" MinHeight="44" IsVisible="{Binding IsInviteChecking}">
+                        <ProgressBar IsIndeterminate="True" Width="80" VerticalAlignment="Center"/>
+                        <TextBlock Text="Checking the invite…" FontSize="14" Classes="soft" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="12" IsVisible="{Binding IsInviteAsk}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Border Classes="avatar" Width="48" Height="48" CornerRadius="24">
+                                <TextBlock Text="{Binding InviterInitials}" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                <TextBlock FontSize="16">
+                                    <Run Text="{Binding InviterName}" FontWeight="Bold"/>
+                                    <Run Text="wants to be your friend"/>
+                                </TextBlock>
+                                <TextBlock Text="Accept and you'll see each other on the leaderboard." FontSize="12" Classes="muted"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="Not now" Command="{Binding DismissInviteCommand}"/>
+                            <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="Accept" Command="{Binding AcceptInviteCommand}"/>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="12" IsVisible="{Binding IsInviteMessage}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Border Classes="avatar inviteIcon" Classes.good="{Binding IsInviteGood}">
+                                <v:Icon Data="{Binding InviteIcon, Converter={x:Static v:FriendsView.IconFor}}" Width="20" Height="20" StrokeThickness="2.2"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="{Binding InviteMessage}" FontSize="14" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="btn" Classes.light="{Binding !CanRetryInvite}" Classes.outline="{Binding CanRetryInvite}"
+                                    Grid.ColumnSpan="{Binding CanRetryInvite, Converter={x:Static v:FriendQrSheet.SpanWhen}}"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="{Binding InviteOkLabel}" Command="{Binding DismissInviteCommand}"/>
+                            <Button Grid.Column="1" Classes="btn light" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="Try again" Command="{Binding RetryInviteCommand}" IsVisible="{Binding CanRetryInvite}"/>
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
 
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
                 <StackPanel x:Name="LeftColumn" Spacing="24">
@@ -274,6 +354,20 @@
                             </Grid>
                             <TextBlock Text="{Binding SearchHint}" FontSize="12" Classes="error"
                                        IsVisible="{Binding SearchHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <!-- Phase 21: your QR code and link -->
+                            <Button Classes="qrRow" Command="{Binding ShowQrCommand}" AutomationProperties.Name="Show my QR code">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Accent}" VerticalAlignment="Center">
+                                        <v:Icon Data="{StaticResource IcQr}" Width="20" Height="20" Stroke="Black" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Show my QR code" FontSize="14" FontWeight="Bold"/>
+                                        <TextBlock Text="Friends scan it to add you, or send them the link." FontSize="12" Classes="muted"/>
+                                    </StackPanel>
+                                    <v:Icon Grid.Column="2" Data="{StaticResource IcChevronRight}" Width="18" Height="18" StrokeThickness="2.2"
+                                            Stroke="{DynamicResource Muted}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
                             <ItemsControl ItemsSource="{Binding Results}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FoundUserViewModel">
@@ -356,6 +450,7 @@
         </ScrollViewer>
     </DockPanel>
 
+    <v:FriendQrSheet DataContext="{Binding Qr}"/>
     <v:ReportUserDialog DataContext="{Binding Report}"/>
     </Grid>
 </UserControl>

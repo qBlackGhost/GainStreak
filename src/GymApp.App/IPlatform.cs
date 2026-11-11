@@ -61,4 +61,10 @@ public interface IPlatform
 
     /// <summary>Apple Health on iOS (Phase 20); every other head has none.</summary>
     IHealthStore CreateHealthStore() => new NoHealthStore();
+
+    /// <summary>Whether <see cref="Share"/> opens the system's share sheet (phones). The desktop has Copy link only.</summary>
+    bool CanShare => false;
+
+    /// <summary>The system's share sheet with <paramref name="text"/> (an invite link, Phase 21).</summary>
+    void Share(string text) { }
 }

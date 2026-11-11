@@ -182,6 +182,92 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
             .ToList();
     }
 
+    // ---- invites (Phase 21): showing your code is your request, so accepting one makes you friends at once ----
+
+    public const string UnknownInviteError = "This invite link doesn't work any more. Ask for a new one.";
+    public const string OwnInviteError = "That's your own code.";
+
+    /// <summary>The user's invite code, made the first time they ask.</summary>
+    public async Task<InviteCodeResult> GetInviteCodeAsync(int userId)
+    {
+        await using (var s = await store.OpenAsync())
+        {
+            if (await s.FindUserAsync(userId) is null) return new(false, Error: UnknownUserError);
+            if (await s.GetInviteCodeAsync(userId) is { } code) return new(true, code);
+        }
+        // Two first opens at once: the loser's commit conflicts, and the winner's code is there to read
+        var made = await ResetInviteCodeAsync(userId);
+        if (made.Success || made.Error != ConflictError) return made;
+        await using var again = await store.OpenAsync();
+        return await again.GetInviteCodeAsync(userId) is { } existing ? new(true, existing) : made;
+    }
+
+    /// <summary>A new invite code; the old link and QR code stop working.</summary>
+    public async Task<InviteCodeResult> ResetInviteCodeAsync(int userId)
+    {
+        await using var s = await store.OpenAsync();
+        if (await s.FindUserAsync(userId) is null) return new(false, Error: UnknownUserError);
+        var code = FriendInvites.NewCode();
+        await s.SetInviteCodeAsync(userId, code, Now);
+        var result = await CommitAsync(s, new FriendResult(true));
+        return result.Success ? new(true, code) : new(false, Error: result.Error);
+    }
+
+    /// <summary>Who the code belongs to, for "alex wants to be your friend". A blocked inviter, either way, looks unknown.</summary>
+    public async Task<InviteLookup> LookUpInviteAsync(int userId, string code)
+    {
+        await using var s = await store.OpenAsync();
+        var (inviter, error) = await FindInviterAsync(s, userId, code);
+        if (inviter is null) return new(false, Error: error);
+
+        var (a, b) = Pair(userId, inviter.Id);
+        var relation = await s.GetFriendshipAsync(a, b) switch
+        {
+            null => FriendRelation.None,
+            { Status: FriendshipStatus.Accepted } => FriendRelation.Friend,
+            var f when f.RequestedById == userId => FriendRelation.RequestSent,
+            _ => FriendRelation.RequestReceived
+        };
+        return new(true, inviter, relation);
+    }
+
+    /// <summary>Accepts the invite: the two become friends with no request step. A request already waiting, from either
+    /// side, is accepted instead. The friend limits still hold.</summary>
+    public async Task<FriendResult> AcceptInviteAsync(int userId, string code)
+    {
+        await using var s = await store.OpenAsync();
+        var (inviter, error) = await FindInviterAsync(s, userId, code);
+        if (inviter is null) return new(false, error);
+
+        var (a, b) = Pair(userId, inviter.Id);
+        if (await s.GetFriendshipAsync(a, b) is { } existing)
+        {
+            if (existing.Status == FriendshipStatus.Accepted) return new(false, "You're already friends.");
+            return await AcceptAsync(s, userId, inviter.Id, existing);
+        }
+
+        if (await FriendCountAsync(s, userId) >= MaxFriends)
+            return new(false, $"You can have at most {MaxFriends} friends.");
+        if (await FriendCountAsync(s, inviter.Id) >= MaxFriends)
+            return new(false, "They already have the most friends allowed.");
+
+        var now = Now;
+        await s.AddFriendshipAsync(new FriendshipRecord(a, b, inviter.Id, FriendshipStatus.Accepted, now, now));
+        return await CommitAsync(s, new FriendResult(true, BecameFriends: true));
+    }
+
+    /// <summary>The code's owner, or the error to show. Malformed codes never reach the store.</summary>
+    private static async Task<(SocialUser? Inviter, string? Error)> FindInviterAsync(ISocialSession s, int userId, string code)
+    {
+        if (FriendInvites.Normalize(code) is not { } normalized || await s.FindInviteAsync(normalized) is not { } inviter)
+            return (null, UnknownInviteError);
+        if (inviter.Id == userId) return (null, OwnInviteError);
+        var blocks = (await s.GetBlocksAsync(userId)).Where(x => x.Other.Id == inviter.Id).ToList();
+        if (blocks.Any(x => x.BlockerId == userId)) return (null, "You blocked them. Unblock them first.");
+        if (blocks.Count > 0) return (null, UnknownInviteError);
+        return (inviter, null);
+    }
+
     /// <summary>Accepted friends, by username.</summary>
     public async Task<IReadOnlyList<Friend>> GetFriendsAsync(int userId)
     {

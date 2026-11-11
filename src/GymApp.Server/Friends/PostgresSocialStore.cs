@@ -128,6 +128,26 @@ public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) :
                 db.UserBlocks.Remove(row);
         }
 
+        public Task<string?> GetInviteCodeAsync(int userId) =>
+            db.FriendInvites.AsNoTracking().Where(x => x.UserId == userId).Select(x => x.Code).FirstOrDefaultAsync();
+
+        public async Task SetInviteCodeAsync(int userId, string code, DateTime at)
+        {
+            if (await db.FriendInvites.FirstOrDefaultAsync(x => x.UserId == userId) is { } row)
+            {
+                row.Code = code;
+                row.CreatedAt = at;
+            }
+            else db.FriendInvites.Add(new FriendInvite { UserId = userId, Code = code, CreatedAt = at });
+        }
+
+        public async Task<SocialUser?> FindInviteAsync(string code) =>
+            await (from x in db.FriendInvites.AsNoTracking()
+                   where x.Code == code
+                   join u in db.Users on x.UserId equals u.Id
+                   where u.SuspendedAt == null
+                   select new SocialUser(u.Id, u.Username)).FirstOrDefaultAsync();
+
         /// <summary>
         /// Each user's latest uploaded day on or before <paramref name="today"/> (the viewer's date). Its week points
         /// count only if that day is in <paramref name="weekStart"/>..<paramref name="weekEnd"/>; an older row still gives

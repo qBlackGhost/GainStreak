@@ -9,7 +9,12 @@ using GymApp.App;
 namespace GymApp.Android;
 
 [Activity(Label = "GainStreak", Theme = "@style/GainStreakTheme", Icon = "@mipmap/ic_launcher", MainLauncher = true,
-    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
+    ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode,
+    LaunchMode = LaunchMode.SingleTask)]
+// Invite links (Phase 21): https://gainstreak.app/add/<code> opens the app, verified against the server's
+// /.well-known/assetlinks.json. Avalonia passes the link on as an OpenUri activation (GymApplication)
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "https", DataHost = "gainstreak.app", DataPathPrefix = "/add/", AutoVerify = true)]
 public class MainActivity : AvaloniaMainActivity
 {
     /// <summary>On the intent a tapped reminder opens (16g): go to Home.</summary>

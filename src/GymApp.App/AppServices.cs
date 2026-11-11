@@ -139,6 +139,7 @@ public static class AppServices
             sp.GetRequiredService<SessionService>(), sp.GetRequiredService<Func<MainViewModel>>(),
             sp.GetRequiredService<IShareService>(), sp.GetRequiredService<SplitShareService>(), sp.GetRequiredService<WorkoutMenuService>(),
             sp.GetRequiredService<ReportUserDialogViewModel>()));
+        sc.AddTransient<FriendQrViewModel>();
         sc.AddTransient<FriendsViewModel>();
         return sc;
     }

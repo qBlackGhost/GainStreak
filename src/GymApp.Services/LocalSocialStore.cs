@@ -140,6 +140,23 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
                 db.UserBlocks.Remove(row);
         }
 
+        public Task<string?> GetInviteCodeAsync(int userId) =>
+            db.FriendInvites.AsNoTracking().Where(x => x.UserId == userId).Select(x => x.Code).FirstOrDefaultAsync();
+
+        public async Task SetInviteCodeAsync(int userId, string code, DateTime at)
+        {
+            if (await db.FriendInvites.FirstOrDefaultAsync(x => x.UserId == userId) is { } row)
+            {
+                row.Code = code;
+                row.CreatedAt = at;
+            }
+            else db.FriendInvites.Add(new FriendInvite { UserId = userId, Code = code, CreatedAt = at });
+        }
+
+        public async Task<SocialUser?> FindInviteAsync(string code) =>
+            await db.FriendInvites.AsNoTracking().Where(x => x.Code == code)
+                .Select(x => new SocialUser(x.User.Id, x.User.Username)).FirstOrDefaultAsync();
+
         public async Task<IReadOnlyList<PublicStats>> GetPublicStatsAsync(IReadOnlyCollection<int> userIds, DateOnly weekStart, DateOnly weekEnd, DateOnly today)
         {
             var ids = userIds.ToList();

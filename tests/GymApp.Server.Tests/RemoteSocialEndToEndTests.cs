@@ -46,6 +46,24 @@ public class RemoteSocialEndToEndTests : ServerTest
         Assert.Equal(0, await bob.Friends.IncomingCountAsync(bob.Me));
     }
 
+    [Fact] public async Task InviteByQrCode_OnePhoneShows_TheOtherAccepts()
+    {
+        var alice = await PhoneAsync("alice");
+        var bob = await PhoneAsync("bob");
+
+        var invite = await alice.Friends.GetInviteCodeAsync(alice.Me);
+        Assert.True(invite.Success, invite.Error);
+        var code = GymApp.Social.InviteLink.TryParse(new Uri(GymApp.Social.InviteLink.For(invite)));
+        Assert.Equal(invite.Code, code);
+
+        var lookup = await bob.Friends.LookUpInviteAsync(bob.Me, code!);
+        Assert.Equal((alice.ServerId, "alice", FriendRelation.None), (lookup.Inviter!.Id, lookup.Inviter.Username, lookup.Relation));
+        Assert.True((await bob.Friends.AcceptInviteAsync(bob.Me, code!)).BecameFriends);
+
+        Assert.Equal(["bob"], (await alice.Friends.GetFriendsAsync(alice.Me)).Select(f => f.Username));
+        Assert.Empty((await alice.Friends.GetRequestsAsync(alice.Me)).Incoming);
+    }
+
     [Fact] public async Task RefusedAccept_CarriesTheServersMessage()
     {
         var alice = await PhoneAsync("alice");

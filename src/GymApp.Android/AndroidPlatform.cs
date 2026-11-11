@@ -26,6 +26,13 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
         catch (ActivityNotFoundException) { Open($"https://play.google.com/store/apps/details?id={id}"); }
     }
 
+    /// <summary>The system's share sheet, from the app's context (so a new task).</summary>
+    public override void Share(string text)
+    {
+        var send = new Intent(Intent.ActionSend).SetType("text/plain").PutExtra(Intent.ExtraText, text);
+        context.StartActivity(Intent.CreateChooser(send, (string?)null)!.AddFlags(ActivityFlags.NewTask));
+    }
+
     private void Open(string url) =>
         context.StartActivity(new Intent(Intent.ActionView, Uri.Parse(url)).AddFlags(ActivityFlags.NewTask));
 }

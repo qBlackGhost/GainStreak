@@ -24,6 +24,18 @@ public interface IFriendService
     Task<int> IncomingCountAsync(int userId);
     Task<FriendResult> BlockAsync(int userId, int otherId);
     Task<FriendResult> UnblockAsync(int userId, int otherId);
+
+    /// <summary>Your invite code for the QR code and link, made on first use (Phase 21).</summary>
+    Task<InviteCodeResult> GetInviteCodeAsync(int userId);
+
+    /// <summary>A new invite code; the old QR code and link stop working.</summary>
+    Task<InviteCodeResult> ResetInviteCodeAsync(int userId);
+
+    /// <summary>Whose code this is, for "alex wants to be your friend".</summary>
+    Task<InviteLookup> LookUpInviteAsync(int userId, string code);
+
+    /// <summary>Accepts the invite: the two become friends at once.</summary>
+    Task<FriendResult> AcceptInviteAsync(int userId, string code);
     /// <summary>The users you blocked, by username.</summary>
     Task<IReadOnlyList<BlockedUser>> GetBlockedAsync(int userId);
 }

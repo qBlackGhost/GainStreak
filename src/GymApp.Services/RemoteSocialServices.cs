@@ -104,6 +104,50 @@ public class RemoteFriendService(SocialApiClient api, SocialCacheStore cache, Se
         return r.IsOk ? r.Value!.Select(b => new BlockedUser(b.UserId, b.Username, b.BlockedAt)).ToList() : [];
     }
 
+    // ---- invites (Phase 21) ----
+
+    /// <summary>Offline, the link saved last time, marked stale; with none saved, the offline message.</summary>
+    public async Task<InviteCodeResult> GetInviteCodeAsync(int userId)
+    {
+        SignedInGuard.Check(session, userId);
+        var r = await api.GetInviteAsync();
+        if (r.IsOk) return await SaveInviteAsync(userId, r.Value!);
+        if (r.IsOffline && await cache.GetAsync<FriendInviteResponse>(userId, SocialCacheKeys.Invite) is { } hit)
+            return new(true, hit.Value.Code, Url: hit.Value.Url, IsStale: true);
+        return new(false, Error: r.Error);
+    }
+
+    public async Task<InviteCodeResult> ResetInviteCodeAsync(int userId)
+    {
+        SignedInGuard.Check(session, userId);
+        var r = await api.ResetInviteAsync();
+        return r.IsOk ? await SaveInviteAsync(userId, r.Value!) : new(false, Error: Refused(r).Error);
+    }
+
+    public async Task<InviteLookup> LookUpInviteAsync(int userId, string code)
+    {
+        SignedInGuard.Check(session, userId);
+        // Checked here too, so a mangled link costs no request (and says the same thing offline)
+        if (FriendInvites.Normalize(code) is not { } normalized) return new(false, Error: FriendService.UnknownInviteError);
+        var r = await api.LookUpInviteAsync(normalized);
+        if (!r.IsOk) return new(false, Error: r.Error);
+        return new(true, new SocialUser(r.Value!.UserId, r.Value.Username), ToSocial(r.Value.Relation));
+    }
+
+    public async Task<FriendResult> AcceptInviteAsync(int userId, string code)
+    {
+        SignedInGuard.Check(session, userId);
+        if (FriendInvites.Normalize(code) is not { } normalized) return new(false, FriendService.UnknownInviteError);
+        var r = await api.AcceptInviteAsync(normalized);
+        return r.IsOk ? new FriendResult(true, BecameFriends: r.Value!.BecameFriends) : Refused(r);
+    }
+
+    private async Task<InviteCodeResult> SaveInviteAsync(int userId, FriendInviteResponse invite)
+    {
+        await cache.SaveAsync(userId, SocialCacheKeys.Invite, invite);
+        return new(true, invite.Code, Url: invite.Url);
+    }
+
     private async Task<FriendResult> WriteAsync(int userId, Func<Task<ApiResult>> call)
     {
         SignedInGuard.Check(session, userId);

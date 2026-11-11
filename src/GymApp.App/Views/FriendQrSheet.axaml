@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.FriendQrSheet"
+             x:DataType="vm:FriendQrViewModel"
+             IsVisible="{Binding IsOpen}">
+    <!-- "Your QR code" over Friends (Phase 21, the GainStreak Mobile canvas's Friends · Your QR code): the invite link
+         as a QR code on white, Copy link, Share (phones) and Reset link with its confirm. A sheet from the bottom on
+         phones, a centred card on the desktop. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style Selector="Button.big">
+            <Setter Property="MinHeight" Value="50"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.danger">
+            <Setter Property="Background" Value="{DynamicResource ErrorText}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource PageBg}"/>
+        </Style>
+    </UserControl.Styles>
+    <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20,14,20,24" CornerRadius="22"
+                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="14">
+                <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"/>
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Your QR code" FontSize="22" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Friends scan it with their phone's camera to add you. Without the app, the link takes them to the store first."
+                                   FontSize="13" Classes="muted"/>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="icon" Command="{Binding CloseCommand}" VerticalAlignment="Top"
+                            ToolTip.Tip="Close" AutomationProperties.Name="Close">
+                        <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                    </Button>
+                </Grid>
+
+                <!-- The code, black on white in both themes, with the username under it -->
+                <StackPanel Spacing="10" HorizontalAlignment="Center" IsVisible="{Binding HasLink}">
+                    <Border Background="White" CornerRadius="20" Padding="12,12,12,14" Width="256" HorizontalAlignment="Center">
+                        <StackPanel Spacing="6">
+                            <v:QrCodeView Text="{Binding Link}" Width="232" Height="232"
+                                          AutomationProperties.Name="QR code for your invite link"/>
+                            <TextBlock Text="{Binding Username}" Foreground="#0B0B0B" FontSize="15" FontWeight="Bold"
+                                       HorizontalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding LinkText}" Classes="mono muted" FontSize="12" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    <Border HorizontalAlignment="Center" Padding="10,6" CornerRadius="999" Background="{DynamicResource Fill}"
+                            BorderBrush="{DynamicResource Control}" BorderThickness="1" IsVisible="{Binding IsOfflineSaved}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <v:Icon Data="{StaticResource IcWifiOff}" Width="14" Height="14" StrokeThickness="2.2" Stroke="{DynamicResource Soft}" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Notice}" FontSize="12" Classes="soft" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding Notice}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource AccentInk}"
+                               HorizontalAlignment="Center" TextAlignment="Center" IsVisible="{Binding !IsOfflineSaved}"/>
+                </StackPanel>
+
+                <!-- Loading, or offline with no saved link -->
+                <Panel MinHeight="230" IsVisible="{Binding !HasLink}">
+                    <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="20" RadiusY="20"/>
+                    <TextBlock Text="Getting your link…" Classes="muted" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                               IsVisible="{Binding IsLoading}"/>
+                    <StackPanel Spacing="10" Margin="20" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding HasNoLink}">
+                        <v:Icon Data="{StaticResource IcWifiOff}" Width="28" Height="28" Stroke="{DynamicResource Muted}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="No link yet" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding NoLinkText}" FontSize="13" Classes="muted" TextAlignment="Center"/>
+                    </StackPanel>
+                </Panel>
+
+                <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Button x:Name="CopyButton" Classes="btn primary big" IsEnabled="{Binding HasLink}" Click="CopyLink"
+                            Grid.ColumnSpan="{Binding CanShare, Converter={x:Static v:FriendQrSheet.SpanWhen}}">
+                        <Panel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsNotCopied}">
+                                <v:Icon Data="{StaticResource IcCopy}" Width="17" Height="17" StrokeThickness="2.2" VerticalAlignment="Center"/>
+                                <TextBlock Text="Copy link" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsCopied}">
+                                <v:Icon Data="{StaticResource IcCheck}" Width="17" Height="17" StrokeThickness="2.6" VerticalAlignment="Center"/>
+                                <TextBlock Text="Link copied" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Panel>
+                    </Button>
+                    <Button Grid.Column="1" Classes="btn outline big" Command="{Binding ShareCommand}" IsVisible="{Binding CanShare}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <v:Icon Data="{StaticResource IcShare}" Width="17" Height="17" StrokeThickness="2.2" VerticalAlignment="Center"/>
+                            <TextBlock Text="Share" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Reset, with its confirm -->
+                <Border Padding="14" CornerRadius="14" Background="{DynamicResource RedTint}" BorderBrush="{DynamicResource RedTintLine}"
+                        BorderThickness="1" IsVisible="{Binding IsConfirmingReset}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Text="Reset your link?" FontSize="14" FontWeight="Bold"/>
+                        <TextBlock Text="Your old QR code and link will stop working. Anyone you sent them to will need the new one."
+                                   FontSize="13" Classes="soft"/>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Content="Cancel" Command="{Binding CancelResetCommand}"/>
+                            <Button Grid.Column="1" Classes="btn danger" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                    Content="Reset link" Command="{Binding ConfirmResetCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+                <Button Classes="link" HorizontalAlignment="Center" MinHeight="44" Content="Reset link" FontSize="13"
+                        Foreground="{DynamicResource Muted}" Command="{Binding AskResetCommand}" IsVisible="{Binding CanReset}"/>
+            </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Border>
+</UserControl>

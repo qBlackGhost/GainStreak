@@ -135,12 +135,12 @@ public partial class FoundUserViewModel(FoundUser user, FriendsViewModel owner) 
 /// the signed-in user's local id.</summary>
 public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
 {
-    /// <summary>Back closes the report popup first.</summary>
+    /// <summary>Back closes the report popup or the QR sheet first.</summary>
     public bool CloseOnBack()
     {
-        if (!Report.IsOpen) return false;
-        Report.IsOpen = false;
-        return true;
+        if (Report.IsOpen) { Report.IsOpen = false; return true; }
+        if (Qr.IsOpen) { Qr.CloseCommand.Execute(null); return true; }
+        return false;
     }
 
     private readonly IFriendService _friends;
@@ -150,9 +150,10 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     private readonly InboxService _inbox;
 
     public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell,
-                            InboxService inbox, ReportUserDialogViewModel report)
+                            InboxService inbox, ReportUserDialogViewModel report, FriendQrViewModel qr)
     {
         Report = report;
+        Qr = qr;
         _friends = friends;
         _inbox = inbox;
         _board = board;
@@ -162,6 +163,121 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     }
 
     public ReportUserDialogViewModel Report { get; }
+
+    /// <summary>"Your QR code" (Phase 21).</summary>
+    public FriendQrViewModel Qr { get; }
+
+    [RelayCommand]
+    private Task ShowQrAsync() => Qr.OpenAsync();
+
+    // ===== The invite card (Phase 21): a scanned QR code or an opened invite link =====
+
+    public const string OfflineInviteText = "Couldn't check this invite. Try again when you're online.";
+
+    private string? _inviteCode;
+    private string? _inviterName;
+
+    [ObservableProperty] public partial bool HasInvite { get; private set; }
+    [ObservableProperty] public partial bool IsInviteChecking { get; private set; }
+
+    /// <summary>"radu99 wants to be your friend", with Not now and Accept.</summary>
+    [ObservableProperty] public partial bool IsInviteAsk { get; private set; }
+    [ObservableProperty] public partial string InviterName { get; private set; } = "";
+    [ObservableProperty] public partial string InviterInitials { get; private set; } = "";
+
+    /// <summary>A result or a refusal in the card, with one button (and Try again when offline).</summary>
+    [ObservableProperty] public partial bool IsInviteMessage { get; private set; }
+    [ObservableProperty] public partial string? InviteMessage { get; private set; }
+    /// <summary>The message's icon: a resource key (IcCheck, IcInfoCircle, IcLinkOff, IcBlock, IcWifiOff).</summary>
+    [ObservableProperty] public partial string InviteIcon { get; private set; } = "IcInfoCircle";
+    [ObservableProperty] public partial bool IsInviteGood { get; private set; }
+    [ObservableProperty] public partial bool CanRetryInvite { get; private set; }
+    [ObservableProperty] public partial string InviteOkLabel { get; private set; } = "OK";
+
+    /// <summary>The shell hands over the code of a link the phone opened; the card checks whose it is.</summary>
+    public Task ShowInviteAsync(string code)
+    {
+        _inviteCode = code;
+        HasInvite = true;
+        return CheckInviteAsync();
+    }
+
+    private void InviteStep(bool checking = false, bool ask = false)
+    {
+        IsInviteChecking = checking;
+        IsInviteAsk = ask;
+        IsInviteMessage = !checking && !ask;
+    }
+
+    private void InviteMessageShow(string text, string icon, string ok = "OK", bool good = false, bool retry = false)
+    {
+        InviteMessage = text;
+        InviteIcon = icon;
+        InviteOkLabel = ok;
+        IsInviteGood = good;
+        CanRetryInvite = retry;
+        InviteStep();
+    }
+
+    private void InviteRefused(string? error)
+    {
+        if (error == GymApp.Client.ApiResult.OfflineMessage)
+            InviteMessageShow(OfflineInviteText, "IcWifiOff", ok: "Not now", retry: true);
+        else if (error == FriendService.UnknownInviteError)
+            InviteMessageShow(error, "IcLinkOff");
+        else if (error is not null && error.StartsWith("You blocked", StringComparison.Ordinal))
+            InviteMessageShow(error, "IcBlock");
+        else
+            InviteMessageShow(error ?? "Something went wrong. Try again.", "IcInfoCircle");
+    }
+
+    private async Task CheckInviteAsync()
+    {
+        if (UserId is not { } me || _inviteCode is not { } code) return;
+        InviteStep(checking: true);
+        try
+        {
+            var r = await _friends.LookUpInviteAsync(me, code);
+            if (!r.Success) { InviteRefused(r.Error); return; }
+            _inviterName = InviterName = r.Inviter!.Username;
+            InviterInitials = Initials(r.Inviter.Username);
+            if (r.Relation == FriendRelation.Friend) InviteMessageShow($"You're already friends with {r.Inviter.Username}.", "IcInfoCircle");
+            else InviteStep(ask: true);
+        }
+        catch (Exception)
+        {
+            InviteMessageShow("Could not check the invite. Try again.", "IcInfoCircle", ok: "Not now", retry: true);
+        }
+    }
+
+    [RelayCommand]
+    private async Task AcceptInviteAsync()
+    {
+        if (UserId is not { } me || _inviteCode is not { } code) return;
+        InviteStep(checking: true);
+        try
+        {
+            var r = await _friends.AcceptInviteAsync(me, code);
+            if (r.Success) InviteMessageShow($"You and {_inviterName} are now friends.", "IcCheck", ok: "Done", good: true);
+            else { InviteRefused(r.Error); return; }
+        }
+        catch (Exception)
+        {
+            InviteMessageShow("Something went wrong. Try again.", "IcInfoCircle", ok: "Not now", retry: true);
+            return;
+        }
+        await ReloadAsync(me);
+    }
+
+    [RelayCommand] private Task RetryInviteAsync() => CheckInviteAsync();
+
+    [RelayCommand] private void DismissInvite() => HasInvite = false;
+
+    private static string Initials(string name)
+    {
+        var letters = new string(name.Where(char.IsLetter).Take(2).ToArray());
+        return (letters.Length > 0 ? letters : name[..Math.Min(2, name.Length)]).ToUpperInvariant();
+    }
     public ObservableCollection<FriendsBoardRowViewModel> Board { get; } = new();
 
     [ObservableProperty]

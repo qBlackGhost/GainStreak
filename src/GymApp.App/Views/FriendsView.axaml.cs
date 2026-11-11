@@ -1,11 +1,18 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
+using Avalonia.Media;
 using GymApp.App.ViewModels;
 
 namespace GymApp.App.Views;
 
 public partial class FriendsView : UserControl
 {
+    /// <summary>The invite card's icon, from its resource key (IcCheck, IcWifiOff…).</summary>
+    public static readonly IValueConverter IconFor = new FuncValueConverter<string?, Geometry?>(key =>
+        key is not null && Application.Current?.TryFindResource(key, out var g) == true ? g as Geometry : null);
+
     /// <summary>Below this content width the requests column goes under the leaderboard.</summary>
     private const double TwoColumnMinWidth = 880;
 

@@ -39,6 +39,10 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
 
     public const string DefaultPassword = "correct horse 1";
 
+    /// <summary>A client with no sign-in that returns redirects instead of following them.</summary>
+    protected HttpClient ClientWithoutRedirects() =>
+        _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+
     /// <summary>A client that sends this token on every request.</summary>
     protected HttpClient ClientWith(string token)
     {

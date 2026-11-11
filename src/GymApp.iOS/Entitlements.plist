@@ -16,6 +16,13 @@
 	<array/>
 	<!-- A Simulator build is signed ad hoc and .NET leaves this out, so HealthKit refused everything (found in 20a).
 	     Device builds get the same value from the profile -->
+	<!-- Invite links (Phase 21): https://gainstreak.app/add/<code> opens the app, as the server's
+	     /.well-known/apple-app-site-association allows. Signed builds need Associated Domains on the App ID
+	     com.gainstreak.app, and a profile made after it was added -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:gainstreak.app</string>
+	</array>
 	<key>application-identifier</key>
 	<string>$(AppIdentifierPrefix)$(CFBundleIdentifier)</string>
 </dict>

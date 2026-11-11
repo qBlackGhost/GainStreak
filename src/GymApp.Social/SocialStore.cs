@@ -68,6 +68,15 @@ public interface ISocialSession : IAsyncDisposable
     Task AddBlockAsync(int blockerId, int blockedId, DateTime at);
     Task DeleteBlockAsync(int blockerId, int blockedId);
 
+    /// <summary>The user's invite code, null before they first ask for one.</summary>
+    Task<string?> GetInviteCodeAsync(int userId);
+
+    /// <summary>Gives the user this invite code, replacing any old one. A code another user holds is a conflict at commit.</summary>
+    Task SetInviteCodeAsync(int userId, string code, DateTime at);
+
+    /// <summary>The user holding this (normalized) invite code, or null. A suspended owner reads as no one.</summary>
+    Task<SocialUser?> FindInviteAsync(string code);
+
     /// <summary>Public stats for each user that exists. <see cref="PublicStats.WeekPoints"/> sums the points dated
     /// <paramref name="weekStart"/> to <paramref name="weekEnd"/>, both included. <paramref name="today"/> is the
     /// viewer's date: a store that keeps projected stats picks each user's entry for it; one that refreshed can ignore it.</summary>

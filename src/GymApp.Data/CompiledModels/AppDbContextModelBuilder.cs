@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("ba51e3d7-e83a-4da2-931b-00eeceab8ff9"), entityTypeCount: 25)
+            : base(skipDetectChanges: false, modelId: new Guid("6311b2f6-eaf1-476d-9cef-5b4a2820352b"), entityTypeCount: 26)
         {
         }
 
@@ -22,6 +22,7 @@ namespace GymApp.Data.CompiledModels
             var city = CityEntityType.Create(this);
             var exercise = ExerciseEntityType.Create(this);
             var exerciseBarSetting = ExerciseBarSettingEntityType.Create(this);
+            var friendInvite = FriendInviteEntityType.Create(this);
             var friendship = FriendshipEntityType.Create(this);
             var gym = GymEntityType.Create(this);
             var liveWorkout = LiveWorkoutEntityType.Create(this);
@@ -49,6 +50,7 @@ namespace GymApp.Data.CompiledModels
             ExerciseEntityType.CreateForeignKey1(exercise, user);
             ExerciseBarSettingEntityType.CreateForeignKey1(exerciseBarSetting, exercise);
             ExerciseBarSettingEntityType.CreateForeignKey2(exerciseBarSetting, user);
+            FriendInviteEntityType.CreateForeignKey1(friendInvite, user);
             FriendshipEntityType.CreateForeignKey1(friendship, user);
             FriendshipEntityType.CreateForeignKey2(friendship, user);
             GymEntityType.CreateForeignKey1(gym, city);
@@ -91,6 +93,7 @@ namespace GymApp.Data.CompiledModels
             CityEntityType.CreateAnnotations(city);
             ExerciseEntityType.CreateAnnotations(exercise);
             ExerciseBarSettingEntityType.CreateAnnotations(exerciseBarSetting);
+            FriendInviteEntityType.CreateAnnotations(friendInvite);
             FriendshipEntityType.CreateAnnotations(friendship);
             GymEntityType.CreateAnnotations(gym);
             LiveWorkoutEntityType.CreateAnnotations(liveWorkout);

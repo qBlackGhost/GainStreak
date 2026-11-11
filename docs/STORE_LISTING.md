@@ -24,6 +24,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 | Active split (which built-in preset, or "custom") | "Who uses it" percentages on split pages | Everyone, only as totals |
 | Gym check-ins: gym name, its OpenStreetMap id and coordinates, city, date (optional: only once the user turns on "Visible to friends") | The friends map | Friends, as gym and day only, never the time |
 | Friend requests and friendships | Friends | The two people involved |
+| Invite code (random, one per account, resettable; Phase 21) | Adding friends by QR code or link | Whoever the user shows it to; the `/add/<code>` page never says whose it is |
 | Shared splits and workouts (snapshots of exercises and sets) | Sending a plan to a friend | The receiving friend; removed once used or after 30 days |
 | Users the person blocked | Keeping them apart | Nobody else |
 | Reports about another user: who, the reason, an optional note | Dealing with abuse | The developer; forwarded to a private Discord channel |

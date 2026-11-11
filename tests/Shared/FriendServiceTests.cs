@@ -445,6 +445,172 @@ public abstract class FriendServiceTests : IAsyncLifetime
         Assert.Equal(["a_bcd"], r.Users.Select(u => u.Username));
     }
 
+    // ---- invites (Phase 21) ----
+
+    private async Task<string> CodeOf(int userId)
+    {
+        var r = await _svc.GetInviteCodeAsync(userId);
+        Assert.True(r.Success, r.Error);
+        return r.Code!;
+    }
+
+    [Fact] public async Task InviteCode_IsMadeOnce_AndKept()
+    {
+        var code = await CodeOf(_alice);
+        Assert.Equal(FriendInvites.CodeLength, code.Length);
+        Assert.Equal(code, FriendInvites.Normalize(code));
+        Assert.Equal(code, await CodeOf(_alice));
+        Assert.NotEqual(code, await CodeOf(_bob));
+    }
+
+    [Fact] public async Task InviteCode_Reset_ReplacesIt_AndTheOldOneStopsWorking()
+    {
+        var old = await CodeOf(_alice);
+        var reset = await _svc.ResetInviteCodeAsync(_alice);
+        Assert.True(reset.Success);
+        Assert.NotEqual(old, reset.Code);
+        Assert.Equal(reset.Code, await CodeOf(_alice));
+
+        var r = await _svc.AcceptInviteAsync(_bob, old);
+        Assert.Equal((false, FriendService.UnknownInviteError), (r.Success, r.Error));
+        Assert.True((await _svc.AcceptInviteAsync(_bob, reset.Code!)).Success);
+    }
+
+    [Fact] public async Task InviteCode_ForAUserWhoDoesntExist_IsRefused() =>
+        Assert.Equal(FriendService.UnknownUserError, (await _svc.GetInviteCodeAsync(99_999)).Error);
+
+    [Fact] public async Task LookUpInvite_NamesTheInviter()
+    {
+        var r = await _svc.LookUpInviteAsync(_bob, await CodeOf(_alice));
+        Assert.True(r.Success);
+        Assert.Equal(new SocialUser(_alice, "alice"), r.Inviter);
+        Assert.Equal(FriendRelation.None, r.Relation);
+    }
+
+    [Fact] public async Task LookUpInvite_ShowsTheRelation()
+    {
+        var code = await CodeOf(_alice);
+        await _svc.SendRequestAsync(_bob, _alice);
+        Assert.Equal(FriendRelation.RequestSent, (await _svc.LookUpInviteAsync(_bob, code)).Relation);
+        await _svc.AcceptAsync(_alice, _bob);
+        Assert.Equal(FriendRelation.Friend, (await _svc.LookUpInviteAsync(_bob, code)).Relation);
+
+        await _svc.SendRequestAsync(_alice, _carol);
+        Assert.Equal(FriendRelation.RequestReceived, (await _svc.LookUpInviteAsync(_carol, code)).Relation);
+    }
+
+    [Fact] public async Task LookUpInvite_IgnoresCaseAndSpaces()
+    {
+        var code = await CodeOf(_alice);
+        Assert.True((await _svc.LookUpInviteAsync(_bob, $"  {code.ToUpperInvariant()} ")).Success);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("short")]
+    [InlineData("abcdefghjk2")]        // too long
+    [InlineData("abcdefghj0")]         // 0 isn't in the alphabet
+    [InlineData("abc%' or 1")]
+    public async Task LookUpInvite_MalformedCodes_AreUnknown(string code)
+    {
+        await CodeOf(_alice);
+        var r = await _svc.LookUpInviteAsync(_bob, code);
+        Assert.Equal((false, FriendService.UnknownInviteError), (r.Success, r.Error));
+    }
+
+    [Fact] public async Task LookUpInvite_AWellFormedCodeNoOneHas_IsUnknown() =>
+        Assert.Equal(FriendService.UnknownInviteError, (await _svc.LookUpInviteAsync(_bob, "abcdefghjk")).Error);
+
+    [Fact] public async Task Invite_OwnCode_IsRefused()
+    {
+        var code = await CodeOf(_alice);
+        Assert.Equal(FriendService.OwnInviteError, (await _svc.LookUpInviteAsync(_alice, code)).Error);
+        Assert.Equal(FriendService.OwnInviteError, (await _svc.AcceptInviteAsync(_alice, code)).Error);
+    }
+
+    [Fact] public async Task AcceptInvite_MakesFriends_WithNoRequestStep()
+    {
+        var r = await _svc.AcceptInviteAsync(_bob, await CodeOf(_alice));
+
+        Assert.True(r.Success, r.Error);
+        Assert.True(r.BecameFriends);
+        Assert.Equal(["bob"], (await _svc.GetFriendsAsync(_alice)).Select(f => f.Username));
+        Assert.Equal(["alice"], (await _svc.GetFriendsAsync(_bob)).Select(f => f.Username));
+        var row = Assert.Single(await RowsAsync());
+        Assert.Equal((FriendshipStatus.Accepted, _alice), (row.Status, row.RequestedById));
+        Assert.Empty((await _svc.GetRequestsAsync(_alice)).Outgoing);
+    }
+
+    [Fact] public async Task AcceptInvite_WhenAlreadyFriends_IsRefused()
+    {
+        await MakeFriends(_alice, _bob);
+        var r = await _svc.AcceptInviteAsync(_bob, await CodeOf(_alice));
+        Assert.Equal((false, "You're already friends."), (r.Success, r.Error));
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AcceptInvite_AcceptsARequestAlreadyWaiting_FromEitherSide(bool scannerSentIt)
+    {
+        if (scannerSentIt) await _svc.SendRequestAsync(_bob, _alice);
+        else await _svc.SendRequestAsync(_alice, _bob);
+
+        Assert.True((await _svc.AcceptInviteAsync(_bob, await CodeOf(_alice))).Success);
+
+        var row = Assert.Single(await RowsAsync());
+        Assert.Equal(FriendshipStatus.Accepted, row.Status);
+        Assert.Equal(["bob"], (await _svc.GetFriendsAsync(_alice)).Select(f => f.Username));
+    }
+
+    [Fact] public async Task Invite_FromSomeoneWhoBlockedYou_LooksUnknown()
+    {
+        var code = await CodeOf(_alice);
+        await _svc.BlockAsync(_alice, _bob);
+        Assert.Equal(FriendService.UnknownInviteError, (await _svc.LookUpInviteAsync(_bob, code)).Error);
+        Assert.Equal(FriendService.UnknownInviteError, (await _svc.AcceptInviteAsync(_bob, code)).Error);
+        Assert.Empty(await RowsAsync());
+    }
+
+    [Fact] public async Task Invite_FromSomeoneYouBlocked_SaysSo()
+    {
+        var code = await CodeOf(_alice);
+        await _svc.BlockAsync(_bob, _alice);
+        Assert.Equal("You blocked them. Unblock them first.", (await _svc.AcceptInviteAsync(_bob, code)).Error);
+        Assert.Empty(await RowsAsync());
+    }
+
+    [Fact] public async Task AcceptInvite_FriendLimit_ForTheScanner()
+    {
+        var code = await CodeOf(_alice);
+        await SeedFriendsAsync(_bob, FriendService.MaxFriends, "pal");
+        var r = await _svc.AcceptInviteAsync(_bob, code);
+        Assert.Equal((false, "You can have at most 50 friends."), (r.Success, r.Error));
+    }
+
+    [Fact] public async Task AcceptInvite_FriendLimit_ForTheInviter()
+    {
+        var code = await CodeOf(_alice);
+        await SeedFriendsAsync(_alice, FriendService.MaxFriends, "pal");
+        var r = await _svc.AcceptInviteAsync(_bob, code);
+        Assert.Equal((false, "They already have the most friends allowed."), (r.Success, r.Error));
+    }
+
+    [Fact] public async Task DeletingAUser_RemovesTheirInviteCode()
+    {
+        var code = await CodeOf(_alice);
+        await DeleteUserAsync(_alice);
+        Assert.Equal(FriendService.UnknownInviteError, (await _svc.LookUpInviteAsync(_bob, code)).Error);
+    }
+
+    [Fact] public async Task TwoUsersCantHoldTheSameCode()
+    {
+        var code = await CodeOf(_alice);
+        await using var s = await _store.OpenAsync();
+        await s.SetInviteCodeAsync(_bob, code, DateTime.UtcNow);
+        await Assert.ThrowsAsync<SocialStoreConflictException>(() => s.CommitAsync());
+    }
+
     // ---- account deletion ----
 
     [Fact] public async Task DeletingAUser_RemovesTheirFriendships()

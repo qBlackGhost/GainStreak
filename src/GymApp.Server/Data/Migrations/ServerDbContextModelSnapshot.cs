@@ -153,6 +153,27 @@ namespace GymApp.Server.Data.Migrations
                     b.ToTable("Feedback", (string)null);
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.FriendInvite", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("FriendInvites");
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.Friendship", b =>
                 {
                     b.Property<long>("Id")
@@ -436,6 +457,15 @@ namespace GymApp.Server.Data.Migrations
                 });
 
             modelBuilder.Entity("GymApp.Server.Data.FeedbackEntry", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.FriendInvite", b =>
                 {
                     b.HasOne("GymApp.Server.Data.User", null)
                         .WithMany()

@@ -27,6 +27,10 @@ public sealed class FakePlatform : IPlatform
     }
 
     public bool CanOpenStorePage { get; set; }
+
+    public bool CanShare { get; set; }
+    public List<string> Shared { get; } = [];
+    public void Share(string text) => Shared.Add(text);
     public int StorePageOpened { get; private set; }
     public void OpenStorePage() => StorePageOpened++;
 

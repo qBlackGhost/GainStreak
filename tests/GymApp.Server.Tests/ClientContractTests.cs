@@ -105,6 +105,29 @@ public class ClientContractTests : ServerTest
         Assert.Equal(404, unknown.Status);
     }
 
+    [Fact] public async Task InviteFlow()
+    {
+        var (alice, aliceMe) = await RegisterAsync("alice");
+        var (bob, bobMe) = await RegisterAsync("bob");
+
+        var invite = (await alice.GetInviteAsync()).Value!;
+        Assert.EndsWith($"/add/{invite.Code}", invite.Url);
+        var reset = (await alice.ResetInviteAsync()).Value!;
+        Assert.NotEqual(invite.Code, reset.Code);
+
+        var old = await bob.LookUpInviteAsync(invite.Code);
+        Assert.Equal((404, GymApp.Social.FriendService.UnknownInviteError), (old.Status, old.Error));
+
+        Assert.Equal(new InviteLookupResponse(aliceMe.Id, "alice", FriendRelation.None), (await bob.LookUpInviteAsync(reset.Code)).Value);
+        Assert.True((await bob.AcceptInviteAsync(reset.Code)).Value!.BecameFriends);
+        Assert.Equal(["bob"], (await alice.GetFriendsAsync()).Value!.Select(f => f.Username));
+        Assert.Equal(FriendRelation.Friend, (await bob.LookUpInviteAsync(reset.Code)).Value!.Relation);
+
+        var own = await alice.AcceptInviteAsync(reset.Code);
+        Assert.Equal((400, GymApp.Social.FriendService.OwnInviteError), (own.Status, own.Error));
+        Assert.NotEqual(aliceMe.Id, bobMe.Id);
+    }
+
     [Fact] public async Task Avatar_ShowsOnMeAndTheLeaderboard_AndUnknownIsRefused()
     {
         var (alice, _) = await RegisterAsync("alice");

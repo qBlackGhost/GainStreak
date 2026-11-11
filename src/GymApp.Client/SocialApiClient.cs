@@ -112,6 +112,20 @@ public sealed class SocialApiClient
 
     // --- Blocks and reports ---
 
+    // Invites (Phase 21). The code goes in the path escaped, though a well-formed one needs no escaping
+
+    public Task<ApiResult<FriendInviteResponse>> GetInviteAsync(CancellationToken ct = default) =>
+        SendAsync<FriendInviteResponse>(HttpMethod.Get, "v1/friends/invite", null, ct);
+
+    public Task<ApiResult<FriendInviteResponse>> ResetInviteAsync(CancellationToken ct = default) =>
+        SendAsync<FriendInviteResponse>(HttpMethod.Post, "v1/friends/invite/reset", null, ct);
+
+    public Task<ApiResult<InviteLookupResponse>> LookUpInviteAsync(string code, CancellationToken ct = default) =>
+        SendAsync<InviteLookupResponse>(HttpMethod.Get, $"v1/invites/{Uri.EscapeDataString(code)}", null, ct);
+
+    public Task<ApiResult<SendRequestResponse>> AcceptInviteAsync(string code, CancellationToken ct = default) =>
+        SendAsync<SendRequestResponse>(HttpMethod.Post, $"v1/invites/{Uri.EscapeDataString(code)}/accept", null, ct);
+
     public Task<ApiResult<List<BlockedUserResponse>>> GetBlockedAsync(CancellationToken ct = default) =>
         SendAsync<List<BlockedUserResponse>>(HttpMethod.Get, "v1/blocks", null, ct);
 

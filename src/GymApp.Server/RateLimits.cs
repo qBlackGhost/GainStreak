@@ -16,6 +16,8 @@ public static class RateLimits
     public const string Report = "report";
     public const string EmailCode = "email-code";
     public const string PasswordReset = "password-reset";
+    public const string Invite = "invite";
+    public const string InviteReset = "invite-reset";
 
     public static IServiceCollection AddGymRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(o =>
@@ -31,6 +33,9 @@ public static class RateLimits
             o.AddPolicy(EmailCode, ctx => Fixed($"email-code:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
             o.AddPolicy(PasswordReset, ctx => PerIp(ctx, 10, TimeSpan.FromHours(1)));
             o.AddPolicy(Report, ctx => Fixed($"report:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
+            // Looking up and accepting invite codes: a script trying codes is what this stops
+            o.AddPolicy(Invite, ctx => Fixed($"invite:{UserOrIp(ctx)}", 30, TimeSpan.FromMinutes(1)));
+            o.AddPolicy(InviteReset, ctx => Fixed($"invite-reset:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });

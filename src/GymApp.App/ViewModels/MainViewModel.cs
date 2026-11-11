@@ -171,8 +171,46 @@ public partial class MainViewModel : ViewModelBase
         Show(new Entry(type, open), vm);
     }
 
+    // ===== Links (Phase 21): a scanned QR code or a tapped invite link opens Friends with the confirm card =====
+
+    private string? _pendingInviteCode;
+    private bool _friendsAfterSignIn;
+
+    /// <summary>An invite code waiting for Friends' confirm card, from a link the phone opened.</summary>
+    public bool HasPendingInvite => _pendingInviteCode is not null;
+
+    /// <summary>A link the phone opened (the heads call it on the UI thread, at a cold start too). An invite link
+    /// opens Friends; before sign-in is done, the code waits in memory and Friends opens once it is. Other links are
+    /// ignored. True when it was an invite link.</summary>
+    public bool OpenLink(Uri link)
+    {
+        if (GymApp.Social.InviteLink.TryParse(link) is not { } code) return false;
+        _pendingInviteCode = code;
+        if (IsSignedInScreen) ShowFriends();
+        else _friendsAfterSignIn = true;
+        return true;
+    }
+
+    /// <summary>The waiting code, once: <see cref="ShowFriends"/> hands it to the new Friends' confirm card, so leaving
+    /// Friends drops the card.</summary>
+    public string? TakePendingInviteCode()
+    {
+        var code = _pendingInviteCode;
+        _pendingInviteCode = null;
+        return code;
+    }
+
     private void Show(Entry entry, ViewModelBase vm)
     {
+        // The first screen after sign-in (or after the start, signed in) gives way to Friends when a link is waiting
+        if (_friendsAfterSignIn && !IsBeforeSignIn(entry.Type) && entry.Type != typeof(FriendsViewModel))
+        {
+            _friendsAfterSignIn = false;
+            ShowFriends();
+            return;
+        }
+        if (entry.Type == typeof(FriendsViewModel)) _friendsAfterSignIn = false;
+
         _current = entry;
         Current = vm;
         SelectedTab = TabOf(entry.Type);
@@ -265,7 +303,13 @@ public partial class MainViewModel : ViewModelBase
     public void ShowWorkouts() => Open(_sp.GetRequiredService<WorkoutsViewModel>, root: true);
     public void ShowCalories() => Open(_sp.GetRequiredService<CaloriesViewModel>, root: true);
     /// <summary>Friends, with the leaderboard on the same screen.</summary>
-    public void ShowFriends() => Open(_sp.GetRequiredService<FriendsViewModel>, root: true);
+    /// <summary>Friends; a waiting invite code (an opened link) goes to its confirm card, once.</summary>
+    public void ShowFriends() => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<FriendsViewModel>();
+        if (TakePendingInviteCode() is { } code) _ = vm.ShowInviteAsync(code);
+        return vm;
+    }, root: true);
     public void ShowSplits() => Open(_sp.GetRequiredService<SplitsViewModel>, root: true);
 
     public void ShowProfile() => Open(_sp.GetRequiredService<ProfileViewModel>, root: false);

@@ -36,6 +36,10 @@ catch (InvalidOperationException e) { missing ??= e.Message; }
 EmailSettings? email = null;
 try { email = EmailSettings.Read(builder.Configuration); }
 catch (InvalidOperationException e) { missing ??= e.Message; }
+// Invite links (Phase 21): all optional; a malformed value is a startup error too
+InviteSettings? invites = null;
+try { invites = InviteSettings.Read(builder.Configuration); }
+catch (InvalidOperationException e) { missing ??= e.Message; }
 if (missing is not null)
 {
     Console.Error.WriteLine(missing);
@@ -54,6 +58,7 @@ builder.Services.ConfigureHttpJsonOptions(o => ApiFormat.Configure(o.SerializerO
 builder.Services.AddProblemDetails();
 builder.Services.AddGymRateLimits();
 builder.Services.AddSingleton<CheckInCleanup>();
+builder.Services.AddSingleton(invites!);
 if (email is not null) builder.Services.AddSingleton<IEmailSender>(sp => ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp, email));
 else if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
 else builder.Services.AddSingleton<IEmailSender, NoEmailSender>();
@@ -128,6 +133,7 @@ app.MapCheckIns();
 app.MapFeedback();
 app.MapReports();
 app.MapShares();
+app.MapInviteLinks();
 
 app.Run();
 

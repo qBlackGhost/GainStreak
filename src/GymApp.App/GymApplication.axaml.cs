@@ -132,6 +132,8 @@ public partial class GymApplication : Application
         var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
         lifetime.Activated += (_, e) =>
         {
+            // An invite link the phone opened in the app (Phase 21): a Universal Link on iOS, an App Link on Android
+            if (e is ProtocolActivatedEventArgs { Kind: ActivationKind.OpenUri, Uri: { } link }) OpenLink(link);
             if (e.Kind != ActivationKind.Background) return;
             _ = watcher.CameToForegroundAsync();
             health.RequestSync();   // Apple Health (Phase 20)
@@ -164,11 +166,27 @@ public partial class GymApplication : Application
         if (Current is GymApplication { _shell: { IsSignedInScreen: true } shell }) shell.ShowHome();
     });
 
+    /// <summary>A link that came while the app was still starting (a cold start from a link): opened with the shell.</summary>
+    private static Uri? _linkBeforeShell;
+
+    /// <summary>A link the phone opened in the app (Phase 21): an invite opens Friends' confirm card. Called from any
+    /// thread; before the shell exists the link waits for it.</summary>
+    public static void OpenLink(Uri link) => Dispatcher.UIThread.Post(() =>
+    {
+        if (Current is GymApplication { _shell: { } shell }) shell.OpenLink(link);
+        else _linkBeforeShell = link;
+    });
+
     /// <summary>The shell, once <see cref="AppStartup"/> has run. On the UI thread.</summary>
     private MainView CreateShellView()
     {
         AppTheme.Apply(Services.GetRequiredService<SessionService>().CurrentUser?.ThemePreference);
         var main = _shell = Services.GetRequiredService<MainViewModel>();
+        if (_linkBeforeShell is { } waiting)
+        {
+            _linkBeforeShell = null;
+            main.OpenLink(waiting);
+        }
         main.UpdateNotice ??= _updateNotice;
         ErrorHandling.Install(Services.GetRequiredService<ErrorLog>(), message => main.GlobalError = message);
         return new MainView { DataContext = main };

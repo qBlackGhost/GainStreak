@@ -46,6 +46,11 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
     /// <summary>Apple Health on iOS (Phase 20); Android's Health Connect comes later.</summary>
     public virtual IHealthStore CreateHealthStore() => new NoHealthStore();
 
+    /// <summary>Phones share through the system's share sheet (Phase 21).</summary>
+    public bool CanShare => true;
+
+    public abstract void Share(string text);
+
     /// <summary>Debug builds: point the server address at <paramref name="debugServerUrl"/> (the Mac as the emulator or
     /// Simulator sees it) through the same override the desktop's GYMAPP_SERVER_URL uses. Call before Avalonia starts.</summary>
     public static void UseDebugServer(string debugServerUrl)

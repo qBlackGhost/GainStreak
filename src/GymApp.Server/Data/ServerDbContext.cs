@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GymApp.Server.Data;
 
 /// <summary>The server's Postgres database: accounts, sessions, friendships, blocks, projected stats, shared check-ins,
-/// feedback, user reports and the splits and workouts friends share.
+/// feedback, user reports, friend invite codes and the splits and workouts friends share.
 /// Separate from the app's AppDbContext, which never leaves the phone.</summary>
 public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
 {
@@ -22,6 +22,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
     public DbSet<UserReport> UserReports => Set<UserReport>();
     public DbSet<EmailCode> EmailCodes => Set<EmailCode>();
+    public DbSet<FriendInvite> FriendInvites => Set<FriendInvite>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -113,6 +114,14 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.ToTable(t => t.HasCheckConstraint("CK_UserBlocks_NotSelf", "\"BlockerId\" <> \"BlockedId\""));
             e.HasOne<User>().WithMany().HasForeignKey(x => x.BlockerId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<User>().WithMany().HasForeignKey(x => x.BlockedId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<FriendInvite>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.Property(x => x.Code).HasMaxLength(Social.FriendInvites.CodeLength);
+            e.HasIndex(x => x.Code).IsUnique();
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<UserReport>(e =>

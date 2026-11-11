@@ -2,13 +2,14 @@ using System.Security.Claims;
 using GymApp.Contracts;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
+using GymApp.Server.Friends;
 using GymApp.Social;
 using Microsoft.EntityFrameworkCore;
 using Relation = GymApp.Contracts.FriendRelation;
 
 namespace GymApp.Server.Endpoints;
 
-/// <summary><c>/v1/users/search</c>, <c>/v1/friends</c> and <c>/v1/blocks</c>: thin wrappers over the shared <see cref="FriendService"/>,
+/// <summary><c>/v1/users/search</c>, <c>/v1/friends</c>, <c>/v1/invites</c> and <c>/v1/blocks</c>: thin wrappers over the shared <see cref="FriendService"/>,
 /// always acting as the signed-in user, so the app's rules (limits, only the receiver accepts) hold for any client.</summary>
 public static class FriendEndpoints
 {
@@ -29,6 +30,13 @@ public static class FriendEndpoints
             Run(friends.CancelAsync(me.UserId(), userId)));
         friends.MapDelete("/{userId:int}", (int userId, ClaimsPrincipal me, FriendService friends) =>
             Run(friends.RemoveAsync(me.UserId(), userId)));
+
+        // Invites (Phase 21): your own code, and someone else's from a scanned QR code or link
+        friends.MapGet("/invite", GetInvite);
+        friends.MapPost("/invite/reset", ResetInvite).RequireRateLimiting(RateLimits.InviteReset);
+        var invites = app.MapGroup("/v1/invites").RequireRateLimiting(RateLimits.Invite);
+        invites.MapGet("/{code}", LookUpInvite);
+        invites.MapPost("/{code}/accept", AcceptInvite);
 
         var blocks = app.MapGroup("/v1/blocks");
         blocks.MapGet("", GetBlocked);
@@ -88,6 +96,31 @@ public static class FriendEndpoints
         return result.Success ? Results.Ok(new SendRequestResponse(result.BecameFriends)) : Refused(result);
     }
 
+    private static async Task<IResult> GetInvite(HttpRequest request, ClaimsPrincipal me, FriendService friends, InviteSettings settings) =>
+        Invite(await friends.GetInviteCodeAsync(me.UserId()), request, settings);
+
+    private static async Task<IResult> ResetInvite(HttpRequest request, ClaimsPrincipal me, FriendService friends, InviteSettings settings) =>
+        Invite(await friends.ResetInviteCodeAsync(me.UserId()), request, settings);
+
+    private static IResult Invite(InviteCodeResult result, HttpRequest request, InviteSettings settings) =>
+        result.Success
+            ? Results.Ok(new FriendInviteResponse(result.Code!, settings.LinkFor(result.Code!, request)))
+            : Refused(new FriendResult(false, result.Error));
+
+    private static async Task<IResult> LookUpInvite(string code, ClaimsPrincipal me, FriendService friends)
+    {
+        var result = await friends.LookUpInviteAsync(me.UserId(), code);
+        return result.Success
+            ? Results.Ok(new InviteLookupResponse(result.Inviter!.Id, result.Inviter.Username, ToContract(result.Relation)))
+            : Refused(new FriendResult(false, result.Error));
+    }
+
+    private static async Task<IResult> AcceptInvite(string code, ClaimsPrincipal me, FriendService friends)
+    {
+        var result = await friends.AcceptInviteAsync(me.UserId(), code);
+        return result.Success ? Results.Ok(new SendRequestResponse(result.BecameFriends)) : Refused(result);
+    }
+
     private static async Task<IResult> Run(Task<FriendResult> action)
     {
         var result = await action;
@@ -96,7 +129,7 @@ public static class FriendEndpoints
 
     private static IResult Refused(FriendResult result) => result.Error switch
     {
-        FriendService.UnknownUserError => Problems.NotFound(result.Error),
+        FriendService.UnknownUserError or FriendService.UnknownInviteError => Problems.NotFound(result.Error),
         FriendService.ConflictError => Problems.Conflict(result.Error),
         _ => Problems.BadRequest(result.Error!)
     };

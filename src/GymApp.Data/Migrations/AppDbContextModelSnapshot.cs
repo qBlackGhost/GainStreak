@@ -705,6 +705,27 @@ namespace GymApp.Data.Migrations
                     b.ToTable("ExerciseBarSettings");
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.FriendInvite", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("UserId");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("FriendInvites");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.Friendship", b =>
                 {
                     b.Property<int>("Id")
@@ -1739,6 +1760,17 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Exercise");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.FriendInvite", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

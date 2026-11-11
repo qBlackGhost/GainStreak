@@ -239,6 +239,10 @@
         <StreamGeometry x:Key="IcChat">M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 9h8M8 12.5h5</StreamGeometry>
         <StreamGeometry x:Key="IcSend">M21 3L10 14M21 3l-6.5 18-4.5-7-7-4.5z</StreamGeometry>
         <StreamGeometry x:Key="IcShare">M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 3v13M7 8l5-5 5 5</StreamGeometry>
+        <StreamGeometry x:Key="IcQr">M4 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM4 14h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zM14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3</StreamGeometry>
+        <StreamGeometry x:Key="IcWifiOff">M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.6M12 20h.01</StreamGeometry>
+        <StreamGeometry x:Key="IcLinkOff">M9 15l6-6M10 6.5l1.2-1.2a4.2 4.2 0 0 1 6 6L16 12.5M14 17.5l-1.2 1.2a4.2 4.2 0 0 1-6-6L8 11.5M3 3l18 18</StreamGeometry>
+        <StreamGeometry x:Key="IcBlock">M5.6 5.6l12.8 12.8M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z</StreamGeometry>
         <StreamGeometry x:Key="IcInbox">M3 13l2.5-7.5A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.9 1.5L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 13h5l1.5 3h5l1.5-3h5</StreamGeometry>
         <StreamGeometry x:Key="IcBell">M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3c0 0 3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0</StreamGeometry>
         <StreamGeometry x:Key="IcSliders">M4 6h9M17 6h3M15 4v4M4 12h3M11 12h9M9 10v4M4 18h11M19 18h1M17 16v4</StreamGeometry>
