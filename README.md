@@ -186,7 +186,9 @@ It has its own data folder (`GymApp-TestBench/data` next to the real one), so it
 
 ## Releases for testers
 
-Releases are built with [Velopack](https://velopack.io): an installer for each system, and the app updates itself.
+> **The desktop app is frozen at 0.21.0**, its last release. New work targets the phones (below), and no more desktop releases are planned. The desktop still builds and runs, and the server keeps accepting 0.21.0 (`MinClientVersion` stays at or below it). The steps here are kept for reference.
+
+Desktop releases are built with [Velopack](https://velopack.io): an installer for each system, and the app updates itself.
 
 1. Fill in `GymAppServerUrl` (the social server, https) and `GymAppUpdateUrl` (the folder the releases will be served from) in `Directory.Build.props`. Both are built into the app. A Release publish without a server address stops with an error. Without an update folder the app never checks for updates.
 2. Bump `Version` in `Directory.Build.props`. Velopack only offers a higher version.

@@ -32,7 +32,7 @@ After any change to the app's entities or `OnModelCreating`, regenerate the comp
 dotnet ef dbcontext optimize --project src/GymApp.Data --startup-project src/GymApp.Desktop --output-dir CompiledModels
 ```
 
-The production server never migrates on start: `docker run ... gymapp-server migrate` (or `dotnet GymApp.Server.dll migrate`) must run before deploying a schema change. Desktop releases: `build/release.sh` then `build/upload-github.sh` (see README "Releases for testers").
+The production server never migrates on start: `docker run ... gymapp-server migrate` (or `dotnet GymApp.Server.dll migrate`) must run before deploying a schema change. Desktop releases (`build/release.sh` then `build/upload-github.sh`, see README "Releases for testers") are frozen since 0.21.0; see "Desktop freeze" below.
 
 ## Architecture
 
@@ -70,11 +70,19 @@ The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.
 
 `docs/PHASE_*.md` are specs written for Claude Code; follow the current one when working on its phase. Phase 16 (`docs/PHASE_16_MOBILE_APP.md`, the iOS and Android heads, with a shared `GymApp.App` library) is in progress; the 16a spike is done (its results are in the spec). Its ground rules include:
 - Do not commit or push.
-- The desktop app must look and behave exactly as in 0.15.x.
+- ~~The desktop app must look and behave exactly as in 0.15.x.~~ Replaced by the desktop freeze below.
+
+## Desktop freeze (from 0.21.0)
+
+Phones are the product; the desktop app is frozen at 0.21.0, its last release, kept for the developer's uni project presentation. It is slimmed only after that presentation (see `docs/PHASE_16_MOBILE_APP.md`, "Later").
+- **No desktop work:** no new desktop features, layouts or desktop-specific polish, and no more desktop releases (`build/release.sh`, `build/upload-github.sh`). Specs and phase plans target the phones only.
+- **Phone-only features are fine:** a new feature may exist only on the phones (gate it through `IPlatform`, as `HasLiveWorkout` does). On the desktop, hide it; don't build a desktop layout for it. What the desktop gets for free from shared code is fine.
+- **It must keep building and starting:** `GymApp.Desktop` is still the startup project for the EF commands and hosts the TestBench, and the presentation needs it. Don't break the existing desktop branches in shared views; don't remove them before the slim-down.
+- **Keep the server accepting 0.21.0:** don't raise the server's `MinClientVersion` above 0.21.0, and keep `Contracts` and endpoints compatible with it, until the developer says the presentation is over.
 
 For iOS, test EF Core changes with a Release build for the Simulator (full AOT). A Debug build JITs and hides runtime model-building failures.
 
 **Checks, for every phase** (this overrides a spec's own "after each sub-phase" checks, to save time and tokens):
 - After each sub-phase: `dotnet build` and the app tests (`dotnet test tests/GymApp.Tests`, which includes `CompiledModelTests`).
-- At the end of the phase: the full `dotnet test` (server tests, Docker), the Android build, the iOS Release build for the Simulator and running the heads.
+- At the end of the phase: the full `dotnet test` (server tests, Docker), the Android build, the iOS Release build for the Simulator and running the phone heads. The desktop only needs to build and start (the freeze above); its look is not checked.
 - Exception: a sub-phase that changes `GymApp.Contracts`, the server, or a head's own code also builds or tests that part right away.

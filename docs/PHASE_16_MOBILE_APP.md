@@ -281,4 +281,4 @@ The 0.14.1 known limitation: the missed-day choice needs the app opened the next
 - Background sync, home-screen widgets (streak), Apple Health / Health Connect.
 - GPS: "you're at a gym, check in?" (a privacy decision of its own).
 - Workout sync between devices (would need Guid ids for rows created offline).
-- Retiring or slimming the desktop head, if mobile makes it unnecessary.
+- Retiring or slimming the desktop head, if mobile makes it unnecessary. **Decided 2026-11-11:** the desktop is frozen at 0.21.0 (rules in CLAUDE.md, "Desktop freeze") and kept as is for the developer's uni presentation. After it, slim it down: drop the desktop layout branches in the shared views, the sidebar, Velopack and the desktop release scripts, keeping a bare window that hosts the EF commands and the TestBench (or move those elsewhere), then allow `MinClientVersion` above 0.21.0.
