@@ -4,6 +4,7 @@ using GymApp.Core;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
 using GymApp.Server.Email;
+using GymApp.Server.Feedback;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -45,8 +46,13 @@ public static class AccountEndpoints
         me.MapDelete("", DeleteAccount);
     }
 
-    private static async Task<IResult> Register(RegisterRequest request, ServerDbContext db, TimeProvider clock)
+    private static async Task<IResult> Register(RegisterRequest request, ServerDbContext db, TimeProvider clock,
+        SignUpLimiter signUps, HttpContext http)
     {
+        // The same answer the rate limiter gives (429, no body), so the app shows its usual "too many tries" message
+        var address = RateLimits.AddressKey(http.Connection.RemoteIpAddress);
+        if (signUps.IsFull(address)) return Results.StatusCode(StatusCodes.Status429TooManyRequests);
+
         var username = (request.Username ?? "").Trim();
         var email = Credentials.NormalizeEmail(request.Email ?? "");
         var password = request.Password ?? "";
@@ -82,6 +88,12 @@ public static class AccountEndpoints
 
         var token = SessionTokens.Start(db, user.Id, request.DeviceName, now);
         await db.SaveChangesAsync();
+
+        // Only a created account counts. A spike across the server goes to Discord before answering: Cloud Run may
+        // stop the app once the response is sent
+        if (signUps.Record(address) is { } lastHour && http.RequestServices.GetService<DiscordFeedbackForwarder>() is { } discord)
+            await discord.PostSignUpAlertAsync(lastHour);
+
         return Results.Created("/v1/me", new AuthResponse(token, ToMe(user)));
     }
 

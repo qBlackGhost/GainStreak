@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -23,7 +25,9 @@ public static class RateLimits
         services.AddRateLimiter(o =>
         {
             o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            o.AddPolicy(Register, ctx => PerIp(ctx, 5, TimeSpan.FromHours(1)));
+            // Attempts, failed ones included: a cap on the work a script can cause. Accounts actually created are
+            // limited separately and more tightly (SignUpLimiter), so mistakes behind a shared address don't count
+            o.AddPolicy(Register, ctx => PerIp(ctx, RegisterAttemptsPerHour, TimeSpan.FromHours(1)));
             o.AddPolicy(Login, ctx => PerIp(ctx, 10, TimeSpan.FromMinutes(1)));
             o.AddPolicy(Search, ctx => PerIp(ctx, 30, TimeSpan.FromMinutes(1)));
             // Per signed-in user: enough for a tester on a bad day, not for a script filling the Discord channel
@@ -40,11 +44,27 @@ public static class RateLimits
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });
 
+    /// <summary>Sign-up attempts per address an hour, failed ones included.</summary>
+    public const int RegisterAttemptsPerHour = 60;
+
+    /// <summary>The partition for a client address: an IPv4 address as is (also when mapped into IPv6), an IPv6
+    /// address by its /64 network. A phone or home gets a whole /64, so limiting single IPv6 addresses would let one
+    /// device rotate through billions of them.</summary>
+    public static string AddressKey(IPAddress? address)
+    {
+        if (address is null) return "ip:";
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        if (address.AddressFamily != AddressFamily.InterNetworkV6) return $"ip:{address}";
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+        return $"ip:{new IPAddress(bytes)}/64";
+    }
+
     private static RateLimitPartition<string> PerIp(HttpContext ctx, int permits, TimeSpan window) =>
-        Fixed($"ip:{ctx.Connection.RemoteIpAddress}", permits, window);
+        Fixed(AddressKey(ctx.Connection.RemoteIpAddress), permits, window);
 
     private static string UserOrIp(HttpContext ctx) =>
-        ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } id ? $"user:{id}" : $"ip:{ctx.Connection.RemoteIpAddress}";
+        ctx.User.FindFirstValue(ClaimTypes.NameIdentifier) is { } id ? $"user:{id}" : AddressKey(ctx.Connection.RemoteIpAddress);
 
     private static RateLimitPartition<string> Fixed(string key, int permits, TimeSpan window) =>
         RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions

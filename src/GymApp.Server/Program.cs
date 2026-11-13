@@ -58,6 +58,7 @@ builder.Services.ConfigureHttpJsonOptions(o => ApiFormat.Configure(o.SerializerO
 builder.Services.AddProblemDetails();
 builder.Services.AddGymRateLimits();
 builder.Services.AddSingleton<CheckInCleanup>();
+builder.Services.AddSingleton<SignUpLimiter>();
 builder.Services.AddSingleton(invites!);
 if (email is not null) builder.Services.AddSingleton<IEmailSender>(sp => ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp, email));
 else if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender, LogEmailSender>();

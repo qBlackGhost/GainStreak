@@ -392,7 +392,7 @@ Before the first public release the version is **0.&lt;phase&gt;.&lt;fix&gt;**:
 
 - The server has no production host yet, so a release build has nothing to connect to. There's no password reset or email verification.
 - Workouts don't sync between devices: signing in on a second device starts it with no workout history.
-- Registering is limited to 5 accounts per hour per IP address, which many phones on one mobile network may share.
+- Sign-ups are limited per address (IPv6: per /64 network): 30 accounts an hour, counting only accounts actually created, and 60 attempts an hour. More than 100 sign-ups an hour across the server posts an alert to the Discord feedback channel (when its webhook is set) but refuses nobody. The counts are kept in memory, so they start over when the server restarts. Login (10 a minute) and search (30 a minute) are still per address, which phones on one mobile network share.
 - Points are computed on the client and can't be verified.
 - Set values can be made up. The check-in rule only stops one-tap check-ins.
 - The missed-day choice needs the app to be opened the next day. There are no notifications, so a user who doesn't open it loses the streak at midnight.

@@ -56,7 +56,7 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
         new(_factory.CreateClient(), tokens ?? new MemoryTokenStore(), appVersion: appVersion);
 
     /// <summary>A phone with <paramref name="username"/> registered and signed in through the app's AccountService.
-    /// Several phones register from one test client, so keep to the register rate limit (5 per test).</summary>
+    /// Several phones register from one test client, so keep within the sign-up limits (SignUpLimiter.PerAddressPerHour per test).</summary>
     protected async Task<Phone> PhoneAsync(string username)
     {
         var phone = new Phone(tokens => Api(tokens));

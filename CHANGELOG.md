@@ -2,6 +2,11 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.21.1
+
+- **Signing up on a busy network:** a mistake when signing up, such as a username that's taken, no longer uses up a try. Many phones on one mobile network can now sign up within the same hour, where five tries used to block everyone sharing that network's address for an hour.
+- Only the server changes, so no app update is needed.
+
 ## 0.21.0
 
 - **Add friends with a QR code:** in **Friends → Add friends**, tap **Show my QR code**. A friend scans it with their phone's camera, and GainStreak opens on their Friends tab with **"yourname wants to be your friend"**. They tap **Accept** and you're friends at once, with no request to wait on.

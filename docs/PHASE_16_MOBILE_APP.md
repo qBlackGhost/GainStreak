@@ -276,7 +276,7 @@ The 0.14.1 known limitation: the missed-day choice needs the app opened the next
 ## Later (not this phase)
 
 - Replacing the public OSM tile, Nominatim and Overpass servers before a public release (required: their usage policies don't allow an app's traffic at scale).
-- Rate limits behind shared IPs: mobile carriers put many phones behind one IP, so "register 5 an hour per IP" will hit real users. Fix before the public release.
+- Rate limits behind shared IPs: mobile carriers put many phones behind one IP, so "register 5 an hour per IP" will hit real users. Fix before the public release. **Done in 0.21.1** for sign-ups (only created accounts count, 30 an hour per address or IPv6 /64, a Discord alert past 100 an hour); App Attest / Play Integrity, or requiring a confirmed email before friend requests, stay options if the alert ever fires.
 - Push notifications for friend requests (needs APNs/FCM and server work).
 - Background sync, home-screen widgets (streak), Apple Health / Health Connect.
 - GPS: "you're at a gym, check in?" (a privacy decision of its own).

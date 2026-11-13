@@ -127,6 +127,51 @@ public sealed class DiscordFeedbackForwarder(
         return true;
     }
 
+    /// <summary>Posts that <paramref name="lastHour"/> accounts were created in the last hour, more than
+    /// <see cref="Auth.SignUpLimiter.AlertPerHour"/>: a script spreading sign-ups over many addresses. Not stored or
+    /// retried; the next spike posts again. Never throws; false if it didn't go through.</summary>
+    public async Task<bool> PostSignUpAlertAsync(int lastHour, CancellationToken ct = default)
+    {
+        try
+        {
+            using var content = BuildSignUpAlert(lastHour, clock.GetUtcNow());
+            using var response = await http.CreateClient(HttpClientName).PostAsync(webhook, content, ct);
+            if (response.IsSuccessStatusCode) return true;
+            log.LogWarning("Discord refused the sign-up alert: {Status}.", (int)response.StatusCode);
+        }
+        catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            log.LogError(e, "Posting the sign-up alert to Discord failed.");
+        }
+        return false;
+    }
+
+    /// <summary>The webhook body for a sign-up spike: one embed with the count.</summary>
+    public static MultipartFormDataContent BuildSignUpAlert(int lastHour, DateTimeOffset at)
+    {
+        var payload = new
+        {
+            username = "GainStreak alerts",
+            allowed_mentions = new { parse = Array.Empty<string>() },
+            embeds = new[]
+            {
+                new
+                {
+                    title = "Sign-up spike",
+                    description = $"{lastHour.ToString(CultureInfo.InvariantCulture)} accounts were created in the last hour " +
+                        $"(alert at {Auth.SignUpLimiter.AlertPerHour.ToString(CultureInfo.InvariantCulture)}). " +
+                        "Check the newest users for spam. The next alert comes an hour after this one at the earliest.",
+                    color = 0xFF6B5B,
+                    timestamp = at.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)
+                }
+            }
+        };
+
+        var json = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8);
+        json.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+        return new MultipartFormDataContent { { json, "payload_json" } };
+    }
+
     /// <summary>The webhook body for a user report: one embed, with the ids to act on. A note is at most
     /// <see cref="UserReportRules.MaxNoteLength"/> characters, so it always fits.</summary>
     public static MultipartFormDataContent BuildReportMessage(UserReport report, string reporter, string reported)
