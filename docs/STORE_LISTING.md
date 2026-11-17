@@ -43,7 +43,9 @@ The email address also receives codes, for confirming it and resetting the passw
 
 **Apple Health (Phase 20, iPhone):** off until turned on in Profile. It saves the app's own workouts, cardio sessions and weigh-ins to Health and reads weight, height, birth date, sex and daily steps from it. Everything read stays on the phone: it fills the body data on the phone, never reaches the server, earns no points and isn't used for ads.
 
-**Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health data (Apple Health is read and written on the phone only), advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
+**Health Connect (Phase 23, Android):** the same as Apple Health, off until turned on in Profile. It saves the app's own workouts, cardio sessions and weigh-ins and reads weight, height and daily steps (Health Connect has no birth date or sex). Everything read stays on the phone.
+
+**Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health data (Apple Health and Health Connect are read and written on the phone only), advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
 
 ## Google Play: Data safety form
 
@@ -65,7 +67,7 @@ The email address also receives codes, for confirming it and resetting the passw
     - Other in-app messages (feedback text, notes on reports about other users): collected; optional; used for developer communications and fraud prevention, security and compliance.
   - **Location (from 0.19.0):**
     - Approximate location: collected; shared; processed ephemerally; optional; used for app functionality. Only the rounded position (about 1 km) sent to OpenStreetMap's Nominatim when the user taps "Show me gyms near me" on vacation.
-- **Not collected:** precise location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files. Device ids apart from the push token (0.22.0, above).
+- **Not collected:** precise location, financial info, health and fitness (workouts, body data and what's read from or saved to Health Connect never leave the phone), contacts, photos, files. Device ids apart from the push token (0.22.0, above).
 - **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only). The precise position is **not collected and not shared**: it's used on the phone only (for the rounded one, see Phase 19 below). No background location, so no location permissions declaration is needed in the Play Console.
 - **Approximate location (Phase 19), decided:** declared as above. "Show me gyms near me" sends a rounded position (about 1 km) to Nominatim, a third party (OpenStreetMap), on the user's tap; Play counts data sent off the device as collected, and sent to a third party that isn't the developer's service provider as shared. Ephemeral: GainStreak doesn't keep it, and it isn't used for anything but naming the city. Enter it in Play Console before 0.19.0 goes to the store.
 
@@ -85,6 +87,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Data used to track you:** none.
 - **Data not linked to the user:**
   - Location: Coarse Location (App Functionality), from 0.19.0. Not used for tracking.
+- **Health Connect (Phase 23):** *accessed*, **not collected and not shared** (it never leaves the phone), so nothing to add to the data types. What Play asks for separately is below.
 - **Export compliance:** `ITSAppUsesNonExemptEncryption` is false in `Info.plist` (HTTPS only), so no questions on upload.
 
 ## Location: notes for the stores (Phase 18)
@@ -96,6 +99,21 @@ The email address also receives codes, for confirming it and resetting the passw
 - **App Review notes (iOS), notifications (Phase 22).** Notifications are asked for only when the user turns on Reminders or Friend requests in Profile → Notifications, or taps Turn on on Friends' card. A reviewer sees a friend notification by sending the review account a request from a second account.
 - **Store descriptions (0.22.0).** Mention it: "Get a notification when a friend sends you a request or accepts yours."
 - **App Review notes (iOS).** Say where location is used (Start workout on Home) and that the review account's gyms are in Timișoara, so a reviewer elsewhere sees the "not at one of your gyms" path, which is expected.
+
+## Health Connect: Play Console (Phase 23)
+
+Google reviews every app that asks for Health Connect permissions. Before the first build with them goes to any track (internal testing included), in Play Console:
+- **App content → Health apps declaration:** the app's health features are fitness: "activity and fitness" (workouts, cardio, steps) and "body measurements" (weight, height). Not a medical device, no medical records.
+- **App content → Health Connect permissions:** declare each permission the manifest asks for, with why:
+  - `READ_WEIGHT`: weigh-ins from a scale or another app fill the days the user hasn't logged in GainStreak.
+  - `WRITE_WEIGHT`: the weigh-ins the user logs in GainStreak are saved to Health Connect.
+  - `READ_EXERCISE`: GainStreak reads back the workouts it saved, to keep them in step (replace or delete them when the user changes or undoes a workout). Other apps' workouts aren't used.
+  - `WRITE_EXERCISE`: finished workouts and cardio sessions are saved to Health Connect.
+  - `READ_HEIGHT`: fills an empty height in the body data, or offers it where it differs.
+  - `READ_STEPS`: the average daily steps of the last 30 days suggest an activity level for the calorie estimate.
+  - No background reading and no history permission.
+- **Privacy policy:** must describe the Health Connect use; it does (`site/privacy.html`, "Health Connect (Android)", which the app's permission page opens). Publish `site/` before uploading.
+- **Review video, if Play asks for one:** Profile → Health Connect → turn it on → the permission sheet → a logged weigh-in appearing in Health Connect.
 
 ## Deleting an account
 
@@ -113,6 +131,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - [ ] **Push Notifications capability (Phase 22):** on developer.apple.com, App ID `com.gainstreak.app` → Capabilities → Push Notifications, then make the profiles again. The APNs key (Keys → +, Apple Push Notifications service) is separate and goes to the server through Secret Manager.
 - [ ] **Firebase (Phase 22):** an Android app `com.gainstreak.app` in the Firebase project, with both SHA-256 fingerprints, and its `google-services.json` for the build (see the README).
 - [ ] **HealthKit capability (Phase 20):** on developer.apple.com, App ID `com.gainstreak.app` → Capabilities → HealthKit, then make the App Store profile again and download it. A signed build fails without it, since the app's entitlements now include HealthKit.
+- [ ] **Health Connect declarations (Phase 23):** the Health apps declaration and the Health Connect permissions form in Play Console (see "Health Connect: Play Console"). Google won't publish a build with health permissions until they're approved.
 - [ ] **Test account for App Review:** Apple's reviewers need to sign in. Make a review account with a few friends and some check-ins, and give its username and password in App Store Connect, not in this repo.
 
 ## Public pages (`site/`)

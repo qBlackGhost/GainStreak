@@ -106,7 +106,7 @@ public partial class ProfileViewModel : ViewModelBase
     /// <summary>The Notifications card: Reminders, friend notifications, or both. Hidden on the desktop.</summary>
     public bool HasNotifications => Reminders.IsSupported || FriendNotifications.IsSupported;
 
-    /// <summary>Apple Health (Phase 20): the iPhone only.</summary>
+    /// <summary>Apple Health (Phase 20) on the iPhone, Health Connect (Phase 23) on Android.</summary>
     public HealthViewModel Health { get; }
 
     /// <summary>Vacation (0.19.0): every head.</summary>

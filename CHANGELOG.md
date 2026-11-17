@@ -2,6 +2,18 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.23.0
+
+- **Health Connect (Android):** turn it on in **Profile → Health Connect**, and choose in Android's sheet what GainStreak may use. It's off until you do. It works like Apple Health on the iPhone.
+  - **Saved to Health Connect:** your finished workouts (with the day's name), your cardio sessions and the weigh-ins you log. Fix a weigh-in or undo a workout and Health Connect follows; the last 30 days are kept in step.
+  - **Read from Health Connect:** weigh-ins from a smart scale or another app fill the days you haven't logged; your height fills an empty field, and where Health Connect says something different, the card asks **Use Health Connect's** or **Keep mine**; your steps of the last 30 days suggest an activity level (**Use it** / **Not now**). Health Connect has no birth date or gender, so those stay yours to fill in.
+  - **Your typed values win,** nothing from Health Connect earns points or changes your streak, and it never leaves your phone.
+  - **Turned something off in the sheet?** The card says what isn't saved, and **Open Settings** takes you to Health Connect, where **App permissions** has GainStreak.
+  - **Android 13 or older:** Health Connect is a separate app there. Turning it on opens it on Google Play; install it and turn it on again.
+  - **Turning it off** stops reading and saving; what's already in Health Connect stays there.
+- **The privacy policy** has a Health Connect section.
+- **No migration:** it uses the same settings as Apple Health. The server doesn't change.
+
 ## 0.22.0
 
 - **Friend notifications on your phone:** GainStreak tells you when someone sends you a friend request, accepts yours, or adds you with your QR code, even when the app is closed.

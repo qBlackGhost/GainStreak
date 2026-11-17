@@ -22,6 +22,10 @@ public sealed class HealthSyncTests : IDisposable
         public HashSet<HealthKind> Denied { get; } = [];
         public bool FailSaves { get; set; }
         public bool IsSupported { get; set; } = true;
+        public HealthTexts Texts { get; set; } = HealthTexts.AppleHealth;
+        public bool NeedsInstall { get; set; }
+        public int InstallPagesOpened { get; private set; }
+        public void OpenInstallPage() => InstallPagesOpened++;
         public Task<bool> RequestAuthorizationAsync() => Task.FromResult(true);
         public HealthAccess WriteAccess(HealthKind kind) => Denied.Contains(kind) ? HealthAccess.Denied : HealthAccess.Allowed;
         public Task<IReadOnlyList<HealthItem>> ReadOwnAsync(DateTime from, DateTime to) =>
@@ -326,7 +330,65 @@ public sealed class HealthSyncTests : IDisposable
         vm.IsOn = false;
         await Until(async () => !await profiles.IsHealthEnabledAsync(_alice));
         await Until(() => Task.FromResult(vm.Note is not null));
-        Assert.Equal(App.ViewModels.HealthViewModel.TurnedOffText, vm.Note);
+        Assert.Equal("What GainStreak already saved stays in Health. You can delete it in the Health app.", vm.Note);
+    }
+
+    // ===== Health Connect (Phase 23): the same card in Android's words =====
+
+    [Fact] public async Task Card_OnTheIphone_KeepsAppleHealthsWords()
+    {
+        var (vm, _) = await CardAsync();
+        Assert.Equal("Apple Health", vm.Texts.Title);
+        Assert.Equal("Saves your workouts, cardio and weigh-ins to this iPhone's Health app, and reads your weight, height, birth date and steps from it.",
+            vm.Texts.Description);
+        Assert.Equal("Use Health's", vm.UseStoreText);
+        Assert.Equal("Apple Health couldn't be opened. Try again.", vm.NoSheetText);
+    }
+
+    [Fact] public async Task Card_OnAndroid_SpeaksOfHealthConnect()
+    {
+        _store.Texts = HealthTexts.HealthConnect;
+        _store.Denied.Add(HealthKind.StrengthWorkout);
+        var (vm, profiles) = await CardAsync();
+        Assert.Equal("Health Connect", vm.Texts.Title);
+        Assert.Equal("Use Health Connect's", vm.UseStoreText);
+
+        vm.IsOn = true;
+        await Until(() => Task.FromResult(vm.Problem is not null));
+        Assert.Equal("Workouts are off for GainStreak in Health Connect, so they aren't saved there.", vm.Problem);
+
+        vm.IsOn = false;
+        await Until(() => Task.FromResult(vm.Note is not null));
+        Assert.Equal("What GainStreak already saved stays in Health Connect. You can delete it in Health Connect.", vm.Note);
+        Assert.False(await profiles.IsHealthEnabledAsync(_alice));
+    }
+
+    [Fact] public async Task Card_WhenHealthConnectMustBeInstalled_OpensItsPage_AndStaysOff()
+    {
+        _store.Texts = HealthTexts.HealthConnect;
+        _store.NeedsInstall = true;
+        var (vm, profiles) = await CardAsync();
+
+        vm.IsOn = true;
+        await Until(() => Task.FromResult(vm.Problem is not null));
+        Assert.False(vm.IsOn);
+        Assert.False(await profiles.IsHealthEnabledAsync(_alice));
+        Assert.Equal(1, _store.InstallPagesOpened);
+        Assert.Equal("Health Connect isn't on this phone yet. Install it from Google Play, then turn this on again.", vm.Problem);
+        Assert.False(vm.CanOpenSettings);
+    }
+
+    [Fact] public async Task Sync_DoesNothing_UntilHealthConnectIsInstalled()
+    {
+        var profiles = new ProfileService(_db);
+        await profiles.SetHealthEnabledAsync(_alice, true);   // turned on, then Health Connect was uninstalled
+        Weight(Today, 80);
+        _store.NeedsInstall = true;
+        var sync = new HealthSync(_store, new HealthExportService(_db), _session, new ProfileHealthSetting(profiles),
+            new ErrorLog(_logDir), _clock, new HealthImportService(_db));
+        Assert.Null(await sync.SyncAsync());
+        Assert.Null(await sync.ReadAsync(force: true));
+        Assert.Empty(_store.Items);
     }
 
     // ===== Reading from Health (20c) =====

@@ -24,6 +24,8 @@
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
     <!-- Friend notifications (Phase 22) through Firebase Cloud Messaging -->
     <PackageReference Include="Xamarin.Firebase.Messaging" Version="125.1.3" />
+    <!-- Health Connect (Phase 23) -->
+    <PackageReference Include="Xamarin.AndroidX.Health.Connect.ConnectClient" Version="1.1.0.4" />
   </ItemGroup>
 
   <ItemGroup>
