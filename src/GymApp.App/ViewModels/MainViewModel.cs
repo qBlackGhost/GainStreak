@@ -133,8 +133,7 @@ public partial class MainViewModel : ViewModelBase
     [ObservableProperty] public partial int OwnLevel { get; private set; }
 
     /// <summary>The app bar's avatar.</summary>
-    public string Initials => _session.CurrentUser?.Username is { Length: > 0 } name
-        ? name[..Math.Min(2, name.Length)].ToUpperInvariant() : "?";
+    public string Initials => UserInitials.Of(_session.CurrentUser?.Username);
 
     /// <summary>The tab a screen belongs to: null for the screens before sign-in and those the app bar opens.</summary>
     public static AppTab? TabOf(Type screen) => screen.Name switch
@@ -312,7 +311,15 @@ public partial class MainViewModel : ViewModelBase
     }, root: true);
     public void ShowSplits() => Open(_sp.GetRequiredService<SplitsViewModel>, root: true);
 
-    public void ShowProfile() => Open(_sp.GetRequiredService<ProfileViewModel>, root: false);
+    public void ShowProfile() => ShowProfile(ProfilePage.Main);
+
+    /// <summary>Profile on one of its phone pages (0.23.1): Calories and Home's setup step open Body data.</summary>
+    public void ShowProfile(ProfilePage page) => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<ProfileViewModel>();
+        vm.Page = page;
+        return vm;
+    }, root: false);
     /// <summary>The Map screen: friends map, your gym, your check-ins. <paramref name="pickToday"/> opens the gym
     /// picker for today right away (Home's "Choose another…" and "Change gym").</summary>
     public void ShowGyms(bool pickToday = false, bool chooseCity = false, bool addGym = false, bool nearMe = false)

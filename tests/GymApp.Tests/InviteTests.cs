@@ -188,7 +188,7 @@ public sealed class OpenInviteLinkTests : IAsyncLifetime
         Assert.False(shell.HasPendingInvite);
         Assert.True(friends.HasInvite);
         Assert.True(friends.IsInviteAsk);
-        Assert.Equal(("bob", "BO"), (friends.InviterName, friends.InviterInitials));
+        Assert.Equal(("bob", "B"), (friends.InviterName, friends.InviterInitials));
     }
 
     [Fact] public async Task Accept_MakesFriends_AndSaysSo()

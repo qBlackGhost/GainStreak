@@ -2,6 +2,18 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.23.1
+
+- **Profile is tidier on the phones:** it now shows just you: your streak, level and points, your weight, and two rows for **Body data** and **Vacation**. The body data row sums it up ("Male · Age 28 · 180 cm · Active") with your maintenance estimate under it; tap it to edit. Unsaved edits wait there and the row says so.
+- **Settings:** the new button at the top right of your profile card opens a list of **Email**, **Password**, **Notifications**, **Apple Health** (Health Connect on Android), **Home city** and **Appearance**, each showing what it's set to. Tap one for its page; the arrow at the top (or Android's back) takes you back. **Send feedback**, **Log out** and **Delete account** are at the bottom of the list.
+- **Edit body data** in Calories and **Fill in your body data** on Home open the Body data page straight away.
+- **Apple Health asking something?** Its row says **Needs an answer** until you pick, so the question isn't missed now that it's a page away.
+- **New switches** that spring across with a check when on, in Profile's settings and the Map's settings (Visible to friends, Ask for gym). The training day reminder's time is set on two wheels right in the card, no popup.
+- **Avatar letters:** an avatar without a picture shows one letter for a one-word username ("cristi" → C) and two for two words split by `_`, `.` or `-` ("andrei.m" → AM), everywhere: the app bar, Profile, friends, the leaderboard, the Inbox and the map's pins.
+- **New usernames need a letter:** one made only of digits (and `_`, `.`, `-`) is refused with "Your username needs at least one letter." Existing accounts keep theirs. Digits before a letter don't count for the avatar: "1cristi" shows C.
+- The desktop app doesn't change.
+- **No migration.** The server refuses digits-only usernames too (it shares the rule), for every app version.
+
 ## 0.23.0
 
 - **Health Connect (Android):** turn it on in **Profile → Health Connect**, and choose in Android's sheet what GainStreak may use. It's off until you do. It works like Apple Health on the iPhone.

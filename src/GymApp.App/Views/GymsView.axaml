@@ -28,7 +28,7 @@
             <Setter Property="CornerRadius" Value="10"/>
         </Style>
 
-        <!-- Settings chips: the whole chip is the switch -->
+        <!-- Settings chips: the whole chip is the switch; the ToggleSwitch inside only shows the state (0.23.1) -->
         <Style Selector="Button.chip">
             <Setter Property="MinHeight" Value="48"/>
             <Setter Property="Padding" Value="12,6"/>
@@ -54,24 +54,6 @@
             <Setter Property="BorderBrush" Value="{DynamicResource LimeTintLineStrong}"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
-        <Style Selector="Border.track">
-            <Setter Property="Width" Value="34"/>
-            <Setter Property="Height" Value="20"/>
-            <Setter Property="CornerRadius" Value="10"/>
-            <Setter Property="Background" Value="{DynamicResource Control}"/>
-            <Setter Property="Padding" Value="2"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-        <Style Selector="Button.chip.on Border.track">
-            <Setter Property="Background" Value="{DynamicResource Accent}"/>
-        </Style>
-        <Style Selector="Border.knob">
-            <Setter Property="Width" Value="16"/>
-            <Setter Property="Height" Value="16"/>
-            <Setter Property="CornerRadius" Value="8"/>
-            <Setter Property="Background" Value="{DynamicResource Inverse}"/>
-            <Setter Property="HorizontalAlignment" Value="Left"/>
-        </Style>
         <!-- The chip's body: icon, words, switch in a row; on phones (the map settings sheet) two tiles side by side,
              the switch top right and the words under it -->
         <Style Selector="Grid.chipBody > StackPanel"><Setter Property="Grid.Column" Value="1"/></Style>
@@ -85,10 +67,6 @@
             <Setter Property="Grid.Column" Value="0"/>
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="Grid.ColumnSpan" Value="3"/>
-        </Style>
-        <Style Selector="Button.chip.on Border.knob">
-            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
-            <Setter Property="HorizontalAlignment" Value="Right"/>
         </Style>
 
         <!-- Friends rows -->
@@ -357,7 +335,7 @@
                                 <TextBlock Text="Visible to friends" FontSize="13" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding ShareStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <Border Grid.Column="2" Classes="track" VerticalAlignment="Center"><Border Classes="knob"/></Border>
+                            <ToggleSwitch Grid.Column="2" IsChecked="{Binding ShareCheckIns, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
                     <Button Classes="chip" Classes.on="{Binding AskForGym}" Command="{Binding ToggleAskCommand}"
@@ -369,7 +347,7 @@
                                 <TextBlock Text="Ask for gym" FontSize="13" FontWeight="Bold"/>
                                 <TextBlock Text="{Binding AskStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
                             </StackPanel>
-                            <Border Grid.Column="2" Classes="track" VerticalAlignment="Center"><Border Classes="knob"/></Border>
+                            <ToggleSwitch Grid.Column="2" IsChecked="{Binding AskForGym, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
                 </WrapPanel>

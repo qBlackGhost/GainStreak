@@ -205,12 +205,8 @@ public static class FriendMapRules
     public static IReadOnlyDictionary<int, int> FriendsAtGym(IEnumerable<FriendCheckIn> latestPerFriend) =>
         latestPerFriend.Where(c => c.GymId > 0).GroupBy(c => c.GymId).ToDictionary(g => g.Key, g => g.Count());
 
-    /// <summary>Two-letter initials from a username's letters: "andrei.m" → "AN". "?" when it has no letters.</summary>
-    public static string Initials(string username)
-    {
-        var letters = new string(username.Where(char.IsLetter).Take(2).ToArray());
-        return letters.Length == 0 ? "?" : letters.ToUpperInvariant();
-    }
+    /// <summary>A friend's pin letters: <see cref="UserInitials"/>.</summary>
+    public static string Initials(string username) => UserInitials.Of(username);
 
     /// <summary>Straight-line distance in km, for "By gym" ordering.</summary>
     public static double DistanceKm(double lat1, double lon1, double lat2, double lon2) =>

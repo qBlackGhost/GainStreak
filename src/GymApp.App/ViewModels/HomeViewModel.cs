@@ -106,7 +106,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
     /// <summary>Signed in with the cached password: the server couldn't be reached.</summary>
     public string? OfflineNotice => _session.SignedInOffline ? "You're offline. Friends will update when you're back online." : null;
-    public string Initials => Username.Length == 0 ? "?" : Username[..Math.Min(2, Username.Length)].ToUpperInvariant();
+    public string Initials => UserInitials.Of(Username);
     public string DateText => AppClock.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
     public string Greeting => AppClock.Now.Hour switch
     {
@@ -780,7 +780,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             new(2, exercises.Title, exercises.Text, exercises.Cta, exercises.Result,
                 isLocked: !checkIn.HasSplit, () => _shell().ShowWorkouts()),
             new(3, body.Title, body.Text, body.Cta, body.Result, isLocked: false,
-                opensProfile ? () => _shell().ShowProfile() : () => _shell().ShowCalories()),
+                opensProfile ? () => _shell().ShowProfile(ProfilePage.BodyData) : () => _shell().ShowCalories()),
             new(4, "Choose your home city",
                 "Loads the gyms near you, so you can log where you trained after checking in.",
                 "Choose city", city?.Name, isLocked: false, () => _shell().ShowGyms(chooseCity: true)),

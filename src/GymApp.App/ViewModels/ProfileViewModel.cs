@@ -92,6 +92,7 @@ public partial class ProfileViewModel : ViewModelBase
         _ = Vacation.LoadAsync();
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
         ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
+        WatchSettingsRows();
         _ = ReloadAsync();
     }
 
@@ -304,7 +305,7 @@ public partial class ProfileViewModel : ViewModelBase
 
             Username = s.Username;
             ApplyEmail(s.Email);
-            Initials = s.Username.Length == 0 ? "?" : s.Username[..Math.Min(2, s.Username.Length)].ToUpperInvariant();
+            Initials = UserInitials.Of(s.Username);
             Avatar = s.Profile.Avatar;
             HasSplit = s.SplitName is not null;
             SplitText = s.SplitName?.Replace(" (", " · ").TrimEnd(')') ?? "No split selected";
@@ -358,6 +359,7 @@ public partial class ProfileViewModel : ViewModelBase
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
+        RaiseSummaries(e.PropertyName);
         if (_loading) return;
         if (e.PropertyName is nameof(SelectedUnits) or nameof(SelectedSex) or nameof(BirthDayText) or nameof(BirthMonth)
             or nameof(BirthYearText) or nameof(HeightCmText) or nameof(HeightFtText) or nameof(HeightInText)

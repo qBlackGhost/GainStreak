@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="GymApp.App.Views.TimeWheel">
+    <!-- A time of day as two wheels in the card (0.23.1), instead of TimePicker's popup: hours 00-23 and minutes in
+         steps of 5, both looping, with a lime band on the chosen row. Avalonia's own wheel panel, as in that popup;
+         it formats each value as a TimeSpan (hh, mm) -->
+    <!-- No list highlight (the lime band marks the chosen row): the list item theme's own brushes, cleared here -->
+    <UserControl.Resources>
+        <SolidColorBrush x:Key="ListBoxItemBackgroundPointerOver" Color="Transparent"/>
+        <SolidColorBrush x:Key="ListBoxItemBackgroundPressed" Color="Transparent"/>
+        <SolidColorBrush x:Key="ListBoxItemBackgroundSelected" Color="Transparent"/>
+        <SolidColorBrush x:Key="ListBoxItemBackgroundSelectedPointerOver" Color="Transparent"/>
+        <SolidColorBrush x:Key="ListBoxItemBackgroundSelectedPressed" Color="Transparent"/>
+        <SolidColorBrush x:Key="SystemControlHighlightListLowBrush" Color="Transparent"/>
+        <SolidColorBrush x:Key="SystemControlHighlightListMediumBrush" Color="Transparent"/>
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentLowBrush" Color="Transparent"/>
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentMediumBrush" Color="Transparent"/>
+        <SolidColorBrush x:Key="SystemControlHighlightListAccentHighBrush" Color="Transparent"/>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="DateTimePickerPanel > ListBoxItem">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="DateTimePickerPanel > ListBoxItem:selected">
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </UserControl.Styles>
+    <Border Height="132" CornerRadius="14" Background="{DynamicResource Fill}" ClipToBounds="True">
+        <Panel>
+            <Border Height="44" Margin="10,0" CornerRadius="10" VerticalAlignment="Center" IsHitTestVisible="False"
+                    Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource AccentInk}" BorderThickness="1"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                <ScrollViewer Width="72" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                    <DateTimePickerPanel x:Name="Hours" PanelType="Hour" ItemHeight="44" ItemFormat="hh" ShouldLoop="True"
+                                         AutomationProperties.Name="Hour"/>
+                </ScrollViewer>
+                <TextBlock Text=":" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource AccentInk}"/>
+                <ScrollViewer Width="72" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
+                    <DateTimePickerPanel x:Name="Minutes" PanelType="Minute" ItemHeight="44" ItemFormat="mm" ShouldLoop="True"
+                                         AutomationProperties.Name="Minute"/>
+                </ScrollViewer>
+            </StackPanel>
+        </Panel>
+    </Border>
+</UserControl>
