@@ -839,13 +839,16 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- ===== Reminders (16g): the phones only; off until turned on, which asks to notify ===== -->
-                    <Border Classes="card" IsVisible="{Binding Reminders.IsSupported}">
-                        <StackPanel Spacing="14" DataContext="{Binding Reminders}" x:DataType="vm:RemindersViewModel">
+                    <!-- ===== Notifications: Reminders (16g) and friend notifications (Phase 22, the canvas's Profile ·
+                         Notifications); the phones only, each off until turned on, which asks to notify ===== -->
+                    <Border Classes="card" IsVisible="{Binding HasNotifications}">
+                      <StackPanel Spacing="14">
+                        <TextBlock Text="Notifications" FontSize="20" FontWeight="Bold"/>
+                        <StackPanel Spacing="14" DataContext="{Binding Reminders}" x:DataType="vm:RemindersViewModel" IsVisible="{Binding IsSupported}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Reminders" FontSize="20" FontWeight="Bold"/>
-                                    <TextBlock Text="A nudge on training days, and the morning after a missed one." FontSize="12" Classes="muted"/>
+                                    <TextBlock Text="Reminders" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="A nudge on training days, and the morning after a missed one." FontSize="12" Classes="muted" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn}" OnContent="" OffContent=""
                                               VerticalAlignment="Center" AutomationProperties.Name="Reminders"/>
@@ -874,6 +877,23 @@
                                 </Grid>
                             </StackPanel>
                         </StackPanel>
+                        <StackPanel Spacing="14" DataContext="{Binding FriendNotifications}" x:DataType="vm:FriendNotificationsViewModel" IsVisible="{Binding IsSupported}">
+                            <Border Height="1" Background="{DynamicResource Divider}"/>
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="Friend requests" FontSize="15" FontWeight="SemiBold"/>
+                                    <TextBlock Text="When someone sends you a request, accepts yours, or adds you with your QR code." FontSize="12"
+                                               Classes="muted" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsOn}" OnContent="" OffContent=""
+                                              VerticalAlignment="Center" AutomationProperties.Name="Friend request notifications"/>
+                            </Grid>
+                            <TextBlock Text="{Binding Note}" Classes="error" FontSize="13" TextWrapping="Wrap"
+                                       IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            <TextBlock Text="Friend notifications go through Apple or Google and show the friend's username. This phone only."
+                                       FontSize="11" Classes="muted" TextWrapping="Wrap"/>
+                        </StackPanel>
+                      </StackPanel>
                     </Border>
 
                     <!-- ===== Apple Health (Phase 20): the iPhone only; off until turned on, which shows iOS's permission sheet ===== -->

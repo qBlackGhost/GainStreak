@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace GymApp.Server.Data;
 
 /// <summary>The server's Postgres database: accounts, sessions, friendships, blocks, projected stats, shared check-ins,
-/// feedback, user reports, friend invite codes and the splits and workouts friends share.
+/// feedback, user reports, friend invite codes, the splits and workouts friends share, and push tokens.
 /// Separate from the app's AppDbContext, which never leaves the phone.</summary>
 public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbContext(options)
 {
@@ -23,6 +23,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<UserReport> UserReports => Set<UserReport>();
     public DbSet<EmailCode> EmailCodes => Set<EmailCode>();
     public DbSet<FriendInvite> FriendInvites => Set<FriendInvite>();
+    public DbSet<PushDevice> PushDevices => Set<PushDevice>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -122,6 +123,18 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.Property(x => x.Code).HasMaxLength(Social.FriendInvites.CodeLength);
             e.HasIndex(x => x.Code).IsUnique();
             e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<PushDevice>(e =>
+        {
+            e.Property(d => d.Platform).HasConversion<string>().HasMaxLength(8);
+            e.Property(d => d.Token).HasMaxLength(PushRules.MaxTokenLength);
+            e.HasIndex(d => d.Token).IsUnique();
+            e.HasIndex(d => d.SessionId).IsUnique();
+            e.HasIndex(d => d.UserId);
+            // Logging out deletes the session, and the token with it
+            e.HasOne<Session>().WithMany().HasForeignKey(d => d.SessionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<UserReport>(e =>

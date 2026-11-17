@@ -46,6 +46,9 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
     /// <summary>Apple Health on iOS (Phase 20); Android's Health Connect comes later.</summary>
     public virtual IHealthStore CreateHealthStore() => new NoHealthStore();
 
+    /// <summary>Friend notifications (Phase 22): each head adds its own in 22e; none until then.</summary>
+    public virtual IPushNotifications CreatePushNotifications() => NoPushNotifications.Instance;
+
     /// <summary>Phones share through the system's share sheet (Phase 21).</summary>
     public bool CanShare => true;
 

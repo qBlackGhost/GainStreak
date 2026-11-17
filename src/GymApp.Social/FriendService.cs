@@ -6,7 +6,9 @@ using GymApp.Core;
 
 namespace GymApp.Social;
 
-public record FriendResult(bool Success, string? Error = null, bool BecameFriends = false);
+/// <summary><see cref="OtherUserId"/> is set where the caller can't know who the other user is: the inviter, when
+/// <see cref="FriendService.AcceptInviteAsync"/> succeeds (the server notifies them, Phase 22).</summary>
+public record FriendResult(bool Success, string? Error = null, bool BecameFriends = false, int? OtherUserId = null);
 
 /// <summary>How a user relates to you, for the Add / Requested / Accept / Friends button.</summary>
 public enum FriendRelation { None, Friend, RequestSent, RequestReceived }
@@ -243,7 +245,8 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
         if (await s.GetFriendshipAsync(a, b) is { } existing)
         {
             if (existing.Status == FriendshipStatus.Accepted) return new(false, "You're already friends.");
-            return await AcceptAsync(s, userId, inviter.Id, existing);
+            var accepted = await AcceptAsync(s, userId, inviter.Id, existing);
+            return accepted.Success ? accepted with { OtherUserId = inviter.Id } : accepted;
         }
 
         if (await FriendCountAsync(s, userId) >= MaxFriends)
@@ -253,7 +256,7 @@ public class FriendService(ISocialStore store, TimeProvider? clock = null) : IFr
 
         var now = Now;
         await s.AddFriendshipAsync(new FriendshipRecord(a, b, inviter.Id, FriendshipStatus.Accepted, now, now));
-        return await CommitAsync(s, new FriendResult(true, BecameFriends: true));
+        return await CommitAsync(s, new FriendResult(true, BecameFriends: true, OtherUserId: inviter.Id));
     }
 
     /// <summary>The code's owner, or the error to show. Malformed codes never reach the store.</summary>

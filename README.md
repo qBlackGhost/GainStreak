@@ -238,10 +238,12 @@ The build number is the commit count (`git rev-list --count HEAD`), because both
   keytool -genkeypair -v -keystore ~/keys/gainstreak-upload.keystore -alias gainstreak -keyalg RSA -keysize 2048 -validity 10000
   ```
 
+  For friend notifications (0.22.0), download `google-services.json` from the Firebase console (Project settings → Your apps → the Android app `com.gainstreak.app`) and keep it outside the repo. Set `GAINSTREAK_GOOGLE_SERVICES_JSON` to its path, or put it next to `GymApp.Android.csproj`, where `.gitignore` keeps it out. Without it the app builds and runs with friend notifications hidden.
+
   Then set `GAINSTREAK_ANDROID_KEYSTORE` (the keystore's path), `GAINSTREAK_ANDROID_KEY_ALIAS` and `GAINSTREAK_ANDROID_KEYSTORE_PASS`, plus `GAINSTREAK_ANDROID_KEY_PASS` if the key's password differs. The script passes the passwords as `env:` references, so they don't show in the build log.
 - **iOS:**
   1. In Xcode → Settings → Accounts, add the Apple ID and download an **Apple Distribution** certificate, which goes into the keychain.
-  2. On developer.apple.com, register the App ID `com.gainstreak.app` with the **HealthKit** capability (Apple Health, 0.20.0), and make an **App Store** provisioning profile for it, then open the profile to install it. A profile made before HealthKit was added doesn't have it: make it again, or signing fails.
+  2. On developer.apple.com, register the App ID `com.gainstreak.app` with the **HealthKit** (Apple Health, 0.20.0), **Associated Domains** (invite links, 0.21.0) and **Push Notifications** (friend notifications, 0.22.0) capabilities, and make an **App Store** provisioning profile for it, then open the profile to install it. A profile made before HealthKit was added doesn't have it: make it again, or signing fails.
   3. Set `GAINSTREAK_IOS_SIGN_IDENTITY` to the certificate's name, e.g. `Apple Distribution: Your Name (TEAMID)`. The team id is the part in brackets.
   4. Set `GAINSTREAK_IOS_PROVISIONING_PROFILE` to the profile's name.
   5. The workout's Live Activity (0.20.0) is an app extension with its own App ID: register `com.gainstreak.app.LiveActivity`, make an **App Store** profile for it too, download it, and set `GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE` to the downloaded `.mobileprovision` file's path.
@@ -324,6 +326,8 @@ Settings come from environment variables only:
 | `Invites__AppStoreUrl`, `Invites__PlayStoreUrl` | Optional. Where `/add/<code>` sends phones that don't have the app: the TestFlight public link and the Play testing link during the beta, the store pages later. Play defaults to the app's store page; with no App Store link the page says "App Store: coming soon" |
 | `Invites__AppleTeamId` | Optional. The 10-character Apple Team ID. Turns on `/.well-known/apple-app-site-association`, so iPhones open invite links in the app |
 | `Invites__AndroidCertFingerprints` | Optional. The SHA-256 fingerprints of the Play app signing key and the upload key (`AB:CD:…`), separated by `;`. Turns on `/.well-known/assetlinks.json`, so Android opens invite links in the app. Play Console → Test and release → App integrity shows both |
+| `Push__Apns__KeyId`, `Push__Apns__TeamId`, `Push__Apns__PrivateKey` | Optional, all three or none. Friend notifications on iPhones (Phase 22): the APNs key's 10-character id, the Apple Team ID and the text of the `.p8` key file (from Secret Manager, never in the repo). `Push__Apns__BundleId` defaults to `com.gainstreak.app`. Unset, iPhone tokens are stored and nothing is sent |
+| `Push__Fcm__ServiceAccountJson` | Optional. Friend notifications on Android: the text of the Firebase service account key file (from Secret Manager). Unset, Android tokens are stored and nothing is sent |
 | `ForwardedHeaders__KnownNetworks__0` (`__1`, …) | The proxy's network in CIDR form, e.g. `10.0.0.0/8`, if it isn't on the same machine. Only these may set the client IP |
 
 HTTPS ends at the host's proxy; the container listens on plain HTTP on port 8080 and runs as a non-root user. Migrations never run on start: apply them first with the same image.
@@ -344,6 +348,14 @@ docker run --rm -e ConnectionStrings__Social="Host=...;Database=...;Username=...
 ```
 
 Suspending ends every session and refuses sign-in, and the account disappears from search, leaderboards, friend lists, the map and shares. Nothing is deleted, so `unsuspend` puts it all back. To remove an account for good, delete its row in `Users`: everything hanging off it goes with it.
+
+### Checking push notifications
+
+To check the push keys after a deploy, send a test notification to someone's registered phones (with the same `Push__*` settings as the service). It prints how each device went, never a token:
+
+```bash
+docker run --rm -e ConnectionStrings__Social="..." -e Push__Apns__KeyId=... gymapp-server push-test <username>
+```
 
 ## Project layout
 

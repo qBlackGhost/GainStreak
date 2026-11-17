@@ -30,13 +30,22 @@ public class MainActivity : AvaloniaMainActivity
     {
         base.OnCreate(savedInstanceState);
         _current = new WeakReference<MainActivity>(this);
-        if (Intent?.GetBooleanExtra(FromReminderExtra, false) == true) GymApplication.OpenFromReminder();
+        Opened(Intent);
     }
 
     protected override void OnNewIntent(Intent? intent)
     {
         base.OnNewIntent(intent);
-        if (intent?.GetBooleanExtra(FromReminderExtra, false) == true) GymApplication.OpenFromReminder();
+        Opened(intent);
+    }
+
+    /// <summary>A tapped reminder opens Home (16g); a tapped friend notification (Phase 22) opens the Inbox's requests or
+    /// Friends. Firebase puts a background push's data in the intent's extras; ours shown in the foreground does the same.</summary>
+    private static void Opened(Intent? intent)
+    {
+        if (intent is null) return;
+        if (intent.GetBooleanExtra(FromReminderExtra, false)) GymApplication.OpenFromReminder();
+        else if (intent.GetStringExtra(GymApp.Contracts.PushPayload.Kind) is { Length: > 0 } kind) GymApplication.OpenFromPush(kind);
     }
 
     /// <summary>Android 13 and later ask for POST_NOTIFICATIONS when the user turns Reminders on; earlier versions

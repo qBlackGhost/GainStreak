@@ -1294,6 +1294,12 @@ namespace GymApp.Data.Migrations
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
 
+                    b.Property<bool?>("FriendNotifications")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("FriendNotificationsCardDismissed")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("GoalType")
                         .IsRequired()
                         .HasColumnType("TEXT");

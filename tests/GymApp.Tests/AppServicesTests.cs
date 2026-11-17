@@ -37,6 +37,7 @@ public sealed class AppServicesTests
         using var sp = Build(false);
         Assert.IsType<RemoteFriendService>(sp.GetRequiredService<IFriendService>());
         Assert.IsType<RemoteFriendCheckInSource>(sp.GetRequiredService<IFriendCheckInSource>());
+        Assert.IsType<RemotePushRegistration>(sp.GetRequiredService<IPushRegistration>());
     }
 
     [Fact] public async Task LocalMode_RunsTheEverydayFlows_WithNoServer()

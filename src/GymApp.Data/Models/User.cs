@@ -45,6 +45,12 @@ public class User
     public TimeOnly TrainingReminderTime { get; set; } = new(18, 0);
     public bool MissedDayReminderEnabled { get; set; } = true;
 
+    /// <summary>Friend notifications on this phone (Phase 22): null until decided (asked, or turned on by itself because
+    /// the phone already allows notifications), then Profile's switch.</summary>
+    public bool? FriendNotifications { get; set; }
+    /// <summary>"Not now" on Friends' card asking to turn them on: it never shows again (Profile still has the switch).</summary>
+    public bool FriendNotificationsCardDismissed { get; set; }
+
     public List<WorkoutLog> WorkoutLogs { get; set; } = new();
     public List<CalorieLog> CalorieLogs { get; set; } = new();
 }

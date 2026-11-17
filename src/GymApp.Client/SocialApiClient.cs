@@ -193,6 +193,15 @@ public sealed class SocialApiClient
     public Task<ApiResult> RemoveShareAsync(long id, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, $"v1/shares/{id}", null, ct);
 
+    // --- Push notifications (Phase 22) ---
+
+    /// <summary>This session's push token. A server before 0.22.0 answers 404 (Refused): try again later.</summary>
+    public Task<ApiResult> RegisterPushDeviceAsync(PushDeviceRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, "v1/me/push-device", request, ct);
+
+    public Task<ApiResult> UnregisterPushDeviceAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, "v1/me/push-device", null, ct);
+
     // --- Plumbing ---
 
     private static string Date(DateOnly date) => date.ToString(ApiFormat.Date, CultureInfo.InvariantCulture);

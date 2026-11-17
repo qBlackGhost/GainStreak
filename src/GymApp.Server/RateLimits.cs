@@ -21,6 +21,7 @@ public static class RateLimits
     public const string Invite = "invite";
     public const string InviteReset = "invite-reset";
     public const string Password = "password";
+    public const string PushDevice = "push-device";
 
     public static IServiceCollection AddGymRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(o =>
@@ -44,6 +45,8 @@ public static class RateLimits
             // mustn't be a way to guess it at the global limit's pace
             o.AddPolicy(Password, ctx => Fixed($"password:{UserOrIp(ctx)}", PasswordChecksPerMinute, TimeSpan.FromMinutes(1)));
             o.AddPolicy(InviteReset, ctx => Fixed($"invite-reset:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
+            // A phone registers its push token after sign-in, when it changes and once a day: far below this
+            o.AddPolicy(PushDevice, ctx => Fixed($"push-device:{UserOrIp(ctx)}", 20, TimeSpan.FromHours(1)));
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });

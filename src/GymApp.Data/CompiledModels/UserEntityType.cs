@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 25,
+                propertyCount: 27,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -64,6 +64,20 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(User).GetField("<Email>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true,
                 maxLength: 254);
+
+            var friendNotifications = runtimeEntityType.AddProperty(
+                "FriendNotifications",
+                typeof(bool?),
+                propertyInfo: typeof(User).GetProperty("FriendNotifications", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<FriendNotifications>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var friendNotificationsCardDismissed = runtimeEntityType.AddProperty(
+                "FriendNotificationsCardDismissed",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("FriendNotificationsCardDismissed", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<FriendNotificationsCardDismissed>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var goalType = runtimeEntityType.AddProperty(
                 "GoalType",

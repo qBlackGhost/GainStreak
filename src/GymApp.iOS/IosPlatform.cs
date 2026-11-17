@@ -2,6 +2,7 @@ using Foundation;
 using UIKit;
 using GymApp.App;
 using GymApp.Client;
+using GymApp.Services;
 
 namespace GymApp.iOS;
 
@@ -22,6 +23,8 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
     public override ILiveActivity CreateLiveActivity() => new IosLiveActivity();
 
     public override IHealthStore CreateHealthStore() => new IosHealthStore();   // Apple Health (Phase 20)
+
+    public override IPushNotifications CreatePushNotifications() => new IosPushNotifications();   // friend notifications (Phase 22)
 
     /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>
     public override bool CanOpenStorePage => BuiltSettings.AppStoreId.Length > 0;

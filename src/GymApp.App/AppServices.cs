@@ -37,6 +37,8 @@ public static class AppServices
             sc.AddTransient<ISplitUsageService, LocalSplitUsageService>();
             sc.AddTransient<IShareService, LocalShareService>();
             sc.AddTransient<IUserReportService, LocalUserReportService>();
+            sc.AddSingleton<IPushRegistration>(sp => new LocalPushRegistration(sp.GetRequiredService<IPushNotifications>(),
+                sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<SessionService>(), sp.GetRequiredService<ErrorLog>()));
         }
         else
         {
@@ -62,6 +64,11 @@ public static class AppServices
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<SessionService>(),
                 sp.GetRequiredService<StatsProjectionService>()));
+            // Friend notifications (Phase 22): the server's copy of this phone's push token
+            sc.AddSingleton<IPushRegistration>(sp => new RemotePushRegistration(sp.GetRequiredService<SocialApiClient>(),
+                sp.GetRequiredService<ITokenStore>(), sp.GetRequiredService<IPushNotifications>(),
+                sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<SessionService>(),
+                sp.GetRequiredService<ErrorLog>()));
             // The reminders replan on the same changes (16g)
             sc.AddSingleton<ISocialSyncHooks>(sp => new ReminderHooks(sp.GetRequiredService<SocialSync>(),
                 sp.GetRequiredService<ReminderSync>()));
@@ -71,6 +78,7 @@ public static class AppServices
         sc.AddSingleton(_ => platform.CreateLocationProvider());   // "verified at gym" (18c)
         sc.AddSingleton(_ => platform.CreateLiveActivity());   // the workout's Dynamic Island on iOS (0.20.0)
         sc.AddSingleton(_ => platform.CreateHealthStore());   // Apple Health (Phase 20)
+        sc.AddSingleton(_ => platform.CreatePushNotifications());   // friend notifications (Phase 22)
         sc.AddTransient<HealthExportService>();
         sc.AddSingleton<IHealthSetting>(sp => new ProfileHealthSetting(sp.GetRequiredService<ProfileService>()));
         sc.AddTransient<HealthImportService>();

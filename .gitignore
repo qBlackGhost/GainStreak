@@ -494,3 +494,7 @@ publish/
 *.p12
 *.mobileprovision
 *.provisionprofile
+# Push notifications (Phase 22): Firebase's app config and service account key, the APNs key (*.p8 above)
+google-services.json
+*firebase-adminsdk*.json
+firebase-service-account*.json

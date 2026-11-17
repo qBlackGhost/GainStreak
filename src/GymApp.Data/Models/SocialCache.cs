@@ -23,4 +23,6 @@ public static class SocialCacheKeys
     public const string CheckIns = "checkins";
     public const string SplitUsage = "splitUsage";
     public const string Invite = "invite";
+    /// <summary>The push token last registered, and for which session (Phase 22).</summary>
+    public const string PushDevice = "pushDevice";
 }

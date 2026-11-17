@@ -62,6 +62,9 @@ public interface IPlatform
     /// <summary>Apple Health on iOS (Phase 20); every other head has none.</summary>
     IHealthStore CreateHealthStore() => new NoHealthStore();
 
+    /// <summary>Friend notifications through APNs or FCM (Phase 22); the desktop has none, so Profile and Friends hide them.</summary>
+    IPushNotifications CreatePushNotifications() => NoPushNotifications.Instance;
+
     /// <summary>Whether <see cref="Share"/> opens the system's share sheet (phones). The desktop has Copy link only.</summary>
     bool CanShare => false;
 

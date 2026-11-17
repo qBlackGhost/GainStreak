@@ -72,12 +72,15 @@ public partial class ProfileViewModel : ViewModelBase
     public ProfileViewModel(ProfileService profiles, IAccountService accounts, GeocodingService geocoding,
         CityService cities, SessionService session, Func<MainViewModel> shell,
         ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync,
-        VacationService vacations, IHealthStore healthStore, HealthSync healthSync, HealthImportService healthImport)
+        VacationService vacations, IHealthStore healthStore, HealthSync healthSync, HealthImportService healthImport,
+        IPushRegistration push, IPushNotifications pushDevice)
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
         Reminders = new RemindersViewModel(reminders, notifications, reminderSync, () => session.CurrentUser?.Id);
         _ = Reminders.LoadAsync();
+        FriendNotifications = new FriendNotificationsViewModel(push, pushDevice);
+        _ = FriendNotifications.LoadAsync();
         Health = new HealthViewModel(healthStore, profiles, healthSync, () => session.CurrentUser?.Id, healthImport,
             () => SelectedUnits, () => _ = ReloadAsync(refillForm: !IsDirty));   // keep unsaved edits
         _ = Health.LoadAsync();
@@ -96,6 +99,12 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Reminders (16g): the phones only.</summary>
     public RemindersViewModel Reminders { get; }
+
+    /// <summary>Friend notifications (Phase 22): phones that can receive pushes.</summary>
+    public FriendNotificationsViewModel FriendNotifications { get; }
+
+    /// <summary>The Notifications card: Reminders, friend notifications, or both. Hidden on the desktop.</summary>
+    public bool HasNotifications => Reminders.IsSupported || FriendNotifications.IsSupported;
 
     /// <summary>Apple Health (Phase 20): the iPhone only.</summary>
     public HealthViewModel Health { get; }
