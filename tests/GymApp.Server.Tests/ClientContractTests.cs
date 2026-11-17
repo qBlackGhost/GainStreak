@@ -51,6 +51,23 @@ public class ClientContractTests : ServerTest
         Assert.Equal(1, expired);
     }
 
+    [Fact] public async Task PushDevice_RegisterAndUnregister()
+    {
+        var (alice, _) = await RegisterAsync("alice");
+        Assert.True((await alice.RegisterPushDeviceAsync(new PushDeviceRequest(PushPlatform.Fcm, "fcm:token-1"))).IsOk);
+        Assert.True((await alice.RegisterPushDeviceAsync(new PushDeviceRequest(PushPlatform.Apns, "abcd1234", Sandbox: true))).IsOk);
+        await using (var db = Db())
+        {
+            var device = Assert.Single(db.PushDevices);
+            Assert.Equal((PushPlatform.Apns, "abcd1234", true), (device.Platform, device.Token, device.Sandbox));
+        }
+
+        var bad = await alice.RegisterPushDeviceAsync(new PushDeviceRequest(PushPlatform.Apns, "has space"));
+        Assert.Equal((400, PushRules.BadTokenMessage), (bad.Status, bad.Error));
+        Assert.True((await alice.UnregisterPushDeviceAsync()).IsOk);
+        await using (var db = Db()) Assert.Empty(db.PushDevices);
+    }
+
     [Fact] public async Task DeleteAccount_NeedsThePassword()
     {
         var (alice, _) = await RegisterAsync("alice");

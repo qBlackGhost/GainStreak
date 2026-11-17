@@ -35,6 +35,13 @@
     <CodesignKey>-</CodesignKey>
   </PropertyGroup>
 
+  <!-- Friend notifications (Phase 22): APNs' sandbox for Debug builds, production for TestFlight and the App Store.
+       Signed builds need Push Notifications on the App ID com.gainstreak.app, and profiles made after it was added -->
+  <ItemGroup>
+    <CustomEntitlements Include="aps-environment" Type="String" Value="development" Condition="'$(Configuration)' != 'Release'" />
+    <CustomEntitlements Include="aps-environment" Type="String" Value="production" Condition="'$(Configuration)' == 'Release'" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia.iOS" Version="12.1.3" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />

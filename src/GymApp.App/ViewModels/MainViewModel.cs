@@ -331,13 +331,43 @@ public partial class MainViewModel : ViewModelBase
         }, root: false);
     }
 
-    /// <summary>Friend requests now; workouts friends share, later.</summary>
-    public void ShowInbox() => Open(() =>
+    /// <summary>Friend requests and what friends share. <paramref name="requests"/> opens on the Requests filter (a
+    /// tapped friend request notification, Phase 22).</summary>
+    public void ShowInbox(bool requests = false) => Open(() =>
     {
         var vm = _sp.GetRequiredService<InboxViewModel>();
+        if (requests) vm.FilterIndex = InboxViewModel.RequestsFilter;
         _ = vm.LoadAsync();
         return vm;
     }, root: false);
+
+    /// <summary>A friend notification was tapped (Phase 22): a request opens the Inbox's requests, an accepted request
+    /// or invite opens Friends. Signed out, it's dropped: whoever signs in next may be someone else. On the UI thread.</summary>
+    public void OpenFromPush(PushKind kind)
+    {
+        if (!IsSignedInScreen) return;
+        if (kind == PushKind.FriendRequest) ShowInbox(requests: true);
+        else ShowFriends();
+    }
+
+    /// <summary>A friend notification came while the app is open (Phase 22). The Inbox badge refreshes; Inbox and
+    /// Friends reload in place. True when the head should still show it (any other screen). On the UI thread.</summary>
+    public bool PushArrived(PushKind kind)
+    {
+        if (_session.CurrentUser is not { } user) return true;
+        _ = _sp.GetRequiredService<InboxService>().RefreshUnreadAsync(user.Id);
+        switch (Current)
+        {
+            case InboxViewModel inbox:
+                _ = inbox.LoadAsync();
+                return false;
+            case FriendsViewModel friends:
+                _ = friends.RefreshAsync();
+                return false;
+            default:
+                return true;
+        }
+    }
 
     public void ShowDay(MenuDay day, string splitName) => Open(() =>
     {

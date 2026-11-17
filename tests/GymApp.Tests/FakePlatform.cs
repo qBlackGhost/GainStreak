@@ -41,6 +41,9 @@ public sealed class FakePlatform : IPlatform
     public INotificationScheduler CreateNotificationScheduler() => Notifications;
     public ILocationProvider Location { get; set; } = NoLocationProvider.Instance;
     public ILocationProvider CreateLocationProvider() => Location;
+    /// <summary>Friend notifications' phone side (Phase 22); none unless a test sets one.</summary>
+    public IPushNotifications Push { get; set; } = NoPushNotifications.Instance;
+    public IPushNotifications CreatePushNotifications() => Push;
     public void OnFrameworkReady() { }
     public Window CreateWindow(Control content, bool isStartupError) => throw new NotSupportedException();
     public void OnShellReady(MainViewModel shell, ErrorLog log) { }

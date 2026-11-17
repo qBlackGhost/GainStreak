@@ -22,10 +22,24 @@
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" Version="12.1.3" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
+    <!-- Friend notifications (Phase 22) through Firebase Cloud Messaging -->
+    <PackageReference Include="Xamarin.Firebase.Messaging" Version="125.1.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\GymApp.App\GymApp.App.csproj" />
+  </ItemGroup>
+
+  <!-- Firebase's config for this app (Phase 22), never in the repo: the path in GAINSTREAK_GOOGLE_SERVICES_JSON, or a
+       google-services.json next to this file (gitignored). Without it the app builds and runs with friend
+       notifications off (AndroidPushNotifications.IsSupported is false) -->
+  <PropertyGroup>
+    <GoogleServicesFile Condition="'$(GoogleServicesFile)' == ''">$(GAINSTREAK_GOOGLE_SERVICES_JSON)</GoogleServicesFile>
+    <GoogleServicesFile Condition="'$(GoogleServicesFile)' == '' and Exists('google-services.json')">google-services.json</GoogleServicesFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="google-services.json" />
+    <GoogleServicesJson Include="$(GoogleServicesFile)" Link="google-services.json" Condition="'$(GoogleServicesFile)' != '' and Exists('$(GoogleServicesFile)')" />
   </ItemGroup>
 
   <Import Project="..\MobileHead.targets" />

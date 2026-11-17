@@ -1,6 +1,7 @@
 using Foundation;
 using GymApp.App;
 using GymApp.Services;
+using GymApp.Contracts;
 using UserNotifications;
 
 namespace GymApp.iOS;
@@ -65,17 +66,37 @@ public sealed class IosNotificationScheduler : INotificationScheduler
     }
 }
 
-/// <summary>Shows a reminder that comes while the app is open, and opens Home when one is tapped.</summary>
-public sealed class ReminderDelegate : UNUserNotificationCenterDelegate
+/// <summary>
+/// Every notification the app gets: the reminders and the workout nudge (local, 16g and Phase 18), and friend
+/// notifications (pushes, Phase 22, which carry a <c>kind</c>). A reminder that comes while the app is open shows, and a
+/// tap opens Home. A push while the app is open shows unless Inbox or Friends is on screen (they reload instead); a tap
+/// opens the Inbox's requests or Friends.
+/// </summary>
+public sealed class NotificationDelegate : UNUserNotificationCenterDelegate
 {
+    private const UNNotificationPresentationOptions Show =
+        UNNotificationPresentationOptions.Banner | UNNotificationPresentationOptions.List | UNNotificationPresentationOptions.Sound;
+
+    private static string? PushKind(UNNotification notification) =>
+        notification.Request.Content.UserInfo.TryGetValue(new NSString(PushPayload.Kind), out var kind) ? kind?.ToString() : null;
+
     public override void WillPresentNotification(UNUserNotificationCenter center, UNNotification notification,
-        Action<UNNotificationPresentationOptions> completionHandler) =>
-        completionHandler(UNNotificationPresentationOptions.Banner | UNNotificationPresentationOptions.Sound);
+        Action<UNNotificationPresentationOptions> completionHandler)
+    {
+        if (PushKind(notification) is not { } kind)
+        {
+            completionHandler(UNNotificationPresentationOptions.Banner | UNNotificationPresentationOptions.Sound);
+            return;
+        }
+        _ = GymApplication.PushArrivedAsync(kind).ContinueWith(t =>
+            completionHandler(!t.IsCompletedSuccessfully || t.Result ? Show : UNNotificationPresentationOptions.None));
+    }
 
     public override void DidReceiveNotificationResponse(UNUserNotificationCenter center, UNNotificationResponse response,
         Action completionHandler)
     {
-        GymApplication.OpenFromReminder();
+        if (PushKind(response.Notification) is { } kind) GymApplication.OpenFromPush(kind);
+        else GymApplication.OpenFromReminder();
         completionHandler();
     }
 }

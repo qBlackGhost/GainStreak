@@ -2,6 +2,20 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.22.0
+
+- **Friend notifications on your phone:** GainStreak tells you when someone sends you a friend request, accepts yours, or adds you with your QR code, even when the app is closed.
+  - **Tap it** and a request opens the **Inbox** on **Requests**, ready to accept; an accepted request or a new friend opens **Friends**.
+  - **Turn them on** in **Profile → Notifications → Friend requests**, or with **Turn on** on the card in Friends, which shows once you have friends or requests. If you already allowed notifications for Reminders, they're on from the start.
+  - **While the app is open,** a notification shows at the top, unless you're already on the Inbox or Friends: then the list just updates.
+  - **Only on this phone,** and only for the account signed in on it. Logging out stops them at once, and another account signed in on the same phone never gets yours.
+  - **What's sent:** Apple or Google deliver each notification with your friend's username and what happened, nothing else. Declined, cancelled or removed requests and blocks never notify anyone.
+  - **No more than one** "wants to be your friend" from the same person in 12 hours.
+  - On the iPhone and on Android; the desktop app doesn't change.
+- **Profile:** Reminders moved into the new **Notifications** card, next to Friend requests.
+- **The privacy policy** has a row for the push token, and says what Apple and Google see.
+- **Migration:** server Postgres (`PushDevices`: one push token per signed-in session, deleted with it) and app SQLite (`AddFriendNotifications`: the Friend requests switch and the card's Not now).
+
 ## 0.21.1
 
 - **Signing up on a busy network:** a mistake when signing up, such as a username that's taken, no longer uses up a try. Many phones on one mobile network can now sign up within the same hour, where five tries used to block everyone sharing that network's address for an hour.

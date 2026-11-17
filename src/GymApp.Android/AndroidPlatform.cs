@@ -2,6 +2,7 @@ using Android.Content;
 using Uri = Android.Net.Uri;
 using GymApp.App;
 using GymApp.Client;
+using GymApp.Services;
 
 namespace GymApp.Android;
 
@@ -15,6 +16,8 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
     public override INotificationScheduler CreateNotificationScheduler() => new AndroidNotificationScheduler(context);
 
     public override ILocationProvider CreateLocationProvider() => new AndroidLocationProvider(context);
+
+    public override IPushNotifications CreatePushNotifications() => new AndroidPushNotifications(context);   // Phase 22
 
     public override bool CanOpenStorePage => true;
 

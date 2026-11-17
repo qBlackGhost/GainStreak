@@ -2,7 +2,7 @@
   <!-- One version for every project. Bump it here for a release (see CHANGELOG.md). -->
   <PropertyGroup>
     <Product>GainStreak</Product>
-    <Version>0.21.1</Version>
+    <Version>0.22.0</Version>
   </PropertyGroup>
 
   <!-- Release settings built into the desktop app (see "Releases for testers" in the README). Fill them in here or pass

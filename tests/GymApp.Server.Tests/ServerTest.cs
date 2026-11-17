@@ -28,6 +28,9 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
     /// <summary>The server's MinClientVersion setting; unset (every build accepted) unless a test class overrides it.</summary>
     protected virtual string? MinClientVersion => null;
 
+    /// <summary>More server settings for a test class (the push keys, say), on top of the database and MinClientVersion.</summary>
+    protected virtual IReadOnlyDictionary<string, string?> Settings => new Dictionary<string, string?>();
+
     /// <summary>A client with no sign-in.</summary>
     protected HttpClient Client { get; private set; } = null!;
 
@@ -100,15 +103,19 @@ public abstract class ServerTest(PostgresFixture postgres) : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b => b
-            .UseEnvironment("Testing")
-            .UseSetting("ConnectionStrings:Social", postgres.ConnectionString($"test_{Guid.NewGuid():N}"))
-            .UseSetting(ClientVersionCheck.SettingName, MinClientVersion)
-            .ConfigureTestServices(services =>
-            {
-                services.AddSingleton<TimeProvider>(Clock);
-                ConfigureServices(services);
-            }));
+        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+        {
+            // UseSetting, not ConfigureAppConfiguration: Program reads its settings before the app is built
+            foreach (var (key, value) in Settings) b.UseSetting(key, value);
+            b.UseEnvironment("Testing")
+                .UseSetting("ConnectionStrings:Social", postgres.ConnectionString($"test_{Guid.NewGuid():N}"))
+                .UseSetting(ClientVersionCheck.SettingName, MinClientVersion)
+                .ConfigureTestServices(services =>
+                {
+                    services.AddSingleton<TimeProvider>(Clock);
+                    ConfigureServices(services);
+                });
+        });
         await using (var db = Db())
             await db.Database.MigrateAsync();
         Client = _factory.CreateClient();

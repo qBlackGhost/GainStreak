@@ -212,6 +212,43 @@
                 </StackPanel>
             </Border>
 
+            <!-- "Know when friends add you" (Phase 22, the canvas's Friends · Turn on notifications) -->
+            <Border Padding="14" CornerRadius="18" Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}"
+                    BorderThickness="1" IsVisible="{Binding Push.IsVisible}">
+                <StackPanel Spacing="12" DataContext="{Binding Push}" x:DataType="vm:FriendPushCardViewModel">
+                    <StackPanel Spacing="12" IsVisible="{Binding IsAsk}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Border Classes="avatar inviteIcon good">
+                                <v:Icon Data="{StaticResource IcBell}" Width="20" Height="20" StrokeThickness="2.2"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                <TextBlock Text="Know when friends add you" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
+                                <TextBlock Text="Get a notification when someone sends you a request or accepts yours." FontSize="13"
+                                           Classes="soft" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                            <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="Not now" Command="{Binding NotNowCommand}"/>
+                            <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                    Content="Turn on" Command="{Binding TurnOnCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                    <StackPanel Spacing="12" IsVisible="{Binding IsMessage}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <Border Classes="avatar inviteIcon" Classes.good="{Binding IsGood}">
+                                <v:Icon Data="{Binding Icon, Converter={x:Static v:FriendsView.IconFor}}" Width="20" Height="20" StrokeThickness="2.2"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Grid.Column="1" Text="{Binding Message}" FontSize="14" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                        </Grid>
+                        <Button Classes="btn light" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" MinHeight="46"
+                                Content="{Binding OkLabel}" Command="{Binding CloseCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
                 <StackPanel x:Name="LeftColumn" Spacing="24">
 

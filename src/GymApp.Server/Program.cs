@@ -6,14 +6,15 @@ using GymApp.Server.Email;
 using GymApp.Server.Endpoints;
 using GymApp.Server.Feedback;
 using GymApp.Server.Friends;
+using GymApp.Server.Push;
 using GymApp.Social;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 // `dotnet GymApp.Server.dll migrate` applies the migrations and exits; production never migrates at startup.
-// `suspend <username>` and `unsuspend <username>` do their one thing and exit too
+// `suspend <username>`, `unsuspend <username>` and `push-test <username>` do their one thing and exit too
 var migrateOnly = args is ["migrate"];
-var isCommand = AccountCommands.IsCommand(args);
+var isCommand = AccountCommands.IsCommand(args) || PushCommands.IsCommand(args);
 var builder = WebApplication.CreateBuilder(migrateOnly || isCommand ? [] : args);
 
 // Production reads its settings from environment variables only (ConnectionStrings__Social, AllowedHosts).
@@ -40,6 +41,10 @@ catch (InvalidOperationException e) { missing ??= e.Message; }
 InviteSettings? invites = null;
 try { invites = InviteSettings.Read(builder.Configuration); }
 catch (InvalidOperationException e) { missing ??= e.Message; }
+// Push notifications (Phase 22): APNs and FCM each optional; half-set or a key that doesn't parse is a startup error too
+PushSettings? push = null;
+try { push = PushSettings.Read(builder.Configuration); }
+catch (InvalidOperationException e) { missing ??= e.Message; }
 if (missing is not null)
 {
     Console.Error.WriteLine(missing);
@@ -60,6 +65,25 @@ builder.Services.AddGymRateLimits();
 builder.Services.AddSingleton<CheckInCleanup>();
 builder.Services.AddSingleton<SignUpLimiter>();
 builder.Services.AddSingleton(invites!);
+// Friend notifications (Phase 22). A service without settings has no sender: its tokens are stored and nothing is sent.
+// No request logging on either client: the APNs URL holds the device token
+if (push!.Apns is { } apns)
+{
+    builder.Services.AddHttpClient(ApnsSender.HttpClientName, c =>
+    {
+        c.Timeout = TimeSpan.FromSeconds(5);
+        c.DefaultRequestVersion = System.Net.HttpVersion.Version20;
+        c.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+    }).RemoveAllLoggers();
+    builder.Services.AddSingleton<IPushSender>(sp => ActivatorUtilities.CreateInstance<ApnsSender>(sp, apns));
+}
+if (push.Fcm is { } fcm)
+{
+    builder.Services.AddHttpClient(FcmSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5)).RemoveAllLoggers();
+    builder.Services.AddSingleton<IFcmAccessTokens>(new GoogleFcmAccessTokens(fcm));
+    builder.Services.AddSingleton<IPushSender>(sp => ActivatorUtilities.CreateInstance<FcmSender>(sp, fcm));
+}
+builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<FriendNotifier>(sp));
 if (email is not null) builder.Services.AddSingleton<IEmailSender>(sp => ActivatorUtilities.CreateInstance<SmtpEmailSender>(sp, email));
 else if (builder.Environment.IsDevelopment()) builder.Services.AddSingleton<IEmailSender, LogEmailSender>();
 else builder.Services.AddSingleton<IEmailSender, NoEmailSender>();
@@ -85,7 +109,10 @@ var app = builder.Build();
 if (isCommand)
 {
     await using var scope = app.Services.CreateAsyncScope();
-    var (ok, message) = await AccountCommands.RunAsync(args, scope.ServiceProvider.GetRequiredService<ServerDbContext>(), TimeProvider.System);
+    var db = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
+    var (ok, message) = PushCommands.IsCommand(args)
+        ? await PushCommands.RunAsync(args, db, scope.ServiceProvider.GetRequiredService<FriendNotifier>())
+        : await AccountCommands.RunAsync(args, db, TimeProvider.System);
     (ok ? Console.Out : Console.Error).WriteLine(message);
     Environment.ExitCode = ok ? 0 : 1;
     return;
@@ -135,6 +162,7 @@ app.MapFeedback();
 app.MapReports();
 app.MapShares();
 app.MapInviteLinks();
+app.MapPush();
 
 app.Run();
 

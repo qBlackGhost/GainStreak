@@ -25,12 +25,15 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 | Gym check-ins: gym name, its OpenStreetMap id and coordinates, city, date (optional: only once the user turns on "Visible to friends") | The friends map | Friends, as gym and day only, never the time |
 | Friend requests and friendships | Friends | The two people involved |
 | Invite code (random, one per account, resettable; Phase 21) | Adding friends by QR code or link | Whoever the user shows it to; the `/add/<code>` page never says whose it is |
+| Push token per signed-in phone (Phase 22; only while friend notifications are on) | Friend notifications: a request, an accepted request, an accepted invite | Nobody; deleted on logout, account deletion, turning them off, or when APNs/FCM report it dead |
 | Shared splits and workouts (snapshots of exercises and sets) | Sending a plan to a friend | The receiving friend; removed once used or after 30 days |
 | Users the person blocked | Keeping them apart | Nobody else |
 | Reports about another user: who, the reason, an optional note | Dealing with abuse | The developer; forwarded to a private Discord channel |
 | Feedback text and, for a problem, the error report the user chose to attach (app version, system, error log with user folder names removed) | Fixing bugs | The developer; forwarded to a private Discord channel |
 
-The email address also receives codes, for confirming it and resetting the password, sent through Google's mail servers.
+The email address also receives codes, for confirming it and resetting the password, sent from noreply@gainstreak.app through Resend (an email delivery service, since 11 November 2026; Gmail's servers before), which acts for the developer.
+
+**Push notifications (Phase 22):** Apple's push service (iPhone) and Firebase Cloud Messaging (Android, Google) carry each friend notification to the phone's push token: a per-event title ("Friend request", "Request accepted", "New friend") and the sentence with the friend's username, plus the event's kind and the sender's user id as data for the tap. Nothing else. They act for the developer (service providers), so this isn't sharing with third parties.
 
 **Other services the phone talks to:** OpenStreetMap's map tiles, Nominatim (city search, and the city at a rounded position for "Show me gyms near me", Phase 19) and the Overpass API (the gyms in a city). They see the phone's IP address and the area asked for, nothing about the account.
 
@@ -56,11 +59,13 @@ The email address also receives codes, for confirming it and resetting the passw
     - Other actions (points, streak, check-ins, shares): collected; optional, with check-ins shared only once turned on; used for app functionality.
   - **App info and performance:**
     - Crash logs and diagnostics: collected only when the user attaches them to feedback; optional; used for analytics (bug fixing).
+  - **Device or other IDs (from 0.22.0, decided 2026-11-15, to confirm before entering):**
+    - Device or other IDs (the push token): collected; not shared (FCM is the developer's service provider); optional (only while friend notifications are on); used for app functionality (friend notifications). Not processed ephemerally: kept until logout, turning it off or account deletion.
   - **Messages:**
     - Other in-app messages (feedback text, notes on reports about other users): collected; optional; used for developer communications and fraud prevention, security and compliance.
   - **Location (from 0.19.0):**
     - Approximate location: collected; shared; processed ephemerally; optional; used for app functionality. Only the rounded position (about 1 km) sent to OpenStreetMap's Nominatim when the user taps "Show me gyms near me" on vacation.
-- **Not collected:** precise location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files, device ids.
+- **Not collected:** precise location, financial info, health and fitness (workouts and body data never leave the phone), contacts, photos, files. Device ids apart from the push token (0.22.0, above).
 - **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only). The precise position is **not collected and not shared**: it's used on the phone only (for the rounded one, see Phase 19 below). No background location, so no location permissions declaration is needed in the Play Console.
 - **Approximate location (Phase 19), decided:** declared as above. "Show me gyms near me" sends a rounded position (about 1 km) to Nominatim, a third party (OpenStreetMap), on the user's tap; Play counts data sent off the device as collected, and sent to a third party that isn't the developer's service provider as shared. Ephemeral: GainStreak doesn't keep it, and it isn't used for anything but naming the city. Enter it in Play Console before 0.19.0 goes to the store.
 
@@ -69,6 +74,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Data linked to the user:**
   - Contact Info: Email Address (App Functionality).
   - Identifiers: User ID (App Functionality).
+  - Identifiers: Device ID (App Functionality), from 0.22.0: the APNs push token, kept per signed-in phone while friend notifications are on. To confirm before entering.
   - User Content: Other User Content, meaning shared splits and workouts, check-ins, feedback and reports about other users (App Functionality).
   - Usage Data: Other Usage Data, meaning points, streak and level (App Functionality).
   - Diagnostics: Crash Data and Other Diagnostic Data, only when attached to feedback (App Functionality).
@@ -87,6 +93,8 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Approximate location:** built. With approximate only, the card says "Turn on precise location to verify your workouts" with Open Settings, instead of reading fixes too vague to count.
 - **Store descriptions.** The long description should mention it ("Workouts done at your gym are marked verified; your location stays on your phone"), so reviewers see why the app asks. Both reviews check that the prompt matches a visible feature.
 - **App Review notes (iOS), Apple Health (Phase 20).** Apple asks that HealthKit be clearly visible in the app. Say: "Apple Health is in Profile → Apple Health. Turning it on shows the permission sheet; GainStreak saves finished workouts, cardio sessions and weigh-ins, and reads weight, height, birth date, sex and steps to fill in the profile and suggest an activity level. Health data never leaves the phone." The review account can turn it on; Health on a review device is usually empty, so expect the step suggestion to stay hidden.
+- **App Review notes (iOS), notifications (Phase 22).** Notifications are asked for only when the user turns on Reminders or Friend requests in Profile → Notifications, or taps Turn on on Friends' card. A reviewer sees a friend notification by sending the review account a request from a second account.
+- **Store descriptions (0.22.0).** Mention it: "Get a notification when a friend sends you a request or accepts yours."
 - **App Review notes (iOS).** Say where location is used (Start workout on Home) and that the review account's gyms are in Timișoara, so a reviewer elsewhere sees the "not at one of your gyms" path, which is expected.
 
 ## Deleting an account
@@ -102,6 +110,8 @@ The email address also receives codes, for confirming it and resetting the passw
 - [x] **Support URL or email** (App Store): https://qblackghost.github.io/GainStreak-releases/ (names `gainstreak.app@gmail.com`).
 - [ ] **Content rating questionnaire** (Play) and **age rating** (App Store). There's no violence, gambling or purchases. Other people see usernames (to friends and in username search) and the names in what friends share. Users can report and block each other.
 - [ ] **Screenshots** (see below).
+- [ ] **Push Notifications capability (Phase 22):** on developer.apple.com, App ID `com.gainstreak.app` → Capabilities → Push Notifications, then make the profiles again. The APNs key (Keys → +, Apple Push Notifications service) is separate and goes to the server through Secret Manager.
+- [ ] **Firebase (Phase 22):** an Android app `com.gainstreak.app` in the Firebase project, with both SHA-256 fingerprints, and its `google-services.json` for the build (see the README).
 - [ ] **HealthKit capability (Phase 20):** on developer.apple.com, App ID `com.gainstreak.app` → Capabilities → HealthKit, then make the App Store profile again and download it. A signed build fails without it, since the app's entitlements now include HealthKit.
 - [ ] **Test account for App Review:** Apple's reviewers need to sign in. Make a review account with a few friends and some check-ins, and give its username and password in App Store Connect, not in this repo.
 

@@ -150,8 +150,9 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     private readonly InboxService _inbox;
 
     public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell,
-                            InboxService inbox, ReportUserDialogViewModel report, FriendQrViewModel qr)
+                            InboxService inbox, ReportUserDialogViewModel report, FriendQrViewModel qr, IPushRegistration push)
     {
+        Push = new FriendPushCardViewModel(push);
         Report = report;
         Qr = qr;
         _friends = friends;
@@ -168,7 +169,15 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     public FriendQrViewModel Qr { get; }
 
     [RelayCommand]
-    private Task ShowQrAsync() => Qr.OpenAsync();
+    private Task ShowQrAsync()
+    {
+        _ = Push.ConsiderAsync();   // showing your code: you'll want to know when someone uses it
+        return Qr.OpenAsync();
+    }
+
+    /// <summary>"Know when friends add you" (Phase 22): once the user has friends or requests, shows their QR code, or
+    /// sends a request.</summary>
+    public FriendPushCardViewModel Push { get; }
 
     // ===== The invite card (Phase 21): a scanned QR code or an opened invite link =====
 
@@ -350,6 +359,9 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
 
     private int? UserId => _session.CurrentUser?.Id;
 
+    /// <summary>Loads the leaderboard and friends again (a friend notification came in, Phase 22).</summary>
+    public Task RefreshAsync() => LoadAsync();
+
     private async Task LoadAsync()
     {
         if (UserId is not { } me) return;
@@ -365,6 +377,7 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
             HasNoFriends = friends.Count == 0;
 
             var requests = await _friends.GetRequestsAsync(me);
+            if (friends.Count > 0 || requests.Incoming.Count > 0 || requests.Outgoing.Count > 0) _ = Push.ConsiderAsync();
             Outgoing.Clear();
             foreach (var r in requests.Outgoing) Outgoing.Add(new RequestRowViewModel(r, this));
             HasOutgoing = Outgoing.Count > 0;

@@ -7,6 +7,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using GymApp.Client;
+using GymApp.Contracts;
 using GymApp.Data;
 using GymApp.Services;
 using GymApp.Social;
@@ -88,6 +89,7 @@ public partial class GymApplication : Application
             TopLevel.SetAutoSafeAreaPadding(host, false);
             Show(host);
             WireForeground();
+            WirePush();
             _ = Task.Run(() => AppStartup.PrepareAsync(Services, LocalSocial)).ContinueWith(t => Dispatcher.UIThread.Post(() =>
             {
                 var error = t.IsFaulted ? "GainStreak couldn't start. The details were saved to errors.log." : t.Result;
@@ -130,6 +132,7 @@ public partial class GymApplication : Application
         var watcher = Services.GetRequiredService<LiveWorkoutWatcher>();
         var health = Services.GetRequiredService<HealthSync>();
         var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
+        var push = Services.GetRequiredService<IPushRegistration>();
         lifetime.Activated += (_, e) =>
         {
             // An invite link the phone opened in the app (Phase 21): a Universal Link on iOS, an App Link on Android
@@ -137,6 +140,7 @@ public partial class GymApplication : Application
             if (e.Kind != ActivationKind.Background) return;
             _ = watcher.CameToForegroundAsync();
             health.RequestSync();   // Apple Health (Phase 20)
+            push.RequestSync();   // friend notifications (Phase 22): the permission may have changed in Settings
             if (sync is null) return;
             sync.StartTimer();
             sync.RequestSync();
@@ -177,6 +181,40 @@ public partial class GymApplication : Application
         else _linkBeforeShell = link;
     });
 
+    /// <summary>Friend notifications (Phase 22): the server's copy of the token follows sign-ins and token changes.
+    /// The phones only; the desktop's push is unsupported anyway.</summary>
+    private void WirePush()
+    {
+        var push = Services.GetRequiredService<IPushRegistration>();
+        Services.GetRequiredService<IPushNotifications>().TokenChanged += push.RequestSync;
+        Services.GetRequiredService<SessionService>().Changed += push.RequestSync;
+    }
+
+    /// <summary>A tapped notification's kind that came while the app was still starting (a cold start).</summary>
+    private static PushKind? _pushBeforeShell;
+
+    /// <summary>A friend notification was tapped (Phase 22). <paramref name="kind"/> is the push's <c>kind</c> data
+    /// (<see cref="PushPayload.Kind"/>); anything else is ignored. Called by the heads from any thread; before the shell
+    /// exists it waits for it.</summary>
+    public static void OpenFromPush(string? kind)
+    {
+        if (PushPayload.Parse(kind) is not { } parsed) return;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (Current is GymApplication { _shell: { } shell }) shell.OpenFromPush(parsed);
+            else _pushBeforeShell = parsed;
+        });
+    }
+
+    /// <summary>A friend notification came while the app is open (Phase 22). True when the head should show it; false
+    /// when the user is on Inbox or Friends, which reload instead. Called from any thread.</summary>
+    public static async Task<bool> PushArrivedAsync(string? kind)
+    {
+        if (PushPayload.Parse(kind) is not { } parsed) return true;
+        return await Dispatcher.UIThread.InvokeAsync(() =>
+            Current is not GymApplication { _shell: { } shell } || shell.PushArrived(parsed));
+    }
+
     /// <summary>The shell, once <see cref="AppStartup"/> has run. On the UI thread.</summary>
     private MainView CreateShellView()
     {
@@ -186,6 +224,11 @@ public partial class GymApplication : Application
         {
             _linkBeforeShell = null;
             main.OpenLink(waiting);
+        }
+        if (_pushBeforeShell is { } tapped)
+        {
+            _pushBeforeShell = null;
+            main.OpenFromPush(tapped);
         }
         main.UpdateNotice ??= _updateNotice;
         ErrorHandling.Install(Services.GetRequiredService<ErrorLog>(), message => main.GlobalError = message);

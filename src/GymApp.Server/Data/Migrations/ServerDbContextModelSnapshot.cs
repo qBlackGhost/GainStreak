@@ -217,6 +217,52 @@ namespace GymApp.Server.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.PushDevice", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
+                    b.Property<bool>("Sandbox")
+                        .HasColumnType("boolean");
+
+                    b.Property<long>("SessionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PushDevices");
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.Session", b =>
                 {
                     b.Property<long>("Id")
@@ -485,6 +531,21 @@ namespace GymApp.Server.Data.Migrations
                     b.HasOne("GymApp.Server.Data.User", null)
                         .WithMany()
                         .HasForeignKey("UserBId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.PushDevice", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.Session", null)
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
