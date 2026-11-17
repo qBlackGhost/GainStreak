@@ -42,6 +42,19 @@
     <CustomEntitlements Include="aps-environment" Type="String" Value="production" Condition="'$(Configuration)' == 'Release'" />
   </ItemGroup>
 
+  <!-- A free Apple account (Personal Team) on your own phone: build/run-on-phone.sh passes -p:FreeAppleAccount=true.
+       Personal Teams can't have Push Notifications or Associated Domains, so this build drops them (no friend pushes,
+       invite links open Safari), and it needs a bundle id of its own (com.gainstreak.app is the store's App ID; override
+       with -p:FreeBundleId=...). Its profiles come from Xcode (see the script) and expire after 7 days -->
+  <PropertyGroup Condition="'$(FreeAppleAccount)' == 'true'">
+    <ApplicationId Condition="'$(FreeBundleId)' != ''">$(FreeBundleId)</ApplicationId>
+    <ApplicationId Condition="'$(FreeBundleId)' == ''">com.gainstreak.app.dev</ApplicationId>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(FreeAppleAccount)' == 'true'">
+    <CustomEntitlements Remove="aps-environment" />
+    <CustomEntitlements Include="com.apple.developer.associated-domains" Type="Remove" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia.iOS" Version="12.1.3" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.3" />
