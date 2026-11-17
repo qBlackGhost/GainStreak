@@ -11,7 +11,8 @@ using GymApp.Services;
 namespace GymApp.App.ViewModels;
 
 /// <summary>
-/// Profile → Apple Health (Phase 20), on the iPhone only (<see cref="IHealthStore.IsSupported"/>). Off until the user
+/// Profile → Apple Health (Phase 20) on the iPhone, Health Connect (Phase 23) on Android
+/// (<see cref="IHealthStore.IsSupported"/>; the words come from <see cref="IHealthStore.Texts"/>). Off until the user
 /// turns it on, which shows iOS's permission sheet, saves the setting and starts a sync (the first one writes the last
 /// 30 days). The kinds the user didn't allow in the sheet are named with a way to Settings; reads can't be checked (iOS
 /// hides them), so nothing is said about them. Turning it off stops syncing; what's in Health stays there.
@@ -21,8 +22,13 @@ namespace GymApp.App.ViewModels;
 /// </summary>
 public partial class HealthViewModel : ObservableObject
 {
-    public const string TurnedOffText = "What GainStreak already saved stays in Health. You can delete it in the Health app.";
-    public const string NoSheetText = "Apple Health couldn't be opened. Try again.";
+    /// <summary>The platform's words (Phase 23): Apple Health on the iPhone, Health Connect on Android.</summary>
+    public HealthTexts Texts => _store.Texts;
+
+    public string TurnedOffText => $"What GainStreak already saved stays in {Texts.Store}. You can delete it in {Texts.App}.";
+    public string NoSheetText => $"{Texts.Title} couldn't be opened. Try again.";
+    public string InstallText => $"{Texts.Title} isn't on this phone yet. Install it from Google Play, then turn this on again.";
+    public string UseStoreText => $"Use {Texts.Store}'s";
 
     private readonly IHealthStore _store;
     private readonly ProfileService _profiles;
@@ -47,7 +53,7 @@ public partial class HealthViewModel : ObservableObject
         _profileChanged = profileChanged ?? (() => { });
     }
 
-    /// <summary>False everywhere but an iPhone build with HealthKit: the card is hidden.</summary>
+    /// <summary>False on the desktop, and where the phone has no Health store: the card is hidden.</summary>
     public bool IsSupported => _store.IsSupported;
 
     [ObservableProperty] public partial bool IsOn { get; set; }
@@ -81,6 +87,7 @@ public partial class HealthViewModel : ObservableObject
     {
         if (_import is null) return;
         await _store.RequestAuthorizationAsync();   // only types never asked before (20c added reads) show the sheet
+        CheckAccess();   // Android knows what was granted only after asking
         if (await _sync.ReadAsync(force: true) is not { } r) return;
         _offer = r.Offer;
         OfferText = r.Offer is { } o ? DescribeOffer(o) : null;
@@ -89,7 +96,7 @@ public partial class HealthViewModel : ObservableObject
             ? $"Your steps say {ActivityLevels.DisplayName(level)}: {avg.ToString("N0", CultureInfo.InvariantCulture)} a day over the last {HealthImport.StepDays} days."
             : null;
         if (r.WeighInsImported > 0)
-            Note = r.WeighInsImported == 1 ? "1 weigh-in from Health added." : $"{r.WeighInsImported} weigh-ins from Health added.";
+            Note = r.WeighInsImported == 1 ? $"1 weigh-in from {Texts.Store} added." : $"{r.WeighInsImported} weigh-ins from {Texts.Store} added.";
         if (r.ProfileFilled || r.WeighInsImported > 0) _profileChanged();
     }
 
@@ -99,7 +106,7 @@ public partial class HealthViewModel : ObservableObject
         if (o.HeightCm is { } h) parts.Add($"height {Units.FormatHeight(h, _units())}");
         if (o.BirthDate is { } b) parts.Add($"born {b.ToString("d MMM yyyy", CultureInfo.InvariantCulture)}");
         if (o.Sex is { } s) parts.Add(s == Sex.Female ? "female" : "male");
-        return $"Health says: {string.Join(", ", parts)}.";
+        return $"{Texts.Store} says: {string.Join(", ", parts)}.";
     }
 
     [RelayCommand] private Task UseHealthProfile() => AnswerOfferAsync(true);
@@ -139,6 +146,15 @@ public partial class HealthViewModel : ObservableObject
     {
         Note = null;
         if (_userId() is not { } id) return;
+        if (_store.NeedsInstall)
+        {
+            // Health Connect on Android 8 to 13: install it first; the switch stays off until then
+            SetQuietly(false);
+            Problem = InstallText;
+            CanOpenSettings = false;
+            _store.OpenInstallPage();
+            return;
+        }
         if (!await _store.RequestAuthorizationAsync())
         {
             SetQuietly(false);
@@ -176,7 +192,7 @@ public partial class HealthViewModel : ObservableObject
         if (_store.WriteAccess(HealthKind.StrengthWorkout) == HealthAccess.Denied) off.Add("Workouts");
         if (_store.WriteAccess(HealthKind.Weight) == HealthAccess.Denied) off.Add(off.Count == 0 ? "Weigh-ins" : "weigh-ins");
         Problem = off.Count == 0 ? null
-            : $"{string.Join(" and ", off)} are off for GainStreak in Health, so they aren't saved there.";
+            : $"{string.Join(" and ", off)} are off for GainStreak in {Texts.Store}, so they aren't saved there.";
         CanOpenSettings = off.Count > 0;
     }
 

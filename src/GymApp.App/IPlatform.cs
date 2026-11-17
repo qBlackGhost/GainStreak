@@ -59,7 +59,7 @@ public interface IPlatform
     /// <summary>The workout's Live Activity on iOS (0.20.0); every other head shows none.</summary>
     ILiveActivity CreateLiveActivity() => new NoLiveActivity();
 
-    /// <summary>Apple Health on iOS (Phase 20); every other head has none.</summary>
+    /// <summary>Apple Health on iOS (Phase 20), Health Connect on Android (Phase 23); the desktop has none.</summary>
     IHealthStore CreateHealthStore() => new NoHealthStore();
 
     /// <summary>Friend notifications through APNs or FCM (Phase 22); the desktop has none, so Profile and Friends hide them.</summary>

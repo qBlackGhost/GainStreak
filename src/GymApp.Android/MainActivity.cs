@@ -25,11 +25,17 @@ public class MainActivity : AvaloniaMainActivity
     private static WeakReference<MainActivity>? _current;
     private static TaskCompletionSource<bool>? _permission;
     private static TaskCompletionSource<bool>? _location;
+    private static AndroidX.Activity.Result.ActivityResultLauncher? _healthLauncher;
+    private static TaskCompletionSource<ICollection<string>>? _health;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
         _current = new WeakReference<MainActivity>(this);
+        // Health Connect's sheet (Phase 23): the launcher must be registered before the activity starts, and is the only
+        // way that works on Android 14+, where the request is a runtime permission (23a results)
+        _healthLauncher = RegisterForActivityResult(AndroidX.Health.Connect.Client.PermissionController.CreateRequestPermissionResultContract(),
+            new HealthPermissionsCallback());
         Opened(Intent);
     }
 
@@ -75,6 +81,26 @@ public class MainActivity : AvaloniaMainActivity
         activity!.RequestPermissions([Manifest.Permission.AccessFineLocation, Manifest.Permission.AccessCoarseLocation],
             LocationPermissionRequest);
         return _location.Task;
+    }
+
+    /// <summary>Health Connect's permission sheet (Phase 23) for <paramref name="permissions"/>; returns what's granted
+    /// afterwards, or null when there's no activity to show it from.</summary>
+    public static Task<ICollection<string>?> RequestHealthPermissionsAsync(IEnumerable<string> permissions)
+    {
+        if (_current?.TryGetTarget(out _) != true || _healthLauncher is null) return Task.FromResult<ICollection<string>?>(null);
+        _health?.TrySetResult([]);
+        var done = new TaskCompletionSource<ICollection<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _health = done;
+        var set = new Java.Util.HashSet();
+        foreach (var p in permissions) set.Add(p);
+        _healthLauncher.Launch(set);
+        return done.Task.ContinueWith(t => (ICollection<string>?)t.Result, TaskScheduler.Default);
+    }
+
+    private sealed class HealthPermissionsCallback : Java.Lang.Object, AndroidX.Activity.Result.IActivityResultCallback
+    {
+        public void OnActivityResult(Java.Lang.Object? result) =>
+            _health?.TrySetResult(result is null ? [] : AndroidHealthStore.Strings(result));
     }
 
     public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)

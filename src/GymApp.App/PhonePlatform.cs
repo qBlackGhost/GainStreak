@@ -43,7 +43,7 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
     /// <summary>iOS's Live Activity (0.20.0); Android has none yet.</summary>
     public virtual ILiveActivity CreateLiveActivity() => new NoLiveActivity();
 
-    /// <summary>Apple Health on iOS (Phase 20); Android's Health Connect comes later.</summary>
+    /// <summary>Apple Health on iOS (Phase 20), Health Connect on Android (Phase 23).</summary>
     public virtual IHealthStore CreateHealthStore() => new NoHealthStore();
 
     /// <summary>Friend notifications (Phase 22): each head adds its own in 22e; none until then.</summary>

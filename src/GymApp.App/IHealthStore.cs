@@ -9,8 +9,23 @@ namespace GymApp.App;
 /// it), so there's nothing like this for reads.</summary>
 public enum HealthAccess { NotAsked, Denied, Allowed }
 
+/// <summary>The Profile card's words for one platform's health store (Phase 23): <see cref="Title"/> names the card and
+/// the switch, <see cref="Store"/> is where the data sits ("in Health"), <see cref="App"/> where the user manages it
+/// ("in the Health app").</summary>
+public sealed record HealthTexts(string Title, string Description, string Store, string App)
+{
+    public static readonly HealthTexts AppleHealth = new("Apple Health",
+        "Saves your workouts, cardio and weigh-ins to this iPhone's Health app, and reads your weight, height, birth date and steps from it.",
+        "Health", "the Health app");
+
+    public static readonly HealthTexts HealthConnect = new("Health Connect",
+        "Saves your workouts, cardio and weigh-ins to Health Connect, and reads your weight, height and steps from it.",
+        "Health Connect", "Health Connect");
+}
+
 /// <summary>
-/// Apple Health (Phase 20), from the head: HealthKit on iOS (<c>IosHealthStore</c>); every other head has none
+/// Apple Health (Phase 20) or Health Connect (Phase 23), from the head: HealthKit on iOS (<c>IosHealthStore</c>), Health
+/// Connect on Android (<c>AndroidHealthStore</c>); every other head has none
 /// (<see cref="NoHealthStore"/>). Plain records in and out (<see cref="HealthItem"/>), so nothing above the head sees
 /// HealthKit types. Writes throw on failure; <see cref="HealthSync"/> logs it (without values) and tries again later.
 /// </summary>
@@ -18,6 +33,16 @@ public interface IHealthStore
 {
     /// <summary>False on heads without Health, and on an iPhone build without the HealthKit entitlement.</summary>
     bool IsSupported { get; }
+
+    /// <summary>The card's words: Apple Health unless the head says otherwise.</summary>
+    HealthTexts Texts => HealthTexts.AppleHealth;
+
+    /// <summary>Supported, but the store must be installed or updated first (Health Connect on Android 8 to 13). Nothing
+    /// syncs until it is.</summary>
+    bool NeedsInstall => false;
+
+    /// <summary>Opens the store's install page (Health Connect on Google Play).</summary>
+    void OpenInstallPage() { }
 
     /// <summary>Shows iOS's permission sheet (only the first time; afterwards it returns at once). False when the sheet
     /// couldn't be shown; true says nothing about what the user allowed (see <see cref="WriteAccess"/>).</summary>

@@ -7,7 +7,7 @@ using GymApp.Services;
 
 namespace GymApp.App;
 
-/// <summary>Whether the signed-in account turned Apple Health on (Phase 20).</summary>
+/// <summary>Whether the signed-in account turned Apple Health (Phase 20) or Health Connect (Phase 23) on.</summary>
 public interface IHealthSetting
 {
     Task<bool> IsEnabledAsync(int userId);
@@ -68,7 +68,7 @@ public sealed class HealthSync(IHealthStore store, HealthExportService export, S
     /// <summary>One run. Returns what it changed, for tests; null when it didn't run.</summary>
     public async Task<HealthChanges?> SyncAsync()
     {
-        if (!store.IsSupported || session.CurrentUser is not { } user) return null;
+        if (!store.IsSupported || store.NeedsInstall || session.CurrentUser is not { } user) return null;
         try
         {
             if (!await setting.IsEnabledAsync(user.Id)) return null;
@@ -109,7 +109,7 @@ public sealed class HealthSync(IHealthStore store, HealthExportService export, S
     /// </summary>
     public async Task<HealthReadResult?> ReadAsync(bool force)
     {
-        if (import is null || !store.IsSupported || session.CurrentUser is not { } user) return null;
+        if (import is null || !store.IsSupported || store.NeedsInstall || session.CurrentUser is not { } user) return null;
         var now = Now;
         if (!force && _lastRead is { } last && now - last < ReadEvery) return null;
         try

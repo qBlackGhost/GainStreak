@@ -19,6 +19,8 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
 
     public override IPushNotifications CreatePushNotifications() => new AndroidPushNotifications(context);   // Phase 22
 
+    public override IHealthStore CreateHealthStore() => new AndroidHealthStore(context);   // Health Connect (Phase 23)
+
     public override bool CanOpenStorePage => true;
 
     /// <summary>The Play Store app at this app's page; the web page where there's no store app (an emulator).</summary>
