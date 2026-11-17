@@ -21,6 +21,8 @@ public class ValidationTests : IDisposable
     [InlineData("alice")]
     [InlineData("Ana_Maria-2.0")]
     [InlineData("Ștefan")]          // letters outside ASCII are fine
+    [InlineData("1cristi")]         // digits are fine with a letter somewhere
+    [InlineData("007_bond")]
     public void Username_Allowed(string name) => Assert.Null(Credentials.CheckUsername(name));
 
     [Theory]
@@ -31,6 +33,22 @@ public class ValidationTests : IDisposable
     [InlineData("semi;colon")]
     public void Username_Refused(string name) =>
         Assert.Equal("Use only letters, digits, '_', '.' and '-' in your username.", Credentials.CheckUsername(name));
+
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("123_456")]
+    [InlineData("2.0-1")]
+    [InlineData("___")]
+    public void Username_WithoutALetter_IsRefused(string name) =>
+        Assert.Equal(Credentials.NeedsALetterMessage, Credentials.CheckUsername(name));
+
+    [Fact] public async Task Register_RefusesADigitsOnlyUsername_OnTheUsernameField()
+    {
+        var r = await _auth.RegisterAsync("12345", "digits@example.com", "password1");
+        Assert.False(r.Success);
+        Assert.Equal(FormField.Username, r.Field);
+        Assert.Equal(Credentials.NeedsALetterMessage, r.Error);
+    }
 
     [Fact] public async Task Register_RefusesASpaceInTheUsername_OnTheUsernameField()
     {

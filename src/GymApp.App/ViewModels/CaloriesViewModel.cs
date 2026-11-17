@@ -416,5 +416,5 @@ public partial class CaloriesViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand] private void ShowProfile() => _shell().ShowProfile();
+    [RelayCommand] private void ShowProfile() => _shell().ShowProfile(ProfilePage.BodyData);
 }

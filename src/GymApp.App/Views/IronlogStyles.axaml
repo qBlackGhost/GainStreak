@@ -147,6 +147,57 @@
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
+        <!-- Switches (0.23.1): a springy pill. The knob stretches while pressed, overshoots as it lands, and a check
+             pops in when on. Every ToggleSwitch on a screen that includes these styles (Profile's settings pages, the
+             Map's settings chips) -->
+        <Style Selector="ToggleSwitch">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Name="Track" Width="44" Height="26" CornerRadius="13" Background="{DynamicResource Control}" ClipToBounds="True">
+                        <Border.Transitions>
+                            <Transitions><BrushTransition Property="Background" Duration="0:0:0.25"/></Transitions>
+                        </Border.Transitions>
+                        <Panel>
+                        <!-- ToggleSwitch requires this part and moves it (and resets its transitions) for dragging; an
+                             empty one, so a tap toggles and the knob below animates on its own -->
+                        <Panel Name="PART_MovingKnobs" Width="0" Height="0"/>
+                        <Border Name="Knob" Width="20" Height="20" CornerRadius="10" Margin="3,0,0,0" HorizontalAlignment="Left"
+                                VerticalAlignment="Center" Background="White" BoxShadow="0 1 3 0 #40000000" RenderTransform="translateX(0px)">
+                            <Border.Transitions>
+                                <Transitions>
+                                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.35" Easing="BackEaseOut"/>
+                                    <DoubleTransition Property="Width" Duration="0:0:0.15" Easing="CubicEaseOut"/>
+                                </Transitions>
+                            </Border.Transitions>
+                            <Path Name="Check" Data="M5,12 L10,17 L20,7" Stroke="#4D7C0F" StrokeThickness="3" StrokeLineCap="Round"
+                                  StrokeJoin="Round" Width="9" Height="9" Stretch="Uniform" Opacity="0" RenderTransform="scale(0.4)"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <Path.Transitions>
+                                    <Transitions>
+                                        <DoubleTransition Property="Opacity" Duration="0:0:0.2" Delay="0:0:0.1"/>
+                                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Delay="0:0:0.1" Easing="BackEaseOut"/>
+                                    </Transitions>
+                                </Path.Transitions>
+                            </Path>
+                        </Border>
+                        </Panel>
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="ToggleSwitch:checked /template/ Border#Track"><Setter Property="Background" Value="{DynamicResource Accent}"/></Style>
+        <!-- 44 x 26 with a 20 knob 3 in from each end: it travels 18. Pressed it stretches to 25, growing toward the middle.
+             The overshoot (BackEaseOut, about a tenth) stays inside the track, which clips anyway -->
+        <Style Selector="ToggleSwitch:checked /template/ Border#Knob"><Setter Property="RenderTransform" Value="translateX(18px)"/></Style>
+        <Style Selector="ToggleSwitch:pressed /template/ Border#Knob"><Setter Property="Width" Value="25"/></Style>
+        <Style Selector="ToggleSwitch:checked:pressed /template/ Border#Knob"><Setter Property="RenderTransform" Value="translateX(13px)"/></Style>
+        <Style Selector="ToggleSwitch:checked /template/ Path#Check">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="RenderTransform" Value="scale(1)"/>
+        </Style>
+        <Style Selector="ToggleSwitch:disabled"><Setter Property="Opacity" Value="0.4"/></Style>
+
         <!-- Phones (MainView sets "phone" under 700 px): "phoneOnly" shows only there, "wideOnly" everywhere else -->
         <Style Selector=":is(Control).phoneOnly">
             <Setter Property="IsVisible" Value="False"/>

@@ -75,6 +75,9 @@
         <Style Selector="StackPanel#RightColumn">
             <Setter Property="Grid.Column" Value="1"/>
         </Style>
+        <Style Selector="Grid#Columns"><Setter Property="RowSpacing" Value="24"/></Style>
+        <!-- The phones show one page's cards at a time, so the stacked columns need no gap between them -->
+        <Style Selector=".phone Grid#Columns"><Setter Property="RowSpacing" Value="0"/></Style>
         <Style Selector="Grid.stack StackPanel#LeftColumn">
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
@@ -93,6 +96,9 @@
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
         <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Button.bare:pressed">
@@ -148,22 +154,82 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
+        <!-- The phones' pages (0.23.1): Main, Settings and the pages its rows open. A card's own title gives way to the
+             page's back row there -->
+        <Style Selector=".phone TextBlock.cardTitle"><Setter Property="IsVisible" Value="False"/></Style>
+        <Style Selector="Border.deleteSection">
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="Padding" Value="0,14,0,0"/>
+        </Style>
+        <Style Selector=".phone Border.deleteSection">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="Button.settingsRow">
+            <Setter Property="MinHeight" Value="54"/>
+            <Setter Property="Padding" Value="16,10"/>
+            <Setter Property="CornerRadius" Value="0"/>
+        </Style>
+        <Style Selector="Button.settingsRow:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="Border.rowDivider">
+            <Setter Property="Height" Value="1"/>
+            <Setter Property="Margin" Value="16,0"/>
+            <Setter Property="Background" Value="{DynamicResource Divider}"/>
+        </Style>
+        <Style Selector="TextBlock.rowValue">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="MaxWidth" Value="170"/>
+        </Style>
+        <Style Selector="TextBlock.rowValue.flame"><Setter Property="Foreground" Value="{DynamicResource FlameText}"/></Style>
+        <Style Selector="TextBlock.rowLabel">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+        <Style Selector="TextBlock.groupLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="LetterSpacing" Value="0.9"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="Margin" Value="4,0,0,-14"/>
+        </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Profile"/>
 
-        <ScrollViewer>
+        <ScrollViewer x:Name="Scroller">
         <StackPanel Classes="page" Spacing="24">
+          <StackPanel Classes="phoneOnly" Spacing="24">
+            <!-- Phones, every page but Main: back to where it was opened from, and the page's title -->
+            <Button Classes="rowLink" Command="{Binding PageBackCommand}" IsVisible="{Binding IsSubPage}" AutomationProperties.Name="Back">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <v:Icon Data="{StaticResource IcChevronLeft}" StrokeThickness="2.4" Width="22" Height="22" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding PageTitle}" FontSize="24" FontWeight="ExtraBold" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                </StackPanel>
+            </Button>
             <!-- Phones (the canvas): a card with the avatar and name, streak / level / points tiles, then the split -->
-            <Border Classes="card phoneOnly">
+            <Border Classes="card" IsVisible="{Binding IsMainPage}">
                 <StackPanel Spacing="14">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                         <Button Classes="bare" Command="{Binding EditAvatarCommand}" AutomationProperties.Name="Change avatar">
                             <v:AvatarView Width="64" Height="64" Choice="{Binding Avatar}" Initials="{Binding Initials}" Level="{Binding AvatarLevel}"
                                           Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
                         </Button>
                         <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <!-- Settings: account, notifications, Health, home city, appearance -->
+                        <Button Grid.Column="2" Classes="bare" Width="44" Height="44" VerticalAlignment="Top" Margin="0,-6,-8,0"
+                                Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Settings}"
+                                AutomationProperties.Name="Settings">
+                            <v:Icon Data="{StaticResource IcSliders}" Stroke="{DynamicResource Ink}" StrokeThickness="2.2" Width="22" Height="22"/>
+                        </Button>
                     </Grid>
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                         <Border Classes="statTile">
@@ -205,6 +271,7 @@
                     </Button>
                 </StackPanel>
             </Border>
+          </StackPanel>
 
             <!-- Header: who you are, your split, streak and level -->
             <Grid x:Name="Header" Classes="wideOnly" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="16">
@@ -261,14 +328,15 @@
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
-            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="24">
+            <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24"
+                  IsVisible="{Binding ShowsCards}">
                 <StackPanel x:Name="LeftColumn" Spacing="24">
 
                     <!-- ===== Body data ===== -->
-                    <Border Classes="card roomy">
+                    <Border Classes="card roomy" IsVisible="{Binding ShowsBodyData}">
                         <StackPanel Spacing="22">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBlock Text="Body data" Classes="h2"/>
+                                <TextBlock Text="Body data" Classes="h2 cardTitle"/>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                     <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" Width="14" Height="14"/>
                                     <TextBlock Classes="muted wideOnly" Text="Stored only on this computer" FontSize="12"/>
@@ -527,7 +595,7 @@
                         </StackPanel>
                     </Border>
                     <!-- ===== Weight ===== -->
-                    <Border Classes="card">
+                    <Border Classes="card" IsVisible="{Binding ShowsWeight}">
                         <StackPanel Spacing="18">
                             <TextBlock Text="Weight" Classes="h2"/>
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -598,10 +666,10 @@
 
                 <StackPanel x:Name="RightColumn" Spacing="24">
                     <!-- ===== Home city ===== -->
-                    <Border Classes="card roomy">
+                    <Border Classes="card roomy" IsVisible="{Binding ShowsHomeCity}">
                         <StackPanel Spacing="16">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Home city" Classes="h2"/>
+                                <TextBlock Text="Home city" Classes="h2 cardTitle"/>
                                 <TextBlock Text="The gym map opens on this city. You can still pick gyms anywhere." FontSize="13" Classes="soft"/>
                             </StackPanel>
                             <Border Padding="16,14" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1"
@@ -665,9 +733,10 @@
                     </Border>
 
                     <!-- ===== Account: the email you sign in with ===== -->
-                    <Border Classes="card">
+                    <Border Classes="card" IsVisible="{Binding ShowsAccountCard}">
                         <StackPanel Spacing="14">
-                            <TextBlock Text="Account" Classes="h2"/>
+                          <StackPanel Spacing="14" IsVisible="{Binding ShowsAccountDetails}">
+                            <TextBlock Text="Account" Classes="h2 cardTitle"/>
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14" IsVisible="{Binding !IsEditingEmail}">
                                 <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill2}">
                                     <v:Icon Data="{StaticResource IcMail}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="20" Height="20"
@@ -756,8 +825,11 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Delete account, behind a confirmation that asks for the password -->
-                            <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
+                          </StackPanel>
+
+                            <!-- Delete account, behind a confirmation that asks for the password (its own page on the phones) -->
+                            <Border Classes="deleteSection" BorderBrush="{DynamicResource Line}"
+                                    IsVisible="{Binding ShowsAccountDelete}">
                                 <StackPanel Spacing="10">
                                     <Button Classes="btn outline small" MinHeight="40" Foreground="{DynamicResource ErrorText}" HorizontalAlignment="Left"
                                             IsVisible="{Binding !IsConfirmingDelete}" Command="{Binding AskDeleteCommand}">
@@ -788,11 +860,11 @@
                     </Border>
 
                     <!-- ===== Vacation (0.19.0): freeze the streak for up to 7 days, once every 2 months ===== -->
-                    <Border Classes="card">
+                    <Border Classes="card" IsVisible="{Binding ShowsVacation}">
                         <StackPanel Spacing="14" DataContext="{Binding Vacation}" x:DataType="vm:VacationCardViewModel">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Vacation" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="Vacation" FontSize="20" FontWeight="Bold" Classes="cardTitle"/>
                                     <TextBlock Text="{x:Static vm:VacationCardViewModel.Blurb}" FontSize="12" Classes="muted" TextWrapping="Wrap"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
@@ -841,9 +913,9 @@
 
                     <!-- ===== Notifications: Reminders (16g) and friend notifications (Phase 22, the canvas's Profile ·
                          Notifications); the phones only, each off until turned on, which asks to notify ===== -->
-                    <Border Classes="card" IsVisible="{Binding HasNotifications}">
+                    <Border Classes="card" IsVisible="{Binding ShowsNotifications}">
                       <StackPanel Spacing="14">
-                        <TextBlock Text="Notifications" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="Notifications" FontSize="20" FontWeight="Bold" Classes="cardTitle"/>
                         <StackPanel Spacing="14" DataContext="{Binding Reminders}" x:DataType="vm:RemindersViewModel" IsVisible="{Binding IsSupported}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
@@ -865,8 +937,8 @@
                                     <ToggleSwitch Grid.Column="1" IsChecked="{Binding TrainingOn}" OnContent="" OffContent=""
                                                   VerticalAlignment="Center" AutomationProperties.Name="Training day reminder"/>
                                 </Grid>
-                                <TimePicker SelectedTime="{Binding TrainingTime}" ClockIdentifier="24HourClock" MinuteIncrement="5"
-                                            IsVisible="{Binding TrainingOn}" AutomationProperties.Name="Training day reminder time"/>
+                                <v:TimeWheel Time="{Binding TrainingTime}" IsVisible="{Binding TrainingOn}"
+                                             AutomationProperties.Name="Training day reminder time"/>
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="Missed days" FontSize="14" Classes="light"/>
@@ -898,11 +970,11 @@
 
                     <!-- ===== Apple Health (Phase 20) on the iPhone, Health Connect (Phase 23) on Android: off until turned on, which
                          shows the system's permission sheet. The words come from the platform (HealthViewModel.Texts) ===== -->
-                    <Border Classes="card" IsVisible="{Binding Health.IsSupported}">
+                    <Border Classes="card" IsVisible="{Binding ShowsHealth}">
                         <StackPanel Spacing="14" DataContext="{Binding Health}" x:DataType="vm:HealthViewModel">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="{Binding Texts.Title}" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Texts.Title}" FontSize="20" FontWeight="Bold" Classes="cardTitle"/>
                                     <TextBlock Text="{Binding Texts.Description}" FontSize="12"
                                                Classes="muted" TextWrapping="Wrap"/>
                                 </StackPanel>
@@ -937,9 +1009,9 @@
                     </Border>
 
                     <!-- ===== Appearance: the Theme setting, applied at once ===== -->
-                    <Border Classes="card">
+                    <Border Classes="card" IsVisible="{Binding ShowsAppearance}">
                         <StackPanel Spacing="14">
-                            <TextBlock Text="Appearance" FontSize="20" FontWeight="Bold"/>
+                            <TextBlock Text="Appearance" FontSize="20" FontWeight="Bold" Classes="cardTitle"/>
                             <Border Classes="track">
                                 <v:SegmentedPill SelectedIndex="{Binding ThemeIndex}" PillInset="0">
                                     <Button Classes="seg" Classes.on="{Binding ThemeIndex, Converter={x:Static v:ProfileView.IsIndex}, ConverterParameter=0}"
@@ -959,19 +1031,125 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Phones: what the sidebar holds on wider screens (the GainStreak Mobile canvas) -->
-            <StackPanel Classes="phoneOnly" Spacing="10">
-                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Command="{Binding SendFeedbackCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <v:Icon Data="{StaticResource IcChat}" VerticalAlignment="Center"/><TextBlock Text="Send feedback" VerticalAlignment="Center"/>
+            <!-- Phones, Main (0.23.1): body data and vacation as rows that open their pages -->
+            <Border Classes="card phoneOnly" Padding="0" ClipToBounds="True" IsVisible="{Binding IsMainPage}">
+                <StackPanel>
+                    <Button Classes="rowLink settingsRow" Padding="16,14" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.BodyData}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="3">
+                                <TextBlock Text="Body data" FontSize="12" Classes="muted"/>
+                                <TextBlock Text="{Binding BodySummary}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding BodySummaryDetail}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <v:Icon Grid.Column="1" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Vacation}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcPlane}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Vacation"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding Vacation.StateText}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- Phones, Settings (0.23.1): grouped rows showing their values, each opening its page. Feedback and log out
+                 (the sidebar's on wider screens) close the list, account deletion last -->
+            <StackPanel Classes="phoneOnly" Spacing="24" IsVisible="{Binding IsSettingsPage}">
+                <TextBlock Classes="groupLabel" Text="ACCOUNT"/>
+                <Border Classes="card" Padding="0" ClipToBounds="True">
+                  <StackPanel>
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Account}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcMail}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Email"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding EmailText}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPasswordCommand}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcLock}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Password"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                  </StackPanel>
+                </Border>
+                <TextBlock Classes="groupLabel" Text="APP"/>
+                <Border Classes="card" Padding="0" ClipToBounds="True">
+                  <StackPanel>
+                    <StackPanel IsVisible="{Binding HasNotifications}">
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Notifications}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcBell}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Notifications"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding NotificationsSummary}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
                     </StackPanel>
-                </Button>
-                <Button Classes="btn outline" HorizontalAlignment="Stretch" MinHeight="48" Foreground="{DynamicResource ErrorText}"
-                        Command="{Binding LogOutCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <v:Icon Data="{StaticResource IcLogout}" VerticalAlignment="Center"/><TextBlock Text="Log out" VerticalAlignment="Center"/>
+                    <StackPanel IsVisible="{Binding Health.IsSupported}">
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Health}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcHeart}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="{Binding Health.Texts.Title}"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding HealthSummary}" Classes.flame="{Binding HealthNeedsLook}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
                     </StackPanel>
-                </Button>
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.HomeCity}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Home city"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding HomeCitySummary}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Appearance}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcMoon}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Appearance"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding ThemeSummary}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                  </StackPanel>
+                </Border>
+                <Border Classes="card" Padding="0" ClipToBounds="True">
+                  <StackPanel>
+                    <Button Classes="rowLink settingsRow" Command="{Binding SendFeedbackCommand}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcChat}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Send feedback"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
+                    <Button Classes="rowLink settingsRow" Command="{Binding LogOutCommand}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcLogout}" Stroke="{DynamicResource ErrorText}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Log out" Foreground="{DynamicResource ErrorText}"/>
+                        </Grid>
+                    </Button>
+                  </StackPanel>
+                </Border>
+                <Border Classes="card" Padding="0" ClipToBounds="True">
+                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.DeleteAccount}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcTrash}" Stroke="{DynamicResource ErrorText}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Delete account" Foreground="{DynamicResource ErrorText}"/>
+                        </Grid>
+                    </Button>
+                </Border>
             </StackPanel>
 
             <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center"/>

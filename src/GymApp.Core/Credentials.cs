@@ -12,14 +12,18 @@ public static class Credentials
     public const int MaxPasswordLength = 128;
     public const int MaxEmailLength = 254;
 
-    /// <summary>Letters, digits, '_', '.' and '-' only (no spaces, emoji or control characters), 3 to 32 of them, and
-    /// nothing <see cref="UsernameFilter"/> refuses. Expects the trimmed username.</summary>
+    public const string NeedsALetterMessage = "Your username needs at least one letter.";
+
+    /// <summary>Letters, digits, '_', '.' and '-' only (no spaces, emoji or control characters), 3 to 32 of them, at
+    /// least one letter (0.23.1: the avatar shows a letter, see <see cref="UserInitials"/>), and nothing
+    /// <see cref="UsernameFilter"/> refuses. Expects the trimmed username.</summary>
     public static string? CheckUsername(string username)
     {
         if (username.Length < MinUsernameLength) return $"Username must be at least {MinUsernameLength} characters.";
         if (username.Length > MaxUsernameLength) return $"Username must be at most {MaxUsernameLength} characters.";
         if (!username.All(c => char.IsLetterOrDigit(c) || c is '_' or '.' or '-'))
             return "Use only letters, digits, '_', '.' and '-' in your username.";
+        if (!username.Any(char.IsLetter)) return NeedsALetterMessage;
         if (!UsernameFilter.IsAllowed(username)) return "That username isn't allowed. Pick another one.";
         return null;
     }

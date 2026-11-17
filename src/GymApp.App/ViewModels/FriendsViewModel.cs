@@ -27,14 +27,10 @@ internal static class StaleText
     }
 }
 
-/// <summary>"CR" for an avatar: the first two letters of a username.</summary>
+/// <summary>The letters on an avatar: <see cref="UserInitials"/>.</summary>
 internal static class Initials
 {
-    public static string Of(string username)
-    {
-        var letters = new string(username.Where(char.IsLetter).Take(2).ToArray());
-        return letters.Length > 0 ? letters.ToUpperInvariant() : username[..Math.Min(2, username.Length)].ToUpperInvariant();
-    }
+    public static string Of(string username) => UserInitials.Of(username);
 }
 
 /// <summary>One row of the leaderboard. Ranking comes from <see cref="Leaderboard"/>; nothing is computed here.</summary>
@@ -282,11 +278,7 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
 
     [RelayCommand] private void DismissInvite() => HasInvite = false;
 
-    private static string Initials(string name)
-    {
-        var letters = new string(name.Where(char.IsLetter).Take(2).ToArray());
-        return (letters.Length > 0 ? letters : name[..Math.Min(2, name.Length)]).ToUpperInvariant();
-    }
+    private static string Initials(string name) => UserInitials.Of(name);
     public ObservableCollection<FriendsBoardRowViewModel> Board { get; } = new();
 
     [ObservableProperty]

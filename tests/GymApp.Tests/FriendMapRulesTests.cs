@@ -209,11 +209,11 @@ public class FriendMapRulesTests
     }
 
     [Theory]
-    [InlineData("andrei.m", "AN")]
-    [InlineData("vlad_t", "VL")]
-    [InlineData("12345", "?")]
+    [InlineData("andrei.m", "AM")]
+    [InlineData("vlad_t", "VT")]
+    [InlineData("12345", "1")]
     [InlineData("x9", "X")]
-    public void Initials_UseTheFirstTwoLetters(string username, string expected) =>
+    public void Initials_FollowUserInitials(string username, string expected) =>
         Assert.Equal(expected, FriendMapRules.Initials(username));
 
     [Fact] public void DistanceKm_IsZeroForTheSamePoint_AndAbout111KmPerDegreeOfLatitude()
