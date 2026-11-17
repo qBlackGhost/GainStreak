@@ -21,8 +21,11 @@ public static class WeekRow
     /// A Pending day is Upcoming from today on; before today it's owed, so it shows as Missed until it's made up.
     /// </summary>
     /// <param name="frozen">Vacation days (0.19.0): a rest day among them shows as a vacation day too.</param>
+    /// <param name="since">The day the user started: their first schedule or first workout, whichever came first.
+    /// Days before it can't have been missed, so they show as rest days, not as a row of red crosses on a new
+    /// account. Null keeps every missed day.</param>
     public static IReadOnlyList<WeekChip> Build(IReadOnlyList<TrainingDayOutcome> timeline, DateOnly today,
-        IReadOnlySet<DateOnly>? frozen = null)
+        IReadOnlySet<DateOnly>? frozen = null, DateOnly? since = null)
     {
         var monday = PointsCalculator.MondayOf(today);
         var byDate = timeline.ToDictionary(t => t.Date, t => t.Outcome);
@@ -38,6 +41,7 @@ public static class WeekRow
                     DayOutcome.Frozen => WeekChipKind.Vacation,
                     _ => d >= today ? WeekChipKind.Upcoming : WeekChipKind.Missed
                 };
+            if (kind == WeekChipKind.Missed && d < since) kind = WeekChipKind.Rest;
             return new WeekChip(d, kind, d == today);
         }).ToList();
     }

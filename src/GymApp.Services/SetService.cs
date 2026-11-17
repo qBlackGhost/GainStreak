@@ -139,14 +139,17 @@ public class SetService(IDbContextFactory<AppDbContext> dbFactory, WorkoutServic
     public async Task<IReadOnlyList<RecentPr>> GetRecentPrsAsync(int userId, int count = 3)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var sets = await db.SetLogs.AsNoTracking().Where(s => s.UserId == userId && s.Kind == SetKind.Working).ToListAsync();
+        // Just the columns the PR rule reads: this is every working set the user ever logged
+        var sets = await db.SetLogs.Where(s => s.UserId == userId && s.Kind == SetKind.Working)
+            .Select(s => new { s.ExerciseId, Entry = new SetEntry(s.Date, s.SetNumber, s.Kind, s.Reps, s.WeightKg) })
+            .ToListAsync();
         var adjustments = await db.PrAdjustments.AsNoTracking().Where(a => a.UserId == userId).ToListAsync();
         var ids = sets.Select(s => s.ExerciseId).Distinct().ToList();
         var names = await db.Exercises.AsNoTracking().Where(e => ids.Contains(e.Id)).ToDictionaryAsync(e => e.Id, e => e.Name);
         var adjustmentsBy = adjustments.ToLookup(a => a.ExerciseId);
 
         return sets.GroupBy(s => s.ExerciseId)
-            .SelectMany(g => PrCalculator.Compute(g.Select(ToEntry),
+            .SelectMany(g => PrCalculator.Compute(g.Select(s => s.Entry),
                     adjustmentsBy[g.Key].Select(a => new CorePrAdjustment(a.Date, a.WeightKg, a.Reps, a.OneRepMaxKg)))
                 .Entries.Where(e => e.Kind == PrEntryKind.Pr)
                 .GroupBy(e => e.Date)

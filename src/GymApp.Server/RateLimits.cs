@@ -20,6 +20,7 @@ public static class RateLimits
     public const string PasswordReset = "password-reset";
     public const string Invite = "invite";
     public const string InviteReset = "invite-reset";
+    public const string Password = "password";
 
     public static IServiceCollection AddGymRateLimits(this IServiceCollection services) =>
         services.AddRateLimiter(o =>
@@ -39,10 +40,16 @@ public static class RateLimits
             o.AddPolicy(Report, ctx => Fixed($"report:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
             // Looking up and accepting invite codes: a script trying codes is what this stops
             o.AddPolicy(Invite, ctx => Fixed($"invite:{UserOrIp(ctx)}", 30, TimeSpan.FromMinutes(1)));
+            // Changing the email or password and deleting the account check the current password: a stolen session
+            // mustn't be a way to guess it at the global limit's pace
+            o.AddPolicy(Password, ctx => Fixed($"password:{UserOrIp(ctx)}", PasswordChecksPerMinute, TimeSpan.FromMinutes(1)));
             o.AddPolicy(InviteReset, ctx => Fixed($"invite-reset:{UserOrIp(ctx)}", 10, TimeSpan.FromHours(1)));
             o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
                 Fixed(UserOrIp(ctx), 120, TimeSpan.FromMinutes(1)));
         });
+
+    /// <summary>Requests that check the current password, per signed-in user a minute.</summary>
+    public const int PasswordChecksPerMinute = 10;
 
     /// <summary>Sign-up attempts per address an hour, failed ones included.</summary>
     public const int RegisterAttemptsPerHour = 60;

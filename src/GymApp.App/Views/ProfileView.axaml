@@ -425,7 +425,7 @@
 
                                 <StackPanel Spacing="5">
                                     <TextBlock Text="BIRTH DATE" Classes="bdLabel"/>
-                                    <Grid ColumnDefinitions="56,*,76" ColumnSpacing="8">
+                                    <Grid ColumnDefinitions="64,*,76" ColumnSpacing="8">
                                         <TextBox TextInputOptions.ContentType="Digits" Classes="field mono" TextAlignment="Center" PlaceholderText="Day"
                                                  Text="{Binding BirthDayText}" AutomationProperties.Name="Day"/>
                                         <ComboBox Grid.Column="1" Classes="field" HorizontalAlignment="Stretch" ItemsSource="{Binding Months}"

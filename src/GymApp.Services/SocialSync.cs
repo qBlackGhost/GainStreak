@@ -35,8 +35,9 @@ public sealed class NoSocialSync : ISocialSyncHooks
 /// <summary>
 /// The only code that uploads to the social server: the sharing setting, the last 31 days of check-ins and the 14-day
 /// stats projection. What still has to go is kept in <see cref="SyncState"/>, so it survives a restart with no signal.
-/// Uploads are retried (unlike friend writes): offline leaves the flag set; a refusal is logged in
-/// <see cref="SyncState.LastError"/> and clears it, so a payload the server won't take isn't sent forever.
+/// Uploads are retried (unlike friend writes): offline, an ended session or the rate limit leaves the flag set; a
+/// refusal of the payload itself is logged in <see cref="SyncState.LastError"/> and clears it, so a payload the server
+/// won't take isn't sent forever.
 /// Runs for the signed-in, linked user only, one sync at a time per user.
 /// </summary>
 public sealed class SocialSync(
@@ -131,15 +132,25 @@ public sealed class SocialSync(
         try
         {
             if (!IsSignedInLinked(userId)) return;
-            SyncState? state;
-            await using (var db = await dbFactory.CreateDbContextAsync())
-                state = await db.SyncStates.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId);
-            if (state is null) return;
+            for (var pass = 0; ; pass++)
+            {
+                SyncState? state;
+                await using (var db = await dbFactory.CreateDbContextAsync())
+                    state = await db.SyncStates.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId);
+                if (state is null) return;
 
-            if (state.AvatarDirtySince is { } avatar && !await RunAsync(userId, Flag.Avatar, avatar, UploadAvatarAsync)) return;
-            if (state.SharingDirtySince is { } sharing && !await RunAsync(userId, Flag.Sharing, sharing, UploadSharingAsync)) return;
-            if (state.CheckInsDirtySince is { } checkIns && !await RunAsync(userId, Flag.CheckIns, checkIns, UploadCheckInsAsync)) return;
-            if (state.StatsDirtySince is { } stats) await RunAsync(userId, Flag.Stats, stats, UploadStatsAsync);
+                if (state.AvatarDirtySince is { } avatar && await RunAsync(userId, Flag.Avatar, avatar, UploadAvatarAsync) != Step.Done) return;
+                if (state.SharingDirtySince is { } sharing && await RunAsync(userId, Flag.Sharing, sharing, UploadSharingAsync) != Step.Done) return;
+                if (state.CheckInsDirtySince is { } checkIns)
+                {
+                    var step = await RunAsync(userId, Flag.CheckIns, checkIns, UploadCheckInsAsync);
+                    // Once more from the top, now with the setting marked; a second refusal waits for the next sync
+                    if (step == Step.SharingFirst && pass == 0) continue;
+                    if (step != Step.Done) return;
+                }
+                if (state.StatsDirtySince is { } stats) await RunAsync(userId, Flag.Stats, stats, UploadStatsAsync);
+                return;
+            }
         }
         finally
         {
@@ -147,24 +158,29 @@ public sealed class SocialSync(
         }
     }
 
-    /// <summary>One step. False if it was offline (stop here); true otherwise, the flag cleared unless it was marked again
-    /// meanwhile (then the next sync sends the newer data).</summary>
-    private async Task<bool> RunAsync(int userId, Flag flag, DateTime markedAt, Func<int, Task<ApiResult?>> upload)
+    private enum Step { Done, Stop, SharingFirst }
+
+    /// <summary>One step. <see cref="Step.Stop"/> if it couldn't get through (stop here, the flag stays);
+    /// <see cref="Step.SharingFirst"/> if the check-ins need the sharing setting sent first; otherwise
+    /// <see cref="Step.Done"/>, the flag cleared unless it was marked again meanwhile (then the next sync sends the
+    /// newer data).</summary>
+    private async Task<Step> RunAsync(int userId, Flag flag, DateTime markedAt, Func<int, Task<ApiResult?>> upload)
     {
-        if (!IsSignedInLinked(userId)) return false;   // signed out or switched accounts mid-sync
+        if (!IsSignedInLinked(userId)) return Step.Stop;   // signed out or switched accounts mid-sync
         var r = await upload(userId);
-        // Offline, or too old a build for the server: keep the flag, the upload goes once it can get through
-        if (r is { IsOffline: true } or { IsUpdateRequired: true }) return false;
+        // Offline, too old a build for the server, the session ended (401), a timeout (408) or the rate limit (429):
+        // none of them is a "no" to this payload, so keep the flag and send it once it can get through
+        if (r is { IsOffline: true } or { IsUpdateRequired: true } or { Status: 401 or 408 or 429 }) return Step.Stop;
 
         await using var db = await dbFactory.CreateDbContextAsync();
         var q = db.SyncStates.Where(s => s.UserId == userId);
         if (flag == Flag.CheckIns && r is { Status: 403 })
         {
             // The server doesn't know sharing is on yet (turning it on marks both, and the two can race): send the
-            // setting first, and keep the check-ins for the sync after it
+            // setting first, and keep the check-ins to send after it
             var now = Now;
             await q.ExecuteUpdateAsync(s => s.SetProperty(x => x.SharingDirtySince, now));
-            return false;
+            return Step.SharingFirst;
         }
         if (r is { IsRefused: true })
             await q.ExecuteUpdateAsync(s => s.SetProperty(x => x.LastError, $"{flag}: {r.Status} {r.Error}"));
@@ -179,7 +195,7 @@ public sealed class SocialSync(
             _ => await q.Where(s => s.StatsDirtySince == markedAt)
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.StatsDirtySince, (DateTime?)null)),
         };
-        return true;
+        return Step.Done;
     }
 
     private async Task<ApiResult?> UploadAvatarAsync(int userId)

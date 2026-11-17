@@ -96,8 +96,18 @@ public class StreakService(IDbContextFactory<AppDbContext> dbFactory)
         await using var db = await dbFactory.CreateDbContextAsync();
         var (dates, schedule, choices, rule) = await LoadAsync(db, userId, today);
         var monday = PointsCalculator.MondayOf(today);
+        // Where the user's history starts: with neither a schedule nor a workout yet, that's today
+        DateOnly? firstSchedule = schedule.Count == 0 ? null : schedule[0].EffectiveFrom;
+        DateOnly? firstWorkout = dates.Count == 0 ? null : dates.Min();
+        var since = (firstSchedule, firstWorkout) switch
+        {
+            ({ } s, { } w) => s < w ? s : w,
+            ({ } s, null) => s,
+            (null, { } w) => w,
+            _ => today
+        };
         return WeekRow.Build(StreakCalculator.Timeline(dates, schedule, choices, today, monday, monday.AddDays(6), rule), today,
-            rule.Frozen);
+            rule.Frozen, since);
     }
 
     /// <summary>The missed day the streak last broke on, or null if it never broke.</summary>

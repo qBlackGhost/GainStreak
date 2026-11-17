@@ -26,7 +26,12 @@ public partial class SplitItemViewModel : ObservableObject
             : [split.Days.Any(d => d.Weekday is not null) ? split.Days.Count(d => d.Weekday is not null) : split.Days.Count];
         DaysText = perWeek.Count > 1 ? $"{perWeek[0]}–{perWeek[^1]} / wk" : $"{perWeek[0]} / wk";
         RecommendedDaysTag = SplitTags.RecommendedDays(split);
+        var days = perWeek.Count > 1 ? $"{perWeek[0]}–{perWeek[^1]} days a week" : perWeek[0] == 1 ? "1 day a week" : $"{perWeek[0]} days a week";
+        PhoneDaysText = split.OwnerUserId is null ? days : $"Custom · {days}";
     }
+
+    /// <summary>The phones' one line under the name: "6 days a week", "2–3 days a week", "Custom · 4 days a week".</summary>
+    public string PhoneDaysText { get; }
 
     public string Name => Split.Name;
     public bool IsRecommended => Split.IsRecommended;

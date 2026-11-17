@@ -39,11 +39,11 @@ public static class AccountEndpoints
 
         var me = app.MapGroup("/v1/me");
         me.MapGet("", GetMe);
-        me.MapPut("/email", ChangeEmail);
+        me.MapPut("/email", ChangeEmail).RequireRateLimiting(RateLimits.Password);
         me.MapPost("/email/code", SendConfirmCode).RequireRateLimiting(RateLimits.EmailCode);
         me.MapPost("/email/confirm", ConfirmEmail).RequireRateLimiting(RateLimits.EmailCode);
-        me.MapPut("/password", ChangePassword);
-        me.MapDelete("", DeleteAccount);
+        me.MapPut("/password", ChangePassword).RequireRateLimiting(RateLimits.Password);
+        me.MapDelete("", DeleteAccount).RequireRateLimiting(RateLimits.Password);
     }
 
     private static async Task<IResult> Register(RegisterRequest request, ServerDbContext db, TimeProvider clock,
@@ -149,7 +149,7 @@ public static class AccountEndpoints
         var userId = principal.UserId();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return Results.NotFound();
-        if (!PasswordHasher.Verify(request.CurrentPassword ?? "", user.PasswordHash))
+        if (!IsCurrentPassword(request.CurrentPassword, user))
             return Problems.BadRequest(WrongPassword, ProblemFields.Password);
         if (user.Email == email) return Problems.BadRequest(SameEmail, ProblemFields.Email);
         if (await db.Users.AnyAsync(u => u.Email == email)) return Problems.Conflict(EmailUsed, ProblemFields.Email);
@@ -234,7 +234,7 @@ public static class AccountEndpoints
         var userId = principal.UserId();
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return Results.NotFound();
-        if (!PasswordHasher.Verify(request.CurrentPassword ?? "", user.PasswordHash))
+        if (!IsCurrentPassword(request.CurrentPassword, user))
             return Problems.BadRequest(WrongPassword, ProblemFields.Password);
         var newPassword = request.NewPassword ?? "";
         if (Credentials.CheckPassword(newPassword) is { } passwordError) return Problems.BadRequest(passwordError, ProblemFields.NewPassword);
@@ -254,13 +254,17 @@ public static class AccountEndpoints
         var userId = principal.UserId();
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
         if (user is null) return Results.NotFound();
-        if (!PasswordHasher.Verify(request.Password ?? "", user.PasswordHash))
+        if (!IsCurrentPassword(request.Password, user))
             return Problems.BadRequest(WrongPassword, ProblemFields.Password);
 
         // The database cascades to sessions and, from 13e on, friendships, stats and check-ins
         await db.Users.Where(u => u.Id == userId).ExecuteDeleteAsync();
         return Results.NoContent();
     }
+
+    /// <summary>No real password is longer than the limit, and hashing a huge one is wasted work (as at login).</summary>
+    private static bool IsCurrentPassword(string? given, User user) =>
+        given is { Length: <= Credentials.MaxPasswordLength } && PasswordHasher.Verify(given, user.PasswordHash);
 
     private static MeResponse ToMe(User user) => new(user.Id, user.Username, user.Email, user.ShareGymCheckIns, user.Avatar, user.EmailConfirmedAt is not null);
 }

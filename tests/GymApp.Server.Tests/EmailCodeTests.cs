@@ -107,6 +107,19 @@ public class EmailCodeTests(PostgresFixture postgres) : ServerTest(postgres)
         Assert.False((await MeAsync(alice)).EmailConfirmed);
     }
 
+    [Fact] public async Task WrongCodesSentAtTheSameMoment_AreEachCounted()
+    {
+        var alice = await SignUpWithCodeAsync("alice");
+        var code = LastCode();
+
+        var tries = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => ConfirmAsync(alice, Wrong(code))));
+
+        Assert.All(tries, t => Assert.Equal(HttpStatusCode.BadRequest, t.StatusCode));
+        await using (var db = Db())
+            Assert.Equal(EmailCode.MaxAttempts, (await db.EmailCodes.SingleAsync()).Attempts);
+        Assert.Equal(HttpStatusCode.BadRequest, (await ConfirmAsync(alice, code)).StatusCode);   // used up
+    }
+
     [Fact] public async Task AnExpiredCode_IsRefused()
     {
         var alice = await SignUpWithCodeAsync("alice");

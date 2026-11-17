@@ -169,6 +169,24 @@
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
         </Style>
 
+        <!-- Phones: the scroll indicator sits in the page's 16 px side margin, not over the cards' right edge -->
+        <Style Selector=".phone ScrollBar:vertical">
+            <Setter Property="RenderTransform" Value="translateX(12px)"/>
+        </Style>
+
+        <!-- Phones: a touch has no hover, so a pressed button dims at once (and keeps the theme's slight shrink) -->
+        <Style Selector=".phone Button">
+            <Setter Property="Transitions">
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="0:0:0.1"/>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.075"/>
+                </Transitions>
+            </Setter>
+        </Style>
+        <Style Selector=".phone Button:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+
         <!-- Phones: grids with other columns (PhoneGrid.cs) -->
         <Style Selector=".phone v|PhoneGrid">
             <Setter Property="IsPhone" Value="True"/>

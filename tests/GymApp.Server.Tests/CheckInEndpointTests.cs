@@ -40,6 +40,19 @@ public class CheckInEndpointTests : ServerTest
     private static async Task ReplaceOkAsync(SignedIn user, params DatedCheckInRequest[] checkIns) =>
         Assert.Equal(HttpStatusCode.NoContent, (await ReplaceAsync(user, checkIns)).StatusCode);
 
+    [Fact] public async Task AnOsmTypeThatIsJustANumber_Is400_NotAServerError()
+    {
+        var alice = await SignUpAsync("alice");
+        await ShareAsync(alice, true);
+        var body = new StringContent(
+            """{"gymOsmType":99,"gymOsmId":101,"gymName":"World Class","cityOsmType":99,"cityOsmId":7,"cityName":"Timișoara","latitude":45.75,"longitude":21.23}""",
+            System.Text.Encoding.UTF8, "application/json");
+
+        var response = await alice.Client.PutAsync($"/v1/me/checkins/{Today:yyyy-MM-dd}", body);
+
+        Assert.Equal("Unknown OSM type.", await ProblemAsync(response, HttpStatusCode.BadRequest));
+    }
+
     private async Task<List<(DateOnly Date, string Gym)>> StoredAsync()
     {
         await using var db = Db();

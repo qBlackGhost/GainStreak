@@ -58,20 +58,20 @@ public class EmailCodeService(ServerDbContext db, IEmailSender sender, TimeProvi
     /// <summary>Whether the code is right. A right one is used up; a wrong one counts as a try.</summary>
     public async Task<bool> CheckAsync(int userId, EmailCodePurpose purpose, string? code)
     {
-        var row = await db.EmailCodes.FirstOrDefaultAsync(c => c.UserId == userId && c.Purpose == purpose);
+        var row = await db.EmailCodes.AsNoTracking().FirstOrDefaultAsync(c => c.UserId == userId && c.Purpose == purpose);
         if (row is null) return false;
         if (row.Attempts >= EmailCode.MaxAttempts || row.ExpiresAt <= clock.GetUtcNow().UtcDateTime) return false;
 
+        // The try is counted before the code is compared, in one statement: requests sent at the same moment can't each
+        // read the same count and get more tries than MaxAttempts between them
+        var counted = await db.EmailCodes.Where(c => c.Id == row.Id && c.Attempts < EmailCode.MaxAttempts)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.Attempts, c => c.Attempts + 1));
+        if (counted == 0) return false;
+
         var given = Encoding.UTF8.GetBytes(Hash(userId, (code ?? "").Trim()));
-        if (CryptographicOperations.FixedTimeEquals(given, Encoding.UTF8.GetBytes(row.CodeHash)))
-        {
-            db.EmailCodes.Remove(row);
-            await db.SaveChangesAsync();
-            return true;
-        }
-        row.Attempts++;
-        await db.SaveChangesAsync();
-        return false;
+        if (!CryptographicOperations.FixedTimeEquals(given, Encoding.UTF8.GetBytes(row.CodeHash))) return false;
+        // Used up; if another request with the right code got here first, only that one counts
+        return await db.EmailCodes.Where(c => c.Id == row.Id).ExecuteDeleteAsync() == 1;
     }
 
     private static string Hash(int userId, string code) => SessionTokens.Hash($"{userId}:{code}");

@@ -375,8 +375,15 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
         var exercises = await db.Exercises.AsNoTracking()
             .Where(e => e.OwnerUserId == null || e.OwnerUserId == userId)
             .ToListAsync();
-        var sets = await db.SetLogs.AsNoTracking()
+        // Only the days that were some exercise's last time, not every set ever logged
+        var lastDays = await db.SetLogs
             .Where(s => s.UserId == userId && s.Date < date && s.Kind == SetKind.Working && s.Reps >= 1)
+            .GroupBy(s => s.ExerciseId)
+            .Select(g => g.Max(s => s.Date))
+            .Distinct()
+            .ToListAsync();
+        var sets = await db.SetLogs.AsNoTracking()
+            .Where(s => s.UserId == userId && lastDays.Contains(s.Date) && s.Kind == SetKind.Working && s.Reps >= 1)
             .Select(s => new { s.ExerciseId, s.Date, s.Reps, s.WeightKg })
             .ToListAsync();
         var last = sets.GroupBy(s => s.ExerciseId).ToDictionary(g => g.Key, g =>
@@ -412,8 +419,15 @@ public class WorkoutService(IDbContextFactory<AppDbContext> dbFactory, StreakSer
             .Select(x => new { x.ExerciseId, x.Exercise.Name, x.WarmupSets, x.WorkingSets })
             .ToListAsync();
         var ids = rows.Select(r => r.ExerciseId).ToList();
+        // Only the day itself and each exercise's last earlier day, not years of sets
+        var lastDays = await db.SetLogs
+            .Where(s => s.UserId == userId && s.Date < date && ids.Contains(s.ExerciseId))
+            .GroupBy(s => s.ExerciseId)
+            .Select(g => g.Max(s => s.Date))
+            .ToListAsync();
+        var days = lastDays.Append(date).Distinct().ToList();
         var sets = await db.SetLogs.AsNoTracking()
-            .Where(s => s.UserId == userId && s.Date <= date && ids.Contains(s.ExerciseId))
+            .Where(s => s.UserId == userId && ids.Contains(s.ExerciseId) && days.Contains(s.Date))
             .ToListAsync();
         var byExercise = sets.ToLookup(s => s.ExerciseId, s => new SetEntry(s.Date, s.SetNumber, s.Kind, s.Reps, s.WeightKg));
 

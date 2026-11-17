@@ -34,6 +34,42 @@ public class StreakServiceTests : IDisposable
         db.SaveChanges();
     }
 
+    // --- The week row: days before the user started can't have been missed ---
+
+    private async Task<WeekChipKind[]> WeekAsync(int userId, DateOnly today) =>
+        (await _svc.GetWeekAsync(userId, today)).Select(c => c.Kind).ToArray();
+
+    [Fact] public async Task WeekRow_OfANewAccountWithNoSplit_HasNoMissedDays()
+    {
+        var bob = _db.AddUser("bob");
+
+        var week = await WeekAsync(bob, D(6));   // a Sunday
+
+        Assert.DoesNotContain(WeekChipKind.Missed, week);
+        Assert.Equal(WeekChipKind.Upcoming, week[6]);
+        Assert.All(week[..6], k => Assert.Equal(WeekChipKind.Rest, k));
+    }
+
+    [Fact] public async Task WeekRow_DaysBeforeTheFirstSchedule_AreNotMissed_ButLaterOnesAre()
+    {
+        var bob = _db.AddUser("bob");
+        // The split was picked on Wednesday; training every day
+        Seed(db => db.UserSchedules.Add(new UserSchedule { UserId = bob, EffectiveFrom = D(2), WeekPattern = "WWWWWWW" }));
+
+        var week = await WeekAsync(bob, D(4));   // Friday
+
+        Assert.Equal([WeekChipKind.Rest, WeekChipKind.Rest, WeekChipKind.Missed, WeekChipKind.Missed,
+            WeekChipKind.Upcoming, WeekChipKind.Upcoming, WeekChipKind.Upcoming], week);
+    }
+
+    [Fact] public async Task WeekRow_AfterTheStart_KeepsItsMissedDays()
+    {
+        // Alice: scheduled from Monday, logged Mon and Wed, missed Tue
+        var week = await WeekAsync(_alice, D(3));
+        Assert.Equal(WeekChipKind.Done, week[0]);
+        Assert.NotEqual(WeekChipKind.Rest, week[1]);   // owed or missed, never hidden
+    }
+
     private void Choose(MissChoice choice) =>
         Seed(db => db.MissedDayChoices.Add(new MissedDayChoice { UserId = _alice, Date = D(1), Choice = choice }));
 

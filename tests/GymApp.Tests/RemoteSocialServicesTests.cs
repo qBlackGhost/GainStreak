@@ -132,6 +132,167 @@ public sealed class RemoteSocialServicesTests : IDisposable
         Assert.Empty(await _friends.GetFriendsAsync(bobId));
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.TooManyRequests)]
+    [InlineData(HttpStatusCode.UpgradeRequired)]
+    [InlineData(HttpStatusCode.InternalServerError)]
+    public async Task ARead_TheServerTurnsAway_ReturnsTheCachedData_AndKeepsTheCache(HttpStatusCode status)
+    {
+        ServeFriends();
+        await _friends.GetFriendsAsync(_me);
+        var before = CacheRows().Single();
+
+        _server.On("GET v1/friends", status);
+        var friends = await _friends.GetFriendsAsync(_me);
+
+        Assert.Equal(["bob", "carol"], friends.Select(f => f.Username));
+        Assert.True(((ICachedResult)friends).IsStale);
+        var after = CacheRows().Single();
+        Assert.Equal((before.Json, before.FetchedAt), (after.Json, after.FetchedAt));
+    }
+
+    [Fact] public async Task ACacheRowThatNoLongerReads_CountsAsNoCache_AndTheNextReadReplacesIt()
+    {
+        using (var db = _db.CreateDbContext())
+        {
+            db.SocialCache.Add(new SocialCache { UserId = _me, Key = SocialCacheKeys.Friends, Json = "{\"from\":\"an older version\"}", FetchedAt = Since });
+            db.SaveChanges();
+        }
+
+        _server.Offline = true;
+        var offline = (FriendList)await _friends.GetFriendsAsync(_me);
+        Assert.Empty(offline);
+        Assert.True(offline.IsStale);
+
+        _server.Offline = false;
+        ServeFriends();
+        await _friends.GetFriendsAsync(_me);
+        _server.Offline = true;
+        Assert.Equal(["bob", "carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+        Assert.Single(CacheRows());
+    }
+
+    [Fact] public async Task ReadsAtTheSameMoment_SaveOneCacheRow()
+    {
+        using var disk = TestDb.OnDisk();   // saved from several threads
+        var me = disk.AddUser("alice");
+        using (var db = disk.CreateDbContext())
+            _session.SignIn(db.Users.Single(u => u.Id == me));
+        var friends = new RemoteFriendService(_server.Api, new SocialCacheStore(disk), _session);
+        ServeFriends();
+
+        var reads = await Task.WhenAll(Enumerable.Range(0, 12).Select(_ => Task.Run(() => friends.GetFriendsAsync(me))));
+
+        Assert.All(reads, r => Assert.Equal(2, r.Count));
+        using var check = disk.CreateDbContext();
+        Assert.Single(check.SocialCache.AsNoTracking().ToList());
+    }
+
+    [Fact] public async Task LeaderboardCachedLastWeek_KeepsItsOwnWeek_WhenReadOfflineThisWeek()
+    {
+        _server.On("GET v1/leaderboard", HttpStatusCode.OK, new LeaderboardResponse(GymApp.Contracts.LeaderboardPeriod.ThisWeek,
+            new DateOnly(2026, 10, 12), new DateOnly(2026, 10, 18), [new(1, 41, "alice", 150, 2, "Novice", 3, true)]));
+        await _board.GetAsync(_me, CorePeriod.ThisWeek, Today);
+
+        _server.Offline = true;
+        var nextWeek = (await _board.GetAsync(_me, CorePeriod.ThisWeek, Today.AddDays(7)))!;
+
+        // Last week's points are shown as last week's (the title comes from WeekStart), not as this week's
+        Assert.True(nextWeek.IsStale);
+        Assert.Equal((new DateOnly(2026, 10, 12), 150), (nextWeek.WeekStart, nextWeek.Rows.Single().Points));
+    }
+
+    // --- A write that worked also leaves the cache: the next read may be offline ---
+
+    /// <summary>Bob (901) and carol (902) everywhere: friends, both boards, the map and the requests.</summary>
+    private async Task CacheEverythingAsync(RemoteFriendCheckInSource checkIns)
+    {
+        ServeFriends();
+        _server.On("GET v1/friends/requests", HttpStatusCode.OK, new FriendRequestsResponse(
+            [new(901, "bob", Since), new(903, "dan", Since)], [new(901, "bob", Since), new(904, "eve", Since)]));
+        // Bob and carol tie for first, alice is third
+        _server.On("GET v1/leaderboard", HttpStatusCode.OK, new LeaderboardResponse(GymApp.Contracts.LeaderboardPeriod.ThisWeek,
+            new DateOnly(2026, 10, 12), new DateOnly(2026, 10, 18),
+            [
+                new(1, 901, "bob", 300, 4, "Dedicated", 5, false),
+                new(1, 902, "carol", 300, 4, "Dedicated", 2, false),
+                new(3, 41, "alice", 150, 2, "Novice", 3, true)
+            ]));
+        _server.On("GET v1/friends/checkins", HttpStatusCode.OK, new List<FriendCheckInResponse>
+        {
+            new(901, "bob", Today, OsmType.Way, 101, "World Class", OsmType.Relation, 7, "Timișoara", 45.75, 21.23),
+            new(902, "carol", Today, OsmType.Way, 101, "World Class", OsmType.Relation, 7, "Timișoara", 45.75, 21.23)
+        });
+        await _friends.GetFriendsAsync(_me);
+        await _friends.GetRequestsAsync(_me);
+        await _board.GetAsync(_me, CorePeriod.ThisWeek, Today);
+        await _board.GetAsync(_me, CorePeriod.AllTime, Today);
+        await checkIns.GetFriendGymCheckInsAsync(_me, Today.AddDays(-7));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task RemovingOrBlockingSomeone_TakesThemOutOfEveryCachedAnswer(bool block)
+    {
+        var checkIns = new RemoteFriendCheckInSource(_server.Api, new SocialCacheStore(_db), _session, _db);
+        await CacheEverythingAsync(checkIns);
+        var fetchedAt = CacheRows().ToDictionary(c => c.Key, c => c.FetchedAt);
+        _server.On("DELETE v1/friends/901", HttpStatusCode.NoContent);
+        _server.On("PUT v1/blocks/901", HttpStatusCode.NoContent);
+
+        Assert.True((block ? await _friends.BlockAsync(_me, 901) : await _friends.RemoveAsync(_me, 901)).Success);
+        _server.Offline = true;
+
+        Assert.Equal(["carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+        foreach (var period in new[] { CorePeriod.ThisWeek, CorePeriod.AllTime })
+        {
+            var board = (await _board.GetAsync(_me, period, Today))!;
+            Assert.Equal([(1, "carol"), (2, "alice")], board.Rows.Select(r => (r.Rank, r.Username)));   // alice moves up
+        }
+        Assert.Equal(["carol"], (await checkIns.GetFriendGymCheckInsAsync(_me, Today.AddDays(-7))).Select(c => c.Username));
+        var requests = await _friends.GetRequestsAsync(_me);
+        Assert.Equal(["dan"], requests.Incoming.Select(r => r.Username));
+        Assert.Equal(["eve"], requests.Outgoing.Select(r => r.Username));
+
+        // Still as old as it was: nothing new came from the server
+        Assert.Equal(fetchedAt, CacheRows().ToDictionary(c => c.Key, c => c.FetchedAt));
+        Assert.True(((ICachedResult)await _friends.GetFriendsAsync(_me)).IsStale);
+    }
+
+    [Fact] public async Task AnsweringOrCancellingARequest_TakesItOutOfTheCachedRequests()
+    {
+        _server.On("GET v1/friends/requests", HttpStatusCode.OK, new FriendRequestsResponse(
+            [new(903, "dan", Since), new(904, "eve", Since)], [new(905, "fay", Since)]));
+        await _friends.GetRequestsAsync(_me);
+        _server.On("POST v1/friends/903/accept", HttpStatusCode.NoContent);
+        _server.On("POST v1/friends/904/decline", HttpStatusCode.NoContent);
+        _server.On("DELETE v1/friends/905/request", HttpStatusCode.NoContent);
+
+        Assert.True((await _friends.AcceptAsync(_me, 903)).Success);
+        _server.Offline = true;
+        Assert.Equal(["eve"], (await _friends.GetRequestsAsync(_me)).Incoming.Select(r => r.Username));
+        Assert.Equal(1, await _friends.IncomingCountAsync(_me));
+
+        _server.Offline = false;
+        Assert.True((await _friends.DeclineAsync(_me, 904)).Success);
+        Assert.True((await _friends.CancelAsync(_me, 905)).Success);
+        _server.Offline = true;
+        var requests = await _friends.GetRequestsAsync(_me);
+        Assert.Equal((0, 0), (requests.Incoming.Count, requests.Outgoing.Count));
+    }
+
+    [Fact] public async Task ARefusedRemove_LeavesTheCache()
+    {
+        ServeFriends();
+        await _friends.GetFriendsAsync(_me);
+        _server.On("DELETE v1/friends/901", HttpStatusCode.Conflict, FakeSocialServer.Problem(409, "Conflict."));
+
+        Assert.False((await _friends.RemoveAsync(_me, 901)).Success);
+        _server.Offline = true;
+        Assert.Equal(["bob", "carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+    }
+
     // --- Writes ---
 
     [Fact] public async Task OfflineWrite_ReturnsTheOfflineMessage_AndChangesNoCache()

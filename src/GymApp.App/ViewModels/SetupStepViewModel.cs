@@ -11,6 +11,9 @@ public partial class SetupStepViewModel(int number, string title, string text, s
                                         bool isLocked, Action open)
 {
     public string Number { get; } = number.ToString();
+
+    /// <summary>The phones' checklist draws a line above every step but the first, which sits under the progress bar.</summary>
+    public bool HasDivider { get; } = number > 1;
     public string Title { get; } = title;
     public string Text { get; } = text;
     public string Cta { get; } = cta;

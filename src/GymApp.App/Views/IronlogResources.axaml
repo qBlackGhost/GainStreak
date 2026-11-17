@@ -85,6 +85,16 @@
                 <SolidColorBrush x:Key="Scrim" Color="#B8000000"/>
                 <!-- Panels floating over the map -->
                 <SolidColorBrush x:Key="Glass" Color="#C7000000"/>
+                <!-- Switches that are on: the lime fill with a black knob, not the system's blue -->
+                <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#C6F432"/>
+                <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#D8FF5E"/>
+                <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#AEDB1F"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#C6F432"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#D8FF5E"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#AEDB1F"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#0B0B0B"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#0B0B0B"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#0B0B0B"/>
             </ResourceDictionary>
             <ResourceDictionary x:Key="Light">
                 <SolidColorBrush x:Key="Accent" Color="#C6F432"/>
@@ -143,6 +153,16 @@
                 <SolidColorBrush x:Key="ColdTint" Color="#E9EEF2"/>
                 <SolidColorBrush x:Key="Scrim" Color="#66141412"/>
                 <SolidColorBrush x:Key="Glass" Color="#EBFFFFFF"/>
+                <!-- Switches that are on: the lime fill with a black knob, not the system's blue -->
+                <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#C6F432"/>
+                <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#D8FF5E"/>
+                <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#AEDB1F"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#C6F432"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOnPointerOver" Color="#D8FF5E"/>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOnPressed" Color="#AEDB1F"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOn" Color="#0B0B0B"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPointerOver" Color="#0B0B0B"/>
+                <SolidColorBrush x:Key="ToggleSwitchKnobFillOnPressed" Color="#0B0B0B"/>
             </ResourceDictionary>
         </ResourceDictionary.ThemeDictionaries>
         <FontFamily x:Key="Mono">Cascadia Mono, Menlo, Consolas, DejaVu Sans Mono, monospace</FontFamily>

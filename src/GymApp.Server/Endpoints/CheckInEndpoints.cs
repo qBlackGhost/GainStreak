@@ -187,6 +187,8 @@ public static class CheckInEndpoints
 
     private static string? Check(CheckInRequest r)
     {
+        // A number that isn't one of the types reads as an enum too; refused here, not a 500 further down
+        if (!Enum.IsDefined(r.CityOsmType) || r.GymOsmType is { } gymType && !Enum.IsDefined(gymType)) return "Unknown OSM type.";
         if (string.IsNullOrWhiteSpace(r.GymName)) return "Send the gym's name.";
         if (r.GymName.Trim().Length > CheckIn.MaxNameLength) return $"The gym's name must be at most {CheckIn.MaxNameLength} characters.";
         if (r.GymOsmType is null != r.GymOsmId is null) return "Send both the gym's OSM type and id, or neither for a custom gym.";

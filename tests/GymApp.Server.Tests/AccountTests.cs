@@ -168,6 +168,31 @@ public class AccountTests(PostgresFixture postgres) : ServerTest(postgres)
         await LogInAsync("alice");
     }
 
+    [Fact] public async Task CheckingTheCurrentPassword_IsLimitedPerUser_AndAHugeOneIsJustWrong()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bob");
+
+        var huge = await alice.Client.PutAsJsonAsync("/v1/me/password", new ChangePasswordRequest(new string('x', 5000), "brand new pass"));
+        Assert.Equal("That password is not right.", await ProblemAsync(huge, HttpStatusCode.BadRequest));
+
+        // Guesses through the three doors that check it share one allowance
+        for (var i = 1; i < RateLimits.PasswordChecksPerMinute; i++)
+        {
+            var guess = i % 3 == 0
+                ? await alice.Client.PutAsJsonAsync("/v1/me/email", new ChangeEmailRequest($"guess {i}", "new@example.com"))
+                : await alice.Client.PutAsJsonAsync("/v1/me/password", new ChangePasswordRequest($"guess {i}", "brand new pass"));
+            Assert.Equal(HttpStatusCode.BadRequest, guess.StatusCode);
+        }
+        var over = await alice.Client.PutAsJsonAsync("/v1/me/password", new ChangePasswordRequest(DefaultPassword, "brand new pass"));
+        Assert.Equal(HttpStatusCode.TooManyRequests, over.StatusCode);
+        await LogInAsync("alice");   // unchanged
+
+        // Someone else's tries don't count against bob
+        var bobs = await bob.Client.PutAsJsonAsync("/v1/me/password", new ChangePasswordRequest(DefaultPassword, "brand new pass"));
+        Assert.Equal(HttpStatusCode.NoContent, bobs.StatusCode);
+    }
+
     // --- Email ---
 
     private static Task<HttpResponseMessage> ChangeEmailAsync(SignedIn user, string email, string password = DefaultPassword) =>

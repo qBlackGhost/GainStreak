@@ -51,10 +51,14 @@ public class RemoteFriendService(SocialApiClient api, SocialCacheStore cache, Se
         return r.IsOk ? new FriendResult(true, BecameFriends: r.Value!.BecameFriends) : Refused(r);
     }
 
-    public Task<FriendResult> AcceptAsync(int userId, int otherId) => WriteAsync(userId, () => api.AcceptAsync(otherId));
-    public Task<FriendResult> DeclineAsync(int userId, int otherId) => WriteAsync(userId, () => api.DeclineAsync(otherId));
-    public Task<FriendResult> CancelAsync(int userId, int otherId) => WriteAsync(userId, () => api.CancelRequestAsync(otherId));
-    public Task<FriendResult> RemoveAsync(int userId, int otherId) => WriteAsync(userId, () => api.RemoveFriendAsync(otherId));
+    public Task<FriendResult> AcceptAsync(int userId, int otherId) =>
+        WriteAsync(userId, () => api.AcceptAsync(otherId), () => ForgetRequestsAsync(userId, otherId));
+    public Task<FriendResult> DeclineAsync(int userId, int otherId) =>
+        WriteAsync(userId, () => api.DeclineAsync(otherId), () => ForgetRequestsAsync(userId, otherId));
+    public Task<FriendResult> CancelAsync(int userId, int otherId) =>
+        WriteAsync(userId, () => api.CancelRequestAsync(otherId), () => ForgetRequestsAsync(userId, otherId));
+    public Task<FriendResult> RemoveAsync(int userId, int otherId) =>
+        WriteAsync(userId, () => api.RemoveFriendAsync(otherId), () => ForgetAsync(userId, otherId));
 
     public async Task<IReadOnlyList<Friend>> GetFriendsAsync(int userId)
     {
@@ -93,7 +97,8 @@ public class RemoteFriendService(SocialApiClient api, SocialCacheStore cache, Se
         return (await cache.GetAsync<FriendRequestsResponse>(userId, SocialCacheKeys.Requests))?.Value.Incoming.Count ?? 0;
     }
 
-    public Task<FriendResult> BlockAsync(int userId, int otherId) => WriteAsync(userId, () => api.BlockAsync(otherId));
+    public Task<FriendResult> BlockAsync(int userId, int otherId) =>
+        WriteAsync(userId, () => api.BlockAsync(otherId), () => ForgetAsync(userId, otherId));
     public Task<FriendResult> UnblockAsync(int userId, int otherId) => WriteAsync(userId, () => api.UnblockAsync(otherId));
 
     /// <summary>Not cached: offline the list is empty, and unblocking needs a connection anyway.</summary>
@@ -148,11 +153,45 @@ public class RemoteFriendService(SocialApiClient api, SocialCacheStore cache, Se
         return new(true, invite.Code, Url: invite.Url);
     }
 
-    private async Task<FriendResult> WriteAsync(int userId, Func<Task<ApiResult>> call)
+    /// <param name="forget">Run after the server did it: takes what the write ended out of the cache, so a read with
+    /// no connection right after doesn't bring it back.</param>
+    private async Task<FriendResult> WriteAsync(int userId, Func<Task<ApiResult>> call, Func<Task>? forget = null)
     {
         SignedInGuard.Check(session, userId);
         var r = await call();
-        return r.IsOk ? new FriendResult(true) : Refused(r);
+        if (!r.IsOk) return Refused(r);
+        if (forget is not null) await forget();
+        return new FriendResult(true);
+    }
+
+    /// <summary>A request that was answered or cancelled leaves the cached requests.</summary>
+    private Task ForgetRequestsAsync(int userId, int otherId) =>
+        cache.UpdateAsync<FriendRequestsResponse>(userId, SocialCacheKeys.Requests, r => new FriendRequestsResponse(
+            r.Incoming.Where(q => q.UserId != otherId).ToList(), r.Outgoing.Where(q => q.UserId != otherId).ToList()));
+
+    /// <summary>Someone removed or blocked leaves every cached answer: the friends, the requests, both leaderboards and
+    /// the map's check-ins. The screen reloads only what it shows, and the rest may next be read offline.</summary>
+    private async Task ForgetAsync(int userId, int otherId)
+    {
+        await cache.UpdateAsync<List<FriendResponse>>(userId, SocialCacheKeys.Friends,
+            friends => friends.Where(f => f.UserId != otherId).ToList());
+        await ForgetRequestsAsync(userId, otherId);
+        foreach (var key in new[] { SocialCacheKeys.LeaderboardThisWeek, SocialCacheKeys.LeaderboardAllTime })
+            await cache.UpdateAsync<LeaderboardResponse>(userId, key, board => WithoutUser(board, otherId));
+        await cache.UpdateAsync<List<FriendCheckInResponse>>(userId, SocialCacheKeys.CheckIns,
+            checkIns => checkIns.Where(c => c.UserId != otherId).ToList());
+    }
+
+    /// <summary>The board without one row. Ties share a rank and the next rank skips (1, 1, 3), so everyone ranked
+    /// below the row that left moves up one.</summary>
+    private static LeaderboardResponse WithoutUser(LeaderboardResponse board, int otherId)
+    {
+        if (board.Rows.FirstOrDefault(r => r.UserId == otherId) is not { } gone) return board;
+        return board with
+        {
+            Rows = board.Rows.Where(r => r.UserId != otherId)
+                .Select(r => r.Rank > gone.Rank ? r with { Rank = r.Rank - 1 } : r).ToList()
+        };
     }
 
     /// <summary>The server's message, or offline's. Any 409 is another write getting there first: the existing message.</summary>

@@ -165,10 +165,13 @@ public class PointsService(IDbContextFactory<AppDbContext> dbFactory, ISocialSyn
 
         await using var tx = await db.Database.BeginTransactionAsync();
 
-        var stored = await db.PointsEntries.Where(p => p.UserId == userId).ToListAsync();
-        var storedKeys = stored.Select(p => p.DedupKey).ToHashSet();
+        // Every key, so nothing is awarded twice; only the window's entries are loaded to change (older ones are frozen)
+        var storedKeys = (await db.PointsEntries.Where(p => p.UserId == userId).Select(p => p.DedupKey).ToListAsync()).ToHashSet();
+        var stored = await db.PointsEntries
+            .Where(p => p.UserId == userId && p.Date >= windowStart && p.Reason != PointsReason.Adjustment)
+            .ToListAsync();
 
-        foreach (var entry in stored.Where(p => p.Date >= windowStart && p.Reason != PointsReason.Adjustment))
+        foreach (var entry in stored)
         {
             if (!wanted.TryGetValue(entry.DedupKey, out var w))
             {

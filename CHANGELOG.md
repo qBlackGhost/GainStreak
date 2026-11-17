@@ -2,6 +2,21 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.21.2
+
+- **Uploads that could go missing:** when the server was busy (its rate limit), slow, or your session had ended, the app treated the answer as a final "no" and dropped the upload. Your points, check-ins, picture or the sharing setting then stayed out of date for friends until you changed them again. They now wait and go on the next sync, as they do offline. This matters most for **turning sharing off**: that now always reaches the server.
+- **Turning sharing on:** if the check-ins got to the server before the setting, they waited up to 15 minutes. They now go right after the setting, in the same sync.
+- **Removed or blocked friends offline:** someone you removed or blocked could still show in the friends list, the leaderboard or on the map if you opened those with no connection afterwards. They're now gone from all three at once. The same goes for a request you accepted, declined or cancelled.
+- **Faster with a long history:** Home, the check-in popup, the live workout card and the rest-day exercise picker read only the sets they show (today's and each exercise's last session) instead of every set you ever logged. With three years of workouts they load two to three times faster.
+- **Server, account safety:** changing your email or password and deleting your account now allow 10 tries a minute at the current password; after that the app says "Too many tries". Email codes sent at the same moment are each counted as a try. Neither needs an app update.
+- **Phone polish:**
+  - **Get set up** on Home is one checklist: the next step is open with its button, the others are rows you tap (a lock marks a step that waits for the one before). Home no longer repeats "Pick a split" in the streak card and Today's workout.
+  - **Split cards** say their days a week once, are about half as tall, and the whole card opens the split. A custom split keeps **Edit** and **Delete** under it.
+  - **This week** on a new account no longer shows red crosses for days before you picked a split or logged a workout.
+  - **Buttons dim when pressed**, so a tap is acknowledged at once.
+  - **Switches** in Profile are lime when on, not the system's blue.
+  - **Smaller fixes:** the scroll indicator no longer covers the right edge of cards, Home's level card is as wide as the others, the birth date boxes line up, and Calories says "No days logged yet" where it said "0 of 0 logged days on target".
+
 ## 0.21.1
 
 - **Signing up on a busy network:** a mistake when signing up, such as a username that's taken, no longer uses up a try. Many phones on one mobile network can now sign up within the same hour, where five tries used to block everyone sharing that network's address for an hour.

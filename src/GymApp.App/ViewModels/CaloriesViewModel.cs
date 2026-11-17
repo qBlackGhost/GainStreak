@@ -241,7 +241,7 @@ public partial class CaloriesViewModel : ViewModelBase
 
         var logged = Bars.Count(b => b.IsLogged);
         var hits = Bars.Count(b => b.IsHit);
-        HitsText = $"{hits} of {logged} logged day{(logged == 1 ? "" : "s")} on target";
+        HitsText = logged == 0 ? "No days logged yet" : $"{hits} of {logged} logged day{(logged == 1 ? "" : "s")} on target";
 
         if (o.Goal.Goal is { } goal)
         {

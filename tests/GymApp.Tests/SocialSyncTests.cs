@@ -345,6 +345,170 @@ public sealed class SocialSyncTests : IDisposable
         Assert.Null(State().CheckInsDirtySince);
     }
 
+    // --- Answers that say nothing about the payload: the upload has to wait, not be dropped ---
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]      // the session ended: it goes after signing in again
+    [InlineData(HttpStatusCode.RequestTimeout)]
+    [InlineData(HttpStatusCode.TooManyRequests)]   // the server's rate limit
+    public async Task ARefusalThatIsNotAboutThePayload_KeepsTheFlags_AndALaterSyncSendsThem(HttpStatusCode status)
+    {
+        Share(true);
+        _server.Offline = true;
+        await MarkAllAsync();   // all three recorded first, so the sync below sees them together
+        _server.Offline = false;
+        _server.On("PUT v1/me/sharing", status);
+
+        await _sync.SyncAsync(_me);
+
+        var state = State();
+        Assert.NotNull(state.SharingDirtySince);
+        Assert.NotNull(state.CheckInsDirtySince);
+        Assert.NotNull(state.StatsDirtySince);
+        Assert.Null(state.LastError);
+        Assert.DoesNotContain("PUT v1/me/stats", _server.Calls);   // stopped at the first step, like offline
+
+        _server.On("PUT v1/me/sharing", HttpStatusCode.NoContent);
+        await _sync.SyncAsync(_me);
+        state = State();
+        Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.StatsDirtySince));
+        Assert.True(_server.LastBody<SharingRequest>("PUT v1/me/sharing")!.ShareGymCheckIns);
+    }
+
+    [Fact] public async Task OfflineHalfway_ClearsWhatWentThrough_AndKeepsTheRest()
+    {
+        Share(true);
+        Log(Today, _gyms.OsmGymId);
+        _server.Offline = true;
+        await MarkAllAsync();
+        _server.Offline = false;
+        _server.On("PUT v1/me/checkins", _ => throw new HttpRequestException("Connection reset"));
+
+        await _sync.SyncAsync(_me);
+
+        var state = State();
+        Assert.Null(state.SharingDirtySince);
+        Assert.NotNull(state.CheckInsDirtySince);
+        Assert.NotNull(state.StatsDirtySince);
+        Assert.DoesNotContain("PUT v1/me/stats", _server.Calls);
+    }
+
+    [Fact] public async Task CheckInsRefusedForSharing_AreSentAgainInTheSameSync_OnceTheSettingIsThere()
+    {
+        Share(true);
+        Log(Today, _gyms.OsmGymId);
+        var sharingOnServer = false;
+        _server.On("PUT v1/me/sharing", _ => { sharingOnServer = true; return FakeSocialServer.Respond(HttpStatusCode.NoContent); });
+        _server.On("PUT v1/me/checkins", _ => sharingOnServer
+            ? FakeSocialServer.Respond(HttpStatusCode.NoContent)
+            : FakeSocialServer.Respond(HttpStatusCode.Forbidden, FakeSocialServer.Problem(403, "Turn on sharing gym check-ins first.")));
+
+        _sync.MarkCheckInsDirty(_me);   // only the check-ins: the server lost (or never got) the setting
+        await _sync.WhenIdleAsync();
+
+        Assert.Equal(["PUT v1/me/checkins", "PUT v1/me/sharing", "PUT v1/me/checkins"], _server.Calls);
+        var state = State();
+        Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.LastError));
+    }
+
+    [Fact] public async Task CheckInsRefusedForSharing_EveryTime_GiveUpUntilTheNextSync()
+    {
+        Share(true);
+        _server.On("PUT v1/me/checkins", HttpStatusCode.Forbidden, FakeSocialServer.Problem(403, "Turn on sharing gym check-ins first."));
+
+        _sync.MarkCheckInsDirty(_me);
+        await _sync.WhenIdleAsync();
+
+        Assert.Equal(2, _server.Calls.Count(c => c == "PUT v1/me/checkins"));   // one retry, not a loop
+        Assert.NotNull(State().CheckInsDirtySince);
+    }
+
+    // --- Signing out, restarts and marks from several threads ---
+
+    [Fact] public async Task SigningOutDuringASync_StopsIt_AndKeepsTheRestForTheNextSignIn()
+    {
+        Share(true);
+        Log(Today, _gyms.OsmGymId);
+        _server.Offline = true;
+        await MarkAllAsync();
+        _server.Offline = false;
+        _server.On("PUT v1/me/sharing", _ => { _session.SignOut(); return FakeSocialServer.Respond(HttpStatusCode.NoContent); });
+
+        await _sync.SyncAsync(_me);
+
+        Assert.Equal(["PUT v1/me/sharing"], _server.Calls);
+        var state = State();
+        Assert.NotNull(state.CheckInsDirtySince);
+        Assert.NotNull(state.StatsDirtySince);
+
+        // Signing in again sends them
+        _server.On("PUT v1/me/sharing", HttpStatusCode.NoContent);
+        using (var db = _db.CreateDbContext()) _session.SignIn(db.Users.Single(u => u.Id == _me));
+        await _sync.SyncAsync(_me);
+        state = State();
+        Assert.Equal((null, null), (state.CheckInsDirtySince, state.StatsDirtySince));
+    }
+
+    [Fact] public async Task FlagsSurviveARestart()
+    {
+        Share(true);
+        _server.Offline = true;
+        await MarkAllAsync();
+        _server.Offline = false;
+
+        using var restarted = new SocialSync(_server.Api, _db, _session, new StatsProjectionService(_db));
+        restarted.RequestSync();
+        await restarted.WhenIdleAsync();
+
+        Assert.Equal(["PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats"], _server.Calls);
+        var state = State();
+        Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.StatsDirtySince));
+    }
+
+    [Fact] public async Task MarksFromManyThreadsAtOnce_AreAllRecorded()
+    {
+        _server.Offline = true;
+
+        // The first marks for a user all want to insert the same SyncState row
+        Parallel.For(0, 24, i =>
+        {
+            switch (i % 4)
+            {
+                case 0: _sync.MarkStatsDirty(_me); break;
+                case 1: _sync.MarkCheckInsDirty(_me); break;
+                case 2: _sync.MarkSharingDirty(_me); break;
+                default: _sync.MarkAvatarDirty(_me); break;
+            }
+        });
+        await _sync.WhenIdleAsync();
+
+        var state = State();
+        Assert.NotNull(state.StatsDirtySince);
+        Assert.NotNull(state.CheckInsDirtySince);
+        Assert.NotNull(state.SharingDirtySince);
+        Assert.NotNull(state.AvatarDirtySince);
+    }
+
+    [Fact] public async Task SyncsAskedForAtOnce_UploadOneAtATime()
+    {
+        var inFlight = 0;
+        var overlapped = false;
+        _server.On("PUT v1/me/stats", _ =>
+        {
+            if (Interlocked.Increment(ref inFlight) > 1) overlapped = true;
+            Thread.Sleep(20);
+            Interlocked.Decrement(ref inFlight);
+            return FakeSocialServer.Respond(HttpStatusCode.NoContent);
+        });
+
+        for (var i = 0; i < 6; i++) _sync.MarkStatsDirty(_me);
+        for (var i = 0; i < 6; i++) _sync.RequestSync();
+        await _sync.WhenIdleAsync();
+
+        Assert.False(overlapped);
+        Assert.Null(State().StatsDirtySince);
+    }
+
     [Fact] public async Task OnlyTheSignedInLinkedUser_IsSynced()
     {
         var other = _db.AddUser("bob");

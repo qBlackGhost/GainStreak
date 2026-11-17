@@ -27,6 +27,8 @@
         <!-- Compact content: header and streak hero stack -->
         <Style Selector="StackPanel.compact Border#LevelPill">
             <Setter Property="Grid.Column" Value="0"/>
+            <!-- Both columns: the empty second one still costs its 16 px gap, which left this card narrower than the rest -->
+            <Setter Property="Grid.ColumnSpan" Value="2"/>
             <Setter Property="Grid.Row" Value="1"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="MinWidth" Value="0"/>
@@ -63,6 +65,26 @@
         <Style Selector="Border.setupStep.next">
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+        </Style>
+        <!-- Phones: the steps as one checklist; a later step is a whole-row button -->
+        <Style Selector="Button.setupRow">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="MinHeight" Value="52"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+        </Style>
+        <Style Selector="Button.setupRow /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.setupRow:disabled">
+            <Setter Property="Opacity" Value="0.55"/>
+        </Style>
+        <Style Selector="Button.setupRow:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
         <Style Selector="Border.setupBadge">
             <Setter Property="Width" Value="28"/>
@@ -459,13 +481,71 @@
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="4">
                             <TextBlock Text="Get set up" Classes="h2"/>
-                            <TextBlock Text="A split and exercises for today's workout unlock your first check-in." FontSize="13" Classes="muted"/>
+                            <TextBlock Classes="muted wideOnly" Text="A split and exercises for today's workout unlock your first check-in." FontSize="13"/>
                         </StackPanel>
                         <TextBlock Grid.Column="1" Text="{Binding SetupDoneText}" Classes="mono soft" FontSize="14"
                                    VerticalAlignment="Center"/>
                     </Grid>
                     <ProgressBar Classes="setup" Minimum="0" Maximum="1" Value="{Binding SetupProgress}"/>
-                    <ItemsControl ItemsSource="{Binding SetupSteps}">
+                    <!-- Phones: one checklist with the next step open, instead of four cards two screens tall -->
+                    <ItemsControl Classes="phoneOnly" ItemsSource="{Binding SetupSteps}" Margin="0,-8,0,-8">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SetupStepViewModel">
+                                <StackPanel>
+                                    <Border Height="1" Background="{DynamicResource Divider}" IsVisible="{Binding HasDivider}"/>
+                                    <Panel>
+                                        <!-- The next step: its text and button -->
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Margin="0,14" IsVisible="{Binding IsNext}">
+                                            <Border Classes="setupBadge" BorderBrush="{DynamicResource AccentInk}" VerticalAlignment="Top">
+                                                <TextBlock Text="{Binding Number}" FontSize="13" FontWeight="Bold"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Spacing="6">
+                                                <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                                <TextBlock Text="{Binding Text}" FontSize="13" Classes="soft" LineHeight="19" TextWrapping="Wrap"/>
+                                                <Button Classes="btn primary" Content="{Binding Cta}" HorizontalAlignment="Left" Margin="0,4,0,0"
+                                                        Command="{Binding OpenCommand}" IsEnabled="{Binding !IsLocked}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <!-- A later step: the row opens it, or shows a lock until the step before is done -->
+                                        <Button Classes="setupRow" Command="{Binding OpenCommand}" IsEnabled="{Binding !IsLocked}"
+                                                AutomationProperties.Name="{Binding Title}">
+                                            <Button.IsVisible>
+                                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                                    <Binding Path="IsTodo"/>
+                                                    <Binding Path="IsOther"/>
+                                                </MultiBinding>
+                                            </Button.IsVisible>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                <Border Classes="setupBadge" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Number}" FontSize="13" FontWeight="Bold"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                                <v:Icon Grid.Column="2" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" StrokeThickness="2.2"
+                                                        Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding !IsLocked}"/>
+                                                <v:Icon Grid.Column="2" Data="{StaticResource IcLock}" Stroke="{DynamicResource Muted}" StrokeThickness="2"
+                                                        Width="16" Height="16" VerticalAlignment="Center" IsVisible="{Binding IsLocked}"/>
+                                            </Grid>
+                                        </Button>
+                                        <!-- Done: a check and what was set up -->
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" MinHeight="52" IsVisible="{Binding IsDone}">
+                                            <Border Classes="setupBadge" BorderBrush="{DynamicResource AccentInk}" VerticalAlignment="Center">
+                                                <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
+                                                        Width="14" Height="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,8">
+                                                <TextBlock Text="{Binding Title}" FontSize="13" Classes="muted" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Result}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Panel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl Classes="wideOnly" ItemsSource="{Binding SetupSteps}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><v:ResponsiveGrid MinItemWidth="220" Spacing="14" Balanced="True"/></ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
@@ -773,8 +853,7 @@
                                 <Button Classes="btn" Classes.primary="{Binding !ShowNearbyGyms}" Classes.outline="{Binding ShowNearbyGyms}"
                                         Classes.strong="{Binding ShowNearbyGyms}" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
                                         Content="{Binding StartLabel}" Command="{Binding StartWorkoutCommand}" IsVisible="{Binding CanStart}"/>
-                                <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
-                                        Content="Pick a split" Command="{Binding ShowSplitsCommand}" IsVisible="{Binding ShowPickSplit}"/>
+                                <!-- No "Pick a split" here: with no split the Get set up card above is showing, and its first step is that button -->
                                 <Button Classes="btn outline strong" HorizontalAlignment="Stretch" MinHeight="52" FontSize="16"
                                         Content="Build a workout" Command="{Binding ShowWorkoutsCommand}" IsVisible="{Binding ShowBuildWorkout}"/>
                             </StackPanel>
@@ -977,8 +1056,6 @@
                                 <TextBlock Text="{Binding EmptyText}" FontSize="14" Classes="soft" TextAlignment="Center"/>
                                 <Button Classes="btn outline small" Content="Build a workout" HorizontalAlignment="Center"
                                         Command="{Binding BuildWorkoutCommand}" IsVisible="{Binding ShowBuildLink}"/>
-                                <Button Classes="btn primary small" Content="Pick a split" HorizontalAlignment="Center"
-                                        Command="{Binding PickSplitCommand}" IsVisible="{Binding ShowPickSplit}"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
