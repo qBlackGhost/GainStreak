@@ -43,6 +43,9 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
     /// <summary>iOS's Live Activity (0.20.0); Android has none yet.</summary>
     public virtual ILiveActivity CreateLiveActivity() => new NoLiveActivity();
 
+    /// <summary>iOS's Home Screen widgets (Phase 24); Android has none.</summary>
+    public virtual IHomeWidgets CreateHomeWidgets() => new NoHomeWidgets();
+
     /// <summary>Apple Health on iOS (Phase 20), Health Connect on Android (Phase 23).</summary>
     public virtual IHealthStore CreateHealthStore() => new NoHealthStore();
 

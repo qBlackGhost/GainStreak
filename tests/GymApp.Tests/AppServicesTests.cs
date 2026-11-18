@@ -25,6 +25,19 @@ public sealed class AppServicesTests
         Assert.NotNull(sp.GetService<IAccountService>());
     }
 
+    /// <summary>ValidateOnBuild doesn't run the factories, so a loop between them (the hooks and the widgets, Phase 24)
+    /// only shows when they are resolved.</summary>
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void TheHooksAndTheWidgets_Resolve(bool localSocial)
+    {
+        using var sp = Build(localSocial);
+        Assert.NotNull(sp.GetRequiredService<WidgetSync>());
+        Assert.NotNull(sp.GetRequiredService<WorkoutService>());
+        if (!localSocial) Assert.IsType<ReminderHooks>(sp.GetRequiredService<ISocialSyncHooks>());
+    }
+
     [Fact] public void ServerMode_UsesTheServer_AndRegistersNoLocalSocialServices()
     {
         var sc = AppServices.Create(localSocial: false, new FakePlatform());

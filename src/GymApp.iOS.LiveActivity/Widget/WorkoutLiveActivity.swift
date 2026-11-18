@@ -3,12 +3,23 @@ import SwiftUI
 import WidgetKit
 
 // The widget extension (0.20.0): draws the live workout's Live Activity in the Dynamic Island and on the Lock Screen.
-// The data comes from the app (WorkoutActivityAttributes); nothing here reads the database.
+// The data comes from the app (WorkoutActivityAttributes); nothing here reads the database. Since Phase 24 it also
+// holds the Home Screen widgets (iOS 17) and the Control Center controls (iOS 18), in HomeWidgets.swift.
 
 @main
 struct GainStreakWidgets: WidgetBundle {
     var body: some Widget {
         WorkoutLiveActivity()
+        if #available(iOS 17.0, *) {
+            StatWidget()
+            PlanWidget()
+            ProgressWidget()
+            BodyWidget()
+            OverviewWidget()
+        }
+        if #available(iOS 18.0, *) { StartWorkoutControl() }
+        if #available(iOS 18.0, *) { TodayPlanControl() }
+        if #available(iOS 18.0, *) { LogWeightControl() }
     }
 }
 

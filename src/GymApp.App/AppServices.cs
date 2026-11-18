@@ -71,7 +71,7 @@ public static class AppServices
                 sp.GetRequiredService<ErrorLog>()));
             // The reminders replan on the same changes (16g)
             sc.AddSingleton<ISocialSyncHooks>(sp => new ReminderHooks(sp.GetRequiredService<SocialSync>(),
-                sp.GetRequiredService<ReminderSync>()));
+                sp.GetRequiredService<ReminderSync>(), sp.GetRequiredService<WidgetSync>));
         }
         // Reminders (16g): planned here, scheduled by the head
         sc.AddSingleton(_ => platform.CreateNotificationScheduler());
@@ -87,6 +87,10 @@ public static class AppServices
             import: sp.GetRequiredService<HealthImportService>()));
         sc.AddTransient(sp => new ReminderService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
         sc.AddSingleton<ReminderSync>();
+        // The iPhone's Home Screen widgets (Phase 24): built here, saved and redrawn by the head
+        sc.AddSingleton(_ => platform.CreateHomeWidgets());
+        sc.AddTransient<WidgetSnapshotService>();
+        sc.AddSingleton<WidgetSync>();
         sc.AddSingleton<LiveWorkoutWatcher>();   // the nudge, the return popup and the 4-hour stop (18b)
         sc.AddSingleton<AwayWatcher>();   // notices a trip away from the home city (0.19.0)
         sc.AddTransient<NearbyCityFinder>();   // "Show me gyms near me" on vacation (0.19.0)

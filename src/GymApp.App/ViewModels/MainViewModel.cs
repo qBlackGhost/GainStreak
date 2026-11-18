@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GymApp.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -183,11 +184,61 @@ public partial class MainViewModel : ViewModelBase
     /// ignored. True when it was an invite link.</summary>
     public bool OpenLink(Uri link)
     {
+        if (WidgetLink.TryParse(link) is { } target)
+        {
+            // A tapped widget or control (Phase 24). Before sign-in is done it waits for the first signed-in screen
+            if (IsSignedInScreen) _ = OpenWidgetAsync(target);
+            else _widgetAfterSignIn = target;
+            return true;
+        }
         if (GymApp.Social.InviteLink.TryParse(link) is not { } code) return false;
         _pendingInviteCode = code;
         if (IsSignedInScreen) ShowFriends();
         else _friendsAfterSignIn = true;
         return true;
+    }
+
+    private WidgetTarget? _widgetAfterSignIn;
+
+    /// <summary>Opens what a tapped widget or control points at (Phase 24). On the UI thread.</summary>
+    private async Task OpenWidgetAsync(WidgetTarget target)
+    {
+        switch (target)
+        {
+            case WidgetTarget.Home:
+                ShowHome();
+                break;
+            case WidgetTarget.Points:
+                ShowHome();
+                (Current as HomeViewModel)?.ShowPointsHistoryCommand.Execute(null);
+                break;
+            case WidgetTarget.Body:
+                ShowProfile(ProfilePage.BodyData);
+                break;
+            case WidgetTarget.StartWorkout:
+                ShowHome();
+                if (Current is HomeViewModel home) await home.StartWhenLoadedAsync();
+                break;
+            case WidgetTarget.Plan:
+                // Today's day of the split; a rest day, or no split, has none: Splits
+                MenuDay? day = null;
+                string? split = null;
+                if (_session.CurrentUser is { } user)
+                {
+                    try
+                    {
+                        if (await _sp.GetRequiredService<WorkoutMenuService>().GetAsync(user.Id, AppClock.Today) is { } menu)
+                        {
+                            day = menu.IsRestToday ? null : menu.Days.FirstOrDefault(d => d.IsToday);
+                            split = menu.SplitName;
+                        }
+                    }
+                    catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "Widget link"); }
+                }
+                if (day is not null) ShowDay(day, split!);
+                else ShowSplits();
+                break;
+        }
     }
 
     /// <summary>The waiting code, once: <see cref="ShowFriends"/> hands it to the new Friends' confirm card, so leaving
@@ -218,6 +269,14 @@ public partial class MainViewModel : ViewModelBase
         OnPropertyChanged(nameof(Initials));
         if (IsSignedInScreen) _ = RefreshStreakAsync();
         _sp.GetService<ReminderSync>()?.RequestRefresh();   // a screen change may follow a choice or a new split (16g)
+        _sp.GetService<WidgetSync>()?.RequestRefresh();   // and the Home Screen widgets show it (Phase 24)
+
+        // A widget tapped before sign-in was done opens now, over the first signed-in screen
+        if (IsSignedInScreen && _widgetAfterSignIn is { } target)
+        {
+            _widgetAfterSignIn = null;
+            _ = OpenWidgetAsync(target);
+        }
     }
 
     /// <summary>The app bar's streak, again: after a screen change, or a vacation starting or ending (0.19.0).</summary>

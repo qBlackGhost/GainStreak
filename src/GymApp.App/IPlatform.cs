@@ -59,6 +59,9 @@ public interface IPlatform
     /// <summary>The workout's Live Activity on iOS (0.20.0); every other head shows none.</summary>
     ILiveActivity CreateLiveActivity() => new NoLiveActivity();
 
+    /// <summary>The Home Screen widgets and Control Center controls on iOS (Phase 24); every other head has none.</summary>
+    IHomeWidgets CreateHomeWidgets() => new NoHomeWidgets();
+
     /// <summary>Apple Health on iOS (Phase 20), Health Connect on Android (Phase 23); the desktop has none.</summary>
     IHealthStore CreateHealthStore() => new NoHealthStore();
 

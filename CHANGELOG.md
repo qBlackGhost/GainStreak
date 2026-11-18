@@ -2,6 +2,22 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.24.0
+
+- **Home Screen widgets on the iPhone (iOS 17 and later):** long-press the Home Screen, tap **Edit → Add Widget** and search for GainStreak.
+  - **GainStreak (small):** one widget, four choices. Long-press it, **Edit Widget**, and pick **Streak**, **Level & points**, **Today's plan** or **Body**. Each copy keeps its own choice, so two can sit side by side.
+  - **Today's plan (medium):** today's day of your split and its exercises, with last time's top set, as on Home.
+  - **Progress (medium):** your streak next to your level and points.
+  - **Body (medium):** your weight with its trend, and this week's steps from Apple Health. **Edit Widget** picks whether the weight change is over 7 or 30 days.
+  - **Overview (large):** streak, level, today's plan, weight and steps. **Edit Widget** can hide the weight and steps row.
+  - **Tap a widget** and the app opens where it points: the streak on **Home**, the level on the **points history**, the plan on **today's workout day** (Splits on a rest day), weight and steps on **Profile → Body data**.
+  - **They follow the app:** the streak turns orange once today is logged, and says when a day is pending, a rest day, missed or on vacation. They update when you log something, change screens or leave the app, and move on to tomorrow's plan at midnight. If the app hasn't been opened since, they ask you to open it rather than guess.
+  - **Light and dark** follow the phone. Logged out, they show no one's data.
+- **Control Center controls (iOS 18 and later):** **Start workout** opens Home and starts today's workout (on a rest day, the exercise picker), **Today's plan** opens Home and **Log weight** opens Body data. Add them from Control Center's **+**.
+- **Steps on the widgets** need Apple Health on in Profile; without it the Body widget says so. Nothing from the widgets leaves your phone.
+- Android and the desktop app don't change.
+- **No migration.** The server doesn't change.
+
 ## 0.23.1
 
 - **Profile is tidier on the phones:** it now shows just you: your streak, level and points, your weight, and two rows for **Body data** and **Vacation**. The body data row sums it up ("Male · Age 28 · 180 cm · Active") with your maintenance estimate under it; tap it to edit. Unsaved edits wait there and the row says so.
