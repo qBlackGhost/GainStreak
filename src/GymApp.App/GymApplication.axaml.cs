@@ -133,9 +133,11 @@ public partial class GymApplication : Application
         var health = Services.GetRequiredService<HealthSync>();
         var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
         var push = Services.GetRequiredService<IPushRegistration>();
+        var widgets = Services.GetRequiredService<WidgetSync>();
         lifetime.Activated += (_, e) =>
         {
-            // An invite link the phone opened in the app (Phase 21): a Universal Link on iOS, an App Link on Android
+            // An invite link the phone opened in the app (Phase 21): a Universal Link on iOS, an App Link on Android.
+            // A tapped Home Screen widget or control (Phase 24) comes the same way, as a gainstreak:// link
             if (e is ProtocolActivatedEventArgs { Kind: ActivationKind.OpenUri, Uri: { } link }) OpenLink(link);
             if (e.Kind != ActivationKind.Background) return;
             _ = watcher.CameToForegroundAsync();
@@ -152,6 +154,7 @@ public partial class GymApplication : Application
             _ = watcher.WentToBackgroundAsync();
             health.RequestSync();   // a workout, cardio or weigh-in from this visit goes to Health
             sync?.StopTimer();
+            widgets.RequestRefresh();   // the Home Screen widgets show what this visit changed (Phase 24)
         };
         StartWorkoutTimer();
     }

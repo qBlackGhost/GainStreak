@@ -1,5 +1,6 @@
 import ActivityKit
 import Foundation
+import WidgetKit
 
 // The app's side of the Live Activity (0.20.0). ActivityKit has no Objective-C API, so the C# head can't call it
 // directly: these two C functions are what IosLiveActivity calls, through function pointers. They return at once; the
@@ -49,6 +50,12 @@ public func gs_live_activity_show(_ dayName: UnsafePointer<CChar>, _ percent: In
             _ = try? Activity.request(attributes: attributes, content: content, pushType: nil)
         }
     }
+}
+
+/// The Home Screen widgets (Phase 24): the app has just saved a new widget.json in the App Group, so they redraw.
+@_cdecl("gs_widgets_reload")
+public func gs_widgets_reload() {
+    WidgetCenter.shared.reloadAllTimelines()
 }
 
 /// Ends every workout activity: the workout finished, ended or stopped by itself, or the user signed out.

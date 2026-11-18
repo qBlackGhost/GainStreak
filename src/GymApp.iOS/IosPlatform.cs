@@ -24,6 +24,8 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
 
     public override IHealthStore CreateHealthStore() => new IosHealthStore();   // Apple Health (Phase 20)
 
+    public override IHomeWidgets CreateHomeWidgets() => new IosHomeWidgets();   // Home Screen widgets (Phase 24)
+
     public override IPushNotifications CreatePushNotifications() => new IosPushNotifications();   // friend notifications (Phase 22)
 
     /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>

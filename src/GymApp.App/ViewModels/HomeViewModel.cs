@@ -93,7 +93,17 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         _missedDays = missedDays;
         _gymSummary = gymSummary;
         TodayWorkout = new TodayWorkoutCardViewModel(shell, canVerify: HasLiveWorkout);
-        _ = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
+        _loaded = RefreshAsync();   // also recalculates the streak and syncs points, so overnight changes show correctly
+    }
+
+    private readonly Task _loaded;
+
+    /// <summary>The "Start workout" control (Phase 24): once Home has loaded, starts today's workout as the button would
+    /// (a rest day opens the exercise picker). Does nothing when the button isn't offered (logged, live, a missed day).</summary>
+    public async Task StartWhenLoadedAsync()
+    {
+        await _loaded;
+        if (CanStart && !IsLive && !IsCardio) await StartAsync(null);
     }
 
     private readonly IAccountService _accounts;

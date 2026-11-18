@@ -23,6 +23,18 @@
 		<key>UIImageName</key>
 		<string>LaunchIcon</string>
 	</dict>
+	<!-- A tapped Home Screen widget or Control Center control (Phase 24) opens gainstreak://open/<screen> -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>GainStreak widgets</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>gainstreak</string>
+			</array>
+		</dict>
+	</array>
 	<!-- The live workout's Live Activity (0.20.0): the Dynamic Island and the Lock Screen show the percent done -->
 	<key>NSSupportsLiveActivities</key>
 	<true/>

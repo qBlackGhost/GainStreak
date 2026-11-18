@@ -42,6 +42,17 @@
     <CustomEntitlements Include="aps-environment" Type="String" Value="production" Condition="'$(Configuration)' == 'Release'" />
   </ItemGroup>
 
+  <!-- The Home Screen widgets (Phase 24): the app saves widget.json into this App Group for the widget extension, whose
+       build.sh puts the same group in its Info.plist and Simulator entitlements. Signed builds need the App Groups
+       capability with group.<bundle id> on both App IDs (com.gainstreak.app and com.gainstreak.app.LiveActivity), and
+       profiles made after it was added. -p:WidgetAppGroup=false builds without it (the widgets then show no data) -->
+  <PropertyGroup>
+    <WidgetAppGroup Condition="'$(WidgetAppGroup)' == ''">true</WidgetAppGroup>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(WidgetAppGroup)' == 'true'">
+    <CustomEntitlements Include="com.apple.security.application-groups" Type="StringArray" Value="group.$(ApplicationId)" />
+  </ItemGroup>
+
   <!-- A free Apple account (Personal Team) on your own phone: build/run-on-phone.sh passes -p:FreeAppleAccount=true.
        Personal Teams can't have Push Notifications or Associated Domains, so this build drops them (no friend pushes,
        invite links open Safari), and it needs a bundle id of its own (com.gainstreak.app is the store's App ID; override
