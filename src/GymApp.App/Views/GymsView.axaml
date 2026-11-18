@@ -58,6 +58,7 @@
              the switch top right and the words under it -->
         <Style Selector="Grid.chipBody > StackPanel"><Setter Property="Grid.Column" Value="1"/></Style>
         <Style Selector=".phone Button.chip">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="VerticalContentAlignment" Value="Top"/>
             <Setter Property="Padding" Value="12,10"/>
@@ -216,6 +217,12 @@
         <Style Selector="Panel#PhonePills WrapPanel#MapPills > Border">
             <Setter Property="Background" Value="{DynamicResource Surface}"/>
         </Style>
+        <!-- Phones: the range pill a little smaller, so it takes less of the map. The buttons keep the 44 pt touch
+             minimum (PhoneTouch) but reach 5 pt past the pill above and below, so the pill itself is 34 pt -->
+        <Style Selector="Panel#PhonePills WrapPanel#MapPills Button.seg">
+            <Setter Property="Margin" Value="0,-5"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
         <!-- The legend: hidden on phones until the info button shows it, under the controls -->
         <Style Selector=".phone Panel#LegendWrap">
             <Setter Property="IsVisible" Value="False"/>
@@ -229,19 +236,11 @@
     <Grid Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
     <DockPanel>
         <v:Sidebar Current="Map"/>
-        <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas) -->
-        <Border DockPanel.Dock="Top" Classes="friendsSwitch phoneOnly">
-            <v:SegmentedPill SlideGroup="friendsTab" SelectedIndex="1" PillInset="0">
-                <Button Classes="seg" MinHeight="40" FontSize="14"  Command="{Binding OpenLeaderboardCommand}"><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcTrophy}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Leaderboard" VerticalAlignment="Center"/></StackPanel></Button>
-                <Button Classes="seg on" MinHeight="40" FontSize="14" ><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcMap}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Map" VerticalAlignment="Center"/></StackPanel></Button>
-            </v:SegmentedPill>
-        </Border>
-
         <Panel x:Name="PageArea">
         <!-- Phones (the GainStreak Mobile canvas): the map fills the screen, the controls float on it, and the rest is a
              sheet from the bottom. GymsView.axaml.cs moves the map, the pills, the chips and the right column in here -->
         <Panel x:Name="PhoneMap" IsVisible="False"/>
-        <StackPanel x:Name="PhoneControls" IsVisible="False" Margin="16,10,16,0" Spacing="10" VerticalAlignment="Top">
+        <StackPanel x:Name="PhoneControls" IsVisible="False" Margin="16,70,16,0" Spacing="10" VerticalAlignment="Top">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <Button Classes="mapControl cityButton" Command="{Binding ChangeCityCommand}" AutomationProperties.Name="Change city">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
@@ -300,6 +299,14 @@
             </Border>
             <Panel x:Name="PhonePills"/>
         </StackPanel>
+        <!-- Phones: the Friends tab holds the leaderboard and the map (the GainStreak Mobile canvas). Here it floats on the
+             map, which runs up to the app bar -->
+        <Border x:Name="FriendsSwitch" Classes="friendsSwitch phoneOnly" VerticalAlignment="Top">
+            <v:SegmentedPill SlideGroup="friendsTab" SelectedIndex="1" PillInset="0">
+                <Button Classes="seg" MinHeight="40" FontSize="14"  Command="{Binding OpenLeaderboardCommand}"><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcTrophy}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Leaderboard" VerticalAlignment="Center"/></StackPanel></Button>
+                <Button Classes="seg on" MinHeight="40" FontSize="14" ><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"><v:Icon Data="{StaticResource IcMap}" Width="15" Height="15" VerticalAlignment="Center"/><TextBlock Text="Map" VerticalAlignment="Center"/></StackPanel></Button>
+            </v:SegmentedPill>
+        </Border>
         <Border x:Name="PhoneSheet" IsVisible="False" VerticalAlignment="Bottom" CornerRadius="22,22,0,0" ClipToBounds="True"
                 Background="{DynamicResource PageBg}" BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
             <!-- No scrolling: dragging the sheet up shows the rest (GymsView.axaml.cs moves the body on the canvas) -->
@@ -348,6 +355,18 @@
                                 <TextBlock Text="{Binding AskStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
                             </StackPanel>
                             <ToggleSwitch Grid.Column="2" IsChecked="{Binding AskForGym, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <!-- Phones only: Latest / All visits, which the desktop shows as a pill next to the range -->
+                    <Button Classes="chip phoneOnly" Classes.on="{Binding ShowAllVisits}" Command="{Binding ToggleAllVisitsCommand}"
+                            AutomationProperties.Name="Show every gym visited">
+                        <Grid Classes="chipBody" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="10">
+                            <v:Icon Data="{StaticResource IcPin}" Width="16" Height="16" VerticalAlignment="Center"/>
+                            <StackPanel>
+                                <TextBlock Text="Every gym visited" FontSize="13" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding AllVisitsStateText}" FontSize="11" FontWeight="Medium" Opacity="0.8" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <ToggleSwitch Grid.Column="2" IsChecked="{Binding ShowAllVisits, Mode=OneWay}" IsHitTestVisible="False" Focusable="False" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
                 </WrapPanel>
@@ -535,7 +554,8 @@
                                 <Button Grid.Column="2" Classes="btn outline small phoneOnly" MinHeight="34" Content="{Binding HomeGymButton}"
                                         Command="{Binding OpenHomeGymPickerCommand}" VerticalAlignment="Center"/>
                             </Grid>
-                            <Border Padding="12,10" CornerRadius="12" Background="{DynamicResource Surface2}">
+                            <!-- Today's check-in; not on phones, where checking in is done from Home and the map gets the room -->
+                            <Border Classes="wideOnly" Padding="12,10" CornerRadius="12" Background="{DynamicResource Surface2}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                     <StackPanel Spacing="1" VerticalAlignment="Center">
                                         <TextBlock Text="Today" FontSize="12" Classes="muted"/>
@@ -687,7 +707,7 @@
         </Panel>
     </DockPanel>
 
-    <!-- Phones: the map's settings (the two switches), a sheet from the settings button -->
+    <!-- Phones: the map's settings (the switches), a sheet from the settings button -->
     <Border x:Name="SettingsSheet" Classes="scrim" Background="{DynamicResource Scrim}" IsVisible="False" PointerPressed="OnSettingsScrim">
         <v:Sheet Padding="16,12,16,24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" PointerPressed="OnSheetPressed">
             <StackPanel Spacing="14">

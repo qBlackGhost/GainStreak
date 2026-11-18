@@ -41,6 +41,7 @@ public partial class GymsView : UserControl
     private static readonly Color DotGray = Color.FromArgb(255, 0x9A, 0xA1, 0xA7);
     private static readonly Color MapInk = Color.FromArgb(255, 0x0E, 0x11, 0x13);
     private static readonly Color AvatarFill = Color.FromArgb(255, 0x1E, 0x1E, 0x1E);
+    private static readonly Color OsmLand = Color.FromArgb(255, 0xF2, 0xEF, 0xE9);   // OpenStreetMap's land colour
 
     private readonly MemoryLayer _dots = new("Gyms") { Style = null };          // each feature carries its own styles
     private readonly MemoryLayer _friends = new("FriendCheckIns") { Style = null };
@@ -52,9 +53,10 @@ public partial class GymsView : UserControl
     {
         InitializeComponent();
 
-        var map = new Map { BackColor = MapInk };
+        // The OSM tiles at full strength, on their own land colour so tiles still loading don't show a dark patch. Dimmed
+        // tiles looked grey, and while zooming the old and new ones overlapped in blotches (the OSM credit is Mapsui's own)
+        var map = new Map { BackColor = OsmLand };
         var tiles = OpenStreetMap.CreateTileLayer(OsmHttp.UserAgent);   // the OSM tile policy asks for a real User-Agent
-        tiles.Opacity = 0.6;    // the light OSM tiles, dimmed onto the dark background (the OSM credit is Mapsui's own)
         map.Layers.Add(tiles);
         map.Layers.Add(_dots);
         map.Layers.Add(_friends);   // added after the dots: drawn on top
@@ -65,6 +67,7 @@ public partial class GymsView : UserControl
         MapCard.SizeChanged += (_, e) => { if (!_phone) LayOutMapHeader(e.NewSize.Width); };
         PageArea.SizeChanged += (_, _) => { if (_phone) LayOutPhone(true); };
         PhoneControls.SizeChanged += (_, _) => { if (_phone) LayOutPhone(true); };
+        FriendsSwitch.SizeChanged += (_, _) => { if (_phone) LayOutPhone(true); };
         HookSheetDrag();
         EmptyNote.Transitions = [new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(400) }];
 
@@ -118,7 +121,7 @@ public partial class GymsView : UserControl
             Move(RightColumn, phone ? PhoneSheetBody : Columns);
             if (!phone) LayOutMapHeader(MapCard.Bounds.Width);
             else { Grid.SetRow(MapPills, 0); Grid.SetColumn(MapPills, 0); MapPills.Margin = default; }
-            MapFrame.CornerRadius = phone ? default : new CornerRadius(14);
+            MapFrame.CornerRadius = new CornerRadius(phone ? 22 : 14);   // phones: rounded under the app bar, like the sheet
             MapFrame.BorderThickness = phone ? default : new Thickness(1);
             PageScroll.IsVisible = !phone;
             PhoneMap.IsVisible = PhoneControls.IsVisible = PhoneSheet.IsVisible = phone;
@@ -133,16 +136,20 @@ public partial class GymsView : UserControl
                 LegendWrap.ClearValue(MarginProperty);
             }
         }
-        // The range and mode pills: their own widths on the page; on a phone they share one row (range a bit wider)
+        // The range and mode pills: their own widths on the page. On a phone the range pill takes the whole row and
+        // All visits is a switch in the map settings instead
         if (MapPills.Children is [Border range, Border mode])
         {
-            var row = Math.Max(0, PageArea.Bounds.Width - 32 - MapPills.ItemSpacing);
-            range.Width = phone ? Math.Floor(row * 0.57) : 234;
-            mode.Width = phone ? Math.Floor(row * 0.43) : 184;
+            range.Width = phone ? Math.Max(0, PageArea.Bounds.Width - 32) : 234;
+            mode.Width = 184;
+            mode.IsVisible = !phone;
         }
         // The settings sheet's switches: side by side on a phone, half the row each
         Chips.ItemWidth = phone ? Math.Max(0, Math.Floor((PageArea.Bounds.Width - 32 - Chips.ItemSpacing) / 2)) : double.NaN;
         if (!phone) return;
+        // The map runs up to the app bar; the Leaderboard/Map pill floats on it and the controls go under the pill
+        var controlsTop = SwitchBottom + 10;
+        if (PhoneControls.Margin.Top != controlsTop) PhoneControls.Margin = new Thickness(16, controlsTop, 16, 0);
         PhoneSheetBody.Width = Math.Max(0, PageArea.Bounds.Width - 32);
         SetSheet(_sheetOpen ? SheetOpenHeight : SheetClosedHeight, _sheetOpen ? Math.Min(_sheetOffset, SheetMaxOffset) : 0);
         // The toast, the note and the legend go just under the floating controls, the note across the map
@@ -167,7 +174,10 @@ public partial class GymsView : UserControl
 
     private double SheetContentHeight => SheetGrabber + SheetTop + PhoneSheetBody.Bounds.Height + SheetBottom;
     private double SheetClosedHeight => Math.Min(SheetGrabber + SheetTop + YourGymCard.Bounds.Height + SheetBottom, SheetContentHeight);
-    private double SheetOpenHeight => Math.Max(SheetClosedHeight, Math.Min(PageArea.Bounds.Height, SheetContentHeight));
+    private double SheetOpenHeight => Math.Max(SheetClosedHeight, Math.Min(PageArea.Bounds.Height - SwitchBottom, SheetContentHeight));
+
+    /// <summary>The bottom of the floating Leaderboard/Map pill: the controls start under it, and the sheet stops there.</summary>
+    private double SwitchBottom => FriendsSwitch.IsVisible ? FriendsSwitch.Bounds.Bottom : 0;
     private double SheetMaxOffset => Math.Max(0, SheetContentHeight - SheetOpenHeight);
 
     private void SetSheet(double height, double offset)

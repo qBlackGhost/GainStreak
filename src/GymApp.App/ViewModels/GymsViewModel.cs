@@ -166,7 +166,13 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 
     // ===== Friends map =====
     [ObservableProperty] public partial int RangeIndex { get; set; } = 2;   // Today, 7 days, 30 days
-    [ObservableProperty] public partial int ModeIndex { get; set; }        // Latest, All visits
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowAllVisits), nameof(AllVisitsStateText))]
+    public partial int ModeIndex { get; set; }        // Latest, All visits
+
+    /// <summary>Phones: All visits is a switch in the map settings rather than a second pill next to the range.</summary>
+    public bool ShowAllVisits => Mode == MapMode.AllVisits;
+    public string AllVisitsStateText => ShowAllVisits ? "On · a pin at every gym" : "Off · their latest gym only";
     [ObservableProperty] public partial int SortIndex { get; set; }        // Recent, By gym
 
     private MapRange Range => (MapRange)RangeIndex;
@@ -532,6 +538,7 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 
     [RelayCommand] private void ToggleShare() => ShareCheckIns = !ShareCheckIns;
     [RelayCommand] private void ToggleAsk() => AskForGym = !AskForGym;
+    [RelayCommand] private void ToggleAllVisits() => ModeIndex = ShowAllVisits ? 0 : 1;
 
     partial void OnShareCheckInsChanged(bool value)
     {

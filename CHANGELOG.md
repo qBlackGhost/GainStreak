@@ -2,6 +2,15 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.24.1
+
+- **A clearer map:** the Map's streets are drawn at full strength instead of dimmed, so the grey haze over the map is gone, and zooming in and out no longer leaves darker and lighter patches while new tiles load.
+- **The map fills the Friends tab:** on the phones it now runs right up to the top bar, with rounder corners, and the **Leaderboard / Map** switch floats on it instead of sitting on a black strip above it.
+- **One pill on the map:** on the phones the map keeps just **Today / 7 days / 30 days**, a little slimmer. **Latest / All visits** moved to the map settings (the sliders button) as **Every gym visited**: off shows each friend at their latest gym, on shows a pin at every gym they went to in that time.
+- **More room for the map:** the map's bottom sheet no longer has the **Today · Check in** row on the phones; check in from Home. The sheet starts with **Your gym**, so more of the map shows.
+- **No grey square on the top bar:** touching the bell (Inbox) or your avatar (Profile) no longer flashes a grey square behind it.
+- **No migration.** The server doesn't change.
+
 ## 0.24.0
 
 - **Home Screen widgets on the iPhone (iOS 17 and later):** long-press the Home Screen, tap **Edit → Add Widget** and search for GainStreak.
