@@ -16,7 +16,8 @@
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
-        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <!-- No fill when touched either: the theme's pressed fill showed as a grey square behind the bell and avatar -->
+        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.bare:pressed /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="Transparent"/>
         </Style>
         <Style Selector="Button.bare:pressed">
