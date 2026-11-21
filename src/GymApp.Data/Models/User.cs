@@ -25,6 +25,8 @@ public class User
 
     public int Points { get; set; }                   // cached sum of PointsEntries; level is derived from this
     public bool PointsBackfilled { get; set; }        // the one-time full points rebuild has run
+    public bool BadgesBackfilled { get; set; }        // badges from the history before Phase 25 were stored, quietly
+    public bool BadgeHistorySheetPending { get; set; } // that backfill found badges: show "You earned N badges from your history" once
     public int CurrentStreak { get; set; }
     public int LongestStreak { get; set; }
     /// <summary>The first day rest days stopped adding to the streak by themselves (0.18.1): the day this user's app

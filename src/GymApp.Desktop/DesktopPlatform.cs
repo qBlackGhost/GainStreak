@@ -37,6 +37,9 @@ public sealed class DesktopPlatform : IPlatform
     /// <summary>False: the check-in. The TestBench turns it on to try the phones' live workout.</summary>
     public bool HasLiveWorkout { get; init; }
 
+    /// <summary>False for the desktop app (frozen at 0.21.0); the TestBench turns it on with its phone workout setting.</summary>
+    public bool HasBadges { get; init; }
+
     public void OpenStorePage() { }
 
     // No reminders on the desktop (16g): Profile hides them

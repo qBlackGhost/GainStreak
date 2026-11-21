@@ -34,8 +34,16 @@ internal static class Initials
 }
 
 /// <summary>One row of the leaderboard. Ranking comes from <see cref="Leaderboard"/>; nothing is computed here.</summary>
-public record FriendsBoardRowViewModel(LeaderboardRow Row)
+public record FriendsBoardRowViewModel(LeaderboardRow Row, FriendsViewModel? Owner = null)
 {
+    /// <summary>Their featured badge after the name (Phase 25e, phones only).</summary>
+    public FeaturedLook? Featured => Owner is { HasBadges: true } ? FeaturedLook.From(Row.FeaturedBadge, Owner.HasBadge) : null;
+    public bool HasFeatured => Featured is not null;
+
+    /// <summary>A tap opens their badges (your own row: yours).</summary>
+    public IRelayCommand OpenCommand => _open ??= new RelayCommand(() => Owner?.OpenBadges(Row));
+    private IRelayCommand? _open;
+
     public string RankText => $"#{Row.Rank}";
     /// <summary>Phones (the canvas): the rank without "#", the name with a YOU tag, the points over "pts".</summary>
     public string RankNumber => Row.Rank.ToString(CultureInfo.InvariantCulture);
@@ -61,6 +69,10 @@ public partial class FriendRowViewModel(Friend friend, LeaderboardRow? row, Frie
     public string Initials => ViewModels.Initials.Of(friend.Username);
     public string? Avatar => row?.Avatar;
     public int LevelNumber => row?.Level.Number ?? 1;
+    public FeaturedLook? Featured => owner.HasBadges ? FeaturedLook.From(row?.FeaturedBadge, owner.HasBadge) : null;
+    public bool HasFeatured => Featured is not null;
+    public bool CanOpenBadges => owner.HasBadges;
+    [RelayCommand] private void OpenBadges() => owner.OpenFriendBadges(UserId, Username, Avatar, LevelNumber, row?.FeaturedBadge);
     public string SinceText => (row is null ? "" : $"Level {row.Level.Number} · {row.Level.Name} · ")
                                + $"since {friend.Since.ToLocalTime().ToString("MMM yyyy", CultureInfo.InvariantCulture)}";
 
@@ -144,10 +156,18 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
     private readonly InboxService _inbox;
+    private readonly BadgeService? _badges;
+    private IReadOnlySet<string> _myBadges = new HashSet<string>();
+
+    /// <summary>Whether you've earned this badge: a friend's hidden featured badge you haven't shows as "?".</summary>
+    public bool HasBadge(string badgeId) => _myBadges.Contains(badgeId);
 
     public FriendsViewModel(IFriendService friends, ILeaderboardService board, SessionService session, Func<MainViewModel> shell,
-                            InboxService inbox, ReportUserDialogViewModel report, FriendQrViewModel qr, IPushRegistration push)
+                            InboxService inbox, ReportUserDialogViewModel report, FriendQrViewModel qr, IPushRegistration push,
+                            IPlatform? platform = null, BadgeService? badges = null)
     {
+        HasBadges = platform?.HasBadges == true;
+        _badges = badges;
         Push = new FriendPushCardViewModel(push);
         Report = report;
         Qr = qr;
@@ -160,6 +180,22 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
     }
 
     public ReportUserDialogViewModel Report { get; }
+
+    /// <summary>Badges (Phase 25e) show on the phones only.</summary>
+    public bool HasBadges { get; }
+
+    /// <summary>A leaderboard row's badges: a friend's, or your own badges screen for your row.</summary>
+    public void OpenBadges(LeaderboardRow row)
+    {
+        if (!HasBadges) return;   // the desktop: rows stay as they were (a disabled button would grey them out)
+        if (row.IsYou) _shell().ShowBadges();
+        else OpenFriendBadges(row.UserId, row.Username, row.Avatar, row.Level.Number, row.FeaturedBadge);
+    }
+
+    public void OpenFriendBadges(int userId, string username, string? avatar, int level, string? featured)
+    {
+        if (HasBadges) _shell().ShowFriendBadges(userId, username, avatar, level, featured);
+    }
 
     /// <summary>"Your QR code" (Phase 21).</summary>
     public FriendQrViewModel Qr { get; }
@@ -314,12 +350,14 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
         if (UserId is not { } me) return rows;
         try
         {
+            if (HasBadges && _badges is not null)
+                _myBadges = (await _badges.GetEarnedAsync(me)).Select(e => e.BadgeId).ToHashSet();
             var period = IsAllTime ? LeaderboardPeriod.AllTime : LeaderboardPeriod.ThisWeek;
             var view = await _board.GetAsync(me, period);
             if (view is null || IsAllTime != (view.Period == LeaderboardPeriod.AllTime)) return rows;   // toggled meanwhile
             BoardStale = StaleText.For(view);
             Board.Clear();
-            foreach (var r in view.Rows) Board.Add(new FriendsBoardRowViewModel(r));
+            foreach (var r in view.Rows) Board.Add(new FriendsBoardRowViewModel(r, this));
             foreach (var r in view.Rows) rows[r.UserId] = r;
             PeriodText = IsAllTime ? "All time" : Leaderboard.WeekTitle(view.WeekStart);
         }

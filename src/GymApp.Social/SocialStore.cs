@@ -23,7 +23,8 @@ public record FriendLink(FriendshipRecord Friendship, SocialUser Other);
 public record BlockRecord(int BlockerId, int BlockedId, DateTime CreatedAt, SocialUser Other);
 
 /// <summary>The stats friends may see: username, points and current streak. Never body data, logs, PRs or gyms.</summary>
-public record PublicStats(int UserId, string Username, int TotalPoints, int WeekPoints, int CurrentStreak, string? Avatar = null);
+public record PublicStats(int UserId, string Username, int TotalPoints, int WeekPoints, int CurrentStreak, string? Avatar = null,
+    string? FeaturedBadge = null);
 
 /// <summary>The write was refused because another write got there first (e.g. the pair already exists).</summary>
 public class SocialStoreConflictException(string message, Exception? inner = null) : Exception(message, inner);

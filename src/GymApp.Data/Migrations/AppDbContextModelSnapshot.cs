@@ -17,6 +17,34 @@ namespace GymApp.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("GymApp.Data.Models.BadgeEvent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Kind", "Date")
+                        .IsUnique();
+
+                    b.ToTable("BadgeEvents");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.CalorieLog", b =>
                 {
                     b.Property<int>("Id")
@@ -142,6 +170,37 @@ namespace GymApp.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Cities");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.EarnedBadge", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BadgeId")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("EarnedOn")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "BadgeId")
+                        .IsUnique();
+
+                    b.ToTable("EarnedBadges");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.Exercise", b =>
@@ -1280,6 +1339,12 @@ namespace GymApp.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("BadgeHistorySheetPending")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("BadgesBackfilled")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -1458,6 +1523,10 @@ namespace GymApp.Data.Migrations
                     b.Property<DateOnly?>("BirthDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("FeaturedBadge")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("HealthEnabled")
                         .HasColumnType("INTEGER");
 
@@ -1487,6 +1556,11 @@ namespace GymApp.Data.Migrations
 
                     b.Property<string>("Sex")
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("ShareBadges")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true);
 
                     b.Property<bool?>("ShareGymCheckIns")
                         .HasColumnType("INTEGER");
@@ -1712,6 +1786,17 @@ namespace GymApp.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Data.Models.BadgeEvent", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GymApp.Data.Models.CalorieLog", b =>
                 {
                     b.HasOne("GymApp.Data.Models.User", "User")
@@ -1737,6 +1822,17 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Gym");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.EarnedBadge", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

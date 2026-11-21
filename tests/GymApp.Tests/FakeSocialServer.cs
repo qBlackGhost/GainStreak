@@ -22,6 +22,8 @@ public sealed class FakeSocialServer
             return Task.FromResult(_routes.TryGetValue(key, out var route) ? route(req) : new HttpResponseMessage(HttpStatusCode.NotFound));
         });
         Tokens = new MemoryTokenStore();
+        // The badges go up after every stats upload (Phase 25); a test can still set its own answer
+        On("PUT v1/me/badges", HttpStatusCode.NoContent);
         Api = new SocialApiClient(new HttpClient(Handler) { BaseAddress = new Uri("http://social.test/") }, Tokens);
     }
 

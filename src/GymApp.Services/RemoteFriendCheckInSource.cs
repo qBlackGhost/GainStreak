@@ -73,13 +73,13 @@ public class RemoteFriendCheckInSource(
 
             if (!isCustom && cityId is { } city && gyms.TryGetValue((city, ToCore(c.GymOsmType!.Value), c.GymOsmId!.Value), out var gym))
                 return new FriendCheckIn(c.UserId, c.Username, gym.Id, gym.Name, cityId, c.CityName,
-                    gym.Latitude ?? c.Latitude, gym.Longitude ?? c.Longitude, null, false, c.Date);
+                    gym.Latitude ?? c.Latitude, gym.Longitude ?? c.Longitude, null, false, c.Date, c.FeaturedBadge);
 
             var key = isCustom
                 ? $"custom:{c.UserId}:{c.CityOsmType}:{c.CityOsmId}:{c.GymName}"
                 : $"osm:{c.GymOsmType}:{c.GymOsmId}";
             return new FriendCheckIn(c.UserId, c.Username, UnknownId(key), c.GymName, cityId, c.CityName,
-                isCustom ? null : c.Latitude, isCustom ? null : c.Longitude, null, isCustom, c.Date);
+                isCustom ? null : c.Latitude, isCustom ? null : c.Longitude, null, isCustom, c.Date, c.FeaturedBadge);
         }).ToList();
     }
 

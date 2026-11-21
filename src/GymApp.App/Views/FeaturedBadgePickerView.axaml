@@ -1,0 +1,112 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.FeaturedBadgePickerView"
+             x:DataType="vm:FeaturedBadgePickerViewModel">
+    <!-- Phase 25, the GainStreak Badges canvas ("Profile · Pick a featured badge"): a preview of a map pin and a
+         leaderboard row, the earned badges and None, and Save. A sheet on phones. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Button.choice">
+            <Setter Property="Background" Value="{DynamicResource Surface2}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="2"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="2,8"/>
+            <Setter Property="Margin" Value="4"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.choice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+        </Style>
+        <Style Selector="Button.choice:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource HoverBg}"/>
+        </Style>
+        <Style Selector="Button.choice.on /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentInk}"/>
+            <Setter Property="Background" Value="{DynamicResource LimeTint}"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="460" MaxHeight="760" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="16" Margin="20,22,20,24">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Featured badge" FontSize="22" FontWeight="ExtraBold"/>
+                        <TextBlock Text="Friends see it next to your name on the leaderboard and in a gym's card on the map." FontSize="14" Classes="soft" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <!-- The preview: your avatar as friends see it on your profile, and a leaderboard row -->
+                    <Border Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="16" Padding="14">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                            <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                <Panel Width="48" Height="48">
+                                    <v:AvatarView Width="44" Height="44" HorizontalAlignment="Left" VerticalAlignment="Top" Choice="{Binding Avatar}" Initials="{Binding Initials}"
+                                                  Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                                    <v:BadgeView Width="22" Height="22" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-4,-4" IsVisible="{Binding HasPick}"
+                                                 Glyph="{Binding Selected.Item.Glyph}" Text="{Binding Selected.Item.Text}" Look="{Binding Selected.Item.Look}"/>
+                                </Panel>
+                                <TextBlock Text="On your profile" FontSize="11" Classes="muted"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                                <Border Background="{DynamicResource Fill}" CornerRadius="12" Padding="12,10">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        <v:BadgeView Width="20" Height="20" IsVisible="{Binding HasPick}" VerticalAlignment="Center"
+                                                     Glyph="{Binding Selected.Item.Glyph}" Text="{Binding Selected.Item.Text}" Look="{Binding Selected.Item.Look}"/>
+                                    </StackPanel>
+                                </Border>
+                                <TextBlock Text="On the leaderboard" FontSize="11" Classes="muted"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Choices}" Margin="-4">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Columns="4"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:FeaturedChoice">
+                                <Button Classes="choice" Classes.on="{Binding IsSelected}" AutomationProperties.Name="{Binding Name}"
+                                        Command="{Binding $parent[UserControl].((vm:FeaturedBadgePickerViewModel)DataContext).SelectCommand}" CommandParameter="{Binding}">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <Panel Width="52" Height="52" HorizontalAlignment="Center">
+                                            <v:BadgeView IsVisible="{Binding !IsNone}" Glyph="{Binding Item.Glyph}" Text="{Binding Item.Text}" Look="{Binding Item.Look}"/>
+                                            <Border IsVisible="{Binding IsNone}" CornerRadius="26" BorderBrush="{DynamicResource Control}" BorderThickness="1.5">
+                                                <TextBlock Text="Off" FontSize="12" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </Panel>
+                                        <TextBlock Text="{Binding Name}" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="76"/>
+                                    </StackPanel>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- A secret badge stays a secret: friends who haven't found it see the "?" -->
+                    <Border IsVisible="{Binding IsSecretPick}" Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Warn}"
+                            BorderThickness="1" CornerRadius="12" Padding="12,10">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <v:Icon Data="{StaticResource IcInfoCircle}" Stroke="{DynamicResource Warn}" StrokeThickness="2"
+                                    Width="18" Height="18" VerticalAlignment="Top" Margin="0,1,0,0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding SecretNote}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,1.6*" ColumnSpacing="10">
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Cancel" Command="{Binding CancelCommand}"/>
+                        <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsDefault="True"/>
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
+</UserControl>

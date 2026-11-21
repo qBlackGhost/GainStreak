@@ -306,6 +306,8 @@ public sealed class NavigationTests : IAsyncLifetime
         { nameof(FriendsViewModel), AppTab.Friends },
         { nameof(GymsViewModel), AppTab.Friends },
         { nameof(ProfileViewModel), null },
+        { nameof(BadgesViewModel), null },
+        { nameof(FriendBadgesViewModel), AppTab.Friends },
         { nameof(InboxViewModel), null },
     };
 

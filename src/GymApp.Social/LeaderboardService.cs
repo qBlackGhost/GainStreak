@@ -25,7 +25,10 @@ public class LeaderboardService(ISocialStore store) : ILeaderboardService
     /// <summary>The board, or null if the user doesn't exist.</summary>
     public async Task<LeaderboardView?> GetAsync(int userId, LeaderboardPeriod period, DateOnly? today = null)
     {
-        var day = today ?? AppClock.Today;
+        var now = today ?? AppClock.Today;
+        // Last week (Phase 25): the board as it stood on the Sunday before this week. The refresh below still runs for
+        // the real today, so it never rewinds anyone's cached streak or points
+        var day = period == LeaderboardPeriod.LastWeek ? PointsCalculator.MondayOf(now).AddDays(-1) : now;
         var (monday, sunday) = Leaderboard.WeekRange(day);
 
         List<int> ids;
@@ -40,7 +43,7 @@ public class LeaderboardService(ISocialStore store) : ILeaderboardService
         }
 
         // Outside the session: the refresh writes through its own contexts
-        await store.RefreshStatsAsync(ids, day);
+        await store.RefreshStatsAsync(ids, now);
 
         IReadOnlyList<PublicStats> stats;
         await using (var s = await store.OpenAsync())
@@ -48,7 +51,7 @@ public class LeaderboardService(ISocialStore store) : ILeaderboardService
         if (stats.All(x => x.UserId != userId)) return null;   // deleted meanwhile
 
         var entries = stats.Select(x => new LeaderboardEntry(x.UserId, x.Username,
-            period == LeaderboardPeriod.ThisWeek ? x.WeekPoints : x.TotalPoints, x.TotalPoints, x.CurrentStreak, x.Avatar));
+            period == LeaderboardPeriod.AllTime ? x.TotalPoints : x.WeekPoints, x.TotalPoints, x.CurrentStreak, x.Avatar, x.FeaturedBadge));
         return new LeaderboardView(period, monday, sunday, Leaderboard.Rank(entries, userId));
     }
 }

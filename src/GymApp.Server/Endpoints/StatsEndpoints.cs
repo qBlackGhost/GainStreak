@@ -16,6 +16,9 @@ public static class StatsEndpoints
 {
     public const int MaxDays = 31;
 
+    /// <summary>How long days before the newest projection are kept: enough for last week's board.</summary>
+    public const int HistoryDays = 21;
+
     public static void MapStats(this IEndpointRouteBuilder app)
     {
         app.MapPut("/v1/me/stats", UploadStats);
@@ -36,8 +39,12 @@ public static class StatsEndpoints
         if (request.Split?.PresetId <= 0) return Problems.BadRequest("Unknown preset split.");
 
         var userId = me.UserId();
+        // The days before the first one sent stay (Phase 25): last week's board reads each user's last Sunday, which a
+        // new projection starting this week no longer holds. Older than HistoryDays, they go.
+        var first = days.Min(d => d.Date);
+        var oldest = clock.ServerToday().AddDays(-HistoryDays);
         await using var tx = await db.Database.BeginTransactionAsync();
-        await db.ProjectedStats.Where(d => d.UserId == userId).ExecuteDeleteAsync();
+        await db.ProjectedStats.Where(d => d.UserId == userId && (d.Date >= first || d.Date < oldest)).ExecuteDeleteAsync();
         db.ProjectedStats.AddRange(days.Select(d => new StatsDay
         {
             UserId = userId, Date = d.Date, TotalPoints = d.TotalPoints, WeekPoints = d.WeekPoints, CurrentStreak = d.CurrentStreak
@@ -70,17 +77,24 @@ public static class StatsEndpoints
         {
             "thisweek" => Period.ThisWeek,
             "alltime" => Period.AllTime,
+            "lastweek" => Period.LastWeek,
             _ => null
         };
-        if (parsed is null) return Problems.BadRequest("Set period to thisWeek or allTime.");
+        if (parsed is null) return Problems.BadRequest("Set period to thisWeek, allTime or lastWeek.");
         if (ClientDates.Parse(today) is not { } day) return Problems.BadRequest($"Send today's date as {ApiFormat.Date}.");
         if (!clock.IsNearServerDate(day)) return Problems.BadRequest($"Today must be within {ClientDates.AllowanceDays} days of the server's date.");
 
-        var view = await leaderboard.GetAsync(me.UserId(), parsed == Period.ThisWeek ? CorePeriod.ThisWeek : CorePeriod.AllTime, day);
+        var view = await leaderboard.GetAsync(me.UserId(), parsed switch
+        {
+            Period.ThisWeek => CorePeriod.ThisWeek,
+            Period.LastWeek => CorePeriod.LastWeek,
+            _ => CorePeriod.AllTime,
+        }, day);
         if (view is null) return Results.NotFound();
 
         return Results.Ok(new LeaderboardResponse(parsed.Value, view.WeekStart, view.WeekEnd,
             view.Rows.Select(r => new LeaderboardRowResponse(
-                r.Rank, r.UserId, r.Username, r.Points, r.Level.Number, r.Level.Name, r.CurrentStreak, r.IsYou, r.Avatar)).ToList()));
+                r.Rank, r.UserId, r.Username, r.Points, r.Level.Number, r.Level.Name, r.CurrentStreak, r.IsYou, r.Avatar,
+                r.FeaturedBadge)).ToList()));
     }
 }

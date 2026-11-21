@@ -50,6 +50,10 @@ public interface IPlatform
     /// today" check-in. Decided by the head, never by the window's width.</summary>
     bool HasLiveWorkout { get; }
 
+    /// <summary>Badges (Phase 25) are on the phones only: their screens and entry points hide elsewhere. The badges
+    /// are still worked out and stored everywhere (shared services); the desktop just shows none.</summary>
+    bool HasBadges => false;
+
     /// <summary>The reminders' local notifications (16g); the desktop's does nothing.</summary>
     INotificationScheduler CreateNotificationScheduler();
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using GymApp.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -78,6 +79,11 @@ public partial class MainViewModel : ViewModelBase
         _session = session;
         _sp = sp;
         _session.Changed += Refresh;
+        if (sp.GetService<BadgeSync>() is { } badgeSync)   // new badges show their sheet (Phase 25)
+        {
+            badgeSync.Unlocked += unlocks => Dispatcher.UIThread.Post(() => _ = PresentBadgeNewsAsync());
+            badgeSync.HistoryFound += () => Dispatcher.UIThread.Post(() => _ = PresentBadgeNewsAsync());
+        }
         Refresh();
     }
 
@@ -144,7 +150,7 @@ public partial class MainViewModel : ViewModelBase
             or nameof(CustomExercisesViewModel) => AppTab.Workouts,
         nameof(HomeViewModel) => AppTab.Home,
         nameof(CaloriesViewModel) => AppTab.Calories,
-        nameof(FriendsViewModel) or nameof(GymsViewModel) => AppTab.Friends,   // the Leaderboard / Map toggle
+        nameof(FriendsViewModel) or nameof(GymsViewModel) or nameof(FriendBadgesViewModel) => AppTab.Friends,   // the Leaderboard / Map toggle
         _ => null,   // Login, Register, ProfileSetup; Profile and Inbox (the app bar)
     };
 
@@ -270,6 +276,8 @@ public partial class MainViewModel : ViewModelBase
         if (IsSignedInScreen) _ = RefreshStreakAsync();
         _sp.GetService<ReminderSync>()?.RequestRefresh();   // a screen change may follow a choice or a new split (16g)
         _sp.GetService<WidgetSync>()?.RequestRefresh();   // and the Home Screen widgets show it (Phase 24)
+        _sp.GetService<BadgeSync>()?.RequestRefresh();   // a set or weigh-in on the screen left may have earned a badge (Phase 25)
+        if (IsSignedInScreen) _ = PresentBadgeNewsAsync();
 
         // A widget tapped before sign-in was done opens now, over the first signed-in screen
         if (IsSignedInScreen && _widgetAfterSignIn is { } target)
@@ -371,6 +379,69 @@ public partial class MainViewModel : ViewModelBase
     public void ShowSplits() => Open(_sp.GetRequiredService<SplitsViewModel>, root: true);
 
     public void ShowProfile() => ShowProfile(ProfilePage.Main);
+
+    // ===== Badges (Phase 25) =====
+
+    /// <summary>The badges screen.</summary>
+    public void ShowBadges() => Open(_sp.GetRequiredService<BadgesViewModel>, root: false);
+
+    /// <summary>A friend's badges (25e). <paramref name="friendId"/> is the friend services' id; the rest shows right away.</summary>
+    public void ShowFriendBadges(int friendId, string username, string? avatar, int level, string? featured) => Open(() =>
+    {
+        var vm = _sp.GetRequiredService<FriendBadgesViewModel>();
+        _ = vm.LoadAsync(friendId, username, avatar, level, featured);
+        return vm;
+    }, root: false);
+
+    /// <summary>One badge's detail, as a popup (a sheet on phones).</summary>
+    public void OpenBadgeDetail(BadgeItemViewModel item)
+    {
+        var vm = _sp.GetRequiredService<BadgeDetailViewModel>();
+        vm.Load(item);
+        Popup = vm;
+    }
+
+    /// <summary>The featured-badge picker. <paramref name="saved"/> runs after it saves.</summary>
+    public void OpenFeaturedPicker(string initials, string? avatar, Func<Task> saved)
+    {
+        var vm = _sp.GetRequiredService<FeaturedBadgePickerViewModel>();
+        _ = vm.LoadAsync(initials, avatar, saved);
+        Popup = vm;
+    }
+
+    private bool _badgeNewsBusy;
+
+    /// <summary>Shows what's new in badges, when nothing else is open: the one "from your history" sheet after the
+    /// first check, else the unlocks not shown yet. Called on badge events and on every signed-in screen.</summary>
+    public async Task PresentBadgeNewsAsync()
+    {
+        if (_badgeNewsBusy || !_sp.GetRequiredService<IPlatform>().HasBadges || !IsSignedInScreen || IsPopupOpen
+            || IsFeedbackOpen || _session.CurrentUser is not { } user) return;
+        _badgeNewsBusy = true;
+        try
+        {
+            var badges = _sp.GetRequiredService<BadgeService>();
+            var unseen = await badges.GetUnseenAsync(user.Id);
+            var settings = await badges.GetSettingsAsync(user.Id);
+            var today = AppClock.Today;
+            var items = BadgeItems.From(await badges.GetProgressAsync(user.Id, today), settings.Imperial, today);
+            if (IsPopupOpen || IsFeedbackOpen || !IsSignedInScreen) return;
+            if (await badges.TakeHistorySheetAsync(user.Id) is { } count and > 0)
+            {
+                var history = _sp.GetRequiredService<BadgeUnlockViewModel>();
+                history.LoadHistory(count, items.Where(i => i.IsEarned).ToList());
+                Popup = history;
+                return;
+            }
+            var news = unseen.Select(u => items.FirstOrDefault(i => i.Id == u.BadgeId)).OfType<BadgeItemViewModel>().ToList();
+            if (news.Count == 0) return;
+            var vm = _sp.GetRequiredService<BadgeUnlockViewModel>();
+            vm.Load(news);
+            Popup = vm;
+        }
+        catch (Exception e) { _sp.GetRequiredService<ErrorLog>().Write(e, "Badge news"); }
+        finally { _badgeNewsBusy = false; }
+    }
 
     /// <summary>Profile on one of its phone pages (0.23.1): Calories and Home's setup step open Body data.</summary>
     public void ShowProfile(ProfilePage page) => Open(() =>

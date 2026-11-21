@@ -248,9 +248,23 @@ public sealed class SocialSync(
     {
         var days = await projection.ProjectAsync(userId, AppClock.Today);
         if (days is null) return null;
-        return await api.UploadStatsAsync(new StatsUploadRequest(
+        var stats = await api.UploadStatsAsync(new StatsUploadRequest(
             days.Select(d => new StatsDayRequest(d.Date, d.TotalPoints, d.WeekPoints, d.CurrentStreak)).ToList(),
             await ActiveSplitAsync(userId)));
+        if (!stats.IsOk) return stats;
+        return await UploadBadgesAsync(userId);
+    }
+
+    /// <summary>The badges go up with the stats (Phase 25): everything earned, the featured badge (the pick, or the
+    /// automatic one) and the sharing setting. Anything that changes them marks the stats.</summary>
+    private async Task<ApiResult> UploadBadgesAsync(int userId)
+    {
+        var badges = new BadgeService(dbFactory);
+        var earned = await badges.GetEarnedAsync(userId);
+        var settings = await badges.GetSettingsAsync(userId);
+        return await api.UploadBadgesAsync(new BadgesUploadRequest(
+            earned.Take(200).Select(e => new BadgeDto(e.BadgeId, e.Tier, e.EarnedOn)).ToList(),
+            settings.FeaturedId, settings.Share));
     }
 
     /// <summary>The user's split for the usage counts: the preset's id, or no id for a custom split.</summary>

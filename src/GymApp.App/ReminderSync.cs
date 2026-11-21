@@ -52,11 +52,26 @@ public sealed class ReminderSync
 /// <summary>The sync hooks with the reminders on top: anything that changes the streak (a check-in, an undo, the
 /// split) also replans them, and redraws the Home Screen widgets (Phase 24). The widgets come late
 /// (<paramref name="widgets"/> is called on the first change): their snapshot reads through services that take these
-/// very hooks, so resolving them up front would loop.</summary>
-public sealed class ReminderHooks(ISocialSyncHooks inner, ReminderSync reminders, Func<WidgetSync>? widgets = null) : ISocialSyncHooks
+/// very hooks, so resolving them up front would loop. The badges (Phase 25) are rechecked too, also resolved late.</summary>
+public sealed class ReminderHooks(ISocialSyncHooks inner, ReminderSync reminders, Func<WidgetSync>? widgets = null,
+    Func<BadgeSync>? badges = null) : ISocialSyncHooks
 {
-    public void MarkStatsDirty(int userId) { inner.MarkStatsDirty(userId); reminders.RequestRefresh(); widgets?.Invoke().RequestRefresh(); }
-    public void MarkCheckInsDirty(int userId) { inner.MarkCheckInsDirty(userId); reminders.RequestRefresh(); widgets?.Invoke().RequestRefresh(); }
+    public void MarkStatsDirty(int userId)
+    {
+        inner.MarkStatsDirty(userId);
+        reminders.RequestRefresh();
+        widgets?.Invoke().RequestRefresh();
+        badges?.Invoke().RequestRefresh();
+    }
+
+    public void MarkCheckInsDirty(int userId)
+    {
+        inner.MarkCheckInsDirty(userId);
+        reminders.RequestRefresh();
+        widgets?.Invoke().RequestRefresh();
+        badges?.Invoke().RequestRefresh();
+    }
+
     public void MarkSharingDirty(int userId) => inner.MarkSharingDirty(userId);
     public void MarkAvatarDirty(int userId) => inner.MarkAvatarDirty(userId);
 }

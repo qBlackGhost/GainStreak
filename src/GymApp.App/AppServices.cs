@@ -37,6 +37,7 @@ public static class AppServices
             sc.AddTransient<ISplitUsageService, LocalSplitUsageService>();
             sc.AddTransient<IShareService, LocalShareService>();
             sc.AddTransient<IUserReportService, LocalUserReportService>();
+            sc.AddTransient<IBadgeShareService, LocalBadgeShareService>();
             sc.AddSingleton<IPushRegistration>(sp => new LocalPushRegistration(sp.GetRequiredService<IPushNotifications>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<SessionService>(), sp.GetRequiredService<ErrorLog>()));
         }
@@ -59,6 +60,7 @@ public static class AppServices
             sc.AddTransient<ISplitUsageService, RemoteSplitUsageService>();
             sc.AddTransient<IShareService, RemoteShareService>();
             sc.AddTransient<IUserReportService, RemoteUserReportService>();
+            sc.AddTransient<IBadgeShareService, RemoteBadgeShareService>();
             // Uploads stats, check-ins and the sharing setting; the services mark what changed through the hooks
             sc.AddTransient(sp => new StatsProjectionService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
             sc.AddSingleton(sp => new SocialSync(sp.GetRequiredService<SocialApiClient>(),
@@ -71,7 +73,7 @@ public static class AppServices
                 sp.GetRequiredService<ErrorLog>()));
             // The reminders replan on the same changes (16g)
             sc.AddSingleton<ISocialSyncHooks>(sp => new ReminderHooks(sp.GetRequiredService<SocialSync>(),
-                sp.GetRequiredService<ReminderSync>(), sp.GetRequiredService<WidgetSync>));
+                sp.GetRequiredService<ReminderSync>(), sp.GetRequiredService<WidgetSync>, sp.GetRequiredService<BadgeSync>));
         }
         // Reminders (16g): planned here, scheduled by the head
         sc.AddSingleton(_ => platform.CreateNotificationScheduler());
@@ -91,6 +93,15 @@ public static class AppServices
         sc.AddSingleton(_ => platform.CreateHomeWidgets());
         sc.AddTransient<WidgetSnapshotService>();
         sc.AddSingleton<WidgetSync>();
+        // Badges (Phase 25): recomputed after anything logged, stored, and their unlocks shown
+        sc.AddTransient(sp => new BadgeService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
+        sc.AddSingleton<BadgeSync>();
+        sc.AddTransient<BadgesViewModel>();
+        sc.AddTransient<BadgeDetailViewModel>();
+        sc.AddTransient<BadgeUnlockViewModel>();
+        sc.AddTransient<FeaturedBadgePickerViewModel>();
+        sc.AddTransient<ProfileBadgesViewModel>();
+        sc.AddTransient<FriendBadgesViewModel>();
         sc.AddSingleton<LiveWorkoutWatcher>();   // the nudge, the return popup and the 4-hour stop (18b)
         sc.AddSingleton<AwayWatcher>();   // notices a trip away from the home city (0.19.0)
         sc.AddTransient<NearbyCityFinder>();   // "Show me gyms near me" on vacation (0.19.0)

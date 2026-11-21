@@ -85,7 +85,7 @@ public static class StreakCalculator
         IReadOnlyDictionary<DateOnly, MissChoice> choices,
         DateOnly today,
         RestDayRule? restRule = null) =>
-        Replay(workoutDates, schedule, choices, today, restRule, null, null);
+        Replay(workoutDates, schedule, choices, today, restRule, null, null, null);
 
     /// <summary>
     /// The outcome of every training day from <paramref name="from"/> to <paramref name="until"/>, from the
@@ -105,7 +105,7 @@ public static class StreakCalculator
         RestDayRule? restRule = null)
     {
         var settled = new Dictionary<DateOnly, DayOutcome>();
-        Replay(workoutDates, schedule, choices, today, restRule, settled, null);
+        Replay(workoutDates, schedule, choices, today, restRule, settled, null, null);
 
         var ordered = schedule.OrderBy(s => s.EffectiveFrom).ToList();
         var result = new List<TrainingDayOutcome>();
@@ -130,12 +130,31 @@ public static class StreakCalculator
         RestDayRule? restRule = null)
     {
         DateOnly? last = null;
-        Replay(workoutDates, schedule, choices, today, restRule, null, d => last = d);
+        Replay(workoutDates, schedule, choices, today, restRule, null, d => last = d, null);
         return last;
     }
 
+    /// <summary>
+    /// The days the streak was kept on ice (0.18.1), in date order: a rest day under the rest-day rule, or a vacation
+    /// day, that kept a running streak without adding to it. Today is included when it is one (the same day
+    /// <see cref="StreakResult.Stale"/> reports). Badges (Phase 25) use it.
+    /// </summary>
+    public static IReadOnlyList<DateOnly> ColdDays(
+        IEnumerable<DateOnly> workoutDates,
+        IReadOnlyList<ScheduleChange> schedule,
+        IReadOnlyDictionary<DateOnly, MissChoice> choices,
+        DateOnly today,
+        RestDayRule? restRule)
+    {
+        var cold = new List<DateOnly>();
+        if (restRule is null) return cold;
+        Replay(workoutDates, schedule, choices, today, restRule, null, null, cold.Add);
+        return cold;
+    }
+
     /// <summary>The walk behind the public methods. When <paramref name="outcomes"/> is given, each training day the walk
-    /// settles (Done, Graced, Missed) or leaves owed (Pending) is written to it.</summary>
+    /// settles (Done, Graced, Missed) or leaves owed (Pending) is written to it. <paramref name="onCold"/> gets each day
+    /// the streak was kept on ice.</summary>
     private static StreakResult Replay(
         IEnumerable<DateOnly> workoutDates,
         IReadOnlyList<ScheduleChange> schedule,
@@ -143,7 +162,8 @@ public static class StreakCalculator
         DateOnly today,
         RestDayRule? restRule,
         Dictionary<DateOnly, DayOutcome>? outcomes,
-        Action<DateOnly>? onBreak)
+        Action<DateOnly>? onBreak,
+        Action<DateOnly>? onCold)
     {
         if (schedule.Any(s => !WeekSchedule.IsValidPattern(s.WeekPattern)))
             throw new ArgumentException("Schedule patterns must be 7 characters of W/R with at least one W.", nameof(schedule));
@@ -193,7 +213,11 @@ public static class StreakCalculator
                     count++;
                     if (isTraining) Set(outcomes, d, DayOutcome.Done);
                 }
-                else if (isTraining) Set(outcomes, d, DayOutcome.Frozen);
+                else
+                {
+                    if (isTraining) Set(outcomes, d, DayOutcome.Frozen);
+                    if (count > 0) onCold?.Invoke(d);
+                }
                 if (count > 0) everCounted = true;
                 longest = Math.Max(longest, count);
                 continue;
@@ -242,6 +266,7 @@ public static class StreakCalculator
             else if (restRule is not null && restRule.Applies(d))                   // rest day under the 0.18.1 rule
             {
                 if (restCounts) count++;                                            // only a verified workout adds (or restarts)
+                else if (count > 0) onCold?.Invoke(d);                              // kept on ice
             }
             else if (count > 0 || worked) count++;                                  // rest day; after a break only a workout restarts
 

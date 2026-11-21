@@ -56,5 +56,10 @@ public class UserProfile
     /// <summary>Where the last weigh-in import from Health stopped (an archived HKQueryAnchor, 20c).</summary>
     public byte[]? HealthWeightAnchor { get; set; }
 
+    // Badges (Phase 25): the badge shown next to the name (null = automatic: the highest tier, then the newest), and
+    // whether friends may see the user's badges
+    public string? FeaturedBadge { get; set; }
+    public bool ShareBadges { get; set; } = true;
+
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -19,6 +19,8 @@ public sealed class Phone : IDisposable
         Workouts = new WorkoutService(Db, new StreakService(Db), Points, Sync);
         Gyms = new GymService(Db, Sync);
         Profiles = new ProfileService(Db, Sync);
+        Badges = new BadgeService(Db);
+        BadgeShare = new RemoteBadgeShareService(Api, cache, Session);
     }
 
     /// <summary>On disk: the sync writes from background tasks.</summary>
@@ -34,6 +36,8 @@ public sealed class Phone : IDisposable
     public WorkoutService Workouts { get; }
     public GymService Gyms { get; }
     public ProfileService Profiles { get; }
+    public BadgeService Badges { get; }
+    public RemoteBadgeShareService BadgeShare { get; }
 
     /// <summary>The signed-in user's local id: what the view models pass as <c>userId</c>.</summary>
     public int Me => Session.CurrentUser!.Id;

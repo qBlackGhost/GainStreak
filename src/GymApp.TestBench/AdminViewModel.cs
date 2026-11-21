@@ -373,6 +373,43 @@ public partial class AdminViewModel : ObservableObject
         return $"Rebuilt the ledger (points {sync?.OldTotal} → {sync?.NewTotal}).";
     });
 
+    // ===== Badges (Phase 25) =====
+    public System.Collections.Generic.IReadOnlyList<string> BadgeIds { get; } =
+        BadgeCatalog.All.Select(b => b.Id).Append(MonthlyChallenges.IdFor(AppClock.Today)).ToList();
+
+    [ObservableProperty] public partial string? SelectedBadgeId { get; set; } = "streak";
+    [ObservableProperty] public partial decimal? BadgeTier { get; set; } = 1;
+
+    /// <summary>Stores the badge as just earned (unseen), so the unlock sheet shows on the next screen.</summary>
+    [RelayCommand]
+    private Task AwardBadge() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        if (SelectedBadgeId is not { } id || BadgeCatalog.Find(id) is not { } badge) return "Pick a badge.";
+        var tier = badge.IsTiered ? Math.Clamp((int)(BadgeTier ?? 1), 1, BadgeCatalog.MaxTier) : 0;
+        await GymApplication.Services.GetRequiredService<BadgeService>().AwardAsync(user.Id, id, tier);
+        await _main.PresentBadgeNewsAsync();
+        return badge.IsTiered ? $"Awarded {badge.Name} at {BadgeCatalog.TierName(badge, tier)}." : $"Awarded {badge.Name}.";
+    });
+
+    /// <summary>Clears every badge and the backfill flag: the next check stores the history again and shows its sheet.</summary>
+    [RelayCommand]
+    private Task ResetBadges() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        await GymApplication.Services.GetRequiredService<BadgeService>().ResetAsync(user.Id);
+        return "Badges cleared. The next check stores your history again.";
+    });
+
+    [RelayCommand]
+    private Task CheckBadges() => RunAsync(async () =>
+    {
+        if (_session.CurrentUser is not { } user) return "Sign in first.";
+        var check = await GymApplication.Services.GetRequiredService<BadgeService>().CheckAsync(user.Id, AppClock.Today);
+        await _main.PresentBadgeNewsAsync();
+        return check.Backfilled ? "Stored the history." : $"{check.Unlocks.Count} new unlock(s).";
+    });
+
     // ===== Data =====
     [RelayCommand]
     private void OpenDataFolder() => Process.Start(new ProcessStartInfo(BenchSettings.DataDir) { UseShellExecute = true });

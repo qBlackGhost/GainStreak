@@ -170,10 +170,20 @@ public class LocalSocialStore(IDbContextFactory<AppDbContext> dbFactory) : ISoci
                 .Where(u => ids.Contains(u.Id))
                 .Select(u => new { u.Id, u.Username, u.Points, u.CurrentStreak })
                 .ToListAsync();
-            var avatars = await db.UserProfiles.AsNoTracking()
+            var profiles = await db.UserProfiles.AsNoTracking()
                 .Where(p => ids.Contains(p.UserId))
-                .ToDictionaryAsync(p => p.UserId, p => p.Avatar);
-            return users.Select(u => new PublicStats(u.Id, u.Username, u.Points, week.GetValueOrDefault(u.Id), u.CurrentStreak, avatars.GetValueOrDefault(u.Id)))
+                .ToDictionaryAsync(p => p.UserId);
+            // The featured badge (Phase 25), as the server would show it: none while the owner doesn't share
+            var earned = (await db.EarnedBadges.AsNoTracking().Where(e => ids.Contains(e.UserId)).ToListAsync())
+                .ToLookup(e => e.UserId);
+            string? Featured(int id)
+            {
+                var profile = profiles.GetValueOrDefault(id);
+                if (profile is { ShareBadges: false }) return null;
+                return BadgeService.Resolve(profile?.FeaturedBadge, earned[id]) is { } f ? FeaturedBadge.Format(f.BadgeId, f.Tier) : null;
+            }
+            return users.Select(u => new PublicStats(u.Id, u.Username, u.Points, week.GetValueOrDefault(u.Id), u.CurrentStreak,
+                    profiles.GetValueOrDefault(u.Id)?.Avatar, Featured(u.Id)))
                 .ToList();
         }
 

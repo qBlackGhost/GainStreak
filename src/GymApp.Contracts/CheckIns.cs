@@ -29,9 +29,11 @@ public sealed record DatedCheckInRequest(
 /// </summary>
 public sealed record CheckInsUploadRequest(IReadOnlyList<DatedCheckInRequest> CheckIns);
 
-/// <summary>A friend's check-in: gym and day, never a time. Coordinates are null for a custom gym.</summary>
+/// <summary>A friend's check-in: gym and day, never a time. Coordinates are null for a custom gym.
+/// <see cref="FeaturedBadge"/> (Phase 25): the friend's featured badge as <c>"&lt;id&gt;:&lt;tier&gt;"</c>, for the map pin;
+/// null when they show none or don't share their badges. Older clients ignore it.</summary>
 public sealed record FriendCheckInResponse(
     int UserId, string Username, DateOnly Date,
     OsmType? GymOsmType, long? GymOsmId, string GymName,
     OsmType CityOsmType, long CityOsmId, string CityName,
-    double? Latitude, double? Longitude);
+    double? Latitude, double? Longitude, string? FeaturedBadge = null);

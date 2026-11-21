@@ -43,6 +43,9 @@ public sealed class HealthSync(IHealthStore store, HealthExportService export, S
 
     private DateTime? _lastRead;
 
+    /// <summary>A background run finished (any thread): imported weigh-ins may have earned a badge (Phase 25).</summary>
+    public event Action? Ran;
+
     private readonly SemaphoreSlim _gate = new(1, 1);
     private int _pending;
 
@@ -62,6 +65,7 @@ public sealed class HealthSync(IHealthStore store, HealthExportService export, S
                 await ReadAsync(force: false);
             }
             finally { _gate.Release(); }
+            Ran?.Invoke();
         });
     }
 

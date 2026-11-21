@@ -154,7 +154,7 @@ public static class CheckInEndpoints
             join u in db.Users on c.UserId equals u.Id
             where friendIds.Contains(c.UserId) && u.ShareGymCheckIns == true && u.SuspendedAt == null && c.Date >= start
             orderby c.Date descending, u.UsernameNormalized
-            select new { CheckIn = c, u.Username }).ToListAsync();
+            select new { CheckIn = c, u.Username, Featured = u.ShareBadges ? u.FeaturedBadge : null }).ToListAsync();
 
         return Results.Ok(rows.Select(r => new FriendCheckInResponse(
             r.CheckIn.UserId, r.Username, r.CheckIn.Date,
@@ -162,7 +162,8 @@ public static class CheckInEndpoints
             ToContract(r.CheckIn.CityOsmType), r.CheckIn.CityOsmId, r.CheckIn.CityName,
             // Checked again on the way out: a custom gym never comes with a position
             r.CheckIn.GymOsmId is null ? null : r.CheckIn.Latitude,
-            r.CheckIn.GymOsmId is null ? null : r.CheckIn.Longitude)).ToList());
+            r.CheckIn.GymOsmId is null ? null : r.CheckIn.Longitude,
+            r.Featured)).ToList());
     }
 
     private const int MaxBulk = StatsEndpoints.MaxDays;

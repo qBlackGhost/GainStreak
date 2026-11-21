@@ -34,6 +34,8 @@ public class AppDbContext : DbContext
     public DbSet<Vacation> Vacations => Set<Vacation>();
     public DbSet<LiveWorkout> LiveWorkouts => Set<LiveWorkout>();
     public DbSet<CardioSession> CardioSessions => Set<CardioSession>();
+    public DbSet<EarnedBadge> EarnedBadges => Set<EarnedBadge>();
+    public DbSet<BadgeEvent> BadgeEvents => Set<BadgeEvent>();
     public AppDbContext() { }
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -253,6 +255,16 @@ public class AppDbContext : DbContext
 
         // Missed-day choices: one per missed day, keyed by the missed date. Choice is stored as an int
         b.Entity<MissedDayChoice>().HasIndex(c => new { c.UserId, c.Date }).IsUnique();
+
+        // Badges (Phase 25)
+        b.Entity<EarnedBadge>().Property(e => e.BadgeId).HasMaxLength(40);
+        b.Entity<EarnedBadge>().HasIndex(e => new { e.UserId, e.BadgeId }).IsUnique();
+        b.Entity<EarnedBadge>().HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<BadgeEvent>().Property(e => e.Kind).HasMaxLength(40);
+        b.Entity<BadgeEvent>().HasIndex(e => new { e.UserId, e.Kind, e.Date }).IsUnique();
+        b.Entity<BadgeEvent>().HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<UserProfile>().Property(p => p.FeaturedBadge).HasMaxLength(40);
+        b.Entity<UserProfile>().Property(p => p.ShareBadges).HasDefaultValue(true).HasSentinel(true);
         b.Entity<MissedDayChoice>().HasOne(c => c.User).WithMany()
             .HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
 

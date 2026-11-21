@@ -10,14 +10,16 @@ namespace GymApp.Core;
 public enum FriendshipStatus { Pending, Accepted }
 
 /// <summary>Which points the board ranks by: this week's (Monday to Sunday) or the all-time total.</summary>
-public enum LeaderboardPeriod { ThisWeek, AllTime }
+public enum LeaderboardPeriod { ThisWeek, AllTime, LastWeek }
 
 /// <summary>One person going into the board. <see cref="PeriodPoints"/> is what they're ranked by;
 /// <see cref="TotalPoints"/> only sets the level.</summary>
-public record LeaderboardEntry(int UserId, string Username, int PeriodPoints, int TotalPoints, int CurrentStreak, string? Avatar = null);
+public record LeaderboardEntry(int UserId, string Username, int PeriodPoints, int TotalPoints, int CurrentStreak, string? Avatar = null,
+    string? FeaturedBadge = null);
 
 /// <summary>One row of the board. Rows tied on points share a rank. The level is always the all-time one.</summary>
-public record LeaderboardRow(int Rank, int UserId, string Username, int Points, LevelInfo Level, int CurrentStreak, bool IsYou, string? Avatar = null);
+public record LeaderboardRow(int Rank, int UserId, string Username, int Points, LevelInfo Level, int CurrentStreak, bool IsYou, string? Avatar = null,
+    string? FeaturedBadge = null);
 
 /// <summary>The friends leaderboard. Only public stats go in: username, points and streak.</summary>
 public static class Leaderboard
@@ -66,7 +68,7 @@ public static class Leaderboard
             var e = ordered[i];
             var rank = i > 0 && e.PeriodPoints == ordered[i - 1].PeriodPoints ? rows[i - 1].Rank : i + 1;
             rows.Add(new LeaderboardRow(rank, e.UserId, e.Username, e.PeriodPoints, LevelCalculator.For(e.TotalPoints),
-                e.CurrentStreak, e.UserId == viewerId, e.Avatar));
+                e.CurrentStreak, e.UserId == viewerId, e.Avatar, e.FeaturedBadge));
         }
         return rows;
     }

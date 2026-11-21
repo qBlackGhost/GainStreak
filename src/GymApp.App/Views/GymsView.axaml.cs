@@ -417,6 +417,7 @@ public partial class GymsView : UserControl
             Font = new Font { Size = 12, Bold = true },
             Opacity = opacity
         });
+        // No featured badge on the pin: it shows in the gym's card, once you tap the pin (Phase 25)
         if (pin.MoreCount > 0)
             f.Styles.Add(new LabelStyle
             {

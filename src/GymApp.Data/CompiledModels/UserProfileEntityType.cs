@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.UserProfile",
                 typeof(UserProfile),
                 baseEntityType,
-                propertyCount: 20,
+                propertyCount: 22,
                 navigationCount: 3,
                 foreignKeyCount: 3,
                 unnamedIndexCount: 3,
@@ -66,6 +66,14 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(UserProfile).GetProperty("BirthDate", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(UserProfile).GetField("<BirthDate>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true);
+
+            var featuredBadge = runtimeEntityType.AddProperty(
+                "FeaturedBadge",
+                typeof(string),
+                propertyInfo: typeof(UserProfile).GetProperty("FeaturedBadge", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<FeaturedBadge>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true,
+                maxLength: 40);
 
             var healthEnabled = runtimeEntityType.AddProperty(
                 "HealthEnabled",
@@ -137,6 +145,15 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(UserProfile).GetField("<Sex>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true,
                 providerPropertyType: typeof(string));
+
+            var shareBadges = runtimeEntityType.AddProperty(
+                "ShareBadges",
+                typeof(bool),
+                propertyInfo: typeof(UserProfile).GetProperty("ShareBadges", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(UserProfile).GetField("<ShareBadges>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                valueGenerated: ValueGenerated.OnAdd,
+                sentinel: true);
+            shareBadges.AddAnnotation("Relational:DefaultValue", true);
 
             var shareGymCheckIns = runtimeEntityType.AddProperty(
                 "ShareGymCheckIns",

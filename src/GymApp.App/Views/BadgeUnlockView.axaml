@@ -1,0 +1,89 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.BadgeUnlockView"
+             x:DataType="vm:BadgeUnlockViewModel">
+    <!-- Phase 25, the GainStreak Badges canvas ("Phone · Unlock moment"): a new badge or tier, one at a time, with
+         its tier marks, Share and Next / Done. Also the one "You earned N badges from your history" sheet. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Border.pip">
+            <Setter Property="Height" Value="5"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Background" Value="{DynamicResource TrackStrong}"/>
+        </Style>
+        <Style Selector="TextBlock.tierName">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="TextBlock.tierName.on">
+            <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="420" MaxHeight="760" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="18" Margin="24,26,24,24">
+                    <TextBlock Text="{Binding Eyebrow}" FontFamily="{StaticResource Mono}" FontSize="12" LetterSpacing="2"
+                               Foreground="{DynamicResource FlameText}" HorizontalAlignment="Center"/>
+
+                    <v:BadgeView Width="168" Height="168" HorizontalAlignment="Center" IsVisible="{Binding !IsHistory}"
+                                 Glyph="{Binding Current.Glyph}" Text="{Binding Current.Text}" Look="{Binding Current.Look}"/>
+                    <ItemsControl ItemsSource="{Binding Preview}" IsVisible="{Binding IsHistory}" HorizontalAlignment="Center">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel ItemSpacing="8" LineSpacing="8" HorizontalAlignment="Center"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BadgeItemViewModel">
+                                <v:BadgeView Width="64" Height="64" Glyph="{Binding Glyph}" Text="{Binding Text}" Look="{Binding Look}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding Headline}" FontSize="26" FontWeight="ExtraBold" TextAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Line}" FontSize="15" Classes="soft" TextAlignment="Center" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Current.Tiers}" HorizontalAlignment="Center" IsVisible="{Binding !IsHistory}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="2"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <!-- Each level with its name under it, so the bars read as levels, not as pages -->
+                            <DataTemplate x:DataType="vm:BadgeTierRow">
+                                <StackPanel Width="66" Spacing="5">
+                                    <!-- Grey for a level not reached yet; a reached one in its material -->
+                                    <Panel HorizontalAlignment="Center">
+                                        <Border Classes="pip"/>
+                                        <Border Classes="pip" IsVisible="{Binding Reached}"
+                                                Background="{Binding Look, Converter={x:Static v:BadgeConverters.LookBar}}"/>
+                                    </Panel>
+                                    <TextBlock Text="{Binding Name}" Classes="tierName" Classes.on="{Binding Reached}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding CountText}" FontSize="12" Classes="muted" HorizontalAlignment="Center"
+                               IsVisible="{Binding CountText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <StackPanel Spacing="10">
+                        <Button Classes="btn primary" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="Share with friends" Command="{Binding ShareCommand}" IsVisible="{Binding CanShare}"/>
+                        <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Content="{Binding NextLabel}" Command="{Binding NextCommand}" IsDefault="True"/>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
+</UserControl>

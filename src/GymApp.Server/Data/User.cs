@@ -32,6 +32,16 @@ public class User
 
     public bool UsesCustomSplit { get; set; }
 
+    public const int MaxFeaturedBadgeLength = 48;
+
+    /// <summary>The badge shown next to the name (Phase 25), as <c>"&lt;id&gt;:&lt;tier&gt;"</c>; null for none or never
+    /// uploaded. Shown to friends only while <see cref="ShareBadges"/> is on.</summary>
+    public string? FeaturedBadge { get; set; }
+
+    /// <summary>Whether friends may see the user's badges and featured badge (Phase 25). On until the phone says
+    /// otherwise.</summary>
+    public bool ShareBadges { get; set; } = true;
+
     public DateTime CreatedAt { get; set; }
 
     /// <summary>Set by the <c>suspend</c> command (<see cref="AccountCommands"/>). A suspended account can't sign in and

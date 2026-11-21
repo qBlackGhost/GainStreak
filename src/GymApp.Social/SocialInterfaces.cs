@@ -69,3 +69,25 @@ public class CachedList<T>(IReadOnlyList<T> items, bool isStale = false, DateTim
 /// <summary>Accepted friends, plus where they came from.</summary>
 public sealed class FriendList(IReadOnlyList<Friend> friends, bool isStale = false, DateTime? fetchedAt = null)
     : CachedList<Friend>(friends, isStale, fetchedAt);
+
+/// <summary>A badge a friend earned (Phase 25): its id, tier (0 for a one-time badge) and when the tier was reached.</summary>
+public sealed record SharedBadge(string Id, int Tier, DateOnly EarnedOn);
+
+/// <summary>A friend's badges and featured badge id. Empty when they don't share them. <see cref="ICachedResult"/>:
+/// stale when the server couldn't be reached and this came from the cache.</summary>
+public sealed record FriendBadges(int UserId, IReadOnlyList<SharedBadge> Badges, string? Featured) : ICachedResult
+{
+    public bool IsStale { get; init; }
+    public DateTime? FetchedAt { get; init; }
+}
+
+/// <summary>Badges between friends (Phase 25): a friend's badges, and how many people joined through your invite.
+/// Your own badges go up with the stats (SocialSync), not through here.</summary>
+public interface IBadgeShareService
+{
+    /// <summary>The friend's badges, or null when they aren't a friend (or nothing was ever fetched while offline).</summary>
+    Task<FriendBadges?> GetFriendBadgesAsync(int userId, int friendId);
+
+    /// <summary>How many people became the user's friend through their invite; null when it couldn't be fetched.</summary>
+    Task<int?> GetAcceptedInvitesAsync(int userId);
+}

@@ -496,7 +496,16 @@
                                                             <TextBlock Text="{Binding Initials}" FontSize="11" FontWeight="Bold"
                                                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                         </Border>
-                                                        <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                        <!-- A long name is cut with "…" before the badge and the link -->
+                                                        <v:NameBadgeRow Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                            <!-- Their featured badge, and a link to their badges (Phase 25e) -->
+                                                            <v:BadgeView Width="20" Height="20" VerticalAlignment="Center" IsVisible="{Binding HasFeatured}"
+                                                                         Glyph="{Binding Featured.Glyph}" Text="{Binding Featured.Text}" Look="{Binding Featured.Look}"/>
+                                                            <Button Classes="link" FontSize="13" Content="Badges" VerticalAlignment="Center"
+                                                                    IsVisible="{Binding CanOpenBadges}" Command="{Binding OpenBadgesCommand}"/>
+                                                        </v:NameBadgeRow>
                                                         <TextBlock Grid.Column="2" Text="{Binding When}" FontSize="13" Classes="soft" VerticalAlignment="Center"/>
                                                     </Grid>
                                                 </DataTemplate>

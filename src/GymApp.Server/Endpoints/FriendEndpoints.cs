@@ -128,12 +128,27 @@ public static class FriendEndpoints
             : Refused(new FriendResult(false, result.Error));
     }
 
-    private static async Task<IResult> AcceptInvite(string code, ClaimsPrincipal me, FriendService friends, FriendNotifier push)
+    private static async Task<IResult> AcceptInvite(string code, ClaimsPrincipal me, FriendService friends, FriendNotifier push,
+        ServerDbContext db, TimeProvider clock)
     {
         var result = await friends.AcceptInviteAsync(me.UserId(), code);
         if (!result.Success) return Refused(result);
-        if (result.OtherUserId is { } inviter) await push.NotifyAsync(inviter, PushKind.InviteAccepted, me.UserId());
+        if (result.OtherUserId is { } inviter)
+        {
+            await RecordInviteAsync(db, inviter, me.UserId(), clock);
+            await push.NotifyAsync(inviter, PushKind.InviteAccepted, me.UserId());
+        }
         return Results.Ok(new SendRequestResponse(result.BecameFriends));
+    }
+
+    /// <summary>The Recruiter badge (Phase 25): who joined through whose invite. Once per pair, even if they unfriend and
+    /// come back through the invite again.</summary>
+    private static async Task RecordInviteAsync(ServerDbContext db, int inviter, int invitee, TimeProvider clock)
+    {
+        if (await db.InviteAccepts.AnyAsync(x => x.InviterId == inviter && x.InviteeId == invitee)) return;
+        db.InviteAccepts.Add(new InviteAccept { InviterId = inviter, InviteeId = invitee, AcceptedAt = clock.GetUtcNow().UtcDateTime });
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { /* the same pair at the same moment: already recorded */ }
     }
 
     private static async Task<IResult> Run(Task<FriendResult> action)

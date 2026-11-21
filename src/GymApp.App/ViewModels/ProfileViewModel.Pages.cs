@@ -49,7 +49,7 @@ public partial class ProfileViewModel : IClosesOnBack
         nameof(IsMainPage), nameof(IsSettingsPage), nameof(IsSubPage), nameof(PageTitle), nameof(ShowsCards),
         nameof(ShowsBodyData), nameof(ShowsWeight), nameof(ShowsHomeCity), nameof(ShowsAccountCard),
         nameof(ShowsAccountDetails), nameof(ShowsAccountDelete), nameof(ShowsVacation), nameof(ShowsNotifications),
-        nameof(ShowsHealth), nameof(ShowsAppearance),
+        nameof(ShowsHealth), nameof(ShowsAppearance), nameof(ShowsBadges),
     ];
 
     private void RaisePageProperties()

@@ -158,6 +158,7 @@ app.MapAccounts();
 app.MapFriends();
 app.MapStats();
 app.MapCheckIns();
+app.MapBadges();   // Phase 25
 app.MapFeedback();
 app.MapReports();
 app.MapShares();

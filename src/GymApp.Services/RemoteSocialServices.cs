@@ -225,10 +225,19 @@ public class RemoteLeaderboardService(SocialApiClient api, SocialCacheStore cach
     {
         SignedInGuard.Check(session, userId);
         var day = today ?? AppClock.Today;
-        var key = period == CorePeriod.ThisWeek ? SocialCacheKeys.LeaderboardThisWeek : SocialCacheKeys.LeaderboardAllTime;
+        var key = period switch
+        {
+            CorePeriod.ThisWeek => SocialCacheKeys.LeaderboardThisWeek,
+            CorePeriod.LastWeek => SocialCacheKeys.LeaderboardLastWeek,
+            _ => SocialCacheKeys.LeaderboardAllTime,
+        };
 
-        var r = await api.GetLeaderboardAsync(
-            period == CorePeriod.ThisWeek ? GymApp.Contracts.LeaderboardPeriod.ThisWeek : GymApp.Contracts.LeaderboardPeriod.AllTime, day);
+        var r = await api.GetLeaderboardAsync(period switch
+        {
+            CorePeriod.ThisWeek => GymApp.Contracts.LeaderboardPeriod.ThisWeek,
+            CorePeriod.LastWeek => GymApp.Contracts.LeaderboardPeriod.LastWeek,
+            _ => GymApp.Contracts.LeaderboardPeriod.AllTime,
+        }, day);
         if (r.IsOk)
         {
             await cache.SaveAsync(userId, key, r.Value!);
@@ -238,12 +247,44 @@ public class RemoteLeaderboardService(SocialApiClient api, SocialCacheStore cach
             return ToView(period, hit.Value) with { IsStale = true, FetchedAt = hit.FetchedAt };
 
         // Nothing cached yet: an empty board that says so, rather than "add friends"
-        var (monday, sunday) = Leaderboard.WeekRange(day);
+        var (monday, sunday) = Leaderboard.WeekRange(period == CorePeriod.LastWeek ? PointsCalculator.MondayOf(day).AddDays(-1) : day);
         return new LeaderboardView(period, monday, sunday, []) { IsStale = true };
     }
 
     private static LeaderboardView ToView(CorePeriod period, LeaderboardResponse r) =>
         new(period, r.WeekStart, r.WeekEnd, r.Rows
-            .Select(x => new LeaderboardRow(x.Rank, x.UserId, x.Username, x.Points, LevelCalculator.ForNumber(x.Level), x.CurrentStreak, x.IsYou, x.Avatar))
+            .Select(x => new LeaderboardRow(x.Rank, x.UserId, x.Username, x.Points, LevelCalculator.ForNumber(x.Level), x.CurrentStreak, x.IsYou, x.Avatar,
+                x.FeaturedBadge))
             .ToList());
+}
+
+/// <summary>Badges between friends on the social server (Phase 25). A friend's badges are cached per friend and come
+/// from the cache, marked stale, while offline. <c>friendId</c> is a server id, like every id these services use.</summary>
+public class RemoteBadgeShareService(SocialApiClient api, SocialCacheStore cache, SessionService session) : IBadgeShareService
+{
+    public async Task<FriendBadges?> GetFriendBadgesAsync(int userId, int friendId)
+    {
+        SignedInGuard.Check(session, userId);
+        var key = SocialCacheKeys.FriendBadges(friendId);
+        var r = await api.GetFriendBadgesAsync(friendId);
+        if (r.IsOk)
+        {
+            await cache.SaveAsync(userId, key, r.Value!);
+            return ToBadges(r.Value!) with { FetchedAt = cache.Now };
+        }
+        if (r.IsRefused) return null;   // not (or no longer) a friend
+        return await cache.GetAsync<UserBadgesResponse>(userId, key) is { } hit
+            ? ToBadges(hit.Value) with { IsStale = true, FetchedAt = hit.FetchedAt }
+            : null;
+    }
+
+    public async Task<int?> GetAcceptedInvitesAsync(int userId)
+    {
+        SignedInGuard.Check(session, userId);
+        var r = await api.GetAcceptedInvitesAsync();
+        return r.IsOk ? r.Value!.Count : null;
+    }
+
+    private static FriendBadges ToBadges(UserBadgesResponse r) =>
+        new(r.UserId, r.Badges.Select(b => new SharedBadge(b.Id, b.Tier, b.EarnedOn)).ToList(), r.Featured);
 }

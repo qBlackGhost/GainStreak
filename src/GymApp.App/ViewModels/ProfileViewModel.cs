@@ -73,7 +73,7 @@ public partial class ProfileViewModel : ViewModelBase
         CityService cities, SessionService session, Func<MainViewModel> shell,
         ReminderService reminders, INotificationScheduler notifications, ReminderSync reminderSync,
         VacationService vacations, IHealthStore healthStore, HealthSync healthSync, HealthImportService healthImport,
-        IPushRegistration push, IPushNotifications pushDevice)
+        IPushRegistration push, IPushNotifications pushDevice, ProfileBadgesViewModel? badges = null)
     {
         _profiles = profiles; _accounts = accounts; _geocoding = geocoding; _cities = cities;
         _session = session; _shell = shell;
@@ -90,6 +90,7 @@ public partial class ProfileViewModel : ViewModelBase
             await _shell().RefreshStreakAsync();
         });
         _ = Vacation.LoadAsync();
+        Badges = badges;
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
         ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
         WatchSettingsRows();
@@ -112,6 +113,11 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Vacation (0.19.0): every head.</summary>
     public VacationCardViewModel Vacation { get; }
+
+    /// <summary>The Badges card (Phase 25): phones only, and only on Main.</summary>
+    public ProfileBadgesViewModel? Badges { get; }
+
+    public bool ShowsBadges => Badges is { IsSupported: true } && IsPhone && IsMainPage;
     private static DateOnly Today => AppClock.Today;
 
     public IReadOnlyList<Sex> Sexes { get; } = Enum.GetValues<Sex>();
@@ -307,6 +313,12 @@ public partial class ProfileViewModel : ViewModelBase
             ApplyEmail(s.Email);
             Initials = UserInitials.Of(s.Username);
             Avatar = s.Profile.Avatar;
+            if (Badges is { IsSupported: true })
+            {
+                Badges.Initials = Initials;
+                Badges.Avatar = Avatar;
+                _ = Badges.LoadAsync();
+            }
             HasSplit = s.SplitName is not null;
             SplitText = s.SplitName?.Replace(" (", " · ").TrimEnd(')') ?? "No split selected";
             StreakText = $"{s.CurrentStreak} day streak · best {s.LongestStreak}";

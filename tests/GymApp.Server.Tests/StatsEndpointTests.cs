@@ -135,15 +135,22 @@ public class StatsEndpointTests : ServerTest
         Assert.Equal(400, (await BoardAsync(alice, "allTime", monday)).Rows.Single(r => r.Username == "bob").Points);
     }
 
-    [Fact] public async Task Upload_ReplacesEveryEarlierRow()
+    /// <summary>An upload replaces the days from its first one on; the days before it stay (Phase 25, last week's
+    /// board), until they're older than <see cref="Endpoints.StatsEndpoints.HistoryDays"/>.</summary>
+    [Fact] public async Task Upload_ReplacesFromItsFirstDay_AndKeepsTheDaysBefore()
     {
         var alice = await SignUpAsync("alice");
+        await using (var seed = Db())
+        {
+            seed.ProjectedStats.Add(new Data.StatsDay { UserId = alice.User.Id, Date = Wednesday.AddDays(-30), TotalPoints = 1 });
+            await seed.SaveChangesAsync();
+        }
         await UploadOkAsync(alice, Day(Wednesday, 10, 10, 1), Day(Wednesday.AddDays(1), 10, 10, 2));
         await UploadOkAsync(alice, Day(Wednesday.AddDays(1), 50, 50, 3));
 
         await using var db = Db();
-        var row = await db.ProjectedStats.SingleAsync();
-        Assert.Equal((Wednesday.AddDays(1), 50), (row.Date, row.TotalPoints));
+        var rows = await db.ProjectedStats.OrderBy(d => d.Date).Select(d => new { d.Date, d.TotalPoints }).ToListAsync();
+        Assert.Equal([(Wednesday, 10), (Wednesday.AddDays(1), 50)], rows.Select(r => (r.Date, r.TotalPoints)));
     }
 
     [Fact] public async Task BadUploads_AreRejected_AndKeepTheOldRows()
@@ -172,8 +179,8 @@ public class StatsEndpointTests : ServerTest
         async Task<string?> Get(string query) =>
             await ProblemAsync(await alice.Client.GetAsync($"/v1/leaderboard?{query}"), HttpStatusCode.BadRequest);
 
-        Assert.Equal("Set period to thisWeek or allTime.", await Get("today=2026-10-14"));
-        Assert.Equal("Set period to thisWeek or allTime.", await Get("period=month&today=2026-10-14"));
+        Assert.Equal("Set period to thisWeek, allTime or lastWeek.", await Get("today=2026-10-14"));
+        Assert.Equal("Set period to thisWeek, allTime or lastWeek.", await Get("period=month&today=2026-10-14"));
         Assert.Equal("Send today's date as yyyy-MM-dd.", await Get("period=allTime"));
         Assert.Equal("Send today's date as yyyy-MM-dd.", await Get("period=allTime&today=14.10.2026"));
         Assert.Equal("Today must be within 2 days of the server's date.", await Get("period=allTime&today=2026-10-17"));

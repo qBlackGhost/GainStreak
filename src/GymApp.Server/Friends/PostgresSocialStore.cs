@@ -164,12 +164,12 @@ public class PostgresSocialStore(IDbContextFactory<ServerDbContext> dbFactory) :
 
             var users = await db.Users.AsNoTracking()
                 .Where(u => ids.Contains(u.Id))
-                .Select(u => new { u.Id, u.Username, u.Avatar })
+                .Select(u => new { u.Id, u.Username, u.Avatar, Featured = u.ShareBadges ? u.FeaturedBadge : null })
                 .ToListAsync();
             return users.Select(u => latest.TryGetValue(u.Id, out var d)
                     ? new PublicStats(u.Id, u.Username, d.TotalPoints,
-                        d.Date >= weekStart && d.Date <= weekEnd ? d.WeekPoints : 0, d.CurrentStreak, u.Avatar)
-                    : new PublicStats(u.Id, u.Username, 0, 0, 0, u.Avatar))
+                        d.Date >= weekStart && d.Date <= weekEnd ? d.WeekPoints : 0, d.CurrentStreak, u.Avatar, u.Featured)
+                    : new PublicStats(u.Id, u.Username, 0, 0, 0, u.Avatar, u.Featured))
                 .ToList();
         }
 

@@ -24,7 +24,8 @@ public sealed record FriendCheckIn(
     double? Longitude,
     double? DistanceKm,          // from the user's own origin (home gym or home city centre), null if unknown
     bool IsCustomGym,
-    DateOnly Date);
+    DateOnly Date,
+    string? FeaturedBadge = null);   // the friend's featured badge, "<id>:<tier>" (Phase 25)
 
 /// <summary>A pin on the map: one gym and the friends shown there, newest first.</summary>
 public sealed record GymPin(

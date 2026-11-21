@@ -11,15 +11,17 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("5624e7ec-5638-40b4-a914-ca1846ef5cba"), entityTypeCount: 26)
+            : base(skipDetectChanges: false, modelId: new Guid("efb4c977-34ce-4287-8214-53770d4badcf"), entityTypeCount: 28)
         {
         }
 
         partial void Initialize()
         {
+            var badgeEvent = BadgeEventEntityType.Create(this);
             var calorieLog = CalorieLogEntityType.Create(this);
             var cardioSession = CardioSessionEntityType.Create(this);
             var city = CityEntityType.Create(this);
+            var earnedBadge = EarnedBadgeEntityType.Create(this);
             var exercise = ExerciseEntityType.Create(this);
             var exerciseBarSetting = ExerciseBarSettingEntityType.Create(this);
             var friendInvite = FriendInviteEntityType.Create(this);
@@ -44,9 +46,11 @@ namespace GymApp.Data.CompiledModels
             var workoutLog = WorkoutLogEntityType.Create(this);
             var workoutSplit = WorkoutSplitEntityType.Create(this);
 
+            BadgeEventEntityType.CreateForeignKey1(badgeEvent, user);
             CalorieLogEntityType.CreateForeignKey1(calorieLog, user);
             CardioSessionEntityType.CreateForeignKey1(cardioSession, gym);
             CardioSessionEntityType.CreateForeignKey2(cardioSession, user);
+            EarnedBadgeEntityType.CreateForeignKey1(earnedBadge, user);
             ExerciseEntityType.CreateForeignKey1(exercise, user);
             ExerciseBarSettingEntityType.CreateForeignKey1(exerciseBarSetting, exercise);
             ExerciseBarSettingEntityType.CreateForeignKey2(exerciseBarSetting, user);
@@ -88,9 +92,11 @@ namespace GymApp.Data.CompiledModels
             WorkoutLogEntityType.CreateForeignKey3(workoutLog, user);
             WorkoutSplitEntityType.CreateForeignKey1(workoutSplit, user);
 
+            BadgeEventEntityType.CreateAnnotations(badgeEvent);
             CalorieLogEntityType.CreateAnnotations(calorieLog);
             CardioSessionEntityType.CreateAnnotations(cardioSession);
             CityEntityType.CreateAnnotations(city);
+            EarnedBadgeEntityType.CreateAnnotations(earnedBadge);
             ExerciseEntityType.CreateAnnotations(exercise);
             ExerciseBarSettingEntityType.CreateAnnotations(exerciseBarSetting);
             FriendInviteEntityType.CreateAnnotations(friendInvite);

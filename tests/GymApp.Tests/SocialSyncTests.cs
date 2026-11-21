@@ -211,7 +211,7 @@ public sealed class SocialSyncTests : IDisposable
 
         await _sync.SyncAsync(_me);
 
-        Assert.Equal(["PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats"], _server.Calls);
+        Assert.Equal(["PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats", "PUT v1/me/badges"], _server.Calls);
         Assert.True(_server.LastBody<SharingRequest>("PUT v1/me/sharing")!.ShareGymCheckIns);
         var stats = _server.LastBody<StatsUploadRequest>("PUT v1/me/stats")!;
         Assert.Equal(Today, stats.Days[0].Date);
@@ -460,7 +460,7 @@ public sealed class SocialSyncTests : IDisposable
         restarted.RequestSync();
         await restarted.WhenIdleAsync();
 
-        Assert.Equal(["PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats"], _server.Calls);
+        Assert.Equal(["PUT v1/me/sharing", "PUT v1/me/checkins", "PUT v1/me/stats", "PUT v1/me/badges"], _server.Calls);
         var state = State();
         Assert.Equal((null, null, null), (state.SharingDirtySince, state.CheckInsDirtySince, state.StatsDirtySince));
     }

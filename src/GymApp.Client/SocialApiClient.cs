@@ -146,11 +146,30 @@ public sealed class SocialApiClient
     /// <param name="today">The phone's own date: weeks are counted from it.</param>
     public Task<ApiResult<LeaderboardResponse>> GetLeaderboardAsync(LeaderboardPeriod period, DateOnly today, CancellationToken ct = default) =>
         SendAsync<LeaderboardResponse>(HttpMethod.Get,
-            $"v1/leaderboard?period={(period == LeaderboardPeriod.ThisWeek ? "thisWeek" : "allTime")}&today={Date(today)}", null, ct);
+            $"v1/leaderboard?period={period switch
+            {
+                LeaderboardPeriod.ThisWeek => "thisWeek",
+                LeaderboardPeriod.LastWeek => "lastWeek",
+                _ => "allTime",
+            }}&today={Date(today)}", null, ct);
 
     /// <summary>How many users train with each split, over every account.</summary>
     public Task<ApiResult<SplitUsageResponse>> GetSplitUsageAsync(CancellationToken ct = default) =>
         SendAsync<SplitUsageResponse>(HttpMethod.Get, "v1/splits/usage", null, ct);
+
+    // --- Badges (Phase 25) ---
+
+    /// <summary>Replaces your badges on the server, with the featured badge and the sharing setting.</summary>
+    public Task<ApiResult> UploadBadgesAsync(BadgesUploadRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Put, "v1/me/badges", request, ct);
+
+    /// <summary>An accepted friend's badges; 404 for anyone else.</summary>
+    public Task<ApiResult<UserBadgesResponse>> GetFriendBadgesAsync(int userId, CancellationToken ct = default) =>
+        SendAsync<UserBadgesResponse>(HttpMethod.Get, $"v1/friends/{userId}/badges", null, ct);
+
+    /// <summary>How many people became your friend through your invite (Recruiter).</summary>
+    public Task<ApiResult<CountResponse>> GetAcceptedInvitesAsync(CancellationToken ct = default) =>
+        SendAsync<CountResponse>(HttpMethod.Get, "v1/me/invites/accepted", null, ct);
 
     // --- Check-ins ---
 

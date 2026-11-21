@@ -33,7 +33,7 @@ if [[ -z "$identity" ]]; then
   exit 1
 fi
 
-# A profile for an app id: newest one that isn't expired. Prints "<path>|<name>"
+# A profile for an app id: the one that expires last. Prints "<path>|<UUID>"
 find_profile() {
   local want=$1 best="" best_date=""
   for dir in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles" "$HOME/Library/MobileDevice/Provisioning Profiles"; do
@@ -46,7 +46,7 @@ find_profile() {
       [[ "${app_id#*.}" == "$want" ]] || continue
       expires=$(plutil -extract ExpirationDate raw "$tmp/p.plist")
       [[ "$expires" > "$(date -u +%Y-%m-%dT%H:%M:%SZ)" ]] || continue
-      name=$(plutil -extract Name raw "$tmp/p.plist")
+      name=$(plutil -extract UUID raw "$tmp/p.plist")   # by UUID: renewed profiles keep the same name
       if [[ -z "$best_date" || "$expires" > "$best_date" ]]; then best="$f|$name" best_date=$expires; fi
     done
   done

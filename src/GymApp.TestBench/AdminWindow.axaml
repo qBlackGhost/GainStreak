@@ -169,6 +169,22 @@
                     </StackPanel>
                 </Border>
 
+                <Border Classes="section" IsEnabled="{Binding IsSignedIn}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="header" Text="Badges"/>
+                        <ComboBox ItemsSource="{Binding BadgeIds}" SelectedItem="{Binding SelectedBadgeId}" HorizontalAlignment="Stretch"/>
+                        <NumericUpDown Value="{Binding BadgeTier}" Minimum="1" Maximum="4" Increment="1" FormatString="0"
+                                       HorizontalAlignment="Stretch" ToolTip.Tip="Tier (Steel 1 to Blaze 4); ignored for one-time badges"/>
+                        <WrapPanel>
+                            <Button Content="Award badge" Command="{Binding AwardBadgeCommand}"/>
+                            <Button Content="Check now" Command="{Binding CheckBadgesCommand}"/>
+                            <Button Content="Reset badges" Command="{Binding ResetBadgesCommand}"/>
+                        </WrapPanel>
+                        <TextBlock Classes="note"
+                                   Text="Badges show only with the phone workout (the live workout switch above). Award shows the unlock sheet; Reset brings back the &quot;from your history&quot; sheet."/>
+                    </StackPanel>
+                </Border>
+
                 <Border Classes="section">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="header" Text="Test data"/>

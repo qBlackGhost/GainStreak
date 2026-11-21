@@ -2,6 +2,23 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.25.0
+
+- **Badges (phones):** GainStreak now awards badges for what you already log. Profile has a new **Badges** card; **See all** opens the badges screen.
+  - **21 badges to work towards** in four groups: Consistency (Streak, Perfect Week, On Ice, Weekend Warrior, Split Finisher), Strength (PR Breaker, Heavy Lifter, Century, Bodyweight Club, Rep Machine, Exercise Explorer, PR Week), Body & health (Fuel Streak, Weigh-in Habit, Cardio Minutes) and Social & gyms (Regular, Explorer, We Go Jim, Recruiter, Top of the Board, and a Monthly Challenge from December).
+  - **Levels:** most badges climb from **Steel** to **Lime**, **Fire** and **Blaze**. One-time badges are lime. Heavy Lifter shows how much you've lifted in all: a car, an elephant, a blue whale, a space station.
+  - **18 hidden badges** show as a dashed **?** with a hint until you earn one. No spoilers here.
+  - **The badges screen** shows how many you have, the closest one to earn next and an **All / Earned / Locked** switch. Tap a badge for its rule, its levels and your progress ("61 t / 150 t", in lb if you use pounds).
+  - **Earned is earned:** a badge or level is never taken away, even if you later edit or delete the log that earned it.
+  - **Your history counts:** the first start after updating awards what your past logs already earned, quietly, with one sheet: "You earned 9 badges from your history".
+  - **New badge sheet:** earning a badge or a new level shows a sheet with its level, **Share with friends** and **Done**. Several at once: swipe through them.
+  - **Badges don't add points,** so levels and the leaderboard work as before.
+- **Featured badge:** one badge shows on your avatar's corner, after your name on the friends' leaderboard and next to your name in a gym's card on the map (tap the pin; pins themselves stay plain). You can feature a secret badge too: friends who haven't found it see a **?** instead, and the picker tells you so. Until you pick one it's your highest level, newest first. **Change** on the Badges card opens a picker with a preview, or **Show no badge**.
+- **Friends' badges:** tap a friend on the leaderboard or in the friends list, or **Badges** in a gym's card on the map, to see their badges: their featured badge, how many they have, how many you both have, and **All / Both have / Only <name>**. Under each badge you see how you compare: your level ("You: Fire"), or **You:** with a green check or a red cross. A hidden badge you haven't earned stays a **?**. Offline, the last copy shows with a note.
+- **Friends can see my badges** (on the Badges card, on by default): off hides your badges and your featured badge from friends everywhere.
+- The desktop app doesn't change.
+- **Migration:** the app's database (badges, featured badge, sharing) and the server's Postgres (`UserBadges`, invite records, featured badge and sharing on users). The server keeps the last 21 days of uploaded stats for last week's leaderboard. Run `migrate` before deploying the server. 0.21.0 and later keep working.
+
 ## 0.24.1
 
 - **A clearer map:** the Map's streets are drawn at full strength instead of dimmed, so the grey haze over the map is gone, and zooming in and out no longer leaves darker and lighter patches while new tiles load.

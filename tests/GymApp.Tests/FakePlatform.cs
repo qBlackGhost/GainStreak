@@ -35,6 +35,7 @@ public sealed class FakePlatform : IPlatform
     public void OpenStorePage() => StorePageOpened++;
 
     public bool HasLiveWorkout { get; set; }
+    public bool HasBadges { get; set; }
 
     /// <summary>The reminders' scheduler; none unless a test sets one.</summary>
     public INotificationScheduler Notifications { get; set; } = NoNotificationScheduler.Instance;

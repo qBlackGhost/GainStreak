@@ -219,8 +219,14 @@
                 <StackPanel Spacing="14">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
                         <Button Classes="bare" Command="{Binding EditAvatarCommand}" AutomationProperties.Name="Change avatar">
-                            <v:AvatarView Width="64" Height="64" Choice="{Binding Avatar}" Initials="{Binding Initials}" Level="{Binding AvatarLevel}"
-                                          Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                            <Panel Width="70" Height="70">
+                                <v:AvatarView Width="64" Height="64" HorizontalAlignment="Left" VerticalAlignment="Top" Choice="{Binding Avatar}" Initials="{Binding Initials}" Level="{Binding AvatarLevel}"
+                                              Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                                <!-- The featured badge on the avatar's corner (Phase 25) -->
+                                <v:BadgeView Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                             IsVisible="{Binding Badges.HasFeatured, FallbackValue=False}"
+                                             Glyph="{Binding Badges.Featured.Glyph}" Text="{Binding Badges.Featured.Text}" Look="{Binding Badges.Featured.Look}"/>
+                            </Panel>
                         </Button>
                         <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
@@ -269,6 +275,62 @@
                             <v:Icon Grid.Column="1" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" VerticalAlignment="Center"/>
                         </Grid>
                     </Button>
+                </StackPanel>
+            </Border>
+            <!-- Phones, Main: the Badges card (Phase 25, "Profile · Your badges") -->
+            <Border Classes="card" IsVisible="{Binding ShowsBadges}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="Badges" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Badges.CountText}" FontFamily="{StaticResource Mono}" FontSize="13"
+                                   Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                        <Button Grid.Column="2" Classes="link" Content="See all" Command="{Binding Badges.SeeAllCommand}"/>
+                    </Grid>
+                    <Border Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1"
+                            CornerRadius="16" Padding="14">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <Panel Width="60" Height="60">
+                                <v:BadgeView IsVisible="{Binding Badges.HasFeatured}" Glyph="{Binding Badges.Featured.Glyph}"
+                                             Text="{Binding Badges.Featured.Text}" Look="{Binding Badges.Featured.Look}"/>
+                                <v:BadgeView IsVisible="{Binding !Badges.HasFeatured}" Look="Locked" Glyph="trophy"/>
+                            </Panel>
+                            <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                <TextBlock Text="FEATURED" FontFamily="{StaticResource Mono}" FontSize="11" LetterSpacing="1.5" Foreground="{DynamicResource AccentInk}"/>
+                                <TextBlock Text="{Binding Badges.Featured.Name, FallbackValue=None}" FontSize="16" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Badges.FeaturedNote}" FontSize="12" Classes="soft" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button Grid.Column="2" Classes="btn primary" Padding="14,0" MinHeight="36" VerticalAlignment="Center"
+                                    Content="Change" Command="{Binding Badges.ChangeCommand}"/>
+                        </Grid>
+                    </Border>
+                    <StackPanel Spacing="10" IsVisible="{Binding Badges.HasRecent}">
+                        <TextBlock Text="Recently earned" FontSize="13" FontWeight="SemiBold" Classes="muted"/>
+                        <ItemsControl ItemsSource="{Binding Badges.Recent}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Columns="4"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:BadgeItemViewModel">
+                                    <Button Classes="bare" AutomationProperties.Name="{Binding Name}" VerticalAlignment="Top" VerticalContentAlignment="Top"
+                                            Command="{Binding $parent[UserControl].((vm:ProfileViewModel)DataContext).Badges.OpenCommand}" CommandParameter="{Binding}">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Top">
+                                            <v:BadgeView Width="54" Height="54" HorizontalAlignment="Center" Glyph="{Binding Glyph}" Text="{Binding Text}" Look="{Binding Look}"/>
+                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="80"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                    <Border Height="1" Background="{DynamicResource Divider}"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="Friends can see my badges" FontSize="15" FontWeight="SemiBold"/>
+                            <TextBlock Text="Earned badges and tiers only, not your progress" FontSize="12" Classes="muted" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1" IsChecked="{Binding Badges.Share}" OnContent="" OffContent=""
+                                      AutomationProperties.Name="Friends can see my badges" VerticalAlignment="Center"/>
+                    </Grid>
                 </StackPanel>
             </Border>
           </StackPanel>

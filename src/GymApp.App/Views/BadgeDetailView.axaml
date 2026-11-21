@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.BadgeDetailView"
+             x:DataType="vm:BadgeDetailViewModel">
+    <!-- One badge (Phase 25): the badge, its name and rule (the hint while it's hidden), the tier ladder, the progress
+         and when it was earned. A sheet on phones; Escape, Close or a tap outside closes it. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="ProgressBar.bar">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="MinHeight" Value="6"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="1"/>
+        </Style>
+    </UserControl.Styles>
+    <Panel TextElement.Foreground="{DynamicResource Ink}">
+        <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}"/>
+        <v:Sheet Width="440" MaxHeight="720" Margin="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 CornerRadius="24" Background="{DynamicResource Surface}" BorderBrush="{DynamicResource Line2}" BorderThickness="1"
+                 BoxShadow="0 24 80 0 #99000000" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="14" Margin="20,22,20,24" DataContext="{Binding Item}" x:DataType="vm:BadgeItemViewModel">
+                    <v:BadgeView Width="132" Height="132" HorizontalAlignment="Center" Glyph="{Binding Glyph}" Text="{Binding Text}" Look="{Binding Look}"/>
+                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="24" FontWeight="ExtraBold" TextAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Status}" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource AccentInk}" TextAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding Rule}" FontSize="15" Classes="soft" TextAlignment="Center" TextWrapping="Wrap"/>
+
+                    <StackPanel Spacing="6" IsVisible="{Binding ShowsProgress}">
+                        <ProgressBar Classes="bar" Value="{Binding Ratio}"/>
+                        <TextBlock Text="{Binding ProgressText}" FontFamily="{StaticResource Mono}" FontSize="13" Classes="soft" HorizontalAlignment="Right"/>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Tiers}" IsVisible="{Binding HasTiers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:BadgeTierRow">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="0,4" Opacity="{Binding Reached, Converter={x:Static v:BadgeConverters.Dim}}">
+                                    <v:BadgeView Width="36" Height="36" Glyph="{Binding Glyph}" Text="{Binding Text}" Look="{Binding Look}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding Threshold}" FontFamily="{StaticResource Mono}" FontSize="13" Classes="soft" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{Binding EarnedText}" FontSize="13" Classes="muted" HorizontalAlignment="Center"
+                               IsVisible="{Binding EarnedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="btn outline" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Content="Close"
+                            Command="{Binding $parent[UserControl].((vm:BadgeDetailViewModel)DataContext).CloseCommand}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Panel>
+</UserControl>

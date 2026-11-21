@@ -1,0 +1,128 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.BadgesView"
+             x:DataType="vm:BadgesViewModel">
+    <!-- Phase 25, the GainStreak Badges canvas ("Phone · Achievements"): the earned count and bar, the closest next
+         badge, the All / Earned / Locked pill and a three-column grid. A tile opens its detail sheet. Phones only. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="ProgressBar.bar">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="MinHeight" Value="6"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="1"/>
+        </Style>
+        <Style Selector="Button.bare, Button.rowLink">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="Button.rowLink">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.rowLink:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.rowLink:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed, Button.rowLink:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="Button.tile">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,6"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.tile:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+    </UserControl.Styles>
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
+        <v:Sidebar Current="Profile"/>
+        <ScrollViewer>
+            <StackPanel Classes="page" Spacing="16">
+                <Button Classes="bare" HorizontalAlignment="Left" Command="{Binding BackCommand}" AutomationProperties.Name="Back">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <v:Icon Data="{StaticResource IcChevronLeft}" StrokeThickness="2.4" Width="22" Height="22" VerticalAlignment="Center"/>
+                        <TextBlock Text="Badges" FontSize="24" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Border Classes="card">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <TextBlock Text="{Binding EarnedCount}" FontFamily="{StaticResource Mono}" FontSize="30" FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentInk}" VerticalAlignment="Bottom"/>
+                            <TextBlock Grid.Column="1" Text="{Binding EarnedText}" FontSize="14" Classes="soft" VerticalAlignment="Bottom" Margin="0,0,0,5"/>
+                        </Grid>
+                        <ProgressBar Classes="bar" Value="{Binding EarnedRatio}"/>
+                        <Button Classes="rowLink" IsVisible="{Binding Closest, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                Command="{Binding OpenCommand}" CommandParameter="{Binding Closest}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <v:BadgeView Width="34" Height="34" Glyph="{Binding Closest.Glyph}" Text="{Binding Closest.Text}" Look="{Binding Closest.Look}"/>
+                                <TextBlock Grid.Column="1" FontSize="13" Classes="soft" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                    <Run Text="Closest: "/><Run Text="{Binding Closest.Name}" Foreground="{DynamicResource Ink}" FontWeight="SemiBold"/>
+                                </TextBlock>
+                                <TextBlock Grid.Column="2" Text="{Binding Closest.ProgressText}" FontFamily="{StaticResource Mono}" FontSize="13"
+                                           Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="track">
+                    <v:SegmentedPill SelectedIndex="{Binding FilterIndex}" PillInset="0">
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsZero}}" MinHeight="40" FontSize="14"
+                                Content="All" Command="{Binding ShowAllCommand}"/>
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsOne}}" MinHeight="40" FontSize="14"
+                                Content="Earned" Command="{Binding ShowEarnedCommand}"/>
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsTwo}}" MinHeight="40" FontSize="14"
+                                Content="Locked" Command="{Binding ShowLockedCommand}"/>
+                    </v:SegmentedPill>
+                </Border>
+
+                <TextBlock Text="{Binding EmptyText}" Classes="soft" FontSize="14" TextWrapping="Wrap" HorizontalAlignment="Center"
+                           IsVisible="{Binding IsEmpty}" Margin="0,24"/>
+
+                <ItemsControl ItemsSource="{Binding Shown}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:BadgeItemViewModel">
+                            <Button Classes="tile" AutomationProperties.Name="{Binding Name}"
+                                    Command="{Binding $parent[UserControl].((vm:BadgesViewModel)DataContext).OpenCommand}" CommandParameter="{Binding}">
+                                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                    <v:BadgeView Width="72" Height="72" HorizontalAlignment="Center" Glyph="{Binding Glyph}" Text="{Binding Text}" Look="{Binding Look}"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="104"/>
+                                    <TextBlock Text="{Binding Short}" FontFamily="{StaticResource Mono}" FontSize="11" Classes="muted"
+                                               TextAlignment="Center" TextWrapping="Wrap" MaxWidth="104"/>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

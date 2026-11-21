@@ -7,13 +7,17 @@ public sealed record StatsDayRequest(DateOnly Date, int TotalPoints, int WeekPoi
 /// <see cref="Split"/> also replaces your active split, for the split usage counts; null means none chosen.</summary>
 public sealed record StatsUploadRequest(IReadOnlyList<StatsDayRequest> Days, ActiveSplitRequest? Split = null);
 
-/// <summary>Sent as <c>thisWeek</c> or <c>allTime</c>, also in the <c>period</c> query parameter.</summary>
-public enum LeaderboardPeriod { ThisWeek, AllTime }
+/// <summary>Sent as <c>thisWeek</c>, <c>allTime</c> or <c>lastWeek</c>, also in the <c>period</c> query parameter.
+/// <see cref="LastWeek"/> (Phase 25) is the finished week before the viewer's current one; older clients never ask for it.</summary>
+public enum LeaderboardPeriod { ThisWeek, AllTime, LastWeek }
 
 /// <summary><see cref="Points"/> is what the row is ranked by (the period's points); the level is always the all-time one.
-/// <see cref="Avatar"/> is the user's choice in <c>AvatarChoice</c> form, null for the plain initials.</summary>
+/// <see cref="Avatar"/> is the user's choice in <c>AvatarChoice</c> form, null for the plain initials.
+/// <see cref="FeaturedBadge"/> (Phase 25) is the badge shown next to the name as <c>"&lt;id&gt;:&lt;tier&gt;"</c>
+/// (<c>"streak:3"</c>), null when they show none or don't share their badges; older clients ignore it.</summary>
 public sealed record LeaderboardRowResponse(
-    int Rank, int UserId, string Username, int Points, int Level, string LevelName, int CurrentStreak, bool IsYou, string? Avatar = null);
+    int Rank, int UserId, string Username, int Points, int Level, string LevelName, int CurrentStreak, bool IsYou, string? Avatar = null,
+    string? FeaturedBadge = null);
 
 /// <summary>The board for one period. <see cref="WeekStart"/>..<see cref="WeekEnd"/> is the week containing the viewer's today.</summary>
 public sealed record LeaderboardResponse(

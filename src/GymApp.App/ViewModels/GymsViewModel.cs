@@ -22,8 +22,15 @@ public record MapMyPin(int GymId, double Latitude, double Longitude, string Init
 public record MapBounds(double South, double West, double North, double East);
 
 /// <summary>One row of the Friends card, or one visitor on the map's gym card.</summary>
-public partial class MapFriendRowViewModel(FriendCheckIn c, DateOnly today, bool onMap, bool byGym) : ObservableObject
+public partial class MapFriendRowViewModel(FriendCheckIn c, DateOnly today, bool onMap, bool byGym, GymsViewModel? owner = null)
+    : ObservableObject
 {
+    /// <summary>Their featured badge (Phase 25e, phones only), and the card's Badges link.</summary>
+    public FeaturedLook? Featured => owner is { HasBadges: true } ? FeaturedLook.From(c.FeaturedBadge, owner.HasBadge) : null;
+    public bool HasFeatured => Featured is not null;
+    public bool CanOpenBadges => owner is { HasBadges: true };
+    [RelayCommand] private void OpenBadges() => owner?.OpenFriendBadges(c);
+
     public int FriendUserId => c.FriendUserId;
     public int GymId => c.GymId;
     public string Username => c.Username;
@@ -131,8 +138,10 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 
     public GymsViewModel(GymService gyms, ProfileService profiles, FriendMapService friendMap, GymSummaryService summaries,
         GymPickerViewModel picker, SessionService session, Func<MainViewModel> shell,
-        VacationService? vacations = null, NearbyCityFinder? nearby = null)
+        VacationService? vacations = null, NearbyCityFinder? nearby = null, IPlatform? platform = null, BadgeService? badges = null)
     {
+        HasBadges = platform?.HasBadges == true;
+        _badges = badges;
         _vacations = vacations; _nearby = nearby;
         _gyms = gyms; _profiles = profiles; _friendMap = friendMap; _summaries = summaries;
         Picker = picker; _session = session; _shell = shell;
@@ -183,6 +192,20 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     public string RangeTitle => Range switch { MapRange.Today => "Today", MapRange.Week => "Last 7 days", _ => "Last 30 days" };
 
     public IReadOnlyList<GymPin> Pins { get; private set; } = [];
+
+    /// <summary>Badges (Phase 25e) show on the phones only: the featured badge on pins and in the gym's card.</summary>
+    public bool HasBadges { get; }
+
+    private readonly BadgeService? _badges;
+    private IReadOnlySet<string> _myBadges = new HashSet<string>();
+
+    /// <summary>Whether you've earned this badge: a friend's hidden featured badge you haven't shows as "?".</summary>
+    public bool HasBadge(string badgeId) => _myBadges.Contains(badgeId);
+
+    /// <summary>The friend card's Badges link. A check-in carries no level or avatar: level 0 has the badges screen
+    /// take both from the friend's leaderboard row.</summary>
+    public void OpenFriendBadges(FriendCheckIn c) =>
+        _shell().ShowFriendBadges(c.FriendUserId, c.Username, null, 0, c.FeaturedBadge);
     public IReadOnlyList<MapGymDot> GymDots { get; private set; } = [];
     public MapMyPin? MyPin { get; private set; }
 
@@ -414,6 +437,8 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     {
         try
         {
+            if (HasBadges && _badges is not null)
+                _myBadges = (await _badges.GetEarnedAsync(UserId)).Select(e => e.BadgeId).ToHashSet();
             var r = await _friendMap.GetAsync(UserId, _homeCity?.Id, _homeGym?.Id, Origin, Range, Mode, Sort);
             Pins = r.Layout.Pins;
             _latestPerFriend = r.Layout.LatestPerFriend;
@@ -611,7 +636,7 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
         SelectedDetail = string.Join(" · ", new[] { row?.Gym.Address, distance }.Where(x => !string.IsNullOrEmpty(x)));
 
         SelectedVisitors.Clear();
-        foreach (var v in pin?.Visitors ?? []) SelectedVisitors.Add(new MapFriendRowViewModel(v, Today, true, false));
+        foreach (var v in pin?.Visitors ?? []) SelectedVisitors.Add(new MapFriendRowViewModel(v, Today, true, false, this));
         HasSelectedVisitors = SelectedVisitors.Count > 0;
 
         var mine = _myVisits.GetValueOrDefault(gymId);

@@ -217,6 +217,24 @@ namespace GymApp.Server.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.InviteAccept", b =>
+                {
+                    b.Property<int>("InviterId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("InviteeId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("AcceptedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("InviterId", "InviteeId");
+
+                    b.HasIndex("InviteeId");
+
+                    b.ToTable("InviteAccepts");
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.PushDevice", b =>
                 {
                     b.Property<long>("Id")
@@ -384,9 +402,18 @@ namespace GymApp.Server.Data.Migrations
                     b.Property<DateTime?>("EmailConfirmedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("FeaturedBadge")
+                        .HasMaxLength(48)
+                        .HasColumnType("character varying(48)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("ShareBadges")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
 
                     b.Property<bool?>("ShareGymCheckIns")
                         .HasColumnType("boolean");
@@ -421,6 +448,26 @@ namespace GymApp.Server.Data.Migrations
                         .HasDatabaseName("IX_Users_UsernameNormalized");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.UserBadge", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BadgeId")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<DateOnly>("EarnedOn")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Tier")
+                        .HasColumnType("integer");
+
+                    b.HasKey("UserId", "BadgeId");
+
+                    b.ToTable("UserBadges");
                 });
 
             modelBuilder.Entity("GymApp.Server.Data.UserBlock", b =>
@@ -535,6 +582,21 @@ namespace GymApp.Server.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.InviteAccept", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("InviteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("InviterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.PushDevice", b =>
                 {
                     b.HasOne("GymApp.Server.Data.Session", null)
@@ -575,6 +637,15 @@ namespace GymApp.Server.Data.Migrations
                 });
 
             modelBuilder.Entity("GymApp.Server.Data.StatsDay", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.UserBadge", b =>
                 {
                     b.HasOne("GymApp.Server.Data.User", null)
                         .WithMany()

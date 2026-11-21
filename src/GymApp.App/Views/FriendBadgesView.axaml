@@ -1,0 +1,143 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.FriendBadgesView"
+             x:DataType="vm:FriendBadgesViewModel">
+    <!-- Phase 25e, the GainStreak Badges canvas ("Profile · A friend's badges"): the friend with their featured badge,
+         how many badges and how many in common, All / Both have / Only <name>, and the grid with notes. Phones only. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Border.track">
+            <Setter Property="Padding" Value="4"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+        </Style>
+        <Style Selector="ProgressBar.bar">
+            <Setter Property="Height" Value="6"/>
+            <Setter Property="MinHeight" Value="6"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="Minimum" Value="0"/>
+            <Setter Property="Maximum" Value="1"/>
+        </Style>
+        <Style Selector="Button.bare, Button.rowLink">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        <Style Selector="Button.rowLink">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.bare:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.rowLink:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.rowLink:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.bare:pressed, Button.rowLink:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+        <Style Selector="Button.tile">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="2,6"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="VerticalContentAlignment" Value="Top"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style Selector="Button.tile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.tile:pressed">
+            <Setter Property="Opacity" Value="0.7"/>
+        </Style>
+    </UserControl.Styles>
+    <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
+        <v:Sidebar Current="Friends"/>
+        <ScrollViewer>
+            <StackPanel Classes="page" Spacing="16">
+                <Button Classes="bare" HorizontalAlignment="Left" Command="{Binding BackCommand}" AutomationProperties.Name="Back">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <v:Icon Data="{StaticResource IcChevronLeft}" StrokeThickness="2.4" Width="22" Height="22" VerticalAlignment="Center"/>
+                        <TextBlock Text="Friends" FontSize="17" Classes="muted" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Border Classes="card">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                        <Panel Width="70" Height="70">
+                            <v:AvatarView Width="64" Height="64" HorizontalAlignment="Left" VerticalAlignment="Top" Choice="{Binding Avatar}"
+                                          Initials="{Binding Initials}" Level="{Binding Level}"
+                                          Fallback="{DynamicResource Inverse}" FallbackInk="{DynamicResource OnInverse}"/>
+                            <v:BadgeView Width="28" Height="28" HorizontalAlignment="Right" VerticalAlignment="Bottom" IsVisible="{Binding HasFeatured}"
+                                         Glyph="{Binding Featured.Glyph}" Text="{Binding Featured.Text}" Look="{Binding Featured.Look}"/>
+                        </Panel>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Username}" FontSize="22" FontWeight="ExtraBold" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                            <TextBlock FontSize="13" Classes="soft" IsVisible="{Binding HasFeatured}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap">
+                                <Run Text="Featured: "/><Run Text="{Binding Featured.Name}" Foreground="{DynamicResource Ink}" FontWeight="SemiBold"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <TextBlock Text="{Binding Title}" FontSize="19" FontWeight="Bold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                    <TextBlock Grid.Column="1" Text="{Binding CountText}" FontFamily="{StaticResource Mono}" FontSize="13"
+                               Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="{Binding CommonText}" FontSize="13" Classes="muted" VerticalAlignment="Center"/>
+                </Grid>
+
+                <TextBlock Text="{Binding Notice}" FontSize="13" Classes="soft" TextWrapping="Wrap"
+                           IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                <Border Classes="track">
+                    <v:SegmentedPill SelectedIndex="{Binding FilterIndex}" PillInset="0">
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsZero}}" MinHeight="40" FontSize="14"
+                                Content="All" Command="{Binding ShowAllCommand}"/>
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsOne}}" MinHeight="40" FontSize="14"
+                                Content="Both have" Command="{Binding ShowBothCommand}"/>
+                        <Button Classes="seg" Classes.on="{Binding FilterIndex, Converter={x:Static v:BadgeConverters.IsTwo}}" MinHeight="40" FontSize="14"
+                                Content="{Binding OnlyLabel}" Command="{Binding ShowOnlyCommand}"/>
+                    </v:SegmentedPill>
+                </Border>
+
+                <TextBlock Text="{Binding EmptyText}" Classes="soft" FontSize="14" TextWrapping="Wrap" HorizontalAlignment="Center"
+                           IsVisible="{Binding IsEmpty}" Margin="0,24"/>
+
+                <ItemsControl ItemsSource="{Binding Shown}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><UniformGrid Columns="3"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:FriendBadgeTile">
+                            <Button Classes="tile" AutomationProperties.Name="{Binding Item.Name}"
+                                    Command="{Binding $parent[UserControl].((vm:FriendBadgesViewModel)DataContext).OpenCommand}" CommandParameter="{Binding}">
+                                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                    <v:BadgeView Width="72" Height="72" HorizontalAlignment="Center"
+                                                 Glyph="{Binding Item.Glyph}" Text="{Binding Item.Text}" Look="{Binding Item.Look}"/>
+                                    <TextBlock Text="{Binding Item.Name}" FontSize="13" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="104"/>
+                                    <!-- "You: Lime", "You:" with a green check / red cross (how you compare), or a hidden badge's hint -->
+                                    <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" MaxWidth="104"
+                                                AutomationProperties.Name="{Binding Note}">
+                                        <TextBlock Text="{Binding Label}" FontSize="11" Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                                                   MaxWidth="104" VerticalAlignment="Center"/>
+                                        <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
+                                                Width="11" Height="11" VerticalAlignment="Center" IsVisible="{Binding ShowsCheck}"/>
+                                        <v:Icon Data="{StaticResource IcX}" Stroke="{DynamicResource MissRed}" StrokeThickness="2.8"
+                                                Width="11" Height="11" VerticalAlignment="Center" IsVisible="{Binding ShowsCross}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

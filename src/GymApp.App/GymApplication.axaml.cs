@@ -143,6 +143,7 @@ public partial class GymApplication : Application
             _ = watcher.CameToForegroundAsync();
             health.RequestSync();   // Apple Health (Phase 20)
             push.RequestSync();   // friend notifications (Phase 22): the permission may have changed in Settings
+            Services.GetRequiredService<BadgeSync>().RequestRefresh(withFriends: true);   // a day may have passed (Phase 25)
             if (sync is null) return;
             sync.StartTimer();
             sync.RequestSync();

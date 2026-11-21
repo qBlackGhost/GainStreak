@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 27,
+                propertyCount: 29,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -35,6 +35,20 @@ namespace GymApp.Data.CompiledModels
                 valueGenerated: ValueGenerated.OnAdd,
                 afterSaveBehavior: PropertySaveBehavior.Throw,
                 sentinel: 0);
+
+            var badgeHistorySheetPending = runtimeEntityType.AddProperty(
+                "BadgeHistorySheetPending",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("BadgeHistorySheetPending", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<BadgeHistorySheetPending>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
+
+            var badgesBackfilled = runtimeEntityType.AddProperty(
+                "BadgesBackfilled",
+                typeof(bool),
+                propertyInfo: typeof(User).GetProperty("BadgesBackfilled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<BadgesBackfilled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var createdAt = runtimeEntityType.AddProperty(
                 "CreatedAt",

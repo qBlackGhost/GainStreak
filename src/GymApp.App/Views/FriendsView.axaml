@@ -27,6 +27,18 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="TextElement.Foreground" Value="Black"/>
         </Style>
+        <!-- A whole row as a button (Phase 25e): no button look of its own, a light press -->
+        <Style Selector="Button.rowTap">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.rowTap:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.rowTap:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.rowTap:disabled /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        <Style Selector="Button.rowTap:pressed"><Setter Property="Opacity" Value="0.75"/></Style>
         <Style Selector="v|AvatarView.face">
             <Setter Property="Width" Value="42"/>
             <Setter Property="Height" Value="42"/>
@@ -276,6 +288,7 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:FriendsBoardRowViewModel">
+                                        <Button Classes="rowTap" Command="{Binding OpenCommand}" AutomationProperties.Name="{Binding Name}">
                                         <Border Classes="boardRow" Classes.you="{Binding IsYou}">
                                             <v:PhoneGrid ColumnDefinitions="40,Auto,*,Auto,76" ColumnSpacing="14" VerticalAlignment="Center"
                                                          PhoneColumns="24,Auto,*,Auto,Auto" PhoneColumnSpacing="10">
@@ -290,8 +303,14 @@
                                                 <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Username}" FontSize="15" FontWeight="Bold" Classes="wideOnly"
                                                                TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                    <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" Classes="phoneOnly"
-                                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                    <!-- The badge follows a short name; a long one is cut with "…" -->
+                                                    <v:NameBadgeRow Classes="phoneOnly" Spacing="6">
+                                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="Bold" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        <!-- The featured badge after the name (Phase 25e) -->
+                                                        <v:BadgeView Width="22" Height="22" VerticalAlignment="Center" IsVisible="{Binding HasFeatured}"
+                                                                     Glyph="{Binding Featured.Glyph}" Text="{Binding Featured.Text}" Look="{Binding Featured.Look}"/>
+                                                    </v:NameBadgeRow>
                                                     <TextBlock Text="{Binding LevelText}" FontSize="12" Classes="muted wideOnly"/>
                                                     <!-- Phones: the YOU tag on this line, so a long name can't push it into the streak -->
                                                     <Grid Classes="phoneOnly" ColumnDefinitions="Auto,*">
@@ -319,6 +338,7 @@
                                                 </StackPanel>
                                             </v:PhoneGrid>
                                         </Border>
+                                        </Button>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -346,11 +366,19 @@
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
                                                 <v:AvatarView Classes="face" Choice="{Binding Avatar}" Initials="{Binding Initials}"
                                                               Level="{Binding LevelNumber}"/>
-                                                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="SemiBold"
-                                                               TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                <!-- Phones: the name opens their badges (Phase 25e) -->
+                                                <Button Grid.Column="1" Classes="rowTap" Command="{Binding OpenBadgesCommand}"
+                                                        VerticalAlignment="Center" AutomationProperties.Name="{Binding Username}">
+                                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                    <v:NameBadgeRow Spacing="6">
+                                                        <TextBlock Text="{Binding Username}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                                   TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                        <v:BadgeView Width="20" Height="20" VerticalAlignment="Center" IsVisible="{Binding HasFeatured}"
+                                                                     Glyph="{Binding Featured.Glyph}" Text="{Binding Featured.Text}" Look="{Binding Featured.Look}"/>
+                                                    </v:NameBadgeRow>
                                                     <TextBlock Text="{Binding SinceText}" FontSize="12" Classes="muted"/>
                                                 </StackPanel>
+                                                </Button>
                                                 <Button Grid.Column="2" Classes="link" FontSize="12" Foreground="{DynamicResource Muted}"
                                                         Content="Cancel" Command="{Binding CancelRemoveCommand}"
                                                         IsVisible="{Binding IsConfirmingRemove}" VerticalAlignment="Center"/>

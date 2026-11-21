@@ -20,6 +20,10 @@ public static class SocialCacheKeys
     public const string Requests = "requests";
     public const string LeaderboardThisWeek = "leaderboard:thisWeek";
     public const string LeaderboardAllTime = "leaderboard:allTime";
+    public const string LeaderboardLastWeek = "leaderboard:lastWeek";
+
+    /// <summary>A friend's badges (Phase 25), one entry per friend.</summary>
+    public static string FriendBadges(int friendId) => $"badges:{friendId}";
     public const string CheckIns = "checkins";
     public const string SplitUsage = "splitUsage";
     public const string Invite = "invite";

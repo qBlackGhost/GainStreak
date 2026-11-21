@@ -24,6 +24,8 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<EmailCode> EmailCodes => Set<EmailCode>();
     public DbSet<FriendInvite> FriendInvites => Set<FriendInvite>();
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
+    public DbSet<UserBadge> UserBadges => Set<UserBadge>();
+    public DbSet<InviteAccept> InviteAccepts => Set<InviteAccept>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -33,6 +35,8 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.Property(u => u.UsernameNormalized).HasMaxLength(Credentials.MaxUsernameLength);
             e.Property(u => u.Email).HasMaxLength(Credentials.MaxEmailLength);
             e.Property(u => u.Avatar).HasMaxLength(Core.AvatarChoice.MaxLength);
+            e.Property(u => u.FeaturedBadge).HasMaxLength(User.MaxFeaturedBadgeLength);
+            e.Property(u => u.ShareBadges).HasDefaultValue(true).HasSentinel(true);
             e.HasIndex(u => u.UsernameNormalized).IsUnique().HasDatabaseName(UsernameIndex);
             e.HasIndex(u => u.Email).IsUnique().HasDatabaseName(EmailIndex);
         });
@@ -57,6 +61,20 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.HasIndex(f => f.UserBId);
             e.HasOne<User>().WithMany().HasForeignKey(f => f.UserAId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<User>().WithMany().HasForeignKey(f => f.UserBId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Badges (Phase 25)
+        b.Entity<UserBadge>(e =>
+        {
+            e.HasKey(x => new { x.UserId, x.BadgeId });
+            e.Property(x => x.BadgeId).HasMaxLength(UserBadge.MaxIdLength);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<InviteAccept>(e =>
+        {
+            e.HasKey(x => new { x.InviterId, x.InviteeId });
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.InviterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(x => x.InviteeId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<StatsDay>(e =>

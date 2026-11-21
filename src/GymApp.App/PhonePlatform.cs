@@ -36,6 +36,8 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public bool HasLiveWorkout => true;
 
+    public bool HasBadges => true;
+
     public abstract INotificationScheduler CreateNotificationScheduler();
 
     public abstract ILocationProvider CreateLocationProvider();
