@@ -91,6 +91,23 @@ plist "$p" CFBundleSupportedPlatforms:0 string "$platform"
 plist "$p" UIDeviceFamily array
 plist "$p" UIDeviceFamily:0 integer 1
 plist "$p" UIDeviceFamily:1 integer 2
+# App Store Connect rejects an extension without these (the app gets them from the .NET build; this plist is made by
+# hand): arm64 in UIRequiredDeviceCapabilities, and the DT* keys that say what built it
+plist "$p" UIRequiredDeviceCapabilities array
+plist "$p" UIRequiredDeviceCapabilities:0 string arm64
+sdk_version=$(xcrun --sdk "$sdk_name" --show-sdk-version)
+sdk_build=$(xcrun --sdk "$sdk_name" --show-sdk-build-version)
+xcode_version=$(xcodebuild -version | awk '/^Xcode/ { print $2 }')
+xcode_build=$(xcodebuild -version | awk '/Build version/ { print $3 }')
+IFS=. read -r xc_major xc_minor xc_patch <<< "$xcode_version"
+plist "$p" DTCompiler string com.apple.compilers.llvm.clang.1_0
+plist "$p" DTPlatformName string "$sdk_name"
+plist "$p" DTPlatformVersion string "$sdk_version"
+plist "$p" DTPlatformBuild string "$sdk_build"
+plist "$p" DTSDKName string "$sdk_name$sdk_version"
+plist "$p" DTSDKBuild string "$sdk_build"
+plist "$p" DTXcode string "$(printf '%02d%d%d' "$xc_major" "${xc_minor:-0}" "${xc_patch:-0}")"
+plist "$p" DTXcodeBuild string "$xcode_build"
 plist "$p" NSExtension dict
 plist "$p" NSExtension:NSExtensionPointIdentifier string com.apple.widgetkit-extension
 # The App Group the app writes widget.json into (Phase 24): the app's csproj gives the app the same one
