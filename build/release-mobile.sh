@@ -30,6 +30,7 @@ esac
 version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' Directory.Build.props)
 build=$(git rev-list --count HEAD)
 out="Releases/mobile/$version"
+started=$(date +%s)
 
 need() {
   local missing=()
@@ -73,6 +74,17 @@ if (( ios )); then
     "$@"
   mkdir -p "$out"
   cp publish/ios/*.ipa "$out/GainStreak-$version-$build.ipa"
+  # The Live Activity extension and its bridge are built by src/GymApp.iOS.LiveActivity/build.sh, so .NET leaves their
+  # symbols out of the .xcarchive; App Store Connect then warns "Upload Symbols Failed" and can't symbolicate their
+  # crashes. Put them in the archive that this publish just made (Organizer uploads the symbols with the build).
+  archive=$(ls -dt "$HOME"/Library/Developer/Xcode/Archives/*/*.xcarchive 2>/dev/null | head -1 || true)
+  extension_dsyms=src/GymApp.iOS/obj/liveactivity/Release/iphoneos/dSYMs
+  if [[ -n "$archive" && -d "$archive/dSYMs" && -d "$extension_dsyms" && "$(stat -f %m "$archive")" -ge "$started" ]]; then
+    cp -R "$extension_dsyms"/*.dSYM "$archive/dSYMs/"
+    echo "Added the Live Activity symbols to $archive."
+  else
+    echo "Note: no fresh .xcarchive or no extension symbols found, so the archive has no symbols for the Live Activity." >&2
+  fi
 fi
 
 echo "GainStreak $version (build $build) is in $out/."

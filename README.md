@@ -243,10 +243,11 @@ The build number is the commit count (`git rev-list --count HEAD`), because both
   Then set `GAINSTREAK_ANDROID_KEYSTORE` (the keystore's path), `GAINSTREAK_ANDROID_KEY_ALIAS` and `GAINSTREAK_ANDROID_KEYSTORE_PASS`, plus `GAINSTREAK_ANDROID_KEY_PASS` if the key's password differs. The script passes the passwords as `env:` references, so they don't show in the build log.
 - **iOS:**
   1. In Xcode → Settings → Accounts, add the Apple ID and download an **Apple Distribution** certificate, which goes into the keychain.
-  2. On developer.apple.com, register the App ID `com.gainstreak.app` with the **HealthKit** (Apple Health, 0.20.0), **Associated Domains** (invite links, 0.21.0) and **Push Notifications** (friend notifications, 0.22.0) capabilities, and make an **App Store** provisioning profile for it, then open the profile to install it. A profile made before HealthKit was added doesn't have it: make it again, or signing fails.
+  2. On developer.apple.com, register the App Group `group.com.gainstreak.app` (the Home Screen widgets read the app's data through it, Phase 24), then the App ID `com.gainstreak.app` with the **HealthKit** (Apple Health, 0.20.0), **Associated Domains** (invite links, 0.21.0), **Push Notifications** (friend notifications, 0.22.0) and **App Groups** (with that group assigned: register the App ID first, then open it and use **Edit** next to App Groups) capabilities. Make an **App Store Connect** provisioning profile for it, then open the profile to install it. A profile made before a capability was added doesn't have it: make it again, or signing fails. For push, also make an APNs key (Keys, Apple Push Notifications service; Sandbox & Production, Team Scoped) and keep the `.p8` outside the repo: its id, the Team ID and its text become the server's `Push__Apns__*` settings.
   3. Set `GAINSTREAK_IOS_SIGN_IDENTITY` to the certificate's name, e.g. `Apple Distribution: Your Name (TEAMID)`. The team id is the part in brackets.
   4. Set `GAINSTREAK_IOS_PROVISIONING_PROFILE` to the profile's name.
-  5. The workout's Live Activity (0.20.0) is an app extension with its own App ID: register `com.gainstreak.app.LiveActivity`, make an **App Store** profile for it too, download it, and set `GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE` to the downloaded `.mobileprovision` file's path.
+  5. The workout's Live Activity and the widgets (0.20.0, Phase 24) are an app extension with its own App ID: register `com.gainstreak.app.LiveActivity` with only **App Groups** (the same group), make an **App Store Connect** profile for it too, download it, and set `GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE` to the downloaded `.mobileprovision` file's path.
+  6. Pass the three variables on the same command line as the script (`GAINSTREAK_IOS_SIGN_IDENTITY=… GAINSTREAK_IOS_PROVISIONING_PROFILE=… GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE=… build/release-mobile.sh --ios`): a variable exported in one terminal tab isn't there in the next. The first signing asks for the login keychain's password: choose **Always Allow**, or `codesign` waits for ever on a prompt that's gone.
 
 Then:
 
@@ -262,8 +263,15 @@ build/release-mobile.sh
   3. Add the testers' Google accounts to the tester list and send them the opt-in link.
 - **TestFlight:**
   1. In App Store Connect, create the app with the same bundle id.
-  2. Upload the `.ipa` with Apple's Transporter app.
-  3. Once it's processed, add testers under TestFlight. Internal testers need no review; external testers need a short beta review first.
+  2. Upload from Xcode's Organizer: the build leaves an `.xcarchive` in Xcode's Archives (`open` it, or find the newest one in Window → Organizer → Archives, where several builds of one version look alike: check the creation time), then **Distribute App → App Store Connect → Upload**. It also uploads the symbols. Transporter takes the `.ipa` too, but it gave a misleading ITMS-90034 on the first day (see below) and hasn't been tried since.
+  3. Once it's processed (10 to 30 minutes), fill in TestFlight → **Test Information** (feedback email, the contact for App Review, a demo account and review notes) and add testers. Internal testers need no review; external testers need a short beta review first, and the public link only works after it passes. Put that link in the server's `Invites__AppStoreUrl`.
+
+If an upload or a link fails:
+
+- **ITMS-90034 "not signed using an Apple submission certificate"** on a signature that `codesign --verify --deep --strict` accepts: seen right after paying for the Developer Program, while Xcode still called the team a "Personal Team" (and Organizer said it wasn't enrolled). In Xcode → Settings → Accounts remove the Apple ID and add it again, then upload from Organizer.
+- **"arm64 for UIRequiredDeviceCapabilities" or a missing `DTPlatformName` in the extension:** the extension's `Info.plist` is written by hand in `src/GymApp.iOS.LiveActivity/build.sh`; it has to carry `UIRequiredDeviceCapabilities` and the `DT*` keys (0.25.0).
+- **"Upload Symbols Failed" for the extension:** the extension and its bridge are built by hand too, so `build.sh` makes their dSYMs and `release-mobile.sh` copies them into the archive.
+- **An invite link or QR code opens the browser and lands on the TestFlight page:** the link has the `run.app` host (set `Invites__BaseUrl=https://gainstreak.app`, then reset the link in the app), or iOS never linked the domain to the app. iOS reads `apple-app-site-association` only when the app is installed, so after changing the file, `Invites__AppleTeamId` or the entitlements, delete the TestFlight build and install it again. Check by long-pressing the link in Notes: **Open in GainStreak** should be there.
 
 Updates install through the stores. When the server's `MinClientVersion` turns a build away, the 426 banner's **Update** button opens the Play Store on Android. On iOS it appears once `GymAppAppStoreId` (in `src/MobileHead.targets`) holds the App Store id. Raise `MinClientVersion` only once every head has a build that passes it.
 

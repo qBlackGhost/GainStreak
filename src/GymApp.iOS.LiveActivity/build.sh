@@ -32,11 +32,19 @@ plist() {   # plist <file> <key> <type> <value>
 bridge=GainStreakLiveActivityBridge
 fw="$out/$bridge.framework"
 mkdir -p "$fw"
-"${swiftc[@]}" -target "arm64-apple-ios16.0$suffix" -module-name "$bridge" -emit-library \
+# Compile to an object file and link it in a second step: the dSYM below needs the object file's debug info, which a
+# one-step swiftc deletes (App Store Connect warns "Upload Symbols Failed" without a dSYM for each binary)
+"${swiftc[@]}" -g -wmo -target "arm64-apple-ios16.0$suffix" -module-name "$bridge" -emit-object \
+  -module-cache-path "$tmp/cache" -o "$tmp/$bridge.o" \
+  "$shared" "$here/Bridge/LiveActivityBridge.swift"
+"${swiftc[@]}" -target "arm64-apple-ios16.0$suffix" -emit-library \
   -Xlinker -install_name -Xlinker "@rpath/$bridge.framework/$bridge" \
   -Xlinker -weak_framework -Xlinker ActivityKit \
-  -module-cache-path "$tmp/cache" -o "$fw/$bridge" \
-  "$shared" "$here/Bridge/LiveActivityBridge.swift"
+  -o "$fw/$bridge" "$tmp/$bridge.o"
+# The symbols for the archive: release-mobile.sh copies $out/dSYMs/*.dSYM into the .xcarchive
+dsyms="$out/dSYMs"
+mkdir -p "$dsyms"
+xcrun dsymutil "$fw/$bridge" -o "$dsyms/$bridge.framework.dSYM"
 p="$fw/Info.plist"
 plist "$p" CFBundleIdentifier string "$app_id.LiveActivityBridge"
 plist "$p" CFBundleExecutable string "$bridge"
@@ -59,12 +67,15 @@ mkdir -p "$appex"
 sources=("$shared" "$here/Widget/WorkoutLiveActivity.swift" "$here/Widget/HomeWidgets.swift")
 echo '["AppIntent","EntityQuery","AppEntity","TransientEntity","AppEnum","AppShortcutProviding","AppShortcutsProvider","AnyResolverProviding","AppIntentsPackage","DynamicOptionsProvider","_IntentValueRepresentable","_AssistantIntentsProvider","_GenerativeFunctionExtractable","IntentValueQuery","Resolver"]' \
   > "$tmp/protocols.json"
-"${swiftc[@]}" -wmo -target "arm64-apple-ios16.2$suffix" -module-name "$ext" -emit-executable \
-  -Xlinker -e -Xlinker _NSExtensionMain \
+"${swiftc[@]}" -g -wmo -target "arm64-apple-ios16.2$suffix" -module-name "$ext" -emit-object \
   -emit-const-values-path "$tmp/$ext.swiftconstvalues" \
   -Xfrontend -const-gather-protocols-file -Xfrontend "$tmp/protocols.json" \
-  -module-cache-path "$tmp/cache" -o "$appex/$ext" \
+  -module-cache-path "$tmp/cache" -o "$tmp/$ext.o" \
   "${sources[@]}"
+"${swiftc[@]}" -target "arm64-apple-ios16.2$suffix" -emit-executable \
+  -Xlinker -e -Xlinker _NSExtensionMain \
+  -o "$appex/$ext" "$tmp/$ext.o"
+xcrun dsymutil "$appex/$ext" -o "$dsyms/$ext.appex.dSYM"
 printf '%s\n' "${sources[@]}" > "$tmp/sources.txt"
 echo "$tmp/$ext.swiftconstvalues" > "$tmp/constvalues.txt"
 xcrun appintentsmetadataprocessor --force --quiet-warnings \
