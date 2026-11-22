@@ -231,10 +231,13 @@
                         <TextBlock Grid.Column="1" Text="{Binding Username}" FontSize="26" FontWeight="ExtraBold" VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
                         <!-- Settings: account, notifications, Health, home city, appearance -->
-                        <Button Grid.Column="2" Classes="bare" Width="44" Height="44" VerticalAlignment="Top" Margin="0,-6,-8,0"
+                        <Button Grid.Column="2" Classes="btn outline small" CornerRadius="999" Padding="12,0" VerticalAlignment="Top"
                                 Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Settings}"
                                 AutomationProperties.Name="Settings">
-                            <v:Icon Data="{StaticResource IcSliders}" Stroke="{DynamicResource Ink}" StrokeThickness="2.2" Width="22" Height="22"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <v:Icon Data="{StaticResource IcSettings}" Stroke="{DynamicResource Ink}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                                <TextBlock Text="Settings" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            </StackPanel>
                         </Button>
                     </Grid>
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">

@@ -2,6 +2,16 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.26.1
+
+- **Home (phones):** the date and greeting above the level card are gone, so the level card and the whole **Gym streak** card now fit on one screen without scrolling. The streak line ("Do Push today to keep your streak.") moved into the streak card, with a lime strip when a workout is still owed today and ice blue on a rest day. The level card is smaller, with **History** on the title line, and the streak number, **Best streak** and **Gyms this month** share one row. The gauge is bigger.
+- **Settings button (Profile):** the sliders icon in the corner is now a **Settings** button with a gear and the word, so it's easy to find.
+- **Body data:** the **Weight** card now shows on the Body data page too. Before, the Home setup card and Calories sent you there to add your weight, but the page had no weight field, and the step stayed open until you logged it from Profile.
+- **Your QR code:** the QR sheet is smaller, so it fits without a scroll bar.
+- **Finding gyms in a city:** the loading line and the error message wrap on narrow screens instead of running off the edge. A server that doesn't answer within 20 seconds now makes the app try the other one, instead of giving up.
+- The desktop app doesn't change.
+- **Migration:** none. The server doesn't change.
+
 ## 0.26.0
 
 - **Food log (phones):** Calories now keeps what you ate, not just one number. **Add food** (on the ring card, or **+ Add** next to a meal) opens a sheet with **Breakfast / Lunch / Dinner / Snacks**.

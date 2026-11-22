@@ -118,13 +118,6 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     /// <summary>Signed in with the cached password: the server couldn't be reached.</summary>
     public string? OfflineNotice => _session.SignedInOffline ? "You're offline. Friends will update when you're back online." : null;
     public string Initials => UserInitials.Of(Username);
-    public string DateText => AppClock.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
-    public string Greeting => AppClock.Now.Hour switch
-    {
-        < 12 => $"Good morning, {Username}",
-        < 18 => $"Good afternoon, {Username}",
-        _ => $"Good evening, {Username}"
-    };
 
     // ===== Streak hero: the big number, and today's gauge (cold until checked in, then on fire) =====
     [ObservableProperty] public partial int StreakCurrent { get; set; }
@@ -311,6 +304,9 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string? PointsLostNotice { get; set; }
     [ObservableProperty] public partial string StreakText { get; set; } = "";
     [ObservableProperty] public partial string StreakNote { get; set; } = "";
+
+    /// <summary>Something is owed today (a workout, or a choice about a missed one): the note shows as a lime strip.</summary>
+    [ObservableProperty] public partial bool StreakNoteIsUrgent { get; set; }
 
     /// <summary>The missed-day card, while yesterday's missed workout needs a choice. Check-in waits for it.</summary>
     [ObservableProperty]
@@ -933,6 +929,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             _ => ""
         };
 
+        StreakNoteIsUrgent = streak.Status is StreakStatus.PendingToday or StreakStatus.NeedsChoice or StreakStatus.AtRisk;
         StreakCurrent = streak.Current;
         BestStreakText = streak.Longest == 1 ? "1 day" : $"{streak.Longest} days";
         if (today.Logged || HasLiveWorkout) ShowSetsHint = false;

@@ -81,7 +81,9 @@ public partial class ProfileViewModel : IClosesOnBack
     /// <summary>The cards' grid: everywhere but the phones' Settings list.</summary>
     public bool ShowsCards => !IsPhone || Page != ProfilePage.Settings;
     public bool ShowsBodyData => Shows(ProfilePage.BodyData);
-    public bool ShowsWeight => Shows(ProfilePage.Main);
+    /// <summary>Main, and the Body data page too: the setup card and Calories send people there to add their weight,
+    /// and the maintenance estimate needs it.</summary>
+    public bool ShowsWeight => Shows(ProfilePage.Main) || Shows(ProfilePage.BodyData);
     public bool ShowsHomeCity => Shows(ProfilePage.HomeCity);
     public bool ShowsAccountDetails => Shows(ProfilePage.Account);
     public bool ShowsAccountDelete => Shows(ProfilePage.DeleteAccount);

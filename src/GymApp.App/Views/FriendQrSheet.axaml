@@ -14,7 +14,7 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <Style Selector="Button.big">
-            <Setter Property="MinHeight" Value="50"/>
+            <Setter Property="MinHeight" Value="46"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="FontSize" Value="15"/>
             <Setter Property="FontWeight" Value="Bold"/>
@@ -28,10 +28,10 @@
         </Style>
     </UserControl.Styles>
     <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
-        <v:Sheet MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20,14,20,24" CornerRadius="22"
+        <v:Sheet MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="20,12,20,16" CornerRadius="22"
                  Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="14">
+            <StackPanel Spacing="10">
                 <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"/>
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="4">
@@ -46,10 +46,10 @@
                 </Grid>
 
                 <!-- The code, black on white in both themes, with the username under it -->
-                <StackPanel Spacing="10" HorizontalAlignment="Center" IsVisible="{Binding HasLink}">
-                    <Border Background="White" CornerRadius="20" Padding="12,12,12,14" Width="256" HorizontalAlignment="Center">
+                <StackPanel Spacing="8" HorizontalAlignment="Center" IsVisible="{Binding HasLink}">
+                    <Border Background="White" CornerRadius="20" Padding="10,10,10,12" Width="204" HorizontalAlignment="Center">
                         <StackPanel Spacing="6">
-                            <v:QrCodeView Text="{Binding Link}" Width="232" Height="232"
+                            <v:QrCodeView Text="{Binding Link}" Width="184" Height="184"
                                           AutomationProperties.Name="QR code for your invite link"/>
                             <TextBlock Text="{Binding Username}" Foreground="#0B0B0B" FontSize="15" FontWeight="Bold"
                                        HorizontalAlignment="Center" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
@@ -68,7 +68,7 @@
                 </StackPanel>
 
                 <!-- Loading, or offline with no saved link -->
-                <Panel MinHeight="230" IsVisible="{Binding !HasLink}">
+                <Panel MinHeight="190" IsVisible="{Binding !HasLink}">
                     <Rectangle Stroke="{DynamicResource Control}" StrokeThickness="1" StrokeDashArray="4,3" RadiusX="20" RadiusY="20"/>
                     <TextBlock Text="Getting your link…" Classes="muted" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
                                IsVisible="{Binding IsLoading}"/>

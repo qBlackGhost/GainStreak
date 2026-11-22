@@ -16,23 +16,33 @@
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>
         <!-- Wide by default; the narrow and compact styles below override these -->
-        <Style Selector="Border#LevelPill">
-            <Setter Property="Grid.Column" Value="1"/>
-            <Setter Property="MinWidth" Value="320"/>
+        <!-- The streak note at the bottom of the streak card: a divider, or a lime strip when something is owed today -->
+        <Style Selector="Border.streakNote">
+            <Setter Property="Margin" Value="0,2,0,0"/>
+            <Setter Property="Padding" Value="0,12,0,0"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
         </Style>
+        <Style Selector="Border.streakNote.urgent">
+            <Setter Property="Padding" Value="12,10"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="{DynamicResource AccentTint}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTintLine}"/>
+        </Style>
+        <Style Selector="Border.streakNote TextBlock"><Setter Property="Foreground" Value="{DynamicResource Soft}"/></Style>
+        <Style Selector="Border.streakNote.urgent TextBlock"><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+        <Style Selector="Border.streakNote.ice TextBlock"><Setter Property="Foreground" Value="{DynamicResource IceText}"/></Style>
+        <!-- The streak card: wide values here, the phones' smaller ones below -->
+        <Style Selector="Grid#Hero"><Setter Property="RowSpacing" Value="24"/></Style>
+        <Style Selector="Viewbox#GaugeBox"><Setter Property="MaxWidth" Value="360"/></Style>
+        <Style Selector="TextBlock#GaugeKicker"><Setter Property="FontSize" Value="15"/></Style>
+        <Style Selector="TextBlock#GaugeSub"><Setter Property="FontSize" Value="17"/></Style>
         <Style Selector="Panel#HeroRight">
             <Setter Property="Grid.Column" Value="1"/>
         </Style>
 
         <!-- Compact content: header and streak hero stack -->
-        <Style Selector="StackPanel.compact Border#LevelPill">
-            <Setter Property="Grid.Column" Value="0"/>
-            <!-- Both columns: the empty second one still costs its 16 px gap, which left this card narrower than the rest -->
-            <Setter Property="Grid.ColumnSpan" Value="2"/>
-            <Setter Property="Grid.Row" Value="1"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="MinWidth" Value="0"/>
-        </Style>
         <Style Selector="StackPanel.compact Panel#HeroLeft">
             <Setter Property="Grid.ColumnSpan" Value="2"/>
         </Style>
@@ -126,6 +136,8 @@
         </Style>
         <Style Selector="TextBlock.gaugeTitle">
             <Setter Property="Foreground" Value="{DynamicResource ColdText}"/>
+            <Setter Property="FontSize" Value="76"/>
+            <Setter Property="LineHeight" Value="76"/>
         </Style>
         <Style Selector="TextBlock.gaugeTitle.rest">
             <Setter Property="Foreground" Value="{DynamicResource Faint}"/>
@@ -212,7 +224,6 @@
             <Setter Property="ItemSpacing" Value="24"/>
             <Setter Property="LineSpacing" Value="24"/>
         </Style>
-        <Style Selector="TextBlock.greeting"><Setter Property="FontSize" Value="34"/></Style>
         <Style Selector="Border.setupCard"><Setter Property="Padding" Value="28,26"/></Style>
         <Style Selector="TextBlock#StreakNumber">
             <Setter Property="FontSize" Value="100"/>
@@ -243,8 +254,27 @@
             <Setter Property="ItemSpacing" Value="14"/>
             <Setter Property="LineSpacing" Value="14"/>
         </Style>
-        <Style Selector=".phone TextBlock.greeting"><Setter Property="FontSize" Value="26"/></Style>
         <Style Selector=".phone Border.setupCard"><Setter Property="Padding" Value="16"/></Style>
+        <!-- Phones: level card plus the whole streak card in about 500 pt, so a small phone needs no scrolling.
+             The gauge is a Viewbox, so its words scale down with it: they get bigger in its own coordinates -->
+        <Style Selector=".phone Border.heroCard"><Setter Property="Padding" Value="14,12"/></Style>
+        <Style Selector=".phone Grid#Hero"><Setter Property="RowSpacing" Value="8"/></Style>
+        <Style Selector=".phone StackPanel#HeroLeftStack"><Setter Property="Spacing" Value="8"/></Style>
+        <Style Selector=".phone StackPanel#GaugeStack"><Setter Property="Spacing" Value="6"/></Style>
+        <Style Selector=".phone Viewbox#GaugeBox"><Setter Property="MaxWidth" Value="330"/></Style>
+        <Style Selector=".phone TextBlock#GaugeKicker"><Setter Property="FontSize" Value="19"/></Style>
+        <Style Selector=".phone TextBlock#GaugeSub"><Setter Property="FontSize" Value="20"/></Style>
+        <Style Selector=".phone TextBlock.gaugeTitle">
+            <Setter Property="FontSize" Value="78"/>
+            <Setter Property="LineHeight" Value="78"/>
+        </Style>
+        <Style Selector=".phone TextBlock#StreakNumberPhone">
+            <Setter Property="FontSize" Value="64"/>
+            <Setter Property="LetterSpacing" Value="-2.5"/>
+            <Setter Property="Margin" Value="0,-8,0,-10"/>
+        </Style>
+        <Style Selector=".phone Border.streakNote"><Setter Property="Padding" Value="0,8,0,0"/></Style>
+        <Style Selector=".phone Border.streakNote.urgent"><Setter Property="Padding" Value="12,8"/></Style>
         <Style Selector=".phone TextBlock#StreakNumber">
             <Setter Property="FontSize" Value="88"/>
             <Setter Property="LetterSpacing" Value="-3.5"/>
@@ -343,39 +373,37 @@
         <ScrollViewer x:Name="MainScroll">
         <StackPanel x:Name="Main" Classes="page">
 
-            <!-- Header: date, greeting, headline, and the level pill -->
+            <!-- Header: the level card, with the offline and streak-ended notices above it. No date or greeting (0.26.1):
+                 the streak note lives in the streak card below. -->
             <!-- Hidden during a live workout (focus mode): the level card's points would show it already counts -->
-            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="16"
-                  IsVisible="{Binding ShowDashboard}">
-                <StackPanel Spacing="6" VerticalAlignment="Bottom">
-                    <TextBlock Text="{Binding DateText}" FontSize="14" FontWeight="Medium" Classes="muted"/>
-                    <TextBlock Classes="greeting" Text="{Binding Greeting}" FontWeight="ExtraBold"/>
-                    <TextBlock Text="{Binding StreakNote}" FontSize="15" Classes="soft"/>
+            <StackPanel Spacing="12" IsVisible="{Binding ShowDashboard}">
+                <StackPanel Spacing="6">
                     <TextBlock Text="{Binding StreakEndedNotice}" FontSize="13" Classes="muted"
                                IsVisible="{Binding StreakEndedNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     <TextBlock Text="{Binding OfflineNotice}" FontSize="13" Classes="muted" TextWrapping="Wrap"
                                IsVisible="{Binding OfflineNotice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                 </StackPanel>
 
-                <Border x:Name="LevelPill" VerticalAlignment="Bottom"
-                        Padding="12,12,16,12" CornerRadius="16" Background="{DynamicResource Surface}"
+                <Border x:Name="LevelPill" HorizontalAlignment="Stretch"
+                        Padding="10,8,14,8" CornerRadius="16" Background="{DynamicResource Surface}"
                         BorderBrush="{DynamicResource Line}" BorderThickness="1">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                        <Border Width="48" Height="48" CornerRadius="12" Background="{DynamicResource Accent}" VerticalAlignment="Top">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Accent}" VerticalAlignment="Top">
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <TextBlock Text="LVL" Foreground="Black" FontSize="10" FontWeight="Bold" LetterSpacing="0.8"
+                                <TextBlock Text="LVL" Foreground="Black" FontSize="9" FontWeight="Bold" LetterSpacing="0.8"
                                            HorizontalAlignment="Center"/>
-                                <TextBlock Text="{Binding LevelNumber}" Foreground="Black" FontSize="22" FontWeight="Black"
-                                           HorizontalAlignment="Center" Margin="0,-4,0,0"/>
+                                <TextBlock Text="{Binding LevelNumber}" Foreground="Black" FontSize="19" FontWeight="Black"
+                                           HorizontalAlignment="Center" Margin="0,-3,0,0"/>
                             </StackPanel>
                         </Border>
-                        <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock FontSize="14" FontWeight="Bold">
                                     <Run Text="{Binding LevelTitle}"/><Run Text=" · "/><Run Text="{Binding PointsText}"/>
                                 </TextBlock>
-                                <Button Grid.Column="1" Classes="link" FontSize="12" Content="History"
-                                        Command="{Binding ShowPointsHistoryCommand}"/>
+                                <!-- The 44 pt touch minimum would make this row tall: negative margins keep the row as high as the text, the touch area stays -->
+                                <Button Grid.Column="1" Classes="link" FontSize="12" Content="History" VerticalAlignment="Center"
+                                        Margin="0,-14" Command="{Binding ShowPointsHistoryCommand}"/>
                             </Grid>
                             <ProgressBar Classes="lvl" Minimum="0" Maximum="1" Value="{Binding LevelProgress}"/>
                             <TextBlock Text="{Binding LevelHint}" FontSize="12" Classes="muted"/>
@@ -387,7 +415,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-            </Grid>
+            </StackPanel>
 
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -600,16 +628,43 @@
             </Border>
 
             <!-- ===== Streak hero ===== -->
-            <Border Classes="card">
-                <Grid x:Name="Hero" ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="32" RowSpacing="24">
+            <Border Classes="card heroCard">
+                <Grid x:Name="Hero" ColumnDefinitions="*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="32">
                     <Panel x:Name="HeroLeft" VerticalAlignment="Center">
-                        <StackPanel Spacing="18">
+                        <StackPanel x:Name="HeroLeftStack" Spacing="18">
                             <StackPanel Orientation="Horizontal" Spacing="10">
                                 <v:Icon Data="{StaticResource IcFlame}" StrokeThickness="2.2"
                                         Classes="streakFlame" Classes.ice="{Binding IsStreakStale}"/>
                                 <TextBlock Text="GYM STREAK" Classes="label" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="14">
+                            <!-- Phones: the number, its caption and the two stats share one row, so the whole card
+                                 (and the level card above it) fits on a small screen without scrolling -->
+                            <Grid Classes="phoneOnly" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <TextBlock x:Name="StreakNumberPhone" Text="{Binding StreakCurrent}" FontWeight="Black"
+                                           TextWrapping="NoWrap" VerticalAlignment="Center"
+                                           Classes.ice="{Binding IsStreakStale}" Classes.zero="{Binding !StreakCurrent}">
+                                    <TextBlock.Styles>
+                                        <Style Selector="TextBlock"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
+                                        <Style Selector="TextBlock.ice"><Setter Property="Foreground" Value="{DynamicResource IceText}"/></Style>
+                                        <Style Selector="TextBlock.zero"><Setter Property="Foreground" Value="{DynamicResource Ghost}"/></Style>
+                                    </TextBlock.Styles>
+                                </TextBlock>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="days" FontSize="20" FontWeight="Bold"/>
+                                    <TextBlock Text="in a row" FontSize="14" FontWeight="Medium" Classes="muted"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center">
+                                    <StackPanel Spacing="1">
+                                        <TextBlock Text="BEST STREAK" Classes="caps" FontSize="10"/>
+                                        <TextBlock Text="{Binding BestStreakText}" Classes="mono" FontSize="16" FontWeight="Bold"/>
+                                    </StackPanel>
+                                    <StackPanel Spacing="1">
+                                        <TextBlock Text="GYMS THIS MONTH" Classes="caps" FontSize="10"/>
+                                        <TextBlock Text="{Binding GymsThisMonth}" Classes="mono" FontSize="16" FontWeight="Bold"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                            <StackPanel Classes="wideOnly" Orientation="Horizontal" Spacing="14">
                                 <TextBlock x:Name="StreakNumber" Text="{Binding StreakCurrent}" FontWeight="Black"
                                            TextWrapping="NoWrap" Classes.ice="{Binding IsStreakStale}"
                                            Classes.zero="{Binding !StreakCurrent}">
@@ -624,7 +679,7 @@
                                     <TextBlock Text="in a row" FontSize="16" FontWeight="Medium" Classes="muted"/>
                                 </StackPanel>
                             </StackPanel>
-                            <WrapPanel ItemSpacing="32" LineSpacing="12">
+                            <WrapPanel Classes="wideOnly" ItemSpacing="32" LineSpacing="12">
                                 <StackPanel Spacing="4">
                                     <TextBlock Text="BEST STREAK" Classes="caps"/>
                                     <TextBlock Text="{Binding BestStreakText}" Classes="mono" FontSize="20" FontWeight="Bold"/>
@@ -634,6 +689,10 @@
                                     <TextBlock Text="{Binding GymsThisMonth}" Classes="mono" FontSize="20" FontWeight="Bold"/>
                                 </StackPanel>
                             </WrapPanel>
+                            <Border Classes="streakNote" Classes.urgent="{Binding StreakNoteIsUrgent}" Classes.ice="{Binding IsStreakStale}"
+                                    IsVisible="{Binding StreakNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <TextBlock Text="{Binding StreakNote}" FontSize="14"/>
+                            </Border>
                         </StackPanel>
                     </Panel>
 
@@ -708,9 +767,9 @@
                         </Panel>
 
                         <!-- Today's gauge and check-in -->
-                        <StackPanel Spacing="14" IsVisible="{Binding !HasMissedDay}" HorizontalAlignment="Center"
+                        <StackPanel x:Name="GaugeStack" Spacing="14" IsVisible="{Binding !HasMissedDay}" HorizontalAlignment="Center"
                                     MaxWidth="400">
-                            <Viewbox Stretch="Uniform" MaxWidth="360" HorizontalAlignment="Center">
+                            <Viewbox x:Name="GaugeBox" Stretch="Uniform" HorizontalAlignment="Center">
                                 <Grid Width="480" Height="260">
                                     <Canvas Width="480" Height="260">
                                         <Path Data="{StaticResource IcArc}" Stroke="{DynamicResource Fill2}" StrokeThickness="28" StrokeLineCap="Round"/>
@@ -752,19 +811,19 @@
                                         </Arc>
                                     </Canvas>
                                     <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center" Spacing="4" Margin="0,0,0,6">
-                                        <TextBlock Text="{Binding GaugeKicker}" FontSize="15" FontWeight="SemiBold" LetterSpacing="2.4"
+                                        <TextBlock x:Name="GaugeKicker" Text="{Binding GaugeKicker}" FontWeight="SemiBold" LetterSpacing="2.4"
                                                    HorizontalAlignment="Center" Classes="muted" Classes.makeUp="{Binding IsMakeUpDay}">
                                             <TextBlock.Styles>
                                                 <Style Selector="TextBlock.makeUp"><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
                                             </TextBlock.Styles>
                                         </TextBlock>
                                         <Viewbox StretchDirection="DownOnly" MaxWidth="330" HorizontalAlignment="Center">
-                                            <TextBlock Text="{Binding GaugeTitle}" Classes="gaugeTitle" FontSize="76" FontWeight="Black"
-                                                       LetterSpacing="1.5" LineHeight="76" TextWrapping="NoWrap"
+                                            <TextBlock Text="{Binding GaugeTitle}" Classes="gaugeTitle" FontWeight="Black"
+                                                       LetterSpacing="1.5" TextWrapping="NoWrap"
                                                        Classes.rest="{Binding IsRestOpen}" Classes.hot="{Binding IsTitleHot}"
                                                        Classes.ice="{Binding IsStreakStale}"/>
                                         </Viewbox>
-                                        <TextBlock Text="{Binding GaugeSub}" FontSize="17" Classes="soft" HorizontalAlignment="Center"
+                                        <TextBlock x:Name="GaugeSub" Text="{Binding GaugeSub}" Classes="soft" HorizontalAlignment="Center"
                                                    TextAlignment="Center" MaxWidth="420"/>
                                     </StackPanel>
                                 </Grid>

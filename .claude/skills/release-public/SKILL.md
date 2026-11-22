@@ -1,5 +1,5 @@
 ---
-name: release
+name: release-public
 description: Release a GainStreak version to phone testers - check the version and CHANGELOG, run the tests, deploy the social server if it changed, build the signed Android and iOS betas with build/release-mobile.sh and hand them over for Google Play internal testing and TestFlight. The desktop is frozen and is not released.
 disable-model-invocation: true
 argument-hint: "[version, e.g. 0.23.1 - defaults to the one in Directory.Build.props] [--android | --ios]"
@@ -67,7 +67,7 @@ Then check `curl https://gymapp-server-611713345242.europe-west1.run.app/health`
 
 ## 4. Build the phone betas
 
-Check the signing settings first and name any that are missing; never print a password.
+Check the signing settings first and name any that are missing; never print a password. Each Bash call is a fresh shell, so the iOS values go on the same command line as the script. The developer's values: identity `Apple Distribution: CRISTIAN DELAMARIAN (T836JC72YJ)`, profile `GainStreak App Store`, Live Activity profile `~/keys/GainStreak_LiveActivity_App_Store.mobileprovision`. The first signing may ask for the login keychain password: the user must answer it (Always Allow).
 - **Android:** `GAINSTREAK_ANDROID_KEYSTORE`, `GAINSTREAK_ANDROID_KEY_ALIAS`, `GAINSTREAK_ANDROID_KEYSTORE_PASS` (and `GAINSTREAK_ANDROID_KEY_PASS` if the key's password differs). For friend notifications, `GAINSTREAK_GOOGLE_SERVICES_JSON` or `google-services.json` next to `GymApp.Android.csproj`; without it the build works but friend notifications are hidden, so say so.
 - **iOS:** `GAINSTREAK_IOS_SIGN_IDENTITY`, `GAINSTREAK_IOS_PROVISIONING_PROFILE` and `GAINSTREAK_IOS_LIVE_ACTIVITY_PROFILE`. These need the paid Apple Developer Program. Without it there is no TestFlight build: release Android only, and point to `build/run-on-phone.sh` for the developer's own iPhone (free account, reinstalled every 7 days).
 
@@ -81,7 +81,7 @@ Add `--android` or `--ios` for one phone. It takes several minutes, so run it in
 
 Uploading happens in the store consoles, signed in as the developer, so give the user the file paths and steps instead of doing it:
 - **Google Play:** Play Console → the app → Testing → Internal testing → Create release, upload the `.aab`, and roll it out. Testers get it through the Play Store. A tester without Play access can get the `.apk` directly (they allow installs from unknown sources once).
-- **TestFlight:** upload the `.ipa` with Apple's Transporter app. Once App Store Connect has processed it, internal testers get it right away; external testers need a short beta review first.
+- **TestFlight:** open the newest `.xcarchive` (`open` it, or Xcode → Window → Organizer → Archives; several builds of one version look alike, so check the creation time), then **Distribute App → App Store Connect → Upload**. Use Organizer, not Transporter (Transporter gave a misleading ITMS-90034). Once App Store Connect has processed it (10 to 30 minutes), internal testers get it right away; external testers need a short beta review first.
 
 ## 6. Tag (**confirm**)
 
