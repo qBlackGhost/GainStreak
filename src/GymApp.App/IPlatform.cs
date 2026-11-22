@@ -54,6 +54,13 @@ public interface IPlatform
     /// are still worked out and stored everywhere (shared services); the desktop just shows none.</summary>
     bool HasBadges => false;
 
+    /// <summary>The food log (Phase 26) is on the phones only: the Calories diary, the Add food sheet and Home's Add food button.
+    /// The desktop keeps the one-number form. Decided by the head, never by the window's width.</summary>
+    bool HasFoodLog => false;
+
+    /// <summary>The camera barcode scanner for the food log (Phase 26): iOS and Android have one; the desktop's is a no-op.</summary>
+    IBarcodeScanner CreateBarcodeScanner() => new NoBarcodeScanner();
+
     /// <summary>The reminders' local notifications (16g); the desktop's does nothing.</summary>
     INotificationScheduler CreateNotificationScheduler();
 

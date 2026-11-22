@@ -77,6 +77,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             _ = CheckAwayAsync();   // back in front: maybe on a trip now (19c)
         }));
         HasLiveWorkout = platform.HasLiveWorkout;
+        HasFoodLog = platform.HasFoodLog;
         PointsHistory = pointsHistory;
         _session = session;
         _accounts = accounts;
@@ -266,14 +267,21 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string CaloriesResult { get; set; } = "";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm))]
+    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm), nameof(ShowCaloriesResult))]
     public partial bool IsCaloriesLogged { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm))]
+    [NotifyPropertyChangedFor(nameof(ShowCaloriesForm), nameof(ShowCaloriesResult))]
     public partial bool IsEditingCalories { get; set; }
 
-    public bool ShowCaloriesForm => !IsCaloriesLogged || IsEditingCalories;
+    /// <summary>The desktop's one-box form. On the phones (Phase 26) food is logged on the Add food sheet instead.</summary>
+    public bool ShowCaloriesForm => !HasFoodLog && (!IsCaloriesLogged || IsEditingCalories);
+
+    /// <summary>The "On target · +10 pts" row: after logging; on the phones whenever there is something logged.</summary>
+    public bool ShowCaloriesResult => HasFoodLog ? IsCaloriesLogged : !ShowCaloriesForm;
+
+    /// <summary>Phones: the card's button is Add food, which opens the sheet.</summary>
+    public bool HasFoodLog { get; }
 
     // ===== Dashboard cards =====
     public TodayWorkoutCardViewModel TodayWorkout { get; }
@@ -840,6 +848,14 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         GoalReviewHint = g.SuggestionChanged ? "Your suggested goal changed. Review it on your profile." : null;
         LogCaloriesLabel = t is null ? "Log" : "Update";
     }
+
+    /// <summary>Phones: Add food opens the sheet for the meal that fits the time of day; the card reloads after each change.</summary>
+    [RelayCommand]
+    private void AddFood() => _shell().OpenAddFood(null, async result =>
+    {
+        if (_session.CurrentUser is not { } user) return;
+        await RefreshCaloriesAsync(user.Id);
+    });
 
     [RelayCommand]
     private async Task LogCaloriesAsync()

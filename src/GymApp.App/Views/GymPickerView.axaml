@@ -149,24 +149,24 @@
                             </TextBlock>
                             <Button Grid.Column="1" Classes="link" FontSize="12" Content="Change city" Command="{Binding ChangeCityCommand}"/>
                         </Grid>
-                        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsFetching}">
-                            <ProgressBar IsIndeterminate="True" Width="80" Height="4" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding FetchingText}" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
-                            <Button Classes="link" FontSize="12" Content="Try again" Command="{Binding RestartFetchCommand}"
+                        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" ColumnSpacing="8" RowSpacing="4" IsVisible="{Binding IsFetching}">
+                            <ProgressBar Grid.ColumnSpan="2" IsIndeterminate="True" Height="4" Foreground="{DynamicResource Accent}"/>
+                            <TextBlock Grid.Row="1" Text="{Binding FetchingText}" FontSize="12" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            <Button Grid.Row="1" Grid.Column="1" Classes="link" FontSize="12" Content="Try again" Command="{Binding RestartFetchCommand}"
                                     IsVisible="{Binding IsFetchSlow}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Spacing="8"
-                                    IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Text="{Binding AddressLookupText}" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
-                            <Button Classes="link" FontSize="12" Content="Retry" Command="{Binding RetryAddressLookupCommand}"
+                        </Grid>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                              IsVisible="{Binding AddressLookupText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <TextBlock Text="{Binding AddressLookupText}" FontSize="12" Classes="muted" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="link" FontSize="12" Content="Retry" Command="{Binding RetryAddressLookupCommand}"
                                     IsVisible="{Binding CanRetryAddressLookup}"/>
-                        </StackPanel>
+                        </Grid>
                         <TextBlock Text="{Binding RefreshNote}" FontSize="12" Foreground="{DynamicResource FlameText}"
                                    IsVisible="{Binding RefreshNote, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         <Border Padding="12" CornerRadius="10" Background="{DynamicResource RedTint}" BorderBrush="{DynamicResource RedTintLine}" BorderThickness="1"
                                 IsVisible="{Binding FetchError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <TextBlock Text="{Binding FetchError}" FontSize="13" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding FetchError}" FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center"/>
                                 <Button Grid.Column="1" Classes="btn outline small" Content="Retry" Command="{Binding RetryCommand}"
                                         IsEnabled="{Binding !IsFetching}"/>
                             </Grid>

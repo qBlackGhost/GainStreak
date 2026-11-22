@@ -63,6 +63,9 @@ namespace GymApp.Data.Migrations
                     b.Property<string>("GoalTypeAtTime")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("LoggedAsTotal")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("UserId")
                         .HasColumnType("INTEGER");
 
@@ -762,6 +765,130 @@ namespace GymApp.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("ExerciseBarSettings");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.Food", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Brand")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("CarbsPer100")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("FatPer100")
+                        .HasColumnType("REAL");
+
+                    b.Property<bool>("IsFavourite")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsLiquid")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("KcalPer100")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("ProteinPer100")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("ServingGrams")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("ServingName")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceKey")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UseCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Source", "SourceKey")
+                        .IsUnique()
+                        .HasFilter("\"SourceKey\" IS NOT NULL");
+
+                    b.ToTable("Foods");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.FoodEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("Carbs")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Fat")
+                        .HasColumnType("REAL");
+
+                    b.Property<int?>("FoodId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("Grams")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Kcal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Meal")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("Protein")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Servings")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FoodId");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.ToTable("FoodEntries");
                 });
 
             modelBuilder.Entity("GymApp.Data.Models.FriendInvite", b =>
@@ -1862,6 +1989,35 @@ namespace GymApp.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Exercise");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.Food", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GymApp.Data.Models.FoodEntry", b =>
+                {
+                    b.HasOne("GymApp.Data.Models.Food", "Food")
+                        .WithMany()
+                        .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GymApp.Data.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Food");
 
                     b.Navigation("User");
                 });

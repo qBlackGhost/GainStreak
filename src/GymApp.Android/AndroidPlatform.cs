@@ -17,6 +17,8 @@ public sealed class AndroidPlatform(Context context) : PhonePlatform(BuiltSettin
 
     public override ILocationProvider CreateLocationProvider() => new AndroidLocationProvider(context);
 
+    public override IBarcodeScanner CreateBarcodeScanner() => new AndroidBarcodeScanner(context);   // food barcodes (Phase 26)
+
     public override IPushNotifications CreatePushNotifications() => new AndroidPushNotifications(context);   // Phase 22
 
     public override IHealthStore CreateHealthStore() => new AndroidHealthStore(context);   // Health Connect (Phase 23)

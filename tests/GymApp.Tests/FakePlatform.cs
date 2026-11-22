@@ -36,6 +36,9 @@ public sealed class FakePlatform : IPlatform
 
     public bool HasLiveWorkout { get; set; }
     public bool HasBadges { get; set; }
+    public bool HasFoodLog { get; set; }
+    public IBarcodeScanner Scanner { get; set; } = new NoBarcodeScanner();
+    IBarcodeScanner IPlatform.CreateBarcodeScanner() => Scanner;
 
     /// <summary>The reminders' scheduler; none unless a test sets one.</summary>
     public INotificationScheduler Notifications { get; set; } = NoNotificationScheduler.Instance;

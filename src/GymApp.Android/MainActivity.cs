@@ -23,6 +23,9 @@ public class MainActivity : AvaloniaMainActivity
     private const int NotificationPermissionRequest = 1601;
     private const int LocationPermissionRequest = 1801;
     private static WeakReference<MainActivity>? _current;
+
+    /// <summary>The activity on screen, for sheets and scanners that need one.</summary>
+    public static Activity? Current => _current?.TryGetTarget(out var activity) == true ? activity : null;
     private static TaskCompletionSource<bool>? _permission;
     private static TaskCompletionSource<bool>? _location;
     private static AndroidX.Activity.Result.ActivityResultLauncher? _healthLauncher;

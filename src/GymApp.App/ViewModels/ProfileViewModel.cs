@@ -276,6 +276,10 @@ public partial class ProfileViewModel : ViewModelBase
     /// <summary>"GainStreak 0.14.1", from the assembly version (Directory.Build.props).</summary>
     public string VersionText { get; } = $"GainStreak {AppVersion.Current}";
 
+    /// <summary>Phones with the food log (Phase 26) credit where the food data comes from.</summary>
+    public bool ShowFoodCredit { get; } = GymApplication.Platform?.HasFoodLog == true;
+    public string FoodCredit => "Food data: USDA FoodData Central and Open Food Facts (openfoodfacts.org, ODbL)";
+
     // The phones have no sidebar, so Profile holds these there
     [RelayCommand]
     private void EditAvatar() => _shell().OpenAvatarPicker(Avatar, Initials, AvatarLevel, async () =>

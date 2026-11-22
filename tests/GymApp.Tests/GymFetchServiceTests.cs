@@ -316,7 +316,7 @@ public class GymFetchServiceTests : IDisposable
         Assert.Single(h.Requests);
     }
 
-    [Fact] public async Task Timeout_IsAFailure_WithoutWaitingOnTheMirror()
+    [Fact] public async Task Timeout_IsAFailure_AfterTryingBothServersTwice()
     {
         var h = new FakeHttpHandler(async (_, ct) =>
         {
@@ -327,7 +327,7 @@ public class GymFetchServiceTests : IDisposable
 
         Assert.Equal(GymRefreshOutcome.Failed, r.Outcome);
         Assert.Contains("too long", r.Error);
-        Assert.Single(h.Requests);
+        Assert.Equal(GymFetchService.Rounds * 2, h.Requests.Count);
     }
 
     [Fact] public async Task TwoPickersOpeningAtOnce_FetchOnlyOnce()

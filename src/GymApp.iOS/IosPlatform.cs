@@ -26,6 +26,8 @@ public sealed class IosPlatform() : PhonePlatform(BuiltSettings.ServerUrl)
 
     public override IHomeWidgets CreateHomeWidgets() => new IosHomeWidgets();   // Home Screen widgets (Phase 24)
 
+    public override IBarcodeScanner CreateBarcodeScanner() => new IosBarcodeScanner();   // food barcodes (Phase 26)
+
     public override IPushNotifications CreatePushNotifications() => new IosPushNotifications();   // friend notifications (Phase 22)
 
     /// <summary>Only once the App Store listing exists (<c>GymAppAppStoreId</c>, 16h).</summary>

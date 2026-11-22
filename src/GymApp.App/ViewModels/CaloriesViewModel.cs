@@ -22,10 +22,44 @@ public partial class GoalTypeOptionViewModel(GoalType type, CaloriesViewModel ow
 }
 
 /// <summary>One day of the "Last 7 days" chart. Heights are in pixels of the chart (see <see cref="CaloriesViewModel.ChartHeight"/>).</summary>
-public record CalorieBarViewModel(string Day, string Label, double BarHeight, bool IsLogged, bool IsHit)
+public record CalorieBarViewModel(string Day, string Label, double BarHeight, bool IsLogged, bool IsHit, DateOnly Date = default, bool IsSelected = false)
 {
     public bool IsOff => IsLogged && !IsHit;
     public bool IsMissing => !IsLogged;
+}
+
+/// <summary>One entry in the food diary: tap to edit (today only), ✕ to delete.</summary>
+public partial class FoodEntryRowViewModel(FoodEntryInfo entry, CaloriesViewModel owner, bool canEdit) : ObservableObject
+{
+    public FoodEntryInfo Entry { get; } = entry;
+    public string Name => Entry.Name;
+    public string Detail => Entry.IsQuickAdd ? "Quick add" : AmountText(Entry);
+    public string KcalText => CalorieGoals.K(Entry.Kcal);
+    public bool CanEdit { get; } = canEdit;
+
+    private static string AmountText(FoodEntryInfo e)
+    {
+        var unit = e.IsLiquid ? "ml" : "g";
+        var grams = e.Grams is { } g ? $"{FoodAmountViewModel.Format(g)} {unit}" : "";
+        return e.Servings is { } s && e.ServingName is { } name
+            ? $"{FoodAmountViewModel.Format(s)} × {name} · {grams}"
+            : grams;
+    }
+
+    [RelayCommand] private void Edit() { if (CanEdit) owner.EditEntry(Entry); }
+    [RelayCommand] private Task Delete() => CanEdit ? owner.DeleteEntryAsync(Entry) : Task.CompletedTask;
+}
+
+/// <summary>One meal of the diary with its entries, its kcal and (today) an Add button.</summary>
+public partial class MealGroupViewModel(Meal meal, IReadOnlyList<FoodEntryRowViewModel> entries, bool canAdd, CaloriesViewModel owner) : ObservableObject
+{
+    public Meal Meal { get; } = meal;
+    public string Name => MealDefaults.DisplayName(Meal);
+    public IReadOnlyList<FoodEntryRowViewModel> Entries { get; } = entries;
+    public bool HasEntries => Entries.Count > 0;
+    public bool CanAdd { get; } = canAdd;
+    public string KcalText => CalorieGoals.K(Entries.Sum(e => e.Entry.Kcal));
+    [RelayCommand] private void Add() => owner.AddFood(Meal);
 }
 
 /// <summary>
@@ -45,16 +79,23 @@ public partial class CaloriesViewModel : ViewModelBase
     private readonly ProfileService _profiles;
     private readonly SessionService _session;
     private readonly Func<MainViewModel> _shell;
+    private readonly FoodService _food;
 
-    public CaloriesViewModel(CalorieService calories, ProfileService profiles, SessionService session, Func<MainViewModel> shell)
+    public CaloriesViewModel(CalorieService calories, ProfileService profiles, SessionService session, Func<MainViewModel> shell,
+        FoodService food, IPlatform platform)
     {
+        _food = food;
+        HasFoodLog = platform.HasFoodLog;
         _calories = calories;
         _profiles = profiles;
         _session = session;
         _shell = shell;
         GoalTypes = Enum.GetValues<GoalType>().Select(t => new GoalTypeOptionViewModel(t, this)).ToList();
-        _ = LoadAsync();
+        Loaded = LoadAsync();
     }
+
+    /// <summary>The first load, for tests to await.</summary>
+    public Task Loaded { get; }
 
     private int? UserId => _session.CurrentUser?.Id;
     private static string K(int kcal) => CalorieGoals.K(kcal);
@@ -86,14 +127,33 @@ public partial class CaloriesViewModel : ViewModelBase
     [ObservableProperty] public partial string? TodayError { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowLogForm))]
+    [NotifyPropertyChangedFor(nameof(ShowLogForm), nameof(ShowLegacyLogForm), nameof(ShowLegacyResult))]
     public partial bool IsLogged { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowLogForm))]
+    [NotifyPropertyChangedFor(nameof(ShowLogForm), nameof(ShowLegacyLogForm), nameof(ShowLegacyResult))]
     public partial bool IsEditing { get; set; }
 
     public bool ShowLogForm => !IsLogged || IsEditing;
+
+    // ===== Food log (Phase 26, phones only) =====
+
+    /// <summary>Phones: the food diary and the Add food sheet. The desktop keeps the one-number form.</summary>
+    public bool HasFoodLog { get; }
+
+    /// <summary>The desktop's one-box form, which the phones no longer show.</summary>
+    public bool ShowLegacyLogForm => !HasFoodLog && ShowLogForm;
+    public bool ShowLegacyResult => !HasFoodLog && !ShowLogForm;
+
+    [ObservableProperty] public partial IReadOnlyList<MealGroupViewModel> Meals { get; set; } = [];
+    [ObservableProperty] public partial string DiaryTitle { get; set; } = "Food today";
+    [ObservableProperty] public partial string MacroText { get; set; } = "";
+    [ObservableProperty] public partial bool HasMacros { get; set; }
+    [ObservableProperty] public partial bool DiaryIsTotalOnly { get; set; }
+    [ObservableProperty] public partial string DiaryTotalText { get; set; } = "";
+    [ObservableProperty] public partial bool DiaryIsPast { get; set; }
+    [ObservableProperty] public partial bool DiaryIsEmpty { get; set; }
+    public DateOnly SelectedDate { get; private set; } = AppClock.Today;
 
     // ===== Last 7 days =====
     [ObservableProperty] public partial IReadOnlyList<CalorieBarViewModel> Bars { get; set; } = [];
@@ -134,6 +194,7 @@ public partial class CaloriesViewModel : ViewModelBase
             ApplyGoal(o.Goal);
             ApplyToday(o);
             ApplyWeek(o);
+            await LoadDiaryAsync(me);
         }
         catch (Exception)
         {
@@ -235,8 +296,8 @@ public partial class CaloriesViewModel : ViewModelBase
 
         Bars = days.Select(d => byDate.TryGetValue(d, out var c)
                 ? new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), K(c.Consumed),
-                    Math.Max(4, Px(c.Consumed)), true, c.Hit == true)
-                : new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), "—", 12, false, false))
+                    Math.Max(4, Px(c.Consumed)), true, c.Hit == true, d, HasFoodLog && d == SelectedDate)
+                : new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), "—", 12, false, false, d, HasFoodLog && d == SelectedDate))
             .ToList();
 
         var logged = Bars.Count(b => b.IsLogged);
@@ -283,6 +344,86 @@ public partial class CaloriesViewModel : ViewModelBase
         ApplyGoal(o.Goal);
         ApplyToday(o);
         ApplyWeek(o);
+        await LoadDiaryAsync(me);
+    }
+
+    // ===== Food diary =====
+
+    /// <summary>Today's entries by meal, or a past day's read-only (picked in the week's bars).</summary>
+    private async Task LoadDiaryAsync(int me)
+    {
+        if (!HasFoodLog) return;
+        var date = SelectedDate;
+        var today = AppClock.Today;
+        var day = await _food.GetDayAsync(me, date);
+        var editable = date == today;
+
+        DiaryIsPast = !editable;
+        DiaryTitle = editable ? "Food today" : date.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
+        DiaryIsTotalOnly = day.TotalOnly;
+        DiaryTotalText = day.TotalOnly ? $"Logged as a total · {K(day.Kcal)} kcal" : "";
+        DiaryIsEmpty = !day.TotalOnly && day.Entries.Count == 0 && !editable;
+        HasMacros = day.Entries.Count > 0;
+        MacroText = HasMacros
+            ? $"Protein {Grams(day.Protein)} · Carbs {Grams(day.Carbs)} · Fat {Grams(day.Fat)}"
+            : "";
+
+        // A day logged as a total has no meals to show; today always shows the four, each with its Add button
+        Meals = day.TotalOnly
+            ? []
+            : Enum.GetValues<Meal>()
+                .Select(m => new MealGroupViewModel(m, day.In(m).Select(e => new FoodEntryRowViewModel(e, this, editable)).ToList(), editable, this))
+                .Where(g => editable || g.HasEntries)
+                .ToList();
+    }
+
+    private static string Grams(double g) => g.ToString("0.#", CultureInfo.InvariantCulture) + " g";
+
+    /// <summary>A bar of the week opens that day's diary (read-only unless it's today).</summary>
+    [RelayCommand]
+    private Task ShowDay(DateOnly date) => ShowDayAsync(date);
+
+    internal async Task ShowDayAsync(DateOnly date)
+    {
+        if (!HasFoodLog || UserId is not { } me) return;
+        SelectedDate = date > AppClock.Today ? AppClock.Today : date;
+        try
+        {
+            var o = await _calories.GetAsync(me);
+            if (o is not null) ApplyWeek(o);   // moves the selection mark
+            await LoadDiaryAsync(me);
+        }
+        catch (Exception) { Error = "Could not load that day."; }
+    }
+
+    [RelayCommand] private Task BackToToday() => ShowDayAsync(AppClock.Today);
+
+    internal void AddFood(Meal? meal) => _shell().OpenAddFood(meal, FoodChangedAsync);
+    internal void EditEntry(FoodEntryInfo entry) => _shell().OpenFoodEntry(entry, FoodChangedAsync);
+
+    [RelayCommand] private void AddFoodNow() => AddFood(null);
+
+    internal async Task DeleteEntryAsync(FoodEntryInfo entry)
+    {
+        try
+        {
+            if (UserId is not { } me) return;
+            var r = await _food.DeleteEntryAsync(me, entry.Id);
+            if (!r.Success) { Error = r.Error; return; }
+            await FoodChangedAsync(r);
+        }
+        catch (Exception) { Error = "Could not delete that."; }
+    }
+
+    /// <summary>The sheet changed today's food: show the points it earned and reload.</summary>
+    private async Task FoodChangedAsync(FoodResult r)
+    {
+        Error = null;
+        Info = r.Points is { Added.Count: > 0 } p
+            ? string.Join(" · ", p.Added.GroupBy(a => a.Reason).Select(g => $"+{g.Sum(a => a.Amount)} {PointsCalculator.DisplayName(g.Key)}"))
+            : null;
+        SelectedDate = AppClock.Today;
+        await ReloadAsync();
     }
 
     // ===== Today's log =====

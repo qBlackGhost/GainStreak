@@ -1117,12 +1117,16 @@
                             <TextBlock Text="{Binding CaloriesTip}" FontSize="12" Classes="muted"
                                        IsVisible="{Binding CaloriesTip, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                         </StackPanel>
-                        <Border Padding="14,12" CornerRadius="12" Background="{DynamicResource Surface2}" IsVisible="{Binding !ShowCaloriesForm}">
+                        <Border Padding="14,12" CornerRadius="12" Background="{DynamicResource Surface2}" IsVisible="{Binding ShowCaloriesResult}">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="{Binding CaloriesResult}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Classes="btn outline small" Content="Edit" Command="{Binding EditCaloriesCommand}"/>
+                                <Button Grid.Column="1" Classes="btn outline small" Content="Edit" Command="{Binding EditCaloriesCommand}"
+                                        IsVisible="{Binding !HasFoodLog}"/>
                             </Grid>
                         </Border>
+                        <!-- Phones (Phase 26): the button is Add food; the typed number is Quick add on its sheet -->
+                        <Button Classes="btn light" MinHeight="50" Content="Add food" Command="{Binding AddFoodCommand}"
+                                IsVisible="{Binding HasFoodLog}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     </StackPanel>
                 </Border>
 

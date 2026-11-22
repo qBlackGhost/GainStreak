@@ -17,7 +17,7 @@
   </nav>
 
   <h1>Privacy policy</h1>
-  <p class="updated">Last updated 17 November 2026</p>
+  <p class="updated">Last updated 22 November 2026</p>
 
   <p>GainStreak is a gym tracker with a small social side: friends, a leaderboard and a map of the gyms your friends train at. It's a student project made by Cristi Delamarian, who is responsible for the data described here. Questions go to <a href="mailto:gainstreak.app@gmail.com">gainstreak.app@gmail.com</a>.</p>
 
@@ -32,7 +32,7 @@
   <ul>
     <li>Workouts, exercises, sets and reps, personal records and splits</li>
     <li>Body data: gender, birth date, height, weight, activity level and weigh-ins</li>
-    <li>Calorie goals and calorie logs</li>
+    <li>Calorie goals and calorie logs, and (iPhone and Android) the foods you log: your foods, favourites and meals, with their calories and macros</li>
     <li>Reminder settings</li>
     <li>The app's error log, unless you choose to attach it to feedback</li>
   </ul>
@@ -53,6 +53,11 @@
   <h3>Gyms near you, on vacation</h3>
   <p>When you tap <strong>Show me gyms near me</strong> on vacation, the app reads your location once and sends it, rounded to about 1 km, to OpenStreetMap's Nominatim to find out which city you're in. Only then, and only that rounded position. The city is kept on your phone as the city you're visiting until the vacation ends, and its gyms are loaded like any city's. If you'd rather not, search for the city by name instead.</p>
   <p>The desktop app never reads your location.</p>
+
+  <h2>Food log and barcodes (iPhone and Android)</h2>
+  <p>What you eat stays on your phone: the foods you log, the ones you create and your favourites are never sent to the GainStreak server. Generic foods come from a USDA food catalogue that is bundled in the app and works offline.</p>
+  <p>To look up a packaged food, the app sends the barcode number, or the text you search for, to <a href="https://world.openfoodfacts.org/">Open Food Facts</a>, a public food database, and shows what it returns. There is no account and no identifier in those requests; Open Food Facts sees your device's IP address and what you asked for, like any website. Their privacy policy is at <a href="https://world.openfoodfacts.org/privacy">openfoodfacts.org</a>. Products you've looked up are kept on your phone, so they work offline next time.</p>
+  <p>The camera is used only to read a barcode when you tap the scan button. Nothing is recorded, saved or sent: the picture is never kept, only the number printed under the barcode is used. You can refuse the camera and type the number instead.</p>
 
   <h2>Apple Health (iPhone)</h2>
   <p>Apple Health is off until you turn it on in Profile, and iOS then asks which data GainStreak may use. You can change that at any time in the iPhone's Settings, or turn it off in Profile.</p>
@@ -154,12 +159,12 @@
   </ul>
 
   <h2>Other services the app talks to</h2>
-  <p>The map, city search and gym list come from <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'s public servers: map tiles, Nominatim (city search, and the city you're in when you ask for gyms near you on vacation) and the Overpass API (gyms in a city). They see your device's IP address and the area you're looking at, or the rounded position described above, but nothing about your account. Their own privacy policy is at <a href="https://osmfoundation.org/wiki/Privacy_Policy">osmfoundation.org</a>.</p>
+  <p>The map, city search and gym list come from <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'s public servers: map tiles, Nominatim (city search, and the city you're in when you ask for gyms near you on vacation) and the Overpass API (gyms in a city). They see your device's IP address and the area you're looking at, or the rounded position described above, but nothing about your account. Food lookups go to Open Food Facts, as described above. Their own privacy policy is at <a href="https://osmfoundation.org/wiki/Privacy_Policy">osmfoundation.org</a>.</p>
   <p>Friend notifications are delivered by Apple's push service on an iPhone and by Firebase Cloud Messaging (Google) on Android. They carry the notification itself, for example "Friend request: alex wants to be your friend.", to the phone's push token. That's your friend's username and what happened, nothing else about either of you. Nothing goes through them while friend notifications are off.</p>
   <p>The companies that run the server for GainStreak, Google Cloud (hosting) and Neon (database), process the server data above on its behalf. Resend, an email delivery service, sends the codes emailed to you for confirming your address and resetting your password, from noreply@gainstreak.app; it gets your email address and the code. Discord receives the feedback and report notifications. None of them get it for their own use, and nothing is sold or shared for advertising.</p>
 
   <h2>What isn't collected</h2>
-  <p>Your location (it's used on the phone as described above, and the only position that leaves it is the rounded one sent to Nominatim when you ask for gyms near you; the GainStreak server never gets it), contacts, photos, files, health data (what the app reads from or saves to Apple Health or Health Connect stays on your phone), advertising ids, or ids of the phone itself such as its serial number (the push token above is the only phone-specific value, and it only delivers friend notifications). There are no ads, no analytics and no tracking tools. Crashes aren't reported anywhere unless you send them yourself through Feedback.</p>
+  <p>Your location (it's used on the phone as described above, and the only position that leaves it is the rounded one sent to Nominatim when you ask for gyms near you; the GainStreak server never gets it), contacts, photos, files, what you eat (the food log stays on your phone; Open Food Facts only gets the barcode or search text you send it), health data (what the app reads from or saves to Apple Health or Health Connect stays on your phone), advertising ids, or ids of the phone itself such as its serial number (the push token above is the only phone-specific value, and it only delivers friend notifications). There are no ads, no analytics and no tracking tools. Crashes aren't reported anywhere unless you send them yourself through Feedback.</p>
 
   <h2>Your choices and rights</h2>
   <ul>

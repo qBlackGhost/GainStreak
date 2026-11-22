@@ -2,6 +2,21 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.26.0
+
+- **Food log (phones):** Calories now keeps what you ate, not just one number. **Add food** (on the ring card, or **+ Add** next to a meal) opens a sheet with **Breakfast / Lunch / Dinner / Snacks**.
+  - **Search:** type a food and your own foods and recent ones come first, then generic foods from a USDA catalogue that is built into the app and works offline, then packaged products from Open Food Facts when you're online. Names follow your phone's language where Open Food Facts has them.
+  - **Scan a barcode:** the barcode button opens the camera; point it at a packaged food and it opens at its amount. No camera access, or no camera? **Enter a barcode number** types it instead. On Android the scanner is Google's and downloads once on first use ("The scanner is getting ready" until then).
+  - **Barcode not found:** **Add it as my food** saves it under that barcode, so the next scan finds it, or **Search by name**.
+  - **The amount:** grams or millilitres, or a serving where the food has one; calories, protein, carbs and fat update as you type, then **Log**. Star a food to keep it near the top.
+  - **Your own foods:** **New food** (per 100 g or per serving, with an optional serving) and **Edit this food**. Editing a catalogue or Open Food Facts food makes your own copy. Numbers that look wrong (more than 100 g of macros per 100 g, no energy) open the form to fix first.
+  - **Quick add:** type just a number of calories, with an optional label, as before; it shows as "Quick add".
+  - **The day adds itself up:** the Calories screen lists each meal with its foods; tap one to change the amount or delete it. The ring, week bars, Home's card, streak and the +10 points for hitting your target all read the day's total, so nothing about points changes. Days you logged before as one number show as "Logged as a total".
+  - **Past days** show their meals read-only; you log today only. Changing a food later never changes what you logged.
+  - **Privacy:** what you eat stays on your phone. A barcode or search text goes to Open Food Facts with no account or identifier. The camera only reads the number; nothing is recorded. Profile's About credits USDA FoodData Central and Open Food Facts.
+- The desktop app doesn't change.
+- **Migration:** the app's database (`FoodLog`: foods and food entries). The server doesn't change, and 0.21.0 and later keep working.
+
 ## 0.25.0
 
 - **Badges (phones):** GainStreak now awards badges for what you already log. Profile has a new **Badges** card; **See all** opens the badges screen.

@@ -22,7 +22,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.CalorieLog",
                 typeof(CalorieLog),
                 baseEntityType,
-                propertyCount: 6,
+                propertyCount: 7,
                 navigationCount: 1,
                 foreignKeyCount: 1,
                 unnamedIndexCount: 1,
@@ -65,6 +65,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(CalorieLog).GetField("<GoalTypeAtTime>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true,
                 providerPropertyType: typeof(string));
+
+            var loggedAsTotal = runtimeEntityType.AddProperty(
+                "LoggedAsTotal",
+                typeof(bool),
+                propertyInfo: typeof(CalorieLog).GetProperty("LoggedAsTotal", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(CalorieLog).GetField("<LoggedAsTotal>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                sentinel: false);
 
             var userId = runtimeEntityType.AddProperty(
                 "UserId",

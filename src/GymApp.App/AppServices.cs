@@ -20,7 +20,7 @@ public static class AppServices
     {
         var sc = new ServiceCollection();
         sc.AddSingleton(platform);
-        OsmHttp.UserAgent = OsmHttp.ForPlatform(AppVersion.Current, AppVersion.PlatformName);
+        AppHttp.UserAgent = AppHttp.ForPlatform(AppVersion.Current, AppVersion.PlatformName);
         sc.AddDbContextFactory<AppDbContext>();
         sc.AddSingleton(_ => new ErrorLog(platform.DataDirectory, appInfo: platform.AppVersionDescription));
         sc.AddSingleton<SessionService>();
@@ -77,6 +77,7 @@ public static class AppServices
         }
         // Reminders (16g): planned here, scheduled by the head
         sc.AddSingleton(_ => platform.CreateNotificationScheduler());
+        sc.AddSingleton(_ => platform.CreateBarcodeScanner());   // the food log's camera (Phase 26)
         sc.AddSingleton(_ => platform.CreateLocationProvider());   // "verified at gym" (18c)
         sc.AddSingleton(_ => platform.CreateLiveActivity());   // the workout's Dynamic Island on iOS (0.20.0)
         sc.AddSingleton(_ => platform.CreateHealthStore());   // Apple Health (Phase 20)
@@ -133,6 +134,14 @@ public static class AppServices
         sc.AddTransient<AvatarPickerViewModel>();
         sc.AddTransient<ProfileService>();
         sc.AddTransient<CalorieService>();
+        // Food log (Phase 26): the same in local and server social modes, food isn't social. One catalog and one Open Food
+        // Facts client, so the extracted file and the request limits are shared
+        sc.AddSingleton(_ => new FoodCatalog(platform.DataDirectory));
+        sc.AddSingleton(_ => new OpenFoodFactsClient());
+        sc.AddTransient<FoodService>();
+        sc.AddTransient(sp => new AddFoodViewModel(sp.GetRequiredService<FoodService>(), sp.GetRequiredService<ProfileService>(),
+            sp.GetRequiredService<SessionService>(), sp.GetRequiredService<IBarcodeScanner>(),
+            () => sp.GetRequiredService<MainViewModel>().ClosePopup()));
         sc.AddTransient<ProfileViewModel>();
         sc.AddTransient<ProfileSetupViewModel>();
         sc.AddTransient<ConfirmEmailViewModel>();

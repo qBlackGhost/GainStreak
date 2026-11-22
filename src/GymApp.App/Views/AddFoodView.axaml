@@ -1,0 +1,296 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.AddFoodView"
+             x:DataType="vm:AddFoodViewModel">
+    <!-- The Add food sheet (Phase 26, phones): search (your foods, the USDA catalog, Open Food Facts), the amount, the New
+         food form and Quick add, all on one sheet from the bottom. Escape or a tap on the dimmed page closes it. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="46"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBox.num"><Setter Property="FontFamily" Value="{StaticResource Mono}"/></Style>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="Margin" Value="2,0,0,4"/>
+        </Style>
+        <Style Selector="Button.big">
+            <Setter Property="MinHeight" Value="50"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Button.rowBtn">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0,8"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+        <Style Selector="Button.plus">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="44"/>
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.macro">
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="4,8"/>
+        </Style>
+    </UserControl.Styles>
+    <UserControl.Resources>
+        <!-- One food: tap for the amount, + for the last amount used -->
+        <DataTemplate x:Key="FoodRow" x:DataType="vm:FoodRowViewModel">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <Button Classes="rowBtn" Command="{Binding OpenCommand}">
+                    <StackPanel Spacing="2">
+                        <TextBlock Text="{Binding Name}" FontSize="15" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <TextBlock Text="{Binding Subtitle}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        <TextBlock Text="{Binding Attribution}" FontSize="11" Foreground="{DynamicResource Faint}" TextWrapping="NoWrap"
+                                   IsVisible="{Binding Attribution, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                </Button>
+                <Button Grid.Column="1" Classes="plus" Command="{Binding QuickAddCommand}" IsVisible="{Binding CanQuickAdd}"
+                        AutomationProperties.Name="Add the last amount">
+                    <v:Icon Data="{StaticResource IcPlus}" Width="16" Height="16" StrokeThickness="2.6" Stroke="Black"/>
+                </Button>
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+    <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="18,12,18,20" CornerRadius="22"
+                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="12" TextElement.Foreground="{DynamicResource Ink}">
+                <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"/>
+
+                <!-- Header -->
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                    <Button Classes="icon" Command="{Binding BackCommand}" IsVisible="{Binding CanGoBack}" AutomationProperties.Name="Back">
+                        <v:Icon Data="{StaticResource IcChevronLeft}" StrokeThickness="2.4"/>
+                    </Button>
+                    <TextBlock Grid.Column="1" Text="{Binding Title}" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                    <Button Grid.Column="2" Classes="icon" Command="{Binding CloseCommand}" AutomationProperties.Name="Close">
+                        <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                    </Button>
+                </Grid>
+
+                <!-- Breakfast / Lunch / Dinner / Snacks -->
+                <Border Padding="3" CornerRadius="12" Background="{DynamicResource Fill}" IsVisible="{Binding ShowMealPill}">
+                    <ItemsControl ItemsSource="{Binding MealOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <v:SegmentedPill SelectedIndex="{Binding SelectedMealIndex}" PillInset="0"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:MealOptionViewModel">
+                                <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="38" FontSize="12" Padding="2,0"
+                                        Content="{Binding Name}" Command="{Binding PickCommand}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Border>
+
+                <TextBlock Text="{Binding Notice}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold" FontSize="13"
+                           IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                <!-- ===== Search ===== -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsSearchPage}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox x:Name="SearchBox" Classes="field" PlaceholderText="Search foods or type a barcode" Text="{Binding SearchText}"/>
+                        <Button Grid.Column="1" Classes="btn outline" MinWidth="50" MinHeight="46" Padding="0" CornerRadius="10"
+                                Command="{Binding ScanCommand}" IsVisible="{Binding CanScan}" AutomationProperties.Name="Scan a barcode">
+                            <v:Icon Data="{StaticResource IcBarcode}" Width="22" Height="22" StrokeThickness="2"/>
+                        </Button>
+                    </Grid>
+                    <Button Classes="link" Content="Enter a barcode number" Command="{Binding ShowBarcodeCommand}" HorizontalAlignment="Left"
+                            Foreground="{DynamicResource AccentInk}" FontSize="13" Padding="2,0"/>
+
+                    <StackPanel Spacing="4" IsVisible="{Binding ShowSuggestions}">
+                        <StackPanel Spacing="2" IsVisible="{Binding HasFavourites}">
+                            <TextBlock Text="FAVOURITES" Classes="caps" Margin="0,4,0,0"/>
+                            <ItemsControl ItemsSource="{Binding Favourites}" ItemTemplate="{StaticResource FoodRow}"/>
+                        </StackPanel>
+                        <StackPanel Spacing="2" IsVisible="{Binding HasRecents}">
+                            <TextBlock Text="RECENT" Classes="caps" Margin="0,4,0,0"/>
+                            <ItemsControl ItemsSource="{Binding Recents}" ItemTemplate="{StaticResource FoodRow}"/>
+                        </StackPanel>
+                        <TextBlock Text="Search a food above, or type a barcode number. Foods you log show up here next time."
+                                   Classes="muted" FontSize="13" Margin="0,6">
+                            <TextBlock.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                    <Binding Path="!HasRecents"/>
+                                    <Binding Path="!HasFavourites"/>
+                                </MultiBinding>
+                            </TextBlock.IsVisible>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Spacing="2" IsVisible="{Binding ShowResults}">
+                        <ItemsControl ItemsSource="{Binding Results}" ItemTemplate="{StaticResource FoodRow}"/>
+                        <TextBlock Text="Searching Open Food Facts…" Classes="muted" FontSize="13" Margin="0,6" IsVisible="{Binding IsSearchingOnline}"/>
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,6" IsVisible="{Binding ShowOfflineNote}">
+                            <v:Icon Data="{StaticResource IcWifiOff}" Width="14" Height="14" StrokeThickness="2.2" Stroke="{DynamicResource Soft}" VerticalAlignment="Center"/>
+                            <TextBlock Text="Offline: showing foods on this phone" FontSize="13" Classes="soft" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <TextBlock Text="{Binding OnlineMessage}" Classes="soft" FontSize="13" Margin="0,6"
+                                   IsVisible="{Binding OnlineMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="No foods found. Add it as your own food below." Classes="muted" FontSize="13" Margin="0,6" IsVisible="{Binding NoResults}"/>
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,4,0,0">
+                        <Button Classes="btn outline big" Content="New food" Command="{Binding NewFoodCommand}"/>
+                        <Button Grid.Column="1" Classes="btn outline big" Content="Quick add" Command="{Binding ShowQuickCommand}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ===== Amount ===== -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsAmountPage}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Amount.Food.Name}" FontSize="18" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding Amount.Food.Origin}" FontSize="12" Classes="muted"/>
+                            <TextBlock Text="{Binding Amount.Food.Attribution}" FontSize="11" Foreground="{DynamicResource Faint}"
+                                       IsVisible="{Binding Amount.Food.Attribution, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="icon" Command="{Binding ToggleFavouriteCommand}" AutomationProperties.Name="Favourite">
+                            <Panel>
+                                <v:Icon Data="{StaticResource IcStar}" Width="20" Height="20" StrokeThickness="2" IsVisible="{Binding !IsFavourite}"/>
+                                <v:Icon Data="{StaticResource IcStar}" Width="20" Height="20" StrokeThickness="3" Stroke="{DynamicResource AccentInk}"
+                                        IsVisible="{Binding IsFavourite}"/>
+                            </Panel>
+                        </Button>
+                    </Grid>
+
+                    <StackPanel DataContext="{Binding Amount}" x:DataType="vm:FoodAmountViewModel" Spacing="10">
+                        <Border Padding="3" CornerRadius="12" Background="{DynamicResource Fill}" IsVisible="{Binding Options.Count}">
+                            <ItemsControl ItemsSource="{Binding Options}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <v:SegmentedPill SelectedIndex="{Binding $parent[UserControl].((vm:FoodAmountViewModel)DataContext).SelectedIndex, Mode=TwoWay}" PillInset="0"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:AmountOptionViewModel">
+                                        <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="38" FontSize="13" Content="{Binding Name}"
+                                                Click="PickUnit"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBox x:Name="AmountBox" Classes="field num" FontSize="22" MinHeight="54" TextInputOptions.ContentType="Number" Text="{Binding AmountText}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding ServingHint}" FontSize="12" Classes="muted" VerticalAlignment="Center" MaxWidth="130"/>
+                        </Grid>
+                        <TextBlock Text="{Binding Error}" Classes="fieldError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <UniformGrid Columns="4">
+                            <Border Classes="macro" Margin="0,0,4,0"><StackPanel Spacing="1" HorizontalAlignment="Center"><TextBlock Classes="mono" Text="{Binding KcalText}" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/><TextBlock Text="kcal" FontSize="11" Classes="muted" HorizontalAlignment="Center"/></StackPanel></Border>
+                            <Border Classes="macro" Margin="2,0"><StackPanel Spacing="1" HorizontalAlignment="Center"><TextBlock Classes="mono" Text="{Binding ProteinText}" FontSize="15" HorizontalAlignment="Center"/><TextBlock Text="protein" FontSize="11" Classes="muted" HorizontalAlignment="Center"/></StackPanel></Border>
+                            <Border Classes="macro" Margin="2,0"><StackPanel Spacing="1" HorizontalAlignment="Center"><TextBlock Classes="mono" Text="{Binding CarbsText}" FontSize="15" HorizontalAlignment="Center"/><TextBlock Text="carbs" FontSize="11" Classes="muted" HorizontalAlignment="Center"/></StackPanel></Border>
+                            <Border Classes="macro" Margin="4,0,0,0"><StackPanel Spacing="1" HorizontalAlignment="Center"><TextBlock Classes="mono" Text="{Binding FatText}" FontSize="15" HorizontalAlignment="Center"/><TextBlock Text="fat" FontSize="11" Classes="muted" HorizontalAlignment="Center"/></StackPanel></Border>
+                        </UniformGrid>
+                    </StackPanel>
+
+                    <Button Classes="btn primary big" Content="{Binding LogLabel}" Command="{Binding LogAmountCommand}"/>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Button Classes="link" Content="Edit this food" Command="{Binding EditFoodCommand}" IsVisible="{Binding CanEditFood}" HorizontalAlignment="Left"/>
+                        <Button Grid.Column="1" Classes="link" Content="Delete entry" Foreground="{DynamicResource ErrorText}"
+                                Command="{Binding DeleteEntryCommand}" IsVisible="{Binding IsEditingEntry}"/>
+                    </Grid>
+                </StackPanel>
+
+                <!-- ===== New food / edit food ===== -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsFormPage}">
+                    <StackPanel DataContext="{Binding Form}" x:DataType="vm:FoodFormViewModel" Spacing="10">
+                        <TextBlock Text="{Binding Notice}" FontSize="13" Foreground="{DynamicResource Warn}"
+                                   IsVisible="{Binding Notice, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <TextBlock Text="{Binding BarcodeLine}" Classes="mono muted" FontSize="13"
+                                   IsVisible="{Binding BarcodeLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <StackPanel><TextBlock Classes="lbl" Text="Name"/><TextBox Classes="field" Text="{Binding Name}"/></StackPanel>
+                        <StackPanel><TextBlock Classes="lbl" Text="Brand (optional)"/><TextBox Classes="field" Text="{Binding Brand}"/></StackPanel>
+                        <Border Padding="3" CornerRadius="12" Background="{DynamicResource Fill}">
+                            <v:SegmentedPill SelectedIndex="{Binding BasisIndex}" PillInset="0">
+                                <Button Classes="seg" Classes.on="{Binding IsPer100}" MinHeight="38" FontSize="13" Content="{Binding Per100Label}" Command="{Binding PickPer100Command}"/>
+                                <Button Classes="seg" Classes.on="{Binding IsPerServing}" MinHeight="38" FontSize="13" Content="Per serving" Command="{Binding PickPerServingCommand}"/>
+                            </v:SegmentedPill>
+                        </Border>
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,5,8"><TextBlock Classes="lbl" Text="Calories (kcal)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding KcalText}"/></StackPanel>
+                            <StackPanel Margin="5,0,0,8"><TextBlock Classes="lbl" Text="Protein (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding ProteinText}"/></StackPanel>
+                            <StackPanel Margin="0,0,5,0"><TextBlock Classes="lbl" Text="Carbs (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding CarbsText}"/></StackPanel>
+                            <StackPanel Margin="5,0,0,0"><TextBlock Classes="lbl" Text="Fat (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding FatText}"/></StackPanel>
+                        </UniformGrid>
+                        <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
+                            <StackPanel><TextBlock Classes="lbl" Text="Serving name"/><TextBox Classes="field" PlaceholderText="1 slice" Text="{Binding ServingName}"/></StackPanel>
+                            <StackPanel Grid.Column="1"><TextBlock Classes="lbl" Text="Serving (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding ServingGramsText}"/></StackPanel>
+                        </Grid>
+                        <CheckBox Content="It's a liquid (per 100 ml)" IsChecked="{Binding IsLiquid}" FontSize="13"/>
+                        <TextBlock Text="{Binding Error}" Classes="fieldError" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                    <Button Classes="btn primary big" Content="Save food" Command="{Binding SaveFormCommand}"/>
+                </StackPanel>
+
+                <!-- ===== Barcode: scan or type the number; "We couldn't find this barcode." ===== -->
+                <StackPanel Spacing="12" IsVisible="{Binding IsBarcodePage}">
+                    <Button Classes="btn primary big" Command="{Binding ScanCommand}" IsVisible="{Binding CanScan}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <v:Icon Data="{StaticResource IcBarcode}" Width="20" Height="20" StrokeThickness="2.2" Stroke="Black" VerticalAlignment="Center"/>
+                            <TextBlock Text="Scan with the camera" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel>
+                        <TextBlock Classes="lbl" Text="Barcode number"/>
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBox x:Name="BarcodeBox" Classes="field num" TextInputOptions.ContentType="Digits" PlaceholderText="5941487002222"
+                                     Text="{Binding BarcodeText}"/>
+                            <Button Grid.Column="1" Classes="btn outline" MinHeight="46" Padding="18,0" Content="Look up" Command="{Binding LookUpNumberCommand}"/>
+                        </Grid>
+                    </StackPanel>
+                    <TextBlock Text="Looking it up…" Classes="muted" FontSize="13" IsVisible="{Binding IsLookingUp}"/>
+                    <TextBlock Text="{Binding BarcodeError}" Classes="fieldError" IsVisible="{Binding BarcodeError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+                    <Border Padding="14" CornerRadius="14" Background="{DynamicResource Fill}" IsVisible="{Binding HasUnknownBarcode}">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="We couldn't find this barcode." FontSize="15" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding UnknownBarcode}" Classes="mono muted" FontSize="13"/>
+                            <TextBlock Text="Open Food Facts doesn't have it, or you're offline. Add it as your own food and the next scan finds it, or search by name."
+                                       FontSize="13" Classes="soft"/>
+                            <Button Classes="btn primary big" Content="Add it as my food" Command="{Binding AddAsMyFoodCommand}"/>
+                            <Button Classes="btn outline big" Content="Search by name" Command="{Binding SearchByNameCommand}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ===== Quick add ===== -->
+                <StackPanel Spacing="10" IsVisible="{Binding IsQuickPage}">
+                    <StackPanel><TextBlock Classes="lbl" Text="Calories (kcal)"/><TextBox x:Name="QuickBox" Classes="field num" FontSize="22" MinHeight="54"
+                             TextInputOptions.ContentType="Digits" PlaceholderText="450" Text="{Binding QuickKcalText}"/></StackPanel>
+                    <StackPanel><TextBlock Classes="lbl" Text="Label (optional)"/><TextBox Classes="field" PlaceholderText="Canteen lunch" Text="{Binding QuickLabel}"/></StackPanel>
+                    <TextBlock Text="{Binding QuickError}" Classes="fieldError" IsVisible="{Binding QuickError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="btn primary big" Content="Add calories" Command="{Binding SaveQuickCommand}"/>
+                </StackPanel>
+            </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Border>
+</UserControl>

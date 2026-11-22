@@ -12,7 +12,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 
 ## What the app stores and sends
 
-**Only on the phone** (the app's SQLite database; never sent): workouts, sets and reps, PRs, splits, body data (gender, birth date, height, weight, activity level), weigh-ins, calorie goals and logs, reminder settings, and the error log.
+**Only on the phone** (the app's SQLite database; never sent): workouts, sets and reps, PRs, splits, body data (gender, birth date, height, weight, activity level), weigh-ins, calorie goals and logs, the food log (foods, favourites, entries; Phase 26), reminder settings, and the error log.
 
 **On the server** (Google Cloud Run in Belgium, with a Neon Postgres database in Frankfurt):
 
@@ -45,6 +45,8 @@ The email address also receives codes, for confirming it and resetting the passw
 
 **Health Connect (Phase 23, Android):** the same as Apple Health, off until turned on in Profile. It saves the app's own workouts, cardio sessions and weigh-ins and reads weight, height and daily steps (Health Connect has no birth date or sex). Everything read stays on the phone.
 
+**Food log (Phase 26):** foods and entries stay on the phone. To look up a packaged food, the barcode or the search text goes to Open Food Facts (openfoodfacts.org, no account, no identifier; it sees the IP address). The camera is used only to read barcodes on the user's tap: no picture is kept or sent. USDA FoodData Central is bundled in the app and works offline.
+
 **Not collected by GainStreak:** location (see above: the server never gets it; the only position that leaves the phone is the rounded one sent to Nominatim on the user's tap), contacts, photos, health data (Apple Health and Health Connect are read and written on the phone only), advertising ids. There are no ads, no analytics and no tracking SDKs. Crashes aren't sent anywhere unless the user sends them through Feedback.
 
 ## Google Play: Data safety form
@@ -71,6 +73,8 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Location (Phase 18):** *accessed* (`ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION`, foreground only). The precise position is **not collected and not shared**: it's used on the phone only (for the rounded one, see Phase 19 below). No background location, so no location permissions declaration is needed in the Play Console.
 - **Approximate location (Phase 19), decided:** declared as above. "Show me gyms near me" sends a rounded position (about 1 km) to Nominatim, a third party (OpenStreetMap), on the user's tap; Play counts data sent off the device as collected, and sent to a third party that isn't the developer's service provider as shared. Ephemeral: GainStreak doesn't keep it, and it isn't used for anything but naming the city. Enter it in Play Console before 0.19.0 goes to the store.
 
+- **Food log and camera (Phase 26), decided:** food data is **not collected** (it never leaves the phone). Barcodes and search text sent to Open Food Facts are not tied to the user, hold no identifier and are used only for the lookup: no extra data type to declare beyond what's above; if Play's form asks, treat it like the Nominatim case (sent to a third party, ephemeral, app functionality) and answer "search history" only if you decide it counts. **Camera:** the Android scanner is Google's code scanner (Google Play services), which needs **no CAMERA permission** in the manifest and returns only the number. The Barcode UI module downloads on first use.
+
 ## App Store: App Privacy ("nutrition label")
 
 - **Data linked to the user:**
@@ -84,6 +88,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Coarse Location (Phase 19), decided:** declared under "Data not linked to the user" below: the rounded position sent to Nominatim for "Show me gyms near me". Apple counts data as collected when it leaves the device and a party can keep it longer than the request needs, and OpenStreetMap's servers keep request logs for a while. Precise location stays not collected. Enter it in App Store Connect before 0.19.0 goes to the store.
 - **The prompt (Phase 19):** `NSLocationWhenInUseUsageDescription` now reads "GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you." Android's note before its prompt says the same.
 - **Health & Fitness (Phase 20):** **not collected.** What's read from Apple Health and what's saved there never leaves the phone (same reasoning as precise location). Nothing to declare; Apple's HealthKit rules still apply: no ads or marketing use, no iCloud storage of Health data (the app keeps it in its local database only), and a privacy policy that says how it's used (`site/privacy.html`, "Apple Health").
+- **Food log and camera (Phase 26), decided:** food data is **not collected** (stays on the phone). Barcodes and search text sent to Open Food Facts carry no identifier and aren't linked to the user; they are the same kind of lookup as the OpenStreetMap ones, so nothing new to declare (if you want to be strict, add "Search History, not linked, App Functionality"). Camera prompt, `NSCameraUsageDescription`: "GainStreak uses the camera to scan food barcodes." Nothing is recorded.
 - **Data used to track you:** none.
 - **Data not linked to the user:**
   - Location: Coarse Location (App Functionality), from 0.19.0. Not used for tracking.
@@ -171,3 +176,8 @@ It makes **alex** (six weeks of Push / Pull / Legs, PRs, weekly weigh-ins, calor
   - 6.9" iPhone at 1320 × 2868, taken on an iPhone 17 Pro Max Simulator with `xcrun simctl io booted screenshot home.png`. App Store Connect scales these down for smaller iPhones.
   - 13" iPad at 2064 × 2752, because the app also runs on iPad (`UIDeviceFamily` 1 and 2). Alternatively, remove iPad support before the first upload.
 - **Google Play:** at least 2 phone screenshots, 1080 × 2400 from the emulator (`adb exec-out screencap -p > home.png`), plus a 512 × 512 icon and a 1024 × 500 feature graphic.
+
+## Food data attribution (Phase 26)
+
+- Profile's About shows "Food data: USDA FoodData Central and Open Food Facts (openfoodfacts.org, ODbL)"; results from Open Food Facts show its name under the food. USDA FoodData Central is public domain (CC0). Open Food Facts' database is ODbL and its contents DbCL; product images aren't used.
+- **Store long description:** mention "log what you eat: search foods, scan barcodes" so reviewers see why the app asks for the camera (iOS review notes: the scan button is on Calories > Add food; a typed barcode works without a camera, e.g. 3017620422003).

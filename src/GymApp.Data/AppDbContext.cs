@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Gym> Gyms => Set<Gym>();
     public DbSet<WorkoutLog> WorkoutLogs => Set<WorkoutLog>();
     public DbSet<CalorieLog> CalorieLogs => Set<CalorieLog>();
+    public DbSet<Food> Foods => Set<Food>();
+    public DbSet<FoodEntry> FoodEntries => Set<FoodEntry>();
     public DbSet<UserSchedule> UserSchedules => Set<UserSchedule>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<UserDayExercise> UserDayExercises => Set<UserDayExercise>();
@@ -139,6 +141,21 @@ public class AppDbContext : DbContext
             .HasForeignKey(c => c.GymId).OnDelete(DeleteBehavior.SetNull);
         b.Entity<CardioSession>().Property(c => c.PauseReason).HasMaxLength(12);
         b.Entity<CalorieLog>().Property(c => c.GoalTypeAtTime).HasConversion<string>();
+
+        // Food log (Phase 26). A food is copied here from the catalog / Open Food Facts the first time it's used; the barcode or
+        // USDA id is unique per user and source. Entries snapshot their numbers; losing the food only clears the link.
+        b.Entity<Food>().Property(f => f.Source).HasConversion<string>().HasMaxLength(16);
+        b.Entity<Food>().Property(f => f.SourceKey).HasMaxLength(32);
+        b.Entity<Food>().Property(f => f.Name).HasMaxLength(200);
+        b.Entity<Food>().Property(f => f.Brand).HasMaxLength(120);
+        b.Entity<Food>().Property(f => f.ServingName).HasMaxLength(80);
+        b.Entity<Food>().HasIndex(f => new { f.UserId, f.Source, f.SourceKey }).IsUnique().HasFilter("\"SourceKey\" IS NOT NULL");
+        b.Entity<Food>().HasOne(f => f.User).WithMany().HasForeignKey(f => f.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<FoodEntry>().Property(e => e.Meal).HasConversion<string>().HasMaxLength(12);
+        b.Entity<FoodEntry>().Property(e => e.Label).HasMaxLength(80);
+        b.Entity<FoodEntry>().HasIndex(e => new { e.UserId, e.Date });
+        b.Entity<FoodEntry>().HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<FoodEntry>().HasOne(e => e.Food).WithMany().HasForeignKey(e => e.FoodId).OnDelete(DeleteBehavior.SetNull);
         
         b.Entity<UserSchedule>().HasIndex(s => new { s.UserId, s.EffectiveFrom }).IsUnique();
         b.Entity<UserSchedule>().Property(s => s.WeekPattern).HasMaxLength(7);

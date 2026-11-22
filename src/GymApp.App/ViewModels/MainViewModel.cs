@@ -393,6 +393,23 @@ public partial class MainViewModel : ViewModelBase
         return vm;
     }, root: false);
 
+    /// <summary>The Add food sheet (Phase 26; phones only). <paramref name="meal"/> null: the meal for the time of day.
+    /// <paramref name="changed"/> runs after every change, so the screen under it reloads.</summary>
+    public void OpenAddFood(Meal? meal, Func<FoodResult, Task> changed)
+    {
+        var vm = _sp.GetRequiredService<AddFoodViewModel>();
+        vm.Load(meal, changed);
+        Popup = vm;
+    }
+
+    /// <summary>The same sheet at one of today's entries, to change its amount or meal, or delete it.</summary>
+    public void OpenFoodEntry(FoodEntryInfo entry, Func<FoodResult, Task> changed)
+    {
+        var vm = _sp.GetRequiredService<AddFoodViewModel>();
+        Popup = vm;
+        _ = vm.LoadEntryAsync(entry, changed);
+    }
+
     /// <summary>One badge's detail, as a popup (a sheet on phones).</summary>
     public void OpenBadgeDetail(BadgeItemViewModel item)
     {

@@ -38,6 +38,11 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public bool HasBadges => true;
 
+    public bool HasFoodLog => true;
+
+    /// <summary>The head's camera scanner (Phase 26); iOS and Android override it.</summary>
+    public virtual IBarcodeScanner CreateBarcodeScanner() => new NoBarcodeScanner();
+
     public abstract INotificationScheduler CreateNotificationScheduler();
 
     public abstract ILocationProvider CreateLocationProvider();

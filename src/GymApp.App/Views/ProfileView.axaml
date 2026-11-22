@@ -1215,6 +1215,8 @@
             </StackPanel>
 
             <TextBlock Text="{Binding VersionText}" Classes="mono" FontSize="12" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center"/>
+            <TextBlock Text="{Binding FoodCredit}" FontSize="11" Foreground="{DynamicResource Faint}" HorizontalAlignment="Center" TextAlignment="Center"
+                       TextWrapping="Wrap" IsVisible="{Binding ShowFoodCredit}"/>
         </StackPanel>
         </ScrollViewer>
     </DockPanel>

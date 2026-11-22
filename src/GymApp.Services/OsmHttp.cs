@@ -7,23 +7,15 @@ using System.Threading.Tasks;
 namespace GymApp.Services;
 
 /// <summary>Shared setup for the OpenStreetMap APIs (Nominatim, Overpass) and tiles: they ask for an identifying
-/// User-Agent.</summary>
+/// User-Agent. Forwards to <see cref="AppHttp"/>, which Open Food Facts uses too.</summary>
 public static class OsmHttp
 {
-    /// <summary>"GainStreak/0.15.6 (Android; student project)": the app sets it at startup (<see cref="ForPlatform"/>),
-    /// before any client is made.</summary>
-    public static string UserAgent { get; set; } = "GainStreak/1.0 (student project)";
+    public static string UserAgent { get => AppHttp.UserAgent; set => AppHttp.UserAgent = value; }
 
-    /// <summary>The User-Agent naming the app's version and the platform it runs on (16f).</summary>
-    public static string ForPlatform(string version, string platform) => $"GainStreak/{version} ({platform}; student project)";
+    public static string ForPlatform(string version, string platform) => AppHttp.ForPlatform(version, platform);
 
-    public static HttpClient CreateClient(TimeSpan timeout, HttpMessageHandler? handler = null)
-    {
-        var client = handler is null ? new HttpClient() : new HttpClient(handler, disposeHandler: false);
-        client.Timeout = timeout;
-        client.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-        return client;
-    }
+    public static HttpClient CreateClient(TimeSpan timeout, HttpMessageHandler? handler = null) =>
+        AppHttp.CreateClient(timeout, handler);
 }
 
 /// <summary>Lets one request through at a time, at least <c>minInterval</c> apart. Keep one per API.</summary>

@@ -11,6 +11,15 @@ public static class Units
     public static double KgToLb(double kg) => kg / KgPerLb;
     public static double LbToKg(double lb) => lb * KgPerLb;
 
+    /// <summary>Food amounts (Phase 26): imperial users may enter ounces; entries still store grams (or ml).</summary>
+    public const double GramsPerOz = 28.349523125;
+    public const double MlPerFlOz = 29.5735295625;
+
+    public static double OzToGrams(double oz) => oz * GramsPerOz;
+    public static double GramsToOz(double grams) => grams / GramsPerOz;
+    public static double FlOzToMl(double flOz) => flOz * MlPerFlOz;
+    public static double MlToFlOz(double ml) => ml / MlPerFlOz;
+
     public static double FeetInchesToCm(int feet, double inches) => (feet * 12 + inches) * CmPerInch;
 
     /// <summary>Rounded to whole inches, so 5 ft 11.6 in shows as 6 ft 0 in rather than 5 ft 12 in.</summary>

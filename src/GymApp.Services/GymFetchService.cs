@@ -63,9 +63,8 @@ public class GymFetchService
         TimeSpan retryDelay)
     {
         _dbFactory = dbFactory;
-        // Well over the server-side [timeout:25]: that limit is only the query's run time, and a busy server queues
-        // first (overpass-api.de took 31 s for Timișoara when it did answer)
-        _http = OsmHttp.CreateClient(timeout ?? TimeSpan.FromSeconds(45), handler);
+        // Per server. A busy server that hasn't answered in 20 s usually won't soon; the other one often answers at once
+        _http = OsmHttp.CreateClient(timeout ?? TimeSpan.FromSeconds(20), handler);
         _endpoints = endpoints;
         _retryDelay = retryDelay;
         _throttle = new RequestThrottle(minInterval);
@@ -177,8 +176,8 @@ public class GymFetchService
                 catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
                 catch (OperationCanceledException)
                 {
-                    // A timeout already took ~45 s; trying again would make the user wait minutes
-                    return (null, "Loading gyms took too long. The map server may be busy, try again later.");
+                    // This server sat on the request: move on to the other one instead of giving up
+                    error = "Loading gyms took too long. The map server may be busy, try again later.";
                 }
                 catch (HttpRequestException)
                 {

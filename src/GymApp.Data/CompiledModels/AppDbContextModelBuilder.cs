@@ -11,7 +11,7 @@ namespace GymApp.Data.CompiledModels
     public partial class AppDbContextModel
     {
         private AppDbContextModel()
-            : base(skipDetectChanges: false, modelId: new Guid("efb4c977-34ce-4287-8214-53770d4badcf"), entityTypeCount: 28)
+            : base(skipDetectChanges: false, modelId: new Guid("217e73ca-f8a4-418e-b473-5f685882f1fd"), entityTypeCount: 30)
         {
         }
 
@@ -24,6 +24,8 @@ namespace GymApp.Data.CompiledModels
             var earnedBadge = EarnedBadgeEntityType.Create(this);
             var exercise = ExerciseEntityType.Create(this);
             var exerciseBarSetting = ExerciseBarSettingEntityType.Create(this);
+            var food = FoodEntityType.Create(this);
+            var foodEntry = FoodEntryEntityType.Create(this);
             var friendInvite = FriendInviteEntityType.Create(this);
             var friendship = FriendshipEntityType.Create(this);
             var gym = GymEntityType.Create(this);
@@ -54,6 +56,9 @@ namespace GymApp.Data.CompiledModels
             ExerciseEntityType.CreateForeignKey1(exercise, user);
             ExerciseBarSettingEntityType.CreateForeignKey1(exerciseBarSetting, exercise);
             ExerciseBarSettingEntityType.CreateForeignKey2(exerciseBarSetting, user);
+            FoodEntityType.CreateForeignKey1(food, user);
+            FoodEntryEntityType.CreateForeignKey1(foodEntry, food);
+            FoodEntryEntityType.CreateForeignKey2(foodEntry, user);
             FriendInviteEntityType.CreateForeignKey1(friendInvite, user);
             FriendshipEntityType.CreateForeignKey1(friendship, user);
             FriendshipEntityType.CreateForeignKey2(friendship, user);
@@ -99,6 +104,8 @@ namespace GymApp.Data.CompiledModels
             EarnedBadgeEntityType.CreateAnnotations(earnedBadge);
             ExerciseEntityType.CreateAnnotations(exercise);
             ExerciseBarSettingEntityType.CreateAnnotations(exerciseBarSetting);
+            FoodEntityType.CreateAnnotations(food);
+            FoodEntryEntityType.CreateAnnotations(foodEntry);
             FriendInviteEntityType.CreateAnnotations(friendInvite);
             FriendshipEntityType.CreateAnnotations(friendship);
             GymEntityType.CreateAnnotations(gym);

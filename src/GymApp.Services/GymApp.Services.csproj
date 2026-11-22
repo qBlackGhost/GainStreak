@@ -7,6 +7,12 @@
     <ProjectReference Include="..\GymApp.Client\GymApp.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The USDA catalog (Phase 26), built by tools/food-catalog and extracted to the data folder when its version changes -->
+    <EmbeddedResource Include="Catalog\foods.db" LogicalName="GymApp.Services.foods.db" />
+    <EmbeddedResource Include="Catalog\foods.version" LogicalName="GymApp.Services.foods.version" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -22,6 +22,8 @@
 		<!-- Friend notifications (Phase 22) that Android shows itself while the app is in the background -->
 		<meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_notification" />
 		<meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="friends" />
+		<!-- Barcode scanner (Phase 26): Play services downloads Google's scanner screen at install, not at the first scan -->
+		<meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
 		<!-- Health Connect (Phase 23) shows the app's permission sheet only if the app explains its use: Android 14 and
 		     later open it through this alias, earlier versions through the rationale action on the activity itself -->
 		<activity-alias android:name="ViewPermissionUsageActivity" android:exported="true"
