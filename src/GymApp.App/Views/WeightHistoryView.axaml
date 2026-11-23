@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.WeightHistoryView"
+             x:DataType="vm:WeightHistoryViewModel">
+    <!-- The phones' weight History (Phase 27): every weigh-in by month, newest first, the change since the one before, Delete -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+    </UserControl.Styles>
+    <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="18,12,18,20" CornerRadius="22"
+                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <DockPanel TextElement.Foreground="{DynamicResource Ink}">
+                <StackPanel DockPanel.Dock="Top" Spacing="4" Margin="0,0,0,8">
+                    <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"
+                            Margin="0,0,0,10"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="Weight history" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="icon" AutomationProperties.Name="Close" Command="{Binding CloseCommand}">
+                            <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                        </Button>
+                    </Grid>
+                    <TextBlock Text="{Binding Summary}" FontSize="12" Classes="muted"/>
+                    <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding Groups}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:WeightHistoryGroup">
+                                <StackPanel Margin="0,10,0,0">
+                                    <TextBlock Text="{Binding Title}" FontSize="11" LetterSpacing="1.2" FontWeight="Bold" Classes="muted" Margin="0,0,0,4"/>
+                                    <ItemsControl ItemsSource="{Binding Rows}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:WeightHistoryRowViewModel">
+                                                <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="50">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DateText}" FontSize="15" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding ChangeText}" FontFamily="{StaticResource Mono}" FontSize="12"
+                                                                   Classes="muted" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding WeightText}" FontFamily="{StaticResource Mono}" FontSize="15"
+                                                                   FontWeight="Bold" VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="3" Classes="btn outline small" Width="36" Height="36" MinHeight="36" Padding="0"
+                                                                BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}" Command="{Binding DeleteCommand}"
+                                                                AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
+                                                            <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
+        </v:Sheet>
+    </Border>
+</UserControl>

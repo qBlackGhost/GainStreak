@@ -237,6 +237,26 @@
         <Style Selector="TextBlock.tileName"><Setter Property="FontSize" Value="13"/></Style>
 
         <Style Selector=".phone StackPanel#Main"><Setter Property="Spacing" Value="14"/></Style>
+        <!-- The calories card's status pill on the phones (Phase 27), as on the Calories screen -->
+        <Style Selector="Border.status">
+            <Setter Property="CornerRadius" Value="999"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Soft}"/>
+        </Style>
+        <Style Selector="Border.status.off">
+            <Setter Property="BorderBrush" Value="{DynamicResource OrangeTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource FlameText}"/>
+        </Style>
+        <Style Selector="Border.status.over">
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource MissRed}"/>
+        </Style>
+        <Style Selector="Border.status.hit">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="TextElement.Foreground" Value="Black"/>
+        </Style>
         <Style Selector="Button.goalChip">
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Padding" Value="10,3"/>
@@ -1121,7 +1141,7 @@
                 </Border>
 
                 <!-- Calories today -->
-                <Border x:Name="CaloriesCard" Classes="card">
+                <Border x:Name="CaloriesCard" Classes="card" IsVisible="{Binding !HasFoodLog}">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Orientation="Horizontal" Spacing="10">
@@ -1186,6 +1206,25 @@
                         <!-- Phones (Phase 26): the button is Add food; the typed number is Quick add on its sheet -->
                         <Button Classes="btn light" MinHeight="50" Content="Add food" Command="{Binding AddFoodCommand}"
                                 IsVisible="{Binding HasFoodLog}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Phones (Phase 27): the Calories screen's card, with Manage food; the goal chip opens Calories -->
+                <Border Classes="card" IsVisible="{Binding HasFoodLog}">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <TextBlock Text="Calories" FontSize="22" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                            <Border Grid.Column="1" Classes="status" Classes.off="{Binding TodayCard.IsUnder}" Classes.over="{Binding TodayCard.IsOver}" Classes.hit="{Binding TodayCard.IsHit}"
+                                    Padding="10,3" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TodayCard.StatusText}" FontSize="12" FontWeight="Bold"/>
+                            </Border>
+                            <Button Grid.Column="2" Classes="goalChip" Command="{Binding ShowCaloriesCommand}"
+                                    Content="{Binding CalorieGoalType, TargetNullValue='Set a goal'}"
+                                    AutomationProperties.Name="Calorie goal and history"/>
+                        </Grid>
+                        <v:TodayCaloriesCard DataContext="{Binding TodayCard}"/>
+                        <Button Classes="btn light" MinHeight="50" Content="Manage food" Command="{Binding AddFoodCommand}"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                     </StackPanel>
                 </Border>
 

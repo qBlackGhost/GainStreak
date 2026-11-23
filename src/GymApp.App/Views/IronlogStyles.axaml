@@ -248,6 +248,10 @@
         <Style Selector=".phone v|Sheet">
             <Setter Property="IsBottomSheet" Value="True"/>
         </Style>
+        <!-- A small card that stays centred on phones too (the past-day popup, Phase 27d) -->
+        <Style Selector=".phone v|Sheet.centred">
+            <Setter Property="IsBottomSheet" Value="False"/>
+        </Style>
 
         <!-- Sidebar -->
         <Style Selector="Button.nav">

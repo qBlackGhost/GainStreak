@@ -152,13 +152,14 @@ public class FoodAmountViewModelTests
 
 public class FoodFormViewModelTests
 {
-    [Fact] public void PerServing_IsConvertedToPer100g()
+    [Fact] public void PerServing_IsConvertedToPer100g_AndKcalIsCalculatedFromTheMacros()
     {
-        var f = new FoodFormViewModel { Name = "Protein bar", KcalText = "200", ProteinText = "15", CarbsText = "20", FatText = "5",
+        var f = new FoodFormViewModel { Name = "Protein bar", ProteinText = "15", CarbsText = "20", FatText = "5",
             ServingName = "1 bar", ServingGramsText = "50", BasisIndex = 1 };
+        Assert.Equal("= 185 kcal", f.KcalPreview);   // 60 + 80 + 45, for the serving as typed
         var input = f.TryBuild()!;
         Assert.Null(f.Error);
-        Assert.Equal(400, input.Kcal);
+        Assert.Equal(370, input.Kcal);               // per 100 g: 30 / 40 / 10
         Assert.Equal(30, input.Protein);
         Assert.Equal(40, input.Carbs);
         Assert.Equal(10, input.Fat);
@@ -167,36 +168,51 @@ public class FoodFormViewModelTests
 
     [Fact] public void PerServing_NeedsTheServingsWeight()
     {
-        var f = new FoodFormViewModel { Name = "Bar", KcalText = "200", BasisIndex = 1 };
+        var f = new FoodFormViewModel { Name = "Bar", ProteinText = "1", CarbsText = "1", FatText = "1", BasisIndex = 1 };
         Assert.Null(f.TryBuild());
         Assert.Contains("serving's weight", f.Error);
     }
 
-    [Theory]
-    [InlineData("", "Enter the calories.")]
-    [InlineData("abc", "must be a number")]
-    [InlineData("950", "between 0 and 900")]
-    public void Calories_AreValidated(string kcal, string message)
+    [Fact] public void PerServing_MacrosCantWeighMoreThanTheServing()
     {
-        var f = new FoodFormViewModel { Name = "Oats", KcalText = kcal };
+        var f = new FoodFormViewModel { Name = "Bar", ProteinText = "30", CarbsText = "0", FatText = "0", ServingGramsText = "25", BasisIndex = 1 };
+        Assert.Null(f.TryBuild());
+        Assert.Contains("serving", f.Error);
+    }
+
+    [Theory]
+    [InlineData("", "5", "5", "Enter the protein")]
+    [InlineData("5", "", "5", "Enter the carbs")]
+    [InlineData("5", "5", "", "Enter the fat")]
+    [InlineData("abc", "5", "5", "must be a number")]
+    [InlineData("101", "0", "0", "between 0 and 100")]
+    [InlineData("60", "60", "0", "more than 100 g")]
+    public void Macros_AreRequiredAndValidated(string protein, string carbs, string fat, string message)
+    {
+        var f = new FoodFormViewModel { Name = "Oats", ProteinText = protein, CarbsText = carbs, FatText = fat };
         Assert.Null(f.TryBuild());
         Assert.Contains(message, f.Error);
     }
 
-    [Fact] public void NameIsRequired_AndMacrosMayBeLeftOut()
+    [Fact] public void NameIsRequired_ZeroMacrosAreFine_AndThePreviewFollowsWhatIsTyped()
     {
-        Assert.Contains("name", new FoodFormViewModel { Name = " ", KcalText = "100" }.Let(f => { f.TryBuild(); return f.Error!; }));
-        var ok = new FoodFormViewModel { Name = "Water", KcalText = "0" }.TryBuild()!;
-        Assert.Equal(0, ok.Kcal);   // zero is a fine number of calories
-        Assert.Null(ok.Protein);
+        Assert.Contains("name", new FoodFormViewModel { Name = " ", ProteinText = "1", CarbsText = "1", FatText = "1" }.Let(f => { f.TryBuild(); return f.Error!; }));
+        var water = new FoodFormViewModel { Name = "Water", ProteinText = "0", CarbsText = "0", FatText = "0" };
+        Assert.Equal("= 0 kcal", water.KcalPreview);
+        Assert.Equal(0, water.TryBuild()!.Kcal);
+
+        var f2 = new FoodFormViewModel { Name = "Oats" };
+        Assert.Equal("= — kcal", f2.KcalPreview);
+        f2.ProteinText = "10"; f2.CarbsText = "60"; f2.FatText = "7";
+        Assert.Equal("= 343 kcal", f2.KcalPreview);   // 40 + 240 + 63
     }
 
-    [Fact] public void AProductWithoutEnergy_OpensWithAnEmptyCaloriesBox_AndItsReason()
+    [Fact] public void AProductWithoutEnergy_OpensWithItsReason_AndItsMacros()
     {
         var product = new FoodInfo(null, FoodSource.OpenFoodFacts, "5941487002932", "Covrigi", "Boromir", false, 0, null, null, null, "400g", 400,
             Problem: FoodRules.NoEnergy);
         var f = new FoodFormViewModel(product, "Check this food", product.Problem);
-        Assert.Equal("", f.KcalText);   // not 0: that would be saved by mistake
+        Assert.Equal("", f.ProteinText);   // missing macros stay empty: they have to be typed
         Assert.Equal("Covrigi", f.Name);
         Assert.Equal("Boromir", f.Brand);
         Assert.Equal("5941487002932", f.Barcode);
@@ -435,19 +451,26 @@ public class FoodLogViewModelTests : IDisposable
 
     // ------------------------------------------------------------ quick add, new food
 
-    [Fact] public async Task QuickAdd_TakesAWholeNumber_AndAnOptionalLabel()
+    [Fact] public async Task QuickAdd_NeedsAllThreeMacros_ShowsTheKcal_AndTakesAnOptionalLabel()
     {
         var food = Food();
         var vm = Sheet(food, Meal.Snacks);
         vm.ShowQuickCommand.Execute(null);
         Assert.True(vm.IsQuickPage);
+        Assert.Equal("= — kcal", vm.QuickKcalPreview);
 
-        vm.QuickKcalText = "abc";
+        vm.QuickProteinText = "abc";
         await Run(vm.SaveQuickCommand);
         Assert.NotNull(vm.QuickError);
+
+        vm.QuickProteinText = "25";
+        vm.QuickCarbsText = "40";
+        await Run(vm.SaveQuickCommand);   // fat missing
+        Assert.Contains("fat", vm.QuickError);
         Assert.Equal(0, _closed);
 
-        vm.QuickKcalText = "450";
+        vm.QuickFatText = "10";
+        Assert.Equal("= 350 kcal", vm.QuickKcalPreview);
         vm.QuickLabel = "Canteen pasta";
         await Run(vm.SaveQuickCommand);
         Assert.Equal(1, _closed);
@@ -455,7 +478,8 @@ public class FoodLogViewModelTests : IDisposable
         Assert.True(entry.IsQuickAdd);
         Assert.Equal("Canteen pasta", entry.Name);
         Assert.Equal(Meal.Snacks, entry.Meal);
-        Assert.Equal(450, entry.Kcal);
+        Assert.Equal(350, entry.Kcal);
+        Assert.Equal(25, entry.Protein);
     }
 
     [Fact] public async Task NewFood_OpensWithWhatWasTyped_SavesIt_AndGoesToTheAmount()
@@ -470,11 +494,11 @@ public class FoodLogViewModelTests : IDisposable
         Assert.False(vm.ShowMealPill);
         Assert.Equal("Bunica's jam", vm.Form!.Name);
 
-        await Run(vm.SaveFormCommand);   // no calories yet
+        await Run(vm.SaveFormCommand);   // no macros yet
         Assert.True(vm.IsFormPage);
-        Assert.Equal("Enter the calories.", vm.Form!.Error);
+        Assert.Contains("protein", vm.Form!.Error);
 
-        vm.Form.KcalText = "260";
+        vm.Form.ProteinText = "0"; vm.Form.CarbsText = "65"; vm.Form.FatText = "0";   // per 100 g: 260 kcal
         vm.Form.ServingName = "1 spoon";
         vm.Form.ServingGramsText = "20";
         await Run(vm.SaveFormCommand);
@@ -498,7 +522,7 @@ public class FoodLogViewModelTests : IDisposable
         Assert.Equal("5941000010000", vm.Form!.Barcode);
         Assert.Equal("", vm.Form.Name);
         vm.Form.Name = "Jam";
-        vm.Form.KcalText = "250";
+        vm.Form.ProteinText = "0"; vm.Form.CarbsText = "62"; vm.Form.FatText = "0";
         await Run(vm.SaveFormCommand);
 
         var again = await food.LookupBarcodeAsync(_alice, "5941000010000");
@@ -518,7 +542,7 @@ public class FoodLogViewModelTests : IDisposable
         Assert.Equal("Check this food", vm.Title);
         Assert.Equal(FoodRules.NoEnergy, vm.Form!.Notice);
 
-        vm.Form.KcalText = "300";
+        vm.Form.ProteinText = "10"; vm.Form.CarbsText = "50"; vm.Form.FatText = "8";
         await Run(vm.SaveFormCommand);
         Assert.True(vm.IsAmountPage);
         Assert.Equal(FoodSource.Mine, vm.Amount!.Food.Source);
@@ -536,7 +560,7 @@ public class FoodLogViewModelTests : IDisposable
 
         Assert.True(vm.IsAmountPage);
         Assert.True(vm.IsEditingEntry);
-        Assert.False(vm.CanGoBack);
+        Assert.True(vm.CanGoBack);   // back to the sheet's list
         Assert.False(vm.CanEditFood);
         Assert.Equal("2", vm.Amount!.AmountText);
         Assert.Equal(Meal.Breakfast, vm.SelectedMeal);
@@ -546,7 +570,10 @@ public class FoodLogViewModelTests : IDisposable
         vm.MealOptions[2].PickCommand.Execute(null);   // Dinner
         await Run(vm.LogAmountCommand);
 
-        Assert.Equal(1, _closed);
+        Assert.Equal(0, _closed);        // saved, and back on the sheet's list
+        Assert.True(vm.IsSearchPage);
+        Assert.False(vm.IsEditingEntry);
+        Assert.Equal(1, _changes.Count);
         var day = await food.GetDayAsync(_alice, AppClock.Today);
         Assert.Equal(286, day.Kcal);
         Assert.Equal(Meal.Dinner, day.Entries.Single().Meal);
@@ -560,13 +587,14 @@ public class FoodLogViewModelTests : IDisposable
         await vm.LoadEntryAsync(entry, r => { _changes.Add(r); return Task.CompletedTask; });
 
         await Run(vm.DeleteEntryCommand);
-        Assert.Equal(1, _closed);
+        Assert.True(vm.IsSearchPage);
+        Assert.False(vm.HasLogged);
         Assert.Empty((await food.GetDayAsync(_alice, AppClock.Today)).Entries);
         await using var db = _db.CreateDbContext();
         Assert.Empty(db.CalorieLogs.Where(c => c.UserId == _alice));
     }
 
-    [Fact] public async Task AQuickAddEntry_OpensAtItsCalories()
+    [Fact] public async Task AQuickAddEntry_OpensAtItsMacros()
     {
         var food = Food();
         var entry = (await food.QuickAddAsync(_alice, 450, "Canteen", Meal.Lunch)).Entry!;
@@ -574,11 +602,11 @@ public class FoodLogViewModelTests : IDisposable
         await vm.LoadEntryAsync(entry, r => { _changes.Add(r); return Task.CompletedTask; });
 
         Assert.True(vm.IsQuickPage);
-        Assert.Equal("450", vm.QuickKcalText);
+        Assert.Equal("", vm.QuickProteinText);   // an old Quick add has no macros: they have to be typed
         Assert.Equal("Canteen", vm.QuickLabel);
-        vm.QuickKcalText = "500";
+        vm.QuickProteinText = "25"; vm.QuickCarbsText = "40"; vm.QuickFatText = "10";
         await Run(vm.SaveQuickCommand);
-        Assert.Equal(500, (await food.GetDayAsync(_alice, AppClock.Today)).Kcal);
+        Assert.Equal(350, (await food.GetDayAsync(_alice, AppClock.Today)).Kcal);
         Assert.Single((await food.GetDayAsync(_alice, AppClock.Today)).Entries);   // edited, not added
     }
 
@@ -704,7 +732,7 @@ public class FoodLogViewModelTests : IDisposable
         Assert.True(vm.IsFormPage);
         Assert.Equal("5941000010000", vm.Form!.Barcode);
         vm.Form.Name = "Bunica's jam";
-        vm.Form.KcalText = "260";
+        vm.Form.ProteinText = "0"; vm.Form.CarbsText = "65"; vm.Form.FatText = "0";
         await Run(vm.SaveFormCommand);
         Assert.True(vm.IsAmountPage);   // straight to logging it
 
@@ -815,11 +843,11 @@ public class FoodLogViewModelTests : IDisposable
         new(_calories, _profiles, _session, () => throw new InvalidOperationException("no shell in this test"), food ?? Food(),
             new FakePlatform { HasFoodLog = foodLog });
 
-    [Fact] public async Task OnThePhones_TheOldFormIsGone_AndTheDiaryShowsTodayByMeal()
+    [Fact] public async Task OnThePhones_TheScreenShowsTodaysMacrosAndHowManyItemsAreLogged()
     {
         var food = Food();
         await LogEgg(food, 2, Meal.Breakfast);
-        await food.QuickAddAsync(_alice, 450, "Canteen", Meal.Lunch);
+        await food.QuickAddMacrosAsync(_alice, 25, 40, 10, "Canteen", Meal.Lunch);
 
         var vm = Screen(foodLog: true, food);
         await vm.Loaded;
@@ -827,30 +855,71 @@ public class FoodLogViewModelTests : IDisposable
         Assert.True(vm.HasFoodLog);
         Assert.False(vm.ShowLegacyLogForm);
         Assert.False(vm.ShowLegacyResult);
-        Assert.Equal("Food today", vm.DiaryTitle);
-        Assert.False(vm.DiaryIsPast);
-        Assert.Equal(["Breakfast", "Lunch", "Dinner", "Snacks"], vm.Meals.Select(m => m.Name));   // today always shows all four
-        Assert.Equal("143", vm.Meals[0].KcalText);
-        Assert.Equal("450", vm.Meals[1].KcalText);
-        Assert.True(vm.Meals.All(m => m.CanAdd));
-        var row = vm.Meals[0].Entries.Single();
-        Assert.Equal("Egg, whole, raw, fresh", row.Name);
-        Assert.Equal("2 × 1 large · 100 g", row.Detail);
-        Assert.Equal("Quick add", vm.Meals[1].Entries.Single().Detail);
-        Assert.True(vm.HasMacros);
-        Assert.Equal("Protein 12.6 g · Carbs 0.7 g · Fat 9.5 g", vm.MacroText);
-        Assert.Equal("593", vm.EatenKcal);   // the ring still reads CalorieLog
+        Assert.True(vm.HasItems);   // Manage food opens the sheet at today's list
+        Assert.True(vm.HasItems);
+        Assert.Equal("38 g", vm.ProteinBar.GramsText);   // 12.6 + 25 = 37.6, rounded
+        Assert.Equal("41 g", vm.CarbsBar.GramsText);
+        Assert.Equal("20 g", vm.FatBar.GramsText);
+        Assert.Equal("493", vm.EatenKcal);   // the ring still reads CalorieLog: 143 + 350
+        Assert.Equal("No goal yet · eaten 493", vm.GoalEatenText);
     }
 
-    [Fact] public async Task OnTheDesktop_TheOldFormStays_AndTheDiaryIsOff()
+    [Fact] public async Task WithoutTargets_EachBarIsItsShareOfTheDaysCalories_AndTheThreeAddUpToOne()
+    {
+        var food = Food();
+        await food.QuickAddMacrosAsync(_alice, 30, 30, 10, null, Meal.Lunch);   // 120 / 120 / 90 kcal of 330
+        var vm = Screen(foodLog: true, food);
+        await vm.Loaded;
+        Assert.Equal(120.0 / 330, vm.ProteinBar.Fill, 6);
+        Assert.Equal(120.0 / 330, vm.CarbsBar.Fill, 6);
+        Assert.Equal(90.0 / 330, vm.FatBar.Fill, 6);
+        Assert.Equal(1.0, vm.ProteinBar.Fill + vm.CarbsBar.Fill + vm.FatBar.Fill, 6);
+        Assert.False(vm.ProteinBar.IsOver);
+    }
+
+    [Fact] public async Task WithTargets_TheBarIsGramsOverTheTarget_CappedAndMarkedOver()
+    {
+        var food = Food();
+        Assert.True((await _calories.SetCustomMacrosAsync(_alice, GoalType.Maintain, 60, 250, 10)).Success);   // 1,330 kcal
+        await food.QuickAddMacrosAsync(_alice, 30, 30, 20, null, Meal.Lunch);
+        var vm = Screen(foodLog: true, food);
+        await vm.Loaded;
+        Assert.Equal(0.5, vm.ProteinBar.Fill, 6);   // 30 of 60
+        Assert.Equal(0.12, vm.CarbsBar.Fill, 6);    // 30 of 250
+        Assert.Equal(1.0, vm.FatBar.Fill, 6);       // 20 of 10: capped
+        Assert.True(vm.FatBar.IsOver);
+        Assert.False(vm.ProteinBar.IsOver);
+    }
+
+    [Fact] public async Task ADayWithNoFood_HasEmptyBars_AndNothingToOpen()
+    {
+        var vm = Screen(foodLog: true);
+        await vm.Loaded;
+        Assert.False(vm.HasItems);
+        Assert.False(vm.HasItems);
+        Assert.Equal(0, vm.ProteinBar.Fill);
+        Assert.Equal("0 g", vm.FatBar.GramsText);
+    }
+
+    [Fact] public async Task ADayLoggedAsATotal_HasNoItemsAndNoMacros()
+    {
+        await _calories.LogTodayAsync(_alice, 1800);
+        var vm = Screen(foodLog: true);
+        await vm.Loaded;
+        Assert.False(vm.HasItems);
+        Assert.Equal("0 g", vm.ProteinBar.GramsText);
+        Assert.Equal("1,800", vm.EatenKcal);
+    }
+
+    [Fact] public async Task OnTheDesktop_TheOldFormStays_AndThereAreNoMacroBars()
     {
         var vm = Screen(foodLog: false);
         await vm.Loaded;
         Assert.False(vm.HasFoodLog);
         Assert.True(vm.ShowLegacyLogForm);
         Assert.False(vm.ShowLegacyResult);
-        Assert.Empty(vm.Meals);
-        Assert.All(vm.Bars, b => Assert.False(b.IsSelected));   // no selection mark on the desktop's chart
+        Assert.False(vm.HasItems);
+        Assert.All(vm.Bars, b => Assert.False(b.IsSelected));   // no outline on the desktop's chart
 
         vm.TodayInput = "1900";
         await Run(vm.LogCommand);
@@ -860,65 +929,313 @@ public class FoodLogViewModelTests : IDisposable
         Assert.Equal("1,900", vm.EatenKcal);
     }
 
-    [Fact] public async Task ADayLoggedBeforeTheFoodLog_ShowsAsATotal()
+    [Fact] public async Task TheChart_OutlinesToday_CountsOnTargetDays_AndSizesBarsAsSharesOfItsHeight()
     {
-        await _calories.LogTodayAsync(_alice, 1800);
+        await _calories.SetCustomGoalAsync(_alice, 2000);
+        await _calories.LogTodayAsync(_alice, 2000);
         var vm = Screen(foodLog: true);
         await vm.Loaded;
-        Assert.True(vm.DiaryIsTotalOnly);
-        Assert.Equal("Logged as a total · 1,800 kcal", vm.DiaryTotalText);
-        Assert.Empty(vm.Meals);
-        Assert.False(vm.HasMacros);
+        Assert.Equal("1 on target", vm.OnTargetText);
+        Assert.Equal([AppClock.Today], vm.Bars.Where(b => b.IsSelected).Select(b => b.Date));
+        var today = vm.Bars.Single(b => b.Date == AppClock.Today);
+        Assert.Equal(2000.0 / 3000, today.Fraction, 6);
+        Assert.InRange(vm.BandBottomFraction, 0.5, 0.7);   // the target band starts below 2000 of 3000
+        Assert.True(vm.BandHeightFraction > 0);
+        Assert.All(vm.Bars.Where(b => !b.IsLogged), b => Assert.InRange(b.Fraction, 0.01, 0.1));
     }
 
-    [Fact] public async Task APastDay_OpensReadOnly_FromTheWeeksBars()
+    [Fact] public async Task TappingAPastDaysBar_OpensItsPopup_AndTodaysDoesNothing()
+    {
+        var opened = new List<DateOnly>();
+        var vm = Screen(foodLog: true);
+        vm.PastDayOpener = opened.Add;
+        await vm.Loaded;
+
+        var yesterday = AppClock.Today.AddDays(-1);
+        await Run(vm.ShowDayCommand, yesterday);
+        await Run(vm.ShowDayCommand, AppClock.Today);
+        Assert.Equal([yesterday], opened);
+    }
+
+    [Fact] public async Task TheGoalAndMaintenanceRows_SaySomethingUseful()
+    {
+        var vm = Screen(foodLog: true);
+        await vm.Loaded;
+        Assert.Equal("Not set", vm.GoalRowText);
+        Assert.Equal("Add body data", vm.MaintenanceRowText);
+
+        await _calories.SetCustomGoalAsync(_alice, 2200);
+        vm = Screen(foodLog: true);
+        await vm.Loaded;
+        Assert.Equal("2,200 kcal", vm.GoalRowText);
+    }
+
+    // ------------------------------------------------------------ the Calorie goal sheet: Recommended and Custom
+
+    // Male, 30, 180 cm, 80 kg, Active: maintenance 2,760 kcal
+    private async Task FillBodyDataAsync()
+    {
+        await _profiles.SaveAsync(_alice, new ProfileInput(Sex.Male, AppClock.Today.AddYears(-30), 180, ActivityLevel.Active, UnitSystem.Metric));
+        await _profiles.LogWeightAsync(_alice, 80);
+    }
+
+    private async Task<(CalorieGoalSheetViewModel Sheet, Func<int> Saved, Func<int> Closed, Func<int> BodyData)> GoalSheetAsync()
+    {
+        int saved = 0, closed = 0, body = 0;
+        var info = (await _calories.GetAsync(_alice))!.Goal;
+        var vm = new CalorieGoalSheetViewModel(info, _calories, _alice, () => { saved++; return Task.CompletedTask; }, () => closed++, () => body++);
+        return (vm, () => saved, () => closed, () => body);
+    }
+
+    [Fact] public async Task TheGoalSheet_RecommendsMacrosPerKg_AndTheCaloriesTheyAddUpTo()
+    {
+        await FillBodyDataAsync();
+        var (vm, saved, closed, _) = await GoalSheetAsync();
+        Assert.True(vm.ShowRecommendation);
+        Assert.Equal("Use these targets", vm.SaveLabel);
+        Assert.Equal(GoalType.Maintain, vm.GoalType);
+        Assert.Equal(["144 g", "320 g", "72 g"], vm.Tiles.Select(t => t.GramsText));
+        Assert.Equal(["1.8 g per kg", "4.0 g per kg", "0.9 g per kg"], vm.Tiles.Select(t => t.RateText));
+        Assert.Equal("2,504", vm.RecommendedKcalText);
+        Assert.StartsWith("256 under your maintenance (2,760). For a man of 80 kg, active.", vm.RecommendedNote);
+
+        vm.GoalTypes[0].PickCommand.Execute(null);   // Lose: under the safe minimum, so carbs make up the rest
+        Assert.Equal(0, vm.GoalTypeIndex);
+        Assert.Equal("raised to the safe minimum", vm.Tiles[1].RateText);
+        Assert.Equal("2,072", vm.RecommendedKcalText);
+
+        await Run(vm.SaveCommand);
+        Assert.Equal((1, 1), (saved(), closed()));
+        var g = (await _calories.GetAsync(_alice))!.Goal;
+        Assert.Equal((MacroMode.Recommended, GoalType.Lose, 2072), (g.MacroMode!.Value, g.GoalType, g.Goal!.Value));
+    }
+
+    [Fact] public async Task TheGoalSheet_Custom_WorksTheGoalOutFromTheMacros_AndNeedsAllThree()
+    {
+        await FillBodyDataAsync();
+        var (vm, saved, _, _) = await GoalSheetAsync();
+        vm.Modes[1].PickCommand.Execute(null);
+        Assert.True(vm.IsCustom);
+        Assert.Equal("Save", vm.SaveLabel);
+        Assert.Equal("—", vm.CustomKcalText);
+
+        vm.ProteinInput = "170"; vm.CarbsInput = "250";
+        Assert.Equal("—", vm.CustomKcalText);
+        await Run(vm.SaveCommand);
+        Assert.Equal("Enter your fat in grams.", vm.Error);
+        Assert.Equal(0, saved());
+
+        vm.FatInput = "70";   // 680 + 1,000 + 630
+        Assert.Equal("= 2,310", vm.CustomKcalText);
+        Assert.Equal("Worked out from your macros. 450 under your maintenance (2,760).", vm.CustomNote);
+        await Run(vm.SaveCommand);
+        Assert.Equal(1, saved());
+        var g = (await _calories.GetAsync(_alice))!.Goal;
+        Assert.Equal((MacroMode.Custom, 2310, 170), (g.MacroMode!.Value, g.Goal!.Value, g.ProteinGoalGrams!.Value));
+
+        // opening again starts in Custom with the saved grams
+        (vm, _, _, _) = await GoalSheetAsync();
+        Assert.True(vm.IsCustom);
+        Assert.Equal(("170", "250", "70"), (vm.ProteinInput, vm.CarbsInput, vm.FatInput));
+    }
+
+    [Fact] public async Task TheGoalSheet_StartFromRecommended_FillsTheCustomFields_AndBadGramsSayHow()
+    {
+        await FillBodyDataAsync();
+        var (vm, _, _, _) = await GoalSheetAsync();
+        vm.Modes[1].PickCommand.Execute(null);
+        vm.StartFromRecommendedCommand.Execute(null);
+        Assert.Equal(("144", "320", "72"), (vm.ProteinInput, vm.CarbsInput, vm.FatInput));
+
+        vm.CarbsInput = "lots";
+        await Run(vm.SaveCommand);
+        Assert.Equal("Enter the macros as whole numbers of grams, e.g. 150.", vm.Error);
+    }
+
+    [Fact] public async Task TheGoalSheet_WithoutBodyData_StartsInCustom_AndRecommendedOffersBodyData()
+    {
+        var (vm, _, closed, body) = await GoalSheetAsync();
+        Assert.True(vm.IsCustom);
+        Assert.False(vm.HasRecommendation);
+
+        vm.Modes[0].PickCommand.Execute(null);
+        Assert.True(vm.ShowNoRecommendation);
+        Assert.Contains("gender", vm.NoRecommendationText);
+        vm.AddBodyDataCommand.Execute(null);
+        Assert.Equal((1, 1), (closed(), body()));
+    }
+
+    [Fact] public async Task TheGoalRow_SaysWhichModeTheGoalFollows()
+    {
+        await FillBodyDataAsync();
+        await _calories.UseRecommendedAsync(_alice, GoalType.Gain);
+        var vm = Screen(foodLog: true);
+        await vm.Loaded;
+        Assert.Equal("Gain · recommended", vm.GoalRowDetail);
+        Assert.True(vm.HasMacroTargets);
+        Assert.Equal("2,760 kcal", vm.MaintenanceRowText.TrimStart('≈', ' '));
+    }
+
+    // ------------------------------------------------------------ Logged today, in the Add food sheet
+
+    [Fact] public async Task LoggedToday_ListsTheDaysFoodByMeal_WithTheTotal()
+    {
+        var food = Food();
+        await LogEgg(food, 2, Meal.Breakfast);
+        await food.QuickAddMacrosAsync(_alice, 25, 40, 10, "Canteen", Meal.Lunch);
+        var vm = Sheet(food);
+        for (var i = 0; i < 50 && !vm.HasLogged; i++) await Task.Delay(20);
+
+        Assert.True(vm.HasLogged);
+        Assert.False(vm.IsReadOnlyDay);
+        Assert.Equal("LOGGED TODAY", vm.LoggedTitle);
+        Assert.Equal(["Breakfast", "Lunch"], vm.LoggedMeals.Select(m => m.Name));   // only the meals that have something
+        Assert.Equal("143", vm.LoggedMeals[0].KcalText);
+        Assert.Equal("350", vm.LoggedMeals[1].KcalText);
+        Assert.Equal("2 × 1 large · 100 g", vm.LoggedMeals[0].Entries.Single().Detail);
+        Assert.Equal("Quick add · 25 P · 40 C · 10 F", vm.LoggedMeals[1].Entries.Single().Detail);
+        Assert.Equal("493 kcal", vm.LoggedTotalText);
+        Assert.Equal("Protein 37.6 g · Carbs 40.7 g · Fat 19.5 g", vm.LoggedMacroText);
+    }
+
+    [Fact] public async Task TappingALoggedItem_OpensItsAmountPage_WithSaveAndRemove()
+    {
+        var food = Food();
+        await LogEgg(food, 2, Meal.Breakfast);
+        var vm = Sheet(food);
+        for (var i = 0; i < 50 && !vm.HasLogged; i++) await Task.Delay(20);
+
+        await Run(vm.LoggedMeals[0].Entries[0].EditCommand);
+        Assert.True(vm.IsAmountPage);
+        Assert.True(vm.IsEditingEntry);
+        Assert.Equal("Save 143 kcal", vm.LogLabel);
+
+        vm.BackCommand.Execute(null);            // Back returns to the list without changing anything
+        Assert.True(vm.IsSearchPage);
+        Assert.Single(vm.LoggedMeals);
+    }
+
+    [Fact] public async Task APastDay_OpensTheListReadOnly_WithNoSearchAndNoEditing()
     {
         var food = Food();
         var yesterday = AppClock.Today.AddDays(-1);
-        await food.QuickAddAsync(_alice, 700, "Dinner out", Meal.Dinner, yesterday);
+        await food.QuickAddMacrosAsync(_alice, 30, 50, 20, "Dinner out", Meal.Dinner, yesterday);
         await food.LogAsync(_alice, (await food.SearchLocalAsync(_alice, "egg")).First(), Meal.Breakfast, 2, AmountUnit.Servings, yesterday);
-        await food.QuickAddAsync(_alice, 100, null, Meal.Snacks);   // today, to see today untouched
+        await food.QuickAddMacrosAsync(_alice, 5, 5, 5, null, Meal.Snacks);   // today: must not show
 
-        var vm = Screen(foodLog: true, food);
-        await vm.Loaded;
-        Assert.Contains(vm.Bars, b => b.Date == AppClock.Today && b.IsSelected);
+        var vm = Sheet(food);
+        await vm.LoadPastDayAsync(yesterday);
 
-        await Run(vm.ShowDayCommand, yesterday);
-        Assert.True(vm.DiaryIsPast);
-        Assert.Equal(yesterday.ToString("dddd, d MMMM", System.Globalization.CultureInfo.InvariantCulture), vm.DiaryTitle);
-        Assert.Equal(["Breakfast", "Dinner"], vm.Meals.Select(m => m.Name));   // only the meals that have entries
-        Assert.All(vm.Meals, m => Assert.False(m.CanAdd));
-        Assert.All(vm.Meals.SelectMany(m => m.Entries), e => Assert.False(e.CanEdit));
-        Assert.Contains(vm.Bars, b => b.Date == yesterday && b.IsSelected);
-        Assert.Equal("843", vm.Meals.Sum(m => int.Parse(m.KcalText)).ToString());
-        Assert.Equal("100", vm.EatenKcal);   // the ring is still today's
-
-        await Run(vm.BackToTodayCommand);
-        Assert.False(vm.DiaryIsPast);
-        Assert.Equal("Food today", vm.DiaryTitle);
+        Assert.True(vm.IsReadOnlyDay);
+        Assert.False(vm.ShowSearchTools);
+        Assert.False(vm.ShowMealPill);
+        Assert.Equal(yesterday.ToString("dddd, d MMMM", System.Globalization.CultureInfo.InvariantCulture), vm.Title);
+        Assert.Equal("FOOD LOGGED", vm.LoggedTitle);
+        Assert.Equal(["Breakfast", "Dinner"], vm.LoggedMeals.Select(m => m.Name));
+        Assert.All(vm.LoggedMeals.SelectMany(m => m.Entries), e => Assert.False(e.CanEdit));
+        Assert.Equal("143", vm.LoggedMeals[0].KcalText);
     }
 
-    [Fact] public async Task ADayWithNothingLogged_SaysSo()
+    [Fact] public async Task APastDayWithNothingLogged_SaysSo_AndATotalOnlyDayExplainsItself()
     {
-        var vm = Screen(foodLog: true);
-        await vm.Loaded;
-        await Run(vm.ShowDayCommand, AppClock.Today.AddDays(-3));
-        Assert.True(vm.DiaryIsEmpty);
-        Assert.Empty(vm.Meals);
+        var vm = Sheet(Food());
+        await vm.LoadPastDayAsync(AppClock.Today.AddDays(-3));
+        Assert.True(vm.LoggedIsEmpty);
+        Assert.Empty(vm.LoggedMeals);
+
+        await _calories.LogTodayAsync(_alice, 1800, AppClock.Today.AddDays(-2));
+        await vm.LoadPastDayAsync(AppClock.Today.AddDays(-2));
+        Assert.True(vm.LoggedIsTotalOnly);
+        Assert.Equal("1,800 kcal", vm.LoggedTotalText);
+        Assert.Empty(vm.LoggedMeals);
     }
 
-    [Fact] public async Task DeletingAnEntryFromTheDiary_ReloadsTheTotals()
+    // ------------------------------------------------------------ the past-day popup (27d)
+
+    private Task<PastDayPopupViewModel> Popup(FoodService food, DateOnly date, Action? seeFood = null, Action? close = null) =>
+        PastDayPopupViewModel.LoadAsync(_calories, food, _alice, date, seeFood ?? (() => { }), close ?? (() => { }));
+
+    [Fact] public async Task APastDayWithFood_ShowsTheRingSplit_ALegendAddingTo100_AndItsStatusAgainstThatDaysGoal()
     {
         var food = Food();
-        await food.QuickAddAsync(_alice, 300, null, Meal.Snacks);
-        await food.QuickAddAsync(_alice, 200, null, Meal.Snacks);
-        var vm = Screen(foodLog: true, food);
-        await vm.Loaded;
-        Assert.Equal("500", vm.EatenKcal);
+        var day = AppClock.Today.AddDays(-2);
+        await _calories.SetCustomGoalAsync(_alice, 1900);
+        await food.QuickAddMacrosAsync(_alice, 150, 300, 60, "Big day", Meal.Dinner, day);   // 600 + 1,200 + 540 = 2,340 kcal
+        await food.QuickAddMacrosAsync(_alice, 1, 1, 1, null, Meal.Snacks, day);
 
-        await Run(vm.Meals[3].Entries[0].DeleteCommand);
-        Assert.Equal("200", vm.EatenKcal);
-        Assert.Single(vm.Meals[3].Entries);
+        var vm = await Popup(food, day);
+
+        Assert.Equal(day.ToString("ddd d MMM", System.Globalization.CultureInfo.InvariantCulture), vm.Title);
+        Assert.True(vm.HasEntries);
+        Assert.True(vm.ShowRing);
+        Assert.False(vm.IsTotalOnly);
+        Assert.NotNull(vm.Split);
+        Assert.Equal(2357, vm.EatenKcal);
+        Assert.Equal(1900, vm.GoalKcal);
+        Assert.True(vm.IsOver);
+        Assert.Equal("Over target · goal 1,900", vm.StatusText);
+        Assert.Equal(["Protein", "Carbs", "Fat"], vm.Legend.Select(r => r.Name));
+        Assert.Equal(["151 g", "301 g", "61 g"], vm.Legend.Select(r => r.GramsText));
+        Assert.Equal(100, vm.Legend.Sum(r => int.Parse(r.PercentText.TrimEnd('%'))));
+    }
+
+    [Fact] public async Task APastDayOnTarget_SaysSo_AndADayWithNoGoalSaysItWasLogged()
+    {
+        var food = Food();
+        var noGoal = AppClock.Today.AddDays(-3);
+        await food.QuickAddMacrosAsync(_alice, 10, 10, 10, null, Meal.Lunch, noGoal);
+        Assert.Equal("Logged · no goal that day", (await Popup(food, noGoal)).StatusText);
+
+        var hit = AppClock.Today.AddDays(-1);
+        await _calories.SetCustomGoalAsync(_alice, 2000);
+        await food.QuickAddMacrosAsync(_alice, 125, 250, 56, null, Meal.Lunch, hit);   // 500 + 1,000 + 504 = 2,004 kcal
+        var vm = await Popup(food, hit);
+        Assert.True(vm.IsHit);
+        Assert.Equal("On target", vm.StatusText);
+    }
+
+    [Fact] public async Task APastDayLoggedAsATotal_ShowsTheKcalWithNoSplit_AndAnEmptyDaySaysNotLogged()
+    {
+        var food = Food();
+        var total = AppClock.Today.AddDays(-2);
+        await _calories.LogTodayAsync(_alice, 1800, total);
+
+        var vm = await Popup(food, total);
+        Assert.True(vm.IsTotalOnly);
+        Assert.True(vm.ShowRing);
+        Assert.Null(vm.Split);
+        Assert.Empty(vm.Legend);
+        Assert.Equal(1800, vm.EatenKcal);
+        Assert.Equal("1,800 kcal", vm.TotalText);
+        Assert.False(vm.HasEntries);   // nothing to list, so no "See what you ate"
+
+        var empty = await Popup(food, AppClock.Today.AddDays(-4));
+        Assert.False(empty.ShowRing);
+        Assert.True(empty.IsNotLogged);
+        Assert.Equal("Not logged", empty.StatusText);
+        Assert.Empty(empty.Legend);
+    }
+
+    [Fact] public async Task SeeWhatYouAte_ClosesThePopupAndOpensTheList_AndCloseOnlyCloses()
+    {
+        var food = Food();
+        var day = AppClock.Today.AddDays(-1);
+        await food.QuickAddMacrosAsync(_alice, 20, 20, 20, null, Meal.Lunch, day);
+        int seen = 0, closed = 0;
+        var vm = await Popup(food, day, () => seen++, () => closed++);
+
+        vm.SeeFoodCommand.Execute(null);
+        Assert.Equal((1, 1), (seen, closed));
+        vm.CloseCommand.Execute(null);
+        Assert.Equal((1, 2), (seen, closed));
+    }
+
+    [Fact] public async Task OpeningFromManageFood_WithItems_AsksTheSheetToScrollToTheList()
+    {
+        var vm = Sheet(Food());
+        Assert.Equal(0, vm.ScrollToLoggedRequest);
+        vm.Load(null, _ => Task.CompletedTask, scrollToLogged: true);
+        Assert.Equal(1, vm.ScrollToLoggedRequest);
     }
 }
 

@@ -1096,29 +1096,59 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Phones, Main (0.23.1): body data and vacation as rows that open their pages -->
-            <Border Classes="card phoneOnly" Padding="0" ClipToBounds="True" IsVisible="{Binding IsMainPage}">
-                <StackPanel>
-                    <Button Classes="rowLink settingsRow" Padding="16,14" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.BodyData}">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <StackPanel Spacing="3">
-                                <TextBlock Text="Body data" FontSize="12" Classes="muted"/>
-                                <TextBlock Text="{Binding BodySummary}" FontSize="15" FontWeight="Bold" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding BodySummaryDetail}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
+            <!-- Phones, Main (Phase 27): the Body card (weight chart, Log, History, Body data) and Vacation on its own -->
+            <Border Classes="card phoneOnly" IsVisible="{Binding IsMainPage}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="Body" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Padding="3" CornerRadius="9" Background="{DynamicResource Fill}">
+                            <ItemsControl ItemsSource="{Binding ChartRanges}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><v:SegmentedPill SelectedIndex="{Binding ChartRangeIndex}" PillInset="0"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PillOptionViewModel">
+                                        <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="28" Padding="10,0" FontSize="12"
+                                                Content="{Binding Name}" Command="{Binding PickCommand}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </Grid>
+                    <v:WeightTrendChart Height="270" WeighIns="{Binding ChartWeighIns}" Range="{Binding ChartRange}" Unit="{Binding WeightUnit}"/>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBox TextInputOptions.ContentType="Number" x:Name="PhoneWeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                     PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"
+                                     AutomationProperties.Name="Today's weight"/>
+                            <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Padding="20,0" Content="Log"
+                                    Command="{Binding LogWeightCommand}"/>
+                        </Grid>
+                        <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                                   IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" Content="History" Command="{Binding ShowWeightHistoryCommand}"/>
+                        <Button Grid.Column="1" Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.BodyData}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="Body data" VerticalAlignment="Center"/>
+                                <v:Icon Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="14" Height="14" VerticalAlignment="Center"/>
                             </StackPanel>
-                            <v:Icon Grid.Column="1" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
-                    <Border Classes="rowDivider"/>
-                    <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Vacation}">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
-                            <v:Icon Data="{StaticResource IcPlane}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Vacation"/>
-                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding Vacation.StateText}"/>
-                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Button>
+                        </Button>
+                    </Grid>
                 </StackPanel>
+            </Border>
+            <Border Classes="card phoneOnly" Padding="0" ClipToBounds="True" IsVisible="{Binding IsMainPage}">
+                <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Vacation}">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                        <v:Icon Data="{StaticResource IcPlane}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Classes="rowLabel" Text="Vacation"/>
+                        <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding Vacation.StateText}"/>
+                        <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                    </Grid>
+                </Button>
             </Border>
 
             <!-- Phones, Settings (0.23.1): grouped rows showing their values, each opening its page. Feedback and log out

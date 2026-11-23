@@ -20,6 +20,11 @@ public partial class CaloriesView : UserControl
         InitializeComponent();
         Columns.SizeChanged += (_, e) => Columns.Classes.Set("stack", e.NewSize.Width < TwoColumnMinWidth);
 
+        // Phones: the Calories card, Manage food and the chart fill the screen, so the chart's card (the star row) takes what is
+        // left and the goal rows sit just below the fold; on a short phone the chart stops at its minimum and the page scrolls
+        Scroller.GetObservable(ScrollViewer.ViewportProperty).Subscribe(new Avalonia.Reactive.AnonymousObserver<Size>(
+            v => FoldPage.MinHeight = System.Math.Max(0, v.Height - PhonePage.Margin.Top - PhonePage.Spacing)));
+
         // Enter submits, like the buttons
         TodayBox.KeyDown += (_, e) => Run(e, vm => vm.LogCommand);
         GoalBox.KeyDown += (_, e) => Run(e, vm => vm.SetCustomGoalCommand);

@@ -69,9 +69,9 @@ public class SetupPlanTests
 
     [Fact] public void Calories_MissingBodyData_AsksForItFirst_InProfile()
     {
-        var (step, opensProfile) = SetupPlan.Calories(Goal(null), Profile(new UserProfile { HeightCm = 180 }, null, null));
+        var (step, opens) = SetupPlan.Calories(Goal(null), Profile(new UserProfile { HeightCm = 180 }, null, null));
 
-        Assert.True(opensProfile);
+        Assert.Equal(ProfilePage.BodyData, opens);
         Assert.Equal(("Fill in your body data", "Open Profile"), (step.Title, step.Cta));
         Assert.Equal("Add your birth date, weight and activity in Profile. They give you a maintenance estimate to base your calorie goal on.", step.Text);
         Assert.Null(step.Result);
@@ -79,9 +79,9 @@ public class SetupPlanTests
 
     [Fact] public void Calories_BodyDataFilled_MovesOnToTheGoal_WithTheMaintenance()
     {
-        var (step, opensProfile) = SetupPlan.Calories(Goal(null), Profile(Full(), 80, 2650));
+        var (step, opens) = SetupPlan.Calories(Goal(null), Profile(Full(), 80, 2650));
 
-        Assert.False(opensProfile);
+        Assert.Null(opens);
         Assert.Equal(("Set your calorie goal", "Open Calories"), (step.Title, step.Cta));
         Assert.StartsWith("Your maintenance is about 2,650 kcal a day.", step.Text);
     }
@@ -92,10 +92,17 @@ public class SetupPlanTests
         var p = Full();
         p.Sex = null;
 
-        var (step, opensProfile) = SetupPlan.Calories(Goal(null), Profile(p, 80, null));
+        var (step, opens) = SetupPlan.Calories(Goal(null), Profile(p, 80, null));
 
-        Assert.False(opensProfile);
+        Assert.Null(opens);
         Assert.Equal("Choose lose, maintain or gain, or enter your own daily target.", step.Text);
+    }
+
+    [Fact] public void Calories_OnlyTheWeightMissing_OpensProfilesBodyCard()
+    {
+        var (step, opens) = SetupPlan.Calories(Goal(null), Profile(Full(), null, null));
+        Assert.Equal(ProfilePage.Main, opens);
+        Assert.StartsWith("Add your weight in Profile.", step.Text);
     }
 
     [Fact] public void Calories_AGoalAlreadySet_IsDone_EvenWithoutBodyData()

@@ -45,6 +45,14 @@ public static class CalorieGoals
         _ => goal.ToString()
     };
 
+    /// <summary>"Lose", "Maintain", "Gain", for pills and short rows.</summary>
+    public static string ShortName(GoalType goal) => goal switch
+    {
+        GoalType.Lose => "Lose",
+        GoalType.Gain => "Gain",
+        _ => "Maintain"
+    };
+
     /// <summary>The lowest goal for your sex. Without a sex, the lower (female) floor.</summary>
     public static int Floor(Sex? sex) => sex == Sex.Male ? MaleFloor : FemaleFloor;
 

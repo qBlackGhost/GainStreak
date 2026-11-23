@@ -1,0 +1,97 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.TodayCaloriesCard"
+             x:DataType="vm:TodayCaloriesViewModel">
+    <!-- Today's calories on the phones (Phase 27), shared by the Calories screen and Home: the lime ring with what is left,
+         Goal and Eaten, the target range and the macro bars. The card around it, its title and its button belong to the screen. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="Arc.phoneRing"><Setter Property="Stroke" Value="{DynamicResource Accent}"/></Style>
+        <Style Selector="Arc.phoneRing.over"><Setter Property="Stroke" Value="{DynamicResource MissRed}"/></Style>
+        <Style Selector="TextBlock.overText"><Setter Property="Foreground" Value="{DynamicResource MissRed}"/></Style>
+        <Style Selector="TextBlock.statLabel">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="LetterSpacing" Value="1"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="Run.statValue">
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+        </Style>
+        <Style Selector="Run.statUnit">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="Border.macroTrack">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.macroFill">
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="MinWidth" Value="0"/>
+        </Style>
+        <Style Selector="Border.macroFill.protein"><Setter Property="Background" Value="{DynamicResource MacroProtein}"/></Style>
+        <Style Selector="Border.macroFill.carbs"><Setter Property="Background" Value="{DynamicResource MacroCarbs}"/></Style>
+        <Style Selector="Border.macroFill.fat"><Setter Property="Background" Value="{DynamicResource MacroFat}"/></Style>
+        <Style Selector="Border.macroFill.over"><Setter Property="Background" Value="{DynamicResource MissRed}"/></Style>
+    </UserControl.Styles>
+    <StackPanel Spacing="14">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+            <Grid Width="150" Height="150">
+                <Ellipse Stroke="{DynamicResource Line}" StrokeThickness="11"/>
+                <Arc Classes="phoneRing" Classes.over="{Binding IsOver}" StartAngle="-90" SweepAngle="{Binding RingSweep}"
+                     StrokeThickness="11" StrokeLineCap="Round"/>
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="0">
+                    <TextBlock Classes="mono" Classes.overText="{Binding IsOver}" Text="{Binding RingCenter}" FontSize="28" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding RingCenterSub}" FontSize="12" Classes="soft" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+            <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                <StackPanel Spacing="0">
+                    <TextBlock Text="GOAL" Classes="statLabel"/>
+                    <TextBlock><Run Text="{Binding GoalStatText}" Classes="statValue"/><Run Text="{Binding GoalStatUnit}" Classes="statUnit"/></TextBlock>
+                </StackPanel>
+                <StackPanel Spacing="0">
+                    <TextBlock Text="EATEN" Classes="statLabel"/>
+                    <TextBlock Classes.overText="{Binding IsOver}"><Run Text="{Binding EatenStatText}" Classes="statValue"/><Run Text=" kcal" Classes="statUnit"/></TextBlock>
+                </StackPanel>
+                <TextBlock FontSize="12" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding HasGoal}">
+                    <Run Text="Target "/><Run Text="{Binding RangeText}" FontFamily="{StaticResource Mono}"/>
+                </TextBlock>
+                <TextBlock Text="No calorie goal yet." FontSize="12" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding !HasGoal}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Protein, carbs and fat: filled bars, grams on the right -->
+        <StackPanel Spacing="10">
+            <StackPanel Spacing="5">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding ProteinBar.Name}" FontSize="13" Classes="soft" Classes.overText="{Binding ProteinBar.IsOver}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding ProteinBar.Amount}" Classes="mono" Classes.overText="{Binding ProteinBar.IsOver}" FontSize="13"/>
+                </Grid>
+                <Border Classes="macroTrack"><v:FractionBox Orientation="Horizontal" Fraction="{Binding ProteinBar.Fill}">
+                    <Border Classes="macroFill protein" Classes.over="{Binding ProteinBar.IsOver}"/></v:FractionBox></Border>
+            </StackPanel>
+            <StackPanel Spacing="5">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding CarbsBar.Name}" FontSize="13" Classes="soft" Classes.overText="{Binding CarbsBar.IsOver}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding CarbsBar.Amount}" Classes="mono" Classes.overText="{Binding CarbsBar.IsOver}" FontSize="13"/>
+                </Grid>
+                <Border Classes="macroTrack"><v:FractionBox Orientation="Horizontal" Fraction="{Binding CarbsBar.Fill}">
+                    <Border Classes="macroFill carbs" Classes.over="{Binding CarbsBar.IsOver}"/></v:FractionBox></Border>
+            </StackPanel>
+            <StackPanel Spacing="5">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding FatBar.Name}" FontSize="13" Classes="soft" Classes.overText="{Binding FatBar.IsOver}"/>
+                    <TextBlock Grid.Column="1" Text="{Binding FatBar.Amount}" Classes="mono" Classes.overText="{Binding FatBar.IsOver}" FontSize="13"/>
+                </Grid>
+                <Border Classes="macroTrack"><v:FractionBox Orientation="Horizontal" Fraction="{Binding FatBar.Fill}">
+                    <Border Classes="macroFill fat" Classes.over="{Binding FatBar.IsOver}"/></v:FractionBox></Border>
+            </StackPanel>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

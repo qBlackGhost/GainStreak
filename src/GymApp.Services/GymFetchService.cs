@@ -53,16 +53,19 @@ public class GymFetchService
     private readonly TimeSpan _retryDelay;
     private readonly RequestThrottle _throttle;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private readonly IServerGyms? _server;
 
-    public GymFetchService(IDbContextFactory<AppDbContext> dbFactory)
-        : this(dbFactory, null, DefaultEndpoints, TimeSpan.FromSeconds(1), null, null, DefaultRetryDelay) { }
+    /// <param name="server">Our own server's gyms (0.27.0), asked first; null (the TestBench's local mode) asks Overpass only.</param>
+    public GymFetchService(IDbContextFactory<AppDbContext> dbFactory, IServerGyms? server = null)
+        : this(dbFactory, null, DefaultEndpoints, TimeSpan.FromSeconds(1), null, null, DefaultRetryDelay, server) { }
 
     /// <param name="handler">For tests: answers instead of the real API.</param>
     public GymFetchService(IDbContextFactory<AppDbContext> dbFactory, HttpMessageHandler? handler,
         IReadOnlyList<string> endpoints, TimeSpan minInterval, TimeSpan? timeout, TimeProvider? clock,
-        TimeSpan retryDelay)
+        TimeSpan retryDelay, IServerGyms? server = null)
     {
         _dbFactory = dbFactory;
+        _server = server;
         // Per server. A busy server that hasn't answered in 20 s usually won't soon; the other one often answers at once
         _http = OsmHttp.CreateClient(timeout ?? TimeSpan.FromSeconds(20), handler);
         _endpoints = endpoints;
@@ -158,6 +161,13 @@ public class GymFetchService
     /// <summary>Gyms, or null and an error the UI can show. Never throws for network trouble.</summary>
     private async Task<(IReadOnlyList<FetchedGym>? Gyms, string? Error)> FetchAsync(City city, CancellationToken ct)
     {
+        // Our server first (0.27.0): fast and not overloaded. An empty answer counts only when the server covers the box;
+        // otherwise (a country it hasn't loaded, offline, refused) the public Overpass servers as before
+        if (_server is not null
+            && await _server.GetAsync(city.South, city.West, city.North, city.East, ct) is { } answer
+            && (answer.Gyms.Count > 0 || answer.Covered))
+            return (answer.Gyms, null);
+
         var query = Overpass.GymQuery(city.South, city.West, city.North, city.East);
         string error = "Couldn't load gyms.";
 

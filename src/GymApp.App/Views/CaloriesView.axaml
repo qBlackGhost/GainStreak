@@ -39,6 +39,10 @@
             <Setter Property="BorderBrush" Value="{DynamicResource OrangeTintLine}"/>
             <Setter Property="TextElement.Foreground" Value="{DynamicResource FlameText}"/>
         </Style>
+        <Style Selector="Border.status.over">
+            <Setter Property="BorderBrush" Value="{DynamicResource RedTintLine}"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource MissRed}"/>
+        </Style>
         <Style Selector="Border.status.hit">
             <Setter Property="Background" Value="{DynamicResource Accent}"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -123,12 +127,38 @@
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
             <Setter Property="TextElement.FontSize" Value="13"/>
         </Style>
+        <!-- The phones' Calories screen (Phase 27): macro bars, the chart that grows, two settings rows -->
+        <Style Selector="Border.macroTrack">
+            <Setter Property="Height" Value="8"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Background" Value="{DynamicResource Fill}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.macroFill">
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="MinWidth" Value="0"/>
+        </Style>
+        <Style Selector="Border.macroFill.protein"><Setter Property="Background" Value="{DynamicResource MacroProtein}"/></Style>
+        <Style Selector="Border.macroFill.carbs"><Setter Property="Background" Value="{DynamicResource MacroCarbs}"/></Style>
+        <Style Selector="Border.macroFill.fat"><Setter Property="Background" Value="{DynamicResource MacroFat}"/></Style>
+        <Style Selector="Border.macroFill.over">
+            <Setter Property="BorderBrush" Value="{DynamicResource Ink}"/>
+            <Setter Property="BorderThickness" Value="0,0,2,0"/>
+        </Style>
+        <Style Selector="Button.settingRow">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0,7"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
     </UserControl.Styles>
     <DockPanel Background="{DynamicResource PageBg}" TextElement.Foreground="{DynamicResource Ink}">
         <v:Sidebar Current="Calories"/>
 
-        <ScrollViewer>
-        <StackPanel Classes="page" Spacing="24">
+        <ScrollViewer x:Name="Scroller">
+        <Panel>
+        <StackPanel Classes="page" Spacing="24" IsVisible="{Binding !HasFoodLog}">
             <!-- Header -->
             <Grid Classes="pageHeader" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6">
@@ -222,60 +252,6 @@
                             <!-- Phones (Phase 26): food is logged on the Add food sheet, not typed here -->
                             <Button Classes="btn primary" MinHeight="50" FontSize="15" Content="Add food" Command="{Binding AddFoodNowCommand}"
                                     IsVisible="{Binding HasFoodLog}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Food diary (Phase 26, phones): today by meal, or a past day read-only -->
-                    <Border Classes="card" IsVisible="{Binding HasFoodLog}">
-                        <StackPanel Spacing="12">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBlock Text="{Binding DiaryTitle}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <Button Grid.Column="1" Classes="btn outline small" Content="Back to today" Command="{Binding BackToTodayCommand}"
-                                        IsVisible="{Binding DiaryIsPast}"/>
-                            </Grid>
-                            <TextBlock Text="{Binding MacroText}" FontSize="13" Classes="soft" IsVisible="{Binding HasMacros}"/>
-                            <Border Classes="tile" IsVisible="{Binding DiaryIsTotalOnly}">
-                                <TextBlock Text="{Binding DiaryTotalText}" FontSize="14" Classes="light"/>
-                            </Border>
-                            <TextBlock Text="Nothing was logged this day." Classes="muted" FontSize="13" IsVisible="{Binding DiaryIsEmpty}"/>
-                            <ItemsControl ItemsSource="{Binding Meals}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:MealGroupViewModel">
-                                        <StackPanel Spacing="0" Margin="0,0,0,6">
-                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Margin="0,6,0,2">
-                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding KcalText}" Classes="mono soft" FontSize="13" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="2" Classes="link" Content="+ Add" Command="{Binding AddCommand}" IsVisible="{Binding CanAdd}"
-                                                        Foreground="{DynamicResource AccentInk}"/>
-                                            </Grid>
-                                            <ItemsControl ItemsSource="{Binding Entries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:FoodEntryRowViewModel">
-                                                        <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
-                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                                                                <Button Background="Transparent" BorderThickness="0" Padding="0,8" HorizontalAlignment="Stretch"
-                                                                        HorizontalContentAlignment="Stretch" Command="{Binding EditCommand}" IsEnabled="{Binding CanEdit}">
-                                                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                                                        <StackPanel Spacing="1">
-                                                                            <TextBlock Text="{Binding Name}" FontSize="15" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                                            <TextBlock Text="{Binding Detail}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
-                                                                        </StackPanel>
-                                                                        <TextBlock Grid.Column="1" Text="{Binding KcalText}" Classes="mono" FontSize="14" VerticalAlignment="Center"/>
-                                                                    </Grid>
-                                                                </Button>
-                                                                <Button Grid.Column="1" Classes="icon" Command="{Binding DeleteCommand}" IsVisible="{Binding CanEdit}"
-                                                                        AutomationProperties.Name="Delete">
-                                                                    <v:Icon Data="{StaticResource IcX}" Width="14" Height="14" StrokeThickness="2.4" Stroke="{DynamicResource Muted}"/>
-                                                                </Button>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
                         </StackPanel>
                     </Border>
 
@@ -510,6 +486,119 @@
                 </StackPanel>
             </Grid>
         </StackPanel>
+
+        <!-- ===== Phones (Phase 27): today, Add food, the last 7 days (takes the rest of the height), goal and maintenance ===== -->
+        <!-- Phones (Phase 27): the Calories card, Manage food and the last 7 days fill the screen; the goal rows are below it -->
+        <StackPanel x:Name="PhonePage" Margin="16,10,16,12" Spacing="10" IsVisible="{Binding HasFoodLog}">
+        <Grid x:Name="FoldPage" RowSpacing="10" RowDefinitions="Auto,Auto,Auto,*">
+            <StackPanel Spacing="2" IsVisible="{Binding HasMessage}">
+                <TextBlock Text="{Binding Info}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold" TextWrapping="Wrap"
+                           IsVisible="{Binding Info, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap"
+                           IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+            </StackPanel>
+
+            <!-- Calories: the ring, goal and eaten, and the macro bars -->
+            <Border Grid.Row="1" Classes="card" Padding="14">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="Calories" FontSize="22" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Classes="status" Classes.off="{Binding TodayCard.IsUnder}" Classes.over="{Binding TodayCard.IsOver}" Classes.hit="{Binding TodayCard.IsHit}"
+                                Padding="10,3" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding TodayCard.StatusText}" FontSize="12" FontWeight="Bold"/>
+                        </Border>
+                    </Grid>
+                    <v:TodayCaloriesCard DataContext="{Binding TodayCard}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Manage food: the Add food sheet, at today's list when something is logged -->
+            <Button Grid.Row="2" Classes="btn primary" MinHeight="48" FontSize="15" Content="Manage food" Command="{Binding ManageFoodCommand}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+
+            <!-- Last 7 days: takes the remaining height, so the bars grow on a tall phone -->
+            <Border Grid.Row="3" Classes="card" Padding="14" MinHeight="150">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="6">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="Last 7 days" FontSize="18" FontWeight="Bold"/>
+                        <TextBlock Grid.Column="1" Text="{Binding OnTargetText}" FontSize="13" Classes="soft" VerticalAlignment="Bottom"/>
+                    </Grid>
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding Bars}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CalorieBarViewModel">
+                                <TextBlock Text="{Binding Label}" Classes="mono soft" FontSize="11" HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Panel Grid.Row="2" MinHeight="60">
+                        <v:FractionBox Fraction="{Binding BandHeightFraction}" BottomFraction="{Binding BandBottomFraction}">
+                            <Border Background="#1FC6F432" BorderBrush="#80C6F432" BorderThickness="0,1"/>
+                        </v:FractionBox>
+                        <ItemsControl ItemsSource="{Binding Bars}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:CalorieBarViewModel">
+                                    <!-- A past day's bar opens that day; today's does nothing -->
+                                    <Button Background="Transparent" BorderThickness="0" Padding="0" HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Stretch" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                            Command="{Binding $parent[UserControl].((vm:CaloriesViewModel)DataContext).ShowDayCommand}"
+                                            CommandParameter="{Binding Date}">
+                                        <v:FractionBox Fraction="{Binding Fraction}" Margin="6,0">
+                                            <Border Classes="bar" MaxWidth="44" MinHeight="4" VerticalAlignment="Stretch"
+                                                    Classes.hit="{Binding IsHit}" Classes.missing="{Binding IsMissing}" Classes.selected="{Binding IsSelected}"/>
+                                        </v:FractionBox>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border VerticalAlignment="Bottom" Height="1" Background="{DynamicResource Line}"/>
+                    </Panel>
+                    <ItemsControl Grid.Row="3" ItemsSource="{Binding Bars}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><UniformGrid Rows="1"/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CalorieBarViewModel">
+                                <TextBlock Text="{Binding Day}" FontSize="12" FontWeight="SemiBold" Classes="muted" HorizontalAlignment="Center"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+            </Border>
+
+        </Grid>
+
+            <!-- Calorie goal (opens its sheet) and Maintenance (opens Profile, Body data), below the fold -->
+            <Border Classes="card" Padding="16,0">
+                <StackPanel>
+                    <Button Classes="settingRow" Command="{Binding OpenGoalSheetCommand}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <StackPanel Spacing="1" VerticalAlignment="Center">
+                                <TextBlock Text="Calorie goal" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock Text="{Binding GoalRowDetail}" FontSize="12" Classes="muted"
+                                           IsVisible="{Binding GoalRowDetail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Text="{Binding GoalRowText}" Classes="mono soft" FontSize="14" VerticalAlignment="Center"/>
+                            <v:Icon Grid.Column="2" Data="{StaticResource IcChevronRight}" Width="14" Height="14" StrokeThickness="2.4" Stroke="{DynamicResource Muted}"/>
+                        </Grid>
+                    </Button>
+                    <Border Height="1" Background="{DynamicResource Line}"/>
+                    <Button Classes="settingRow" Command="{Binding ShowProfileCommand}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                            <TextBlock Text="Maintenance" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding MaintenanceRowText}" Classes="mono soft" FontSize="14" VerticalAlignment="Center"/>
+                            <v:Icon Grid.Column="2" Data="{StaticResource IcChevronRight}" Width="14" Height="14" StrokeThickness="2.4" Stroke="{DynamicResource Muted}"/>
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        </Panel>
         </ScrollViewer>
     </DockPanel>
 </UserControl>

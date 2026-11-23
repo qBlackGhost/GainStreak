@@ -171,6 +171,13 @@ public sealed class SocialApiClient
     public Task<ApiResult<CountResponse>> GetAcceptedInvitesAsync(CancellationToken ct = default) =>
         SendAsync<CountResponse>(HttpMethod.Get, "v1/me/invites/accepted", null, ct);
 
+    // --- Gyms (0.27.0) ---
+
+    /// <summary>The server's gyms in a map box. Refused for a box that is inverted or too big.</summary>
+    public Task<ApiResult<GymBoxResponse>> GetGymsAsync(double south, double west, double north, double east, CancellationToken ct = default) =>
+        SendAsync<GymBoxResponse>(HttpMethod.Get, string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"v1/gyms?south={south}&west={west}&north={north}&east={east}"), null, ct);
+
     // --- Check-ins ---
 
     public Task<ApiResult> SetAvatarAsync(string? avatar, CancellationToken ct = default) =>

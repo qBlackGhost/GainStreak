@@ -374,4 +374,53 @@ public class GymFetchServiceTests : IDisposable
         Assert.Null(b.LookedUpAddress);
         Assert.Null(b.AddressLookedUpAt);
     }
+    // ------------------------------------------------------------ our server first (0.27.0)
+
+    private sealed class FakeServerGyms(ServerGymsAnswer? answer) : IServerGyms
+    {
+        public int Calls { get; private set; }
+        public Task<ServerGymsAnswer?> GetAsync(double south, double west, double north, double east, CancellationToken ct = default)
+        {
+            Calls++;
+            return Task.FromResult(answer);
+        }
+    }
+
+    private GymFetchService Svc(FakeHttpHandler h, IServerGyms server) =>
+        new(_db, h, [Main, Mirror], TimeSpan.Zero, null, _clock, TimeSpan.Zero, server);
+
+    private static FetchedGym ServerGym(long id, string name) => new(OsmElementType.Node, id, name, null, 45.75, 21.22);
+
+    [Fact] public async Task TheServersGyms_AreUsed_WithoutAskingOverpass()
+    {
+        var h = FakeHttpHandler.Json(Fixtures.Read("overpass_timisoara.json"));
+        var server = new FakeServerGyms(new ServerGymsAnswer([ServerGym(1, "Gold Gym"), ServerGym(2, "Spartan")], Covered: true));
+        var r = await Svc(h, server).RefreshIfNeededAsync(_timisoara);
+
+        Assert.Equal((GymRefreshOutcome.Fetched, 2), (r.Outcome, r.Added));
+        Assert.Equal(["Gold Gym", "Spartan"], Gyms(_timisoara).Select(g => g.Name));
+        Assert.Empty(h.Requests);
+        Assert.Equal(1, server.Calls);
+    }
+
+    [Fact] public async Task AnEmptyCoveredAnswer_MeansNoGyms_AndDoesNotWaitForOverpass()
+    {
+        var h = FakeHttpHandler.Json(Fixtures.Read("overpass_timisoara.json"));
+        var r = await Svc(h, new FakeServerGyms(new ServerGymsAnswer([], Covered: true))).RefreshIfNeededAsync(_timisoara);
+        Assert.Equal(GymRefreshOutcome.Fetched, r.Outcome);
+        Assert.Empty(Gyms(_timisoara));
+        Assert.Empty(h.Requests);
+    }
+
+    [Fact] public async Task WhenTheServerCantAnswer_OrDoesntCoverTheCity_OverpassIsAsked()
+    {
+        foreach (var answer in new[] { null, new ServerGymsAnswer([], Covered: false) })
+        {
+            var city = AddCity(answer is null ? 1001 : 1002, answer is null ? "Offline town" : "Vienna");
+            var h = FakeHttpHandler.Json(Fixtures.Read("overpass_timisoara.json"));
+            var r = await Svc(h, new FakeServerGyms(answer)).RefreshIfNeededAsync(city);
+            Assert.Equal((GymRefreshOutcome.Fetched, 21), (r.Outcome, r.Added));
+            Assert.Single(h.Requests);
+        }
+    }
 }

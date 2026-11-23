@@ -21,7 +21,7 @@ namespace GymApp.Data.CompiledModels
                 "GymApp.Data.Models.User",
                 typeof(User),
                 baseEntityType,
-                propertyCount: 29,
+                propertyCount: 34,
                 navigationCount: 4,
                 foreignKeyCount: 2,
                 unnamedIndexCount: 5,
@@ -49,6 +49,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(User).GetProperty("BadgesBackfilled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(User).GetField("<BadgesBackfilled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: false);
+
+            var carbsGoalGrams = runtimeEntityType.AddProperty(
+                "CarbsGoalGrams",
+                typeof(int?),
+                propertyInfo: typeof(User).GetProperty("CarbsGoalGrams", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<CarbsGoalGrams>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var createdAt = runtimeEntityType.AddProperty(
                 "CreatedAt",
@@ -78,6 +85,13 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(User).GetField("<Email>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 nullable: true,
                 maxLength: 254);
+
+            var fatGoalGrams = runtimeEntityType.AddProperty(
+                "FatGoalGrams",
+                typeof(int?),
+                propertyInfo: typeof(User).GetProperty("FatGoalGrams", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<FatGoalGrams>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var friendNotifications = runtimeEntityType.AddProperty(
                 "FriendNotifications",
@@ -115,6 +129,22 @@ namespace GymApp.Data.CompiledModels
                 fieldInfo: typeof(User).GetField("<LongestStreak>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: 0);
 
+            var macroBasisWeightKg = runtimeEntityType.AddProperty(
+                "MacroBasisWeightKg",
+                typeof(double?),
+                propertyInfo: typeof(User).GetProperty("MacroBasisWeightKg", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<MacroBasisWeightKg>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
+
+            var macroMode = runtimeEntityType.AddProperty(
+                "MacroMode",
+                typeof(MacroMode?),
+                propertyInfo: typeof(User).GetProperty("MacroMode", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<MacroMode>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true,
+                maxLength: 12,
+                providerPropertyType: typeof(string));
+
             var missedDayReminderEnabled = runtimeEntityType.AddProperty(
                 "MissedDayReminderEnabled",
                 typeof(bool),
@@ -141,6 +171,13 @@ namespace GymApp.Data.CompiledModels
                 propertyInfo: typeof(User).GetProperty("PointsBackfilled", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 fieldInfo: typeof(User).GetField("<PointsBackfilled>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
                 sentinel: false);
+
+            var proteinGoalGrams = runtimeEntityType.AddProperty(
+                "ProteinGoalGrams",
+                typeof(int?),
+                propertyInfo: typeof(User).GetProperty("ProteinGoalGrams", BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                fieldInfo: typeof(User).GetField("<ProteinGoalGrams>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+                nullable: true);
 
             var rememberTokenHash = runtimeEntityType.AddProperty(
                 "RememberTokenHash",

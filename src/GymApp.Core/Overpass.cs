@@ -14,7 +14,7 @@ public record FetchedGym(OsmElementType OsmType, long OsmId, string Name, string
 
 public static class Overpass
 {
-    public const string UnnamedGym = "Unnamed gym";
+    public const string UnnamedGym = OsmGyms.UnnamedGym;
     public const int ServerTimeoutSeconds = 25;
 
     /// <summary>All leisure=fitness_centre objects in the box. nwr + "out center" gives ways and relations
@@ -46,18 +46,11 @@ public static class Overpass
         return result;
     }
 
-    /// <summary>"Street 12", or just "Street" without a house number. A house number alone says nothing, so null.</summary>
-    public static string? Address(string? street, string? houseNumber)
-    {
-        street = Clean(street);
-        houseNumber = Clean(houseNumber);
-        if (street is null) return null;
-        return houseNumber is null ? street : $"{street} {houseNumber}";
-    }
+    /// <inheritdoc cref="OsmGyms.Address"/>
+    public static string? Address(string? street, string? houseNumber) => OsmGyms.Address(street, houseNumber);
 
-    /// <summary>The name tag, or "Unnamed gym (Street)" / "Unnamed gym" when there is none.</summary>
-    public static string Name(string? name, string? street) =>
-        Clean(name) ?? (Clean(street) is { } s ? $"{UnnamedGym} ({s})" : UnnamedGym);
+    /// <inheritdoc cref="OsmGyms.Name"/>
+    public static string Name(string? name, string? street) => OsmGyms.Name(name, street);
 
     private static FetchedGym? TryMap(JsonElement e)
     {
@@ -74,15 +67,8 @@ public static class Overpass
         }
         if (lat is not { } la || lon is not { } lo) return null;
 
-        string? name = null, street = null, number = null;
-        if (e.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Object)
-        {
-            name = Str(tags, "name");
-            street = Str(tags, "addr:street");
-            number = Str(tags, "addr:housenumber");
-        }
-
-        return new FetchedGym(type, id, Name(name, street), Address(street, number), la, lo);
+        var hasTags = e.TryGetProperty("tags", out var tags) && tags.ValueKind == JsonValueKind.Object;
+        return OsmGyms.Map(type, id, la, lo, key => hasTags ? Str(tags, key) : null);
     }
 
     private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

@@ -48,6 +48,7 @@ public static class AppServices
             sc.AddSingleton(sp => new SocialApiClient(
                 new HttpClient { BaseAddress = ServerAddress.FromEnvironment(platform.ServerUrl) }, sp.GetRequiredService<ITokenStore>(),
                 appVersion: AppVersion.Current));
+            sc.AddSingleton<IServerGyms>(sp => new RemoteServerGyms(sp.GetRequiredService<SocialApiClient>()));
             sc.AddSingleton(sp => new AccountService(sp.GetRequiredService<SocialApiClient>(),
                 sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<ITokenStore>(),
                 sp.GetRequiredService<SessionService>()));
@@ -149,7 +150,8 @@ public static class AppServices
         sc.AddTransient<CaloriesViewModel>();
         sc.AddSingleton(_ => new GeocodingService());   // one instance, so its one-request-per-second limit holds
         sc.AddTransient<CityService>();
-        sc.AddSingleton(sp => new GymFetchService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>()));
+        // Our server's gyms first in the server-backed wiring (0.27.0); the local mode has none and asks Overpass only
+        sc.AddSingleton(sp => new GymFetchService(sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetService<IServerGyms>()));
         sc.AddTransient<GymService>();
         sc.AddSingleton(sp => new GymAddressLookupService(
             sp.GetRequiredService<IDbContextFactory<AppDbContext>>(), sp.GetRequiredService<GeocodingService>()));

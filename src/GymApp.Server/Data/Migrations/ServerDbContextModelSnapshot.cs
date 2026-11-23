@@ -235,6 +235,82 @@ namespace GymApp.Server.Data.Migrations
                     b.ToTable("InviteAccepts");
                 });
 
+            modelBuilder.Entity("GymApp.Server.Data.OsmGym", b =>
+                {
+                    b.Property<string>("OsmType")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<long>("OsmId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("OsmType", "OsmId");
+
+                    b.HasIndex("Country");
+
+                    b.HasIndex("Latitude", "Longitude");
+
+                    b.ToTable("OsmGyms");
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.OsmGymCountry", b =>
+                {
+                    b.Property<string>("Country")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<DateTime>("DataAsOf")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("East")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("GymCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<double>("North")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("South")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("West")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Country");
+
+                    b.ToTable("OsmGymCountries");
+                });
+
             modelBuilder.Entity("GymApp.Server.Data.PushDevice", b =>
                 {
                     b.Property<long>("Id")

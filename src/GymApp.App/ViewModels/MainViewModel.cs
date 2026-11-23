@@ -219,7 +219,7 @@ public partial class MainViewModel : ViewModelBase
                 (Current as HomeViewModel)?.ShowPointsHistoryCommand.Execute(null);
                 break;
             case WidgetTarget.Body:
-                ShowProfile(ProfilePage.BodyData);
+                ShowProfile(ProfilePage.Main);   // the Body card: the weight chart and Log (Phase 27)
                 break;
             case WidgetTarget.StartWorkout:
                 ShowHome();
@@ -395,11 +395,45 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>The Add food sheet (Phase 26; phones only). <paramref name="meal"/> null: the meal for the time of day.
     /// <paramref name="changed"/> runs after every change, so the screen under it reloads.</summary>
-    public void OpenAddFood(Meal? meal, Func<FoodResult, Task> changed)
+    public void OpenAddFood(Meal? meal, Func<FoodResult, Task> changed, bool scrollToLogged = false)
     {
         var vm = _sp.GetRequiredService<AddFoodViewModel>();
-        vm.Load(meal, changed);
+        vm.Load(meal, changed, scrollToLogged);
         Popup = vm;
+    }
+
+    /// <summary>A past day's food, read-only (Phase 27).</summary>
+    public void OpenFoodDay(DateOnly date)
+    {
+        var vm = _sp.GetRequiredService<AddFoodViewModel>();
+        Popup = vm;
+        _ = vm.LoadPastDayAsync(date);
+    }
+
+    /// <summary>A past day from the 7-day chart (Phase 27d): its ring, legend and status, with "See what you ate".</summary>
+    public async Task OpenPastDayAsync(DateOnly date)
+    {
+        if (_session.CurrentUser?.Id is not { } me) return;
+        try
+        {
+            Popup = await PastDayPopupViewModel.LoadAsync(_sp.GetRequiredService<CalorieService>(), _sp.GetRequiredService<FoodService>(),
+                me, date, () => OpenFoodDay(date), ClosePopup);
+        }
+        catch (Exception)
+        {
+            OpenFoodDay(date);   // the plain list still says what was eaten
+        }
+    }
+
+    /// <summary>A sheet over the current screen that brings its own view model (Phase 27: the weight History).</summary>
+    public void OpenSheet(ViewModelBase sheet) => Popup = sheet;
+
+    /// <summary>The Calorie goal sheet (Phase 27): Lose / Maintain / Gain, and the recommended or your own macros.</summary>
+    public void OpenCalorieGoalSheet(CaloriesViewModel calories)
+    {
+        if (calories.GoalInfo is not { } info || _session.CurrentUser?.Id is not { } me) return;
+        Popup = new CalorieGoalSheetViewModel(info, _sp.GetRequiredService<CalorieService>(), me, calories.ReloadAsync, ClosePopup,
+            () => ShowProfile(ProfilePage.BodyData));
     }
 
     /// <summary>The same sheet at one of today's entries, to change its amount or meal, or delete it.</summary>

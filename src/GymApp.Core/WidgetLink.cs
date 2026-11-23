@@ -9,7 +9,7 @@ public enum WidgetTarget
     Plan,
     /// <summary>Home with the points history open.</summary>
     Points,
-    /// <summary>Profile's body data: weight and steps.</summary>
+    /// <summary>Profile's Body card: weight and steps.</summary>
     Body,
     /// <summary>Home, starting today's workout when it can (the "Start workout" control).</summary>
     StartWorkout,

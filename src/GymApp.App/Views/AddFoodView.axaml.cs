@@ -15,11 +15,24 @@ public partial class AddFoodView : UserControl
         {
             if (e.Key == Key.Escape) { Close(); e.Handled = true; }
         };
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is not AddFoodViewModel vm) return;
+            if (vm.ScrollToLoggedRequest > 0) ScrollToLogged();   // opened from "N items logged today"
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(AddFoodViewModel.ScrollToLoggedRequest)) ScrollToLogged();
+            };
+        };
         Scrim.PointerPressed += (_, e) =>
         {
             if (e.Source == Scrim) { Close(); e.Handled = true; }
         };
     }
+
+    // The list loads a moment after the sheet opens, so wait for it before scrolling
+    private void ScrollToLogged() =>
+        Avalonia.Threading.DispatcherTimer.RunOnce(() => LoggedPanel.BringIntoView(), System.TimeSpan.FromMilliseconds(200));
 
     private void Close() => (DataContext as AddFoodViewModel)?.CloseCommand.Execute(null);
 

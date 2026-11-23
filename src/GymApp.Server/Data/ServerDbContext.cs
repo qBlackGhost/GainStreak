@@ -26,9 +26,28 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<PushDevice> PushDevices => Set<PushDevice>();
     public DbSet<UserBadge> UserBadges => Set<UserBadge>();
     public DbSet<InviteAccept> InviteAccepts => Set<InviteAccept>();
+    public DbSet<OsmGym> OsmGyms => Set<OsmGym>();
+    public DbSet<OsmGymCountry> OsmGymCountries => Set<OsmGymCountry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
+        // Gyms from the Geofabrik import (0.27.0): box queries on latitude and longitude
+        b.Entity<OsmGym>(e =>
+        {
+            e.HasKey(g => new { g.OsmType, g.OsmId });
+            e.Property(g => g.OsmType).HasConversion<string>().HasMaxLength(10);
+            e.Property(g => g.Name).HasMaxLength(OsmGym.MaxNameLength);
+            e.Property(g => g.Address).HasMaxLength(OsmGym.MaxAddressLength);
+            e.Property(g => g.Country).HasMaxLength(OsmGym.MaxCountryLength);
+            e.HasIndex(g => new { g.Latitude, g.Longitude });
+            e.HasIndex(g => g.Country);
+        });
+        b.Entity<OsmGymCountry>(e =>
+        {
+            e.HasKey(c => c.Country);
+            e.Property(c => c.Country).HasMaxLength(OsmGym.MaxCountryLength);
+        });
+
         b.Entity<User>(e =>
         {
             e.Property(u => u.Username).HasMaxLength(Credentials.MaxUsernameLength);

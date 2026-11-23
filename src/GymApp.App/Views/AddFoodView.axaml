@@ -116,6 +116,7 @@
 
                 <!-- ===== Search ===== -->
                 <StackPanel Spacing="10" IsVisible="{Binding IsSearchPage}">
+                    <StackPanel Spacing="10" IsVisible="{Binding ShowSearchTools}">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <TextBox x:Name="SearchBox" Classes="field" PlaceholderText="Search foods or type a barcode" Text="{Binding SearchText}"/>
                         <Button Grid.Column="1" Classes="btn outline" MinWidth="50" MinHeight="46" Padding="0" CornerRadius="10"
@@ -162,6 +163,50 @@
                         <Button Classes="btn outline big" Content="New food" Command="{Binding NewFoodCommand}"/>
                         <Button Grid.Column="1" Classes="btn outline big" Content="Quick add" Command="{Binding ShowQuickCommand}"/>
                     </Grid>
+                    </StackPanel>
+
+                    <!-- Logged today (Phase 27): the day's food by meal; tap an item to change or remove it. A past day shows the same, read-only. -->
+                    <StackPanel x:Name="LoggedPanel" Spacing="6" Margin="0,8,0,0">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <TextBlock Text="{Binding LoggedTitle}" Classes="caps" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding LoggedTotalText}" Classes="mono soft" FontSize="13" IsVisible="{Binding HasLogged}"/>
+                        </Grid>
+                        <TextBlock Text="{Binding LoggedMacroText}" FontSize="12" Classes="muted" IsVisible="{Binding HasLoggedMacros}"/>
+                        <Border Classes="macro" Padding="12,10" IsVisible="{Binding LoggedIsTotalOnly}">
+                            <TextBlock Text="Logged as a total. There are no items to show." FontSize="13" Classes="light"/>
+                        </Border>
+                        <TextBlock Text="{Binding LoggedEmptyText}" Classes="muted" FontSize="13" IsVisible="{Binding LoggedIsEmpty}"/>
+                        <ItemsControl ItemsSource="{Binding LoggedMeals}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LoggedMealViewModel">
+                                    <StackPanel Spacing="0" Margin="0,4,0,4">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="0,4,0,2">
+                                            <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding KcalText}" Classes="mono soft" FontSize="13"/>
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding Entries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:LoggedEntryViewModel">
+                                                    <Border BorderBrush="{DynamicResource Line}" BorderThickness="0,1,0,0">
+                                                        <Button Classes="rowBtn" Command="{Binding EditCommand}" IsHitTestVisible="{Binding CanEdit}" Focusable="{Binding CanEdit}">
+                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                                <StackPanel Spacing="1">
+                                                                    <TextBlock Text="{Binding Name}" FontSize="15" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                                                    <TextBlock Text="{Binding Detail}" FontSize="12" Classes="muted" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+                                                                               IsVisible="{Binding Detail, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="1" Text="{Binding KcalText}" Classes="mono" FontSize="14" VerticalAlignment="Center"/>
+                                                            </Grid>
+                                                        </Button>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- ===== Amount ===== -->
@@ -214,7 +259,7 @@
                     <Button Classes="btn primary big" Content="{Binding LogLabel}" Command="{Binding LogAmountCommand}"/>
                     <Grid ColumnDefinitions="*,Auto">
                         <Button Classes="link" Content="Edit this food" Command="{Binding EditFoodCommand}" IsVisible="{Binding CanEditFood}" HorizontalAlignment="Left"/>
-                        <Button Grid.Column="1" Classes="link" Content="Delete entry" Foreground="{DynamicResource ErrorText}"
+                        <Button Grid.Column="1" Classes="link" Content="Remove from today" Foreground="{DynamicResource ErrorText}"
                                 Command="{Binding DeleteEntryCommand}" IsVisible="{Binding IsEditingEntry}"/>
                     </Grid>
                 </StackPanel>
@@ -234,12 +279,14 @@
                                 <Button Classes="seg" Classes.on="{Binding IsPerServing}" MinHeight="38" FontSize="13" Content="Per serving" Command="{Binding PickPerServingCommand}"/>
                             </v:SegmentedPill>
                         </Border>
-                        <UniformGrid Columns="2">
-                            <StackPanel Margin="0,0,5,8"><TextBlock Classes="lbl" Text="Calories (kcal)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding KcalText}"/></StackPanel>
-                            <StackPanel Margin="5,0,0,8"><TextBlock Classes="lbl" Text="Protein (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding ProteinText}"/></StackPanel>
-                            <StackPanel Margin="0,0,5,0"><TextBlock Classes="lbl" Text="Carbs (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding CarbsText}"/></StackPanel>
-                            <StackPanel Margin="5,0,0,0"><TextBlock Classes="lbl" Text="Fat (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding FatText}"/></StackPanel>
+                        <UniformGrid Columns="3">
+                            <StackPanel Margin="0,0,4,0"><TextBlock Classes="lbl" Text="Protein (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding ProteinText}"/></StackPanel>
+                            <StackPanel Margin="2,0"><TextBlock Classes="lbl" Text="Carbs (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding CarbsText}"/></StackPanel>
+                            <StackPanel Margin="4,0,0,0"><TextBlock Classes="lbl" Text="Fat (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding FatText}"/></StackPanel>
                         </UniformGrid>
+                        <Border Classes="macro" Padding="12,10">
+                            <TextBlock Text="{Binding KcalPreview}" Classes="mono" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        </Border>
                         <Grid ColumnDefinitions="*,110" ColumnSpacing="10">
                             <StackPanel><TextBlock Classes="lbl" Text="Serving name"/><TextBox Classes="field" PlaceholderText="1 slice" Text="{Binding ServingName}"/></StackPanel>
                             <StackPanel Grid.Column="1"><TextBlock Classes="lbl" Text="Serving (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" Text="{Binding ServingGramsText}"/></StackPanel>
@@ -283,8 +330,14 @@
 
                 <!-- ===== Quick add ===== -->
                 <StackPanel Spacing="10" IsVisible="{Binding IsQuickPage}">
-                    <StackPanel><TextBlock Classes="lbl" Text="Calories (kcal)"/><TextBox x:Name="QuickBox" Classes="field num" FontSize="22" MinHeight="54"
-                             TextInputOptions.ContentType="Digits" PlaceholderText="450" Text="{Binding QuickKcalText}"/></StackPanel>
+                    <UniformGrid Columns="3">
+                        <StackPanel Margin="0,0,4,0"><TextBlock Classes="lbl" Text="Protein (g)"/><TextBox x:Name="QuickBox" Classes="field num" TextInputOptions.ContentType="Number" PlaceholderText="25" Text="{Binding QuickProteinText}"/></StackPanel>
+                        <StackPanel Margin="2,0"><TextBlock Classes="lbl" Text="Carbs (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" PlaceholderText="40" Text="{Binding QuickCarbsText}"/></StackPanel>
+                        <StackPanel Margin="4,0,0,0"><TextBlock Classes="lbl" Text="Fat (g)"/><TextBox Classes="field num" TextInputOptions.ContentType="Number" PlaceholderText="10" Text="{Binding QuickFatText}"/></StackPanel>
+                    </UniformGrid>
+                    <Border Classes="macro" Padding="12,10">
+                        <TextBlock Text="{Binding QuickKcalPreview}" Classes="mono" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </Border>
                     <StackPanel><TextBlock Classes="lbl" Text="Label (optional)"/><TextBox Classes="field" PlaceholderText="Canteen lunch" Text="{Binding QuickLabel}"/></StackPanel>
                     <TextBlock Text="{Binding QuickError}" Classes="fieldError" IsVisible="{Binding QuickError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                     <Button Classes="btn primary big" Content="Add calories" Command="{Binding SaveQuickCommand}"/>

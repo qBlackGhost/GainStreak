@@ -68,6 +68,10 @@
                 <SolidColorBrush x:Key="Warn" Color="#E8C15A"/>
                 <SolidColorBrush x:Key="ColdText" Color="#B9C8D6"/>
                 <!-- A streak on ice: a rest day that didn't add to it (0.18.1) -->
+                <!-- Macro colours (Phase 27): protein lime, carbs orange, fat blue, the same values as Accent, Flame and Ice -->
+                <SolidColorBrush x:Key="MacroProtein" Color="#C6F432"/>
+                <SolidColorBrush x:Key="MacroCarbs" Color="#FF8A2A"/>
+                <SolidColorBrush x:Key="MacroFat" Color="#5CB8FF"/>
                 <SolidColorBrush x:Key="Ice" Color="#5CB8FF"/>
                 <SolidColorBrush x:Key="IceText" Color="#8FD0FF"/>
                 <SolidColorBrush x:Key="IceTintLine" Color="#1E3F5C"/>
@@ -141,6 +145,10 @@
                 <SolidColorBrush x:Key="FlameHot" Color="#C25100"/>
                 <SolidColorBrush x:Key="Warn" Color="#8A6400"/>
                 <SolidColorBrush x:Key="ColdText" Color="#3E5568"/>
+                <!-- Macro colours (Phase 27): protein lime, carbs orange, fat blue, the same values as Accent, Flame and Ice -->
+                <SolidColorBrush x:Key="MacroProtein" Color="#C6F432"/>
+                <SolidColorBrush x:Key="MacroCarbs" Color="#C25100"/>
+                <SolidColorBrush x:Key="MacroFat" Color="#1C7ED6"/>
                 <SolidColorBrush x:Key="Ice" Color="#1C7ED6"/>
                 <SolidColorBrush x:Key="IceText" Color="#1668B3"/>
                 <SolidColorBrush x:Key="IceTintLine" Color="#A9D2F5"/>

@@ -48,6 +48,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     private readonly CardioService _cardio;
     private readonly VacationService _vacations;
     private readonly AwayWatcher _away;
+    private readonly FoodService _food;
 
     public HomeViewModel(SessionService session, Func<MainViewModel> shell,
                          WorkoutService workouts, StreakService streaks, CalorieService calories,
@@ -57,8 +58,9 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
                          GymSummaryService gymSummary, IAccountService accounts, PointsHistoryViewModel pointsHistory,
                          InboxService inbox, IPlatform platform, LiveWorkoutService liveWorkouts,
                          LiveWorkoutWatcher watcher, INotificationScheduler notifications, ILocationProvider location,
-                         CardioService cardio, VacationService vacations, AwayWatcher away)
+                         CardioService cardio, VacationService vacations, AwayWatcher away, FoodService food)
     {
+        _food = food;
         _vacations = vacations;
         _away = away;
         Vacation = new VacationCardViewModel(vacations, () => _session.CurrentUser?.Id, VacationChangedAsync);
@@ -275,6 +277,9 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
 
     /// <summary>Phones: the card's button is Add food, which opens the sheet.</summary>
     public bool HasFoodLog { get; }
+
+    /// <summary>Phones (Phase 27): the same calories card as the Calories screen's: ring, Goal and Eaten, macro bars.</summary>
+    public TodayCaloriesViewModel TodayCard { get; } = new();
 
     // ===== Dashboard cards =====
     public TodayWorkoutCardViewModel TodayWorkout { get; }
@@ -784,7 +789,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         var splitResult = menu is null ? null
             : checkIn.PlannedDay is { } planned ? $"{menu.SplitName} · today: {planned.Name}" : $"{menu.SplitName} · rest today";
         var exercises = SetupPlan.Exercises(menu);
-        var (body, opensProfile) = SetupPlan.Calories(calories?.Goal, profile);
+        var (body, opensPage) = SetupPlan.Calories(calories?.Goal, profile);
 
         var steps = new List<SetupStepViewModel>
         {
@@ -794,7 +799,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
             new(2, exercises.Title, exercises.Text, exercises.Cta, exercises.Result,
                 isLocked: !checkIn.HasSplit, () => _shell().ShowWorkouts()),
             new(3, body.Title, body.Text, body.Cta, body.Result, isLocked: false,
-                opensProfile ? () => _shell().ShowProfile(ProfilePage.BodyData) : () => _shell().ShowCalories()),
+                opensPage is { } page ? () => _shell().ShowProfile(page) : () => _shell().ShowCalories()),
             new(4, "Choose your home city",
                 "Loads the gyms near you, so you can log where you trained after checking in.",
                 "Choose city", city?.Name, isLocked: false, () => _shell().ShowGyms(chooseCity: true)),
@@ -843,15 +848,20 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         }
         GoalReviewHint = g.SuggestionChanged ? "Your suggested goal changed. Review it on your profile." : null;
         LogCaloriesLabel = t is null ? "Log" : "Update";
+
+        TodayCard.Apply(o);
+        if (HasFoodLog)
+            TodayCard.ApplyFood(await _food.GetDayMacrosAsync(userId, AppClock.Today), g.ProteinGoalGrams, g.CarbsGoalGrams, g.FatGoalGrams);
     }
 
-    /// <summary>Phones: Add food opens the sheet for the meal that fits the time of day; the card reloads after each change.</summary>
+    /// <summary>Phones: Manage food opens the sheet for the meal that fits the time of day, at today's list when something is
+    /// logged; the card reloads after each change.</summary>
     [RelayCommand]
     private void AddFood() => _shell().OpenAddFood(null, async result =>
     {
         if (_session.CurrentUser is not { } user) return;
         await RefreshCaloriesAsync(user.Id);
-    });
+    }, scrollToLogged: TodayCard.HasItems);
 
     [RelayCommand]
     private async Task LogCaloriesAsync()

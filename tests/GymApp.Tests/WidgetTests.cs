@@ -256,17 +256,15 @@ public sealed class OpenWidgetLinkTests : IAsyncLifetime
         Assert.True(done());
     }
 
-    [Fact] public async Task Body_OpensProfilesBodyData()
+    [Fact] public async Task Body_OpensProfilesBodyCard()
     {
         var shell = await SignedInAsync();
 
         Assert.True(shell.OpenLink(WidgetLink.For(WidgetTarget.Body)));
 
         var profile = Assert.IsType<ProfileViewModel>(shell.Current);
-        Assert.Equal(ProfilePage.BodyData, profile.Page);
-        // The setup card sends people here to add their weight, so the Weight card must show on this page too
-        Assert.True(profile.ShowsBodyData);
-        Assert.True(profile.ShowsWeight);
+        Assert.Equal(ProfilePage.Main, profile.Page);   // the Body card: weight chart and Log (Phase 27)
+        Assert.True(profile.IsMainPage);
     }
 
     [Fact] public async Task Points_OpensHomesPointsHistory()

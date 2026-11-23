@@ -49,22 +49,23 @@ public static class SetupPlan
     }
 
     /// <summary>Step 3: body data first (in Profile), then the calorie goal (in Calories). A goal already set
-    /// finishes it either way. <c>OpensProfile</c> says which screen the button opens.</summary>
-    public static (SetupStepText Step, bool OpensProfile) Calories(CalorieGoalInfo? goal, ProfileSummary? profile)
+    /// finishes it either way. <c>Opens</c> is the Profile page the button opens, or null for Calories: Body data for missing
+    /// measurements, Main (the Body card, Phase 27) when only the weight is missing.</summary>
+    public static (SetupStepText Step, ProfilePage? Opens) Calories(CalorieGoalInfo? goal, ProfileSummary? profile)
     {
         if (goal is { Goal: { } kcal } g)
-            return (new("Set your calorie goal", "", "Open Calories", $"{CalorieGoals.DisplayName(g.GoalType)} · {CalorieGoals.K(kcal)} kcal"), false);
+            return (new("Set your calorie goal", "", "Open Calories", $"{CalorieGoals.DisplayName(g.GoalType)} · {CalorieGoals.K(kcal)} kcal"), null);
 
         var missing = profile is null ? ["birth date", "height", "weight", "activity"] : MissingBodyData(profile.Profile, profile.CurrentWeight);
         if (missing.Count > 0)
             return (new("Fill in your body data",
                 $"Add your {JoinList(missing)} in Profile. They give you a maintenance estimate to base your calorie goal on.",
-                "Open Profile", null), true);
+                "Open Profile", null), missing is ["weight"] ? ProfilePage.Main : ProfilePage.BodyData);
 
         var text = profile?.Maintenance.Kcal is { } m
             ? $"Your maintenance is about {CalorieGoals.K(m)} kcal a day. Choose lose, maintain or gain to get a suggested daily target."
             : "Choose lose, maintain or gain, or enter your own daily target.";
-        return (new("Set your calorie goal", text, "Open Calories", null), false);
+        return (new("Set your calorie goal", text, "Open Calories", null), null);
     }
 
     private static string JoinList(IReadOnlyList<string> items) => items.Count switch

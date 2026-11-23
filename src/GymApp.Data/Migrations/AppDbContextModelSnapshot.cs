@@ -1472,6 +1472,9 @@ namespace GymApp.Data.Migrations
                     b.Property<bool>("BadgesBackfilled")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("CarbsGoalGrams")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -1485,6 +1488,9 @@ namespace GymApp.Data.Migrations
                         .HasMaxLength(254)
                         .HasColumnType("TEXT")
                         .UseCollation("NOCASE");
+
+                    b.Property<int?>("FatGoalGrams")
+                        .HasColumnType("INTEGER");
 
                     b.Property<bool?>("FriendNotifications")
                         .HasColumnType("INTEGER");
@@ -1502,6 +1508,13 @@ namespace GymApp.Data.Migrations
                     b.Property<int>("LongestStreak")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double?>("MacroBasisWeightKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("MacroMode")
+                        .HasMaxLength(12)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("MissedDayReminderEnabled")
                         .HasColumnType("INTEGER");
 
@@ -1513,6 +1526,9 @@ namespace GymApp.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("PointsBackfilled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ProteinGoalGrams")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("RememberTokenHash")

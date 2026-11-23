@@ -157,11 +157,62 @@ Opened from a past day's bar. A centred card on a dimmed page (a `Sheet` with th
 
 **Stop and report**, with screenshots.
 
+## Design review after 27d (decided with the developer)
+
+These replace the matching parts above (decision 7, the main screen in 27c, the goal and Maintenance sheets).
+
+- **Main screen (phones):** no date or "Calories" header; the first card is titled **Calories** with the status pill. The
+  ring is 150 pt, its progress arc **lime** up to the goal and orange past the range (`Arc.phoneRing`). Beside it, **Goal** and
+  **Eaten** as labelled numbers and "Target lo–hi". **Manage food** replaces Add food and the "N items logged today" line;
+  it opens the sheet at Logged today when something is logged. The Calories card, Manage food and Last 7 days fill the
+  screen (`FoldPage`); the Calorie goal and Maintenance rows are below the fold.
+- **Calorie goal sheet:** Lose / Maintain / Gain, then a **Recommended / Custom** pill. Macros come first; the calorie goal
+  is what they add up to (`MacroPlan`).
+  - Recommended, grams per kg (carbs for Active; ±0.5 g/kg per activity step):
+
+    | Goal | Protein | Fat (men / women) | Carbs (men / women) |
+    |---|---|---|---|
+    | Lose | 2.2 | 0.7 / 0.9 | 2.5 / 2.0 |
+    | Maintain | 1.8 | 0.9 / 1.0 | 4.0 / 3.5 |
+    | Gain | 1.8 | 1.0 / 1.1 | 5.0 / 4.5 |
+
+    Protein uses the lower of the weight and the weight at BMI 27. Under the safe minimum (`CalorieGoals.SafeMinimum`)
+    carbs go up until it is met. Needs the same body data as the maintenance estimate.
+  - The weight is the **14-day average** of weigh-ins (else the latest). Recommended targets move only when that average is
+    **1 kg** from the weight they were worked out from (`User.MacroBasisWeightKg`), and right away after a body data
+    change. When the weight moved them, the Calories screen says so once ("Your targets changed to …").
+  - Custom: protein, carbs and fat are all required (0 to 1,000 g); the calorie goal is calculated and read-only, within the
+    existing safety limits. "Start from recommended" copies the suggestion in. Custom targets never move by themselves.
+  - `User.MacroMode` (null until picked: the goal stays as it was), migration `MacroPlan`.
+- **Maintenance:** the sheet is gone. The row shows the maintenance kcal and opens Profile, Body data.
+
+## Later design changes (decided with the developer, in 0.27.0)
+
+- **Macro rows:** "eaten / target" above each bar ("90 / 144 g"), no percentage. Past a target the bar and its text are red
+  (`MissRed`); calories past the target range turn the ring, Eaten and the pill red; under the range the pill stays orange.
+- **Shared card:** the Calories card's ring, Goal / Eaten, target and bars are one control (`TodayCaloriesCard` +
+  `TodayCaloriesViewModel`), used by the Calories screen and Home's calories card (phones), which gets **Manage food**.
+- **Profile (phones):** a **Body** card on Main with a weight chart after Apple Health's (`WeightTrendChart`,
+  `WeightChartModel`: W / M / 6M, touch-and-hold scrub over whole-day columns, swipe for the previous window, tap to peek), Log,
+  **History** (a sheet of every weigh-in by month with the change and Delete) and **Body data ›**. Vacation is its own card.
+  Body data shows only the measurements; the Body widget and a weight-only setup step open the Body card.
+
+## Gyms from our own server (in 0.27.0, before 27e)
+
+Planned as Phase 28 in the handoff; shipped in 0.27.0 at the developer's request. Server: `OsmGyms` / `OsmGymCountries`
+(migration `OsmGyms`), `GET /v1/gyms?south=&west=&north=&east=` (signed in, global read limit; box at most 2° each way and
+2,000 gyms; `Covered` when a country loaded in the last 45 days contains the box), `import-gyms [--country romania]
+[--file path]` (osmium filter + GeoJSON export, centre of the bounding box for ways and relations, one transaction, missing gyms
+made inactive; osmium in the server image). Shared tag rule `Core/OsmGyms`. App: `GymFetchService` asks `IServerGyms` first
+and falls back to Overpass when the server can't answer or the box isn't covered; the local (TestBench) mode has no server
+source. Contracts: new `ServerGym`, `GymBoxResponse` only; `MinClientVersion` unchanged. To do outside the code: run
+`migrate` and a first `import-gyms` on the beta server, and a weekly Cloud Run Job.
+
 ## Release (27e)
 
 - `CHANGELOG.md` 0.27.0 for testers in the existing style: a calmer Calories screen, macro bars, the past-day popup,
   macros required for foods you add yourself, macro targets in the calorie goal. End with **Migration:** app database
-  (`MacroGoals`). `Directory.Build.props` to 0.27.0.
+  (`MacroGoals`, `MacroPlan`). `Directory.Build.props` to 0.27.0.
 - `docs/STORE_LISTING.md` and `site/privacy.html` need no change (nothing new is collected). Say so in the report.
 - The end-of-phase checks from CLAUDE.md.
 

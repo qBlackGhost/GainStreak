@@ -2,6 +2,26 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.27.0
+
+- **A calmer Calories screen (phones):** the first card is now **Calories**, with a bigger ring that fills in lime as you eat and turns red once you're over your target range. Beside it, **Goal** and **Eaten** in plain numbers and your target range. **Last 7 days** fills the rest of the screen; **Calorie goal** and **Maintenance** sit just below, a short scroll away.
+- **Macro bars:** under the ring, protein, carbs and fat each have a bar with "eaten / target" ("90 / 144 g"). A macro past its target turns red. Without targets, a bar shows that macro's share of the day's calories.
+- **Manage food:** the **Add food** button is now **Manage food**. With something logged, the sheet opens at today's list, where you can change or remove an item.
+- **Past days:** tap a past day's bar in **Last 7 days** for a card with that day's ring split into protein, carbs and fat, the grams and percentages, how it went against that day's goal, and **See what you ate**.
+- **Macros for what you type:** a **New food** and a **Quick add** now ask for protein, carbs and fat (0 is fine) and work out the calories for you ("= 330 kcal"). Foods from the catalogue and Open Food Facts keep their label values; one with calories but no macros asks for them first.
+- **Calorie goal, macros first:** pick **Lose**, **Maintain** or **Gain**, then **Recommended** or **Custom**.
+  - **Recommended** sets protein, carbs and fat in grams per kilo of body weight, different for men and women, a little more carbs the more active you are, and your goal is what they add up to. It never goes under the safe minimum. It follows your weight as a 2-week average and only moves when that changes by a kilo, so one heavy morning doesn't change your targets; when it does, the Calories screen tells you once.
+  - **Custom:** type your own grams; the calorie goal is worked out from them. **Start from recommended** fills them in to adjust.
+  - A goal you set before this update stays as it is until you pick one of the two.
+- **Maintenance:** the row shows your maintenance calories and opens **Profile, Body data**.
+- **Home (phones):** the calories card matches the Calories screen: the same ring, Goal and Eaten, macro bars and **Manage food**.
+- **Profile (phones):** a new **Body** card with your weight chart, **Log**, **History** and **Body data**. **Vacation** has its own row. **Body data** now shows only your measurements.
+  - **The weight chart** works like Apple Health's: **W / M / 6M**, touch and hold then slide to read any day under your thumb, swipe sideways for earlier weeks, or tap a day.
+  - **History** lists every weigh-in by month, with the change since the one before, and lets you delete one.
+- **Gyms load much faster** and no longer fail when the public map server is busy: in Romania the app now gets a city's gyms from the GainStreak server, in well under a second. Elsewhere, or if our server can't answer, it asks the public map server as before. Gyms are the same OpenStreetMap data, refreshed weekly.
+- The desktop app doesn't change.
+- **Migration:** the app's database (`MacroGoals`, `MacroPlan`: macro targets and the goal's mode) and the server's Postgres (`OsmGyms`: the gyms table). Run `migrate`, then `import-gyms --country romania` once, before deploying the server, and schedule `import-gyms` weekly. 0.21.0 and later keep working.
+
 ## 0.26.1
 
 - **Home (phones):** the date and greeting above the level card are gone, so the level card and the whole **Gym streak** card now fit on one screen without scrolling. The streak line ("Do Push today to keep your streak.") moved into the streak card, with a lime strip when a workout is still owed today and ice blue on a rest day. The level card is smaller, with **History** on the title line, and the streak number, **Best streak** and **Gyms this month** share one row. The gauge is bigger.

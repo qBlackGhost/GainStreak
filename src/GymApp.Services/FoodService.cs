@@ -28,6 +28,10 @@ public record FoodDay(DateOnly Date, IReadOnlyList<FoodEntryInfo> Entries, int K
     public int KcalIn(Meal meal) => In(meal).Sum(e => e.Kcal);
 }
 
+/// <summary>A day's macros (Phase 27): grams and kcal from its entries. <see cref="Split"/> is null when there is nothing to
+/// split: no entries (a day with nothing, or only a typed total) or entries without macros.</summary>
+public record DayMacros(DateOnly Date, int Kcal, double Protein, double Carbs, double Fat, bool HasEntries, MacroSplit? Split, int EntryCount = 0);
+
 public record FoodResult(bool Success, string? Error = null, FoodEntryInfo? Entry = null, FoodInfo? Food = null, PointsSync? Points = null)
 {
     public static FoodResult Fail(string error) => new(false, error);
@@ -170,6 +174,17 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
         return new FoodDay(date, entries, total ?? 0, 0, 0, 0, TotalOnly: total is not null);
     }
 
+    /// <summary>The day's grams per macro and kcal, from its entries (a missing macro counts as 0). A day with no entries, even
+    /// one logged only as a total, has no split.</summary>
+    public async Task<DayMacros> GetDayMacrosAsync(int userId, DateOnly date)
+    {
+        var day = await GetDayAsync(userId, date);
+        if (day.Entries.Count == 0)
+            return new DayMacros(date, day.Kcal, 0, 0, 0, HasEntries: false, Split: null);
+        return new DayMacros(date, day.Kcal, day.Protein, day.Carbs, day.Fat, HasEntries: true,
+            MacroSplit.From(day.Protein, day.Carbs, day.Fat), day.Entries.Count);
+    }
+
     // ---------------------------------------------------------------- logging
 
     /// <summary>Logs a food for today in a meal. The food is copied into the user's foods the first time (a food whose numbers
@@ -231,8 +246,21 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
             : await LogAsync(userId, food, meal, 100, AmountUnit.Grams, today);
     }
 
-    /// <summary>A typed number: "Quick add · 450 kcal" in the meal, no food, an optional label.</summary>
-    public async Task<FoodResult> QuickAddAsync(int userId, int kcal, string? label, Meal meal, DateOnly? today = null)
+    /// <summary>A typed number: "Quick add · 450 kcal" in the meal, no food, an optional label. No macros (see
+    /// <see cref="QuickAddMacrosAsync"/>, which the screens use).</summary>
+    internal Task<FoodResult> QuickAddAsync(int userId, int kcal, string? label, Meal meal, DateOnly? today = null) =>
+        AddQuickAsync(userId, kcal, null, null, null, label, meal, today);
+
+    /// <summary>A Quick add from macros (Phase 27): all three are required (0 is fine) and the calories are calculated, protein
+    /// and carbs 4 kcal per gram, fat 9. The entry keeps the grams.</summary>
+    public Task<FoodResult> QuickAddMacrosAsync(int userId, double? protein, double? carbs, double? fat, string? label, Meal meal, DateOnly? today = null)
+    {
+        if (FoodRules.CheckQuickMacros(protein, carbs, fat) is { } error) return Task.FromResult(FoodResult.Fail(error));
+        var kcal = FoodRules.KcalFromMacros(protein!.Value, carbs!.Value, fat!.Value);
+        return AddQuickAsync(userId, kcal, Math.Round(protein.Value, 1), Math.Round(carbs.Value, 1), Math.Round(fat.Value, 1), label, meal, today);
+    }
+
+    private async Task<FoodResult> AddQuickAsync(int userId, int kcal, double? protein, double? carbs, double? fat, string? label, Meal meal, DateOnly? today)
     {
         var day = today ?? AppClock.Today;
         if (CalorieGoals.CheckConsumed(kcal) is { } error) return FoodResult.Fail(error);
@@ -245,7 +273,11 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
         {
             if (await db.Users.AsNoTracking().AnyAsync(u => u.Id == userId) is false) return FoodResult.Fail("User not found.");
             if (await TotalErrorAsync(db, userId, day, kcal) is { } tooMuch) return FoodResult.Fail(tooMuch);
-            entry = new FoodEntry { UserId = userId, Date = day, Meal = meal, Label = label, Kcal = kcal, CreatedAt = AppClock.Now };
+            entry = new FoodEntry
+            {
+                UserId = userId, Date = day, Meal = meal, Label = label, Kcal = kcal, Protein = protein, Carbs = carbs, Fat = fat,
+                CreatedAt = AppClock.Now
+            };
             await MarkLoggedAsTotalAsync(db, userId, day);
             db.FoodEntries.Add(entry);
             try { await db.SaveChangesAsync(); }
@@ -299,8 +331,21 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
         return await FinishAsync(userId, day, entryId, null);
     }
 
-    /// <summary>Changes a Quick add's calories, label and meal.</summary>
-    public async Task<FoodResult> EditQuickAddAsync(int userId, int entryId, Meal meal, int kcal, string? label, DateOnly? today = null)
+    /// <summary>Changes a Quick add's calories, label and meal (its macros are left as they are).</summary>
+    internal Task<FoodResult> EditQuickAddAsync(int userId, int entryId, Meal meal, int kcal, string? label, DateOnly? today = null) =>
+        ChangeQuickAsync(userId, entryId, meal, kcal, null, null, null, false, label, today);
+
+    /// <summary>Changes a Quick add's macros (all three required), label and meal; the calories are calculated again.</summary>
+    public Task<FoodResult> EditQuickAddMacrosAsync(int userId, int entryId, Meal meal, double? protein, double? carbs, double? fat,
+        string? label, DateOnly? today = null)
+    {
+        if (FoodRules.CheckQuickMacros(protein, carbs, fat) is { } error) return Task.FromResult(FoodResult.Fail(error));
+        var kcal = FoodRules.KcalFromMacros(protein!.Value, carbs!.Value, fat!.Value);
+        return ChangeQuickAsync(userId, entryId, meal, kcal, Math.Round(protein.Value, 1), Math.Round(carbs.Value, 1), Math.Round(fat.Value, 1), true, label, today);
+    }
+
+    private async Task<FoodResult> ChangeQuickAsync(int userId, int entryId, Meal meal, int kcal, double? protein, double? carbs, double? fat,
+        bool setMacros, string? label, DateOnly? today)
     {
         var day = today ?? AppClock.Today;
         if (CalorieGoals.CheckConsumed(kcal) is { } error) return FoodResult.Fail(error);
@@ -317,6 +362,7 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
             if (await TotalErrorAsync(db, userId, day, kcal - entry.Kcal) is { } tooMuch) return FoodResult.Fail(tooMuch);
 
             entry.Meal = meal; entry.Kcal = kcal; entry.Label = label;
+            if (setMacros) { entry.Protein = protein; entry.Carbs = carbs; entry.Fat = fat; }
             try { await db.SaveChangesAsync(); }
             catch (DbUpdateException) { return FoodResult.Fail("Could not save your calories."); }
         }
@@ -342,7 +388,7 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
 
     /// <summary>A new "Mine" food. With a barcode, the next scan finds it. A barcode the user already saved is refused,
     /// unless that food was deleted (then it comes back with the new numbers).</summary>
-    public async Task<FoodResult> CreateFoodAsync(int userId, FoodInput input)
+    internal async Task<FoodResult> CreateFoodAsync(int userId, FoodInput input)
     {
         if (Check(input) is { } error) return FoodResult.Fail(error);
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -367,9 +413,26 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
         return new FoodResult(true, Food: ToInfo(row));
     }
 
+    /// <summary>A new "Mine" food from the form (Phase 27): protein, carbs and fat are required and the calories are calculated from
+    /// them (<see cref="FoodRules.KcalFromMacros"/>); <paramref name="input"/>'s own kcal is ignored. Numbers are per 100 g or ml.</summary>
+    public Task<FoodResult> CreateTypedFoodAsync(int userId, FoodInput input) =>
+        WithCalculatedKcal(input) is { } typed ? CreateFoodAsync(userId, typed) : Task.FromResult(FoodResult.Fail(MacroError(input)));
+
+    /// <summary>The edit twin of <see cref="CreateTypedFoodAsync"/>; the food's calories are recalculated and past entries keep
+    /// their numbers.</summary>
+    public Task<FoodResult> SaveTypedFoodEditAsync(int userId, FoodInfo original, FoodInput input) =>
+        WithCalculatedKcal(input) is { } typed ? SaveFoodEditAsync(userId, original, typed) : Task.FromResult(FoodResult.Fail(MacroError(input)));
+
+    private static FoodInput? WithCalculatedKcal(FoodInput i) =>
+        FoodRules.CheckMacros(i.Protein, i.Carbs, i.Fat) is not null
+            ? null
+            : i with { Kcal = Math.Min(FoodRules.KcalFromMacros(i.Protein!.Value, i.Carbs!.Value, i.Fat!.Value), FoodRules.MaxKcalPer100) };
+
+    private static string MacroError(FoodInput i) => FoodRules.CheckMacros(i.Protein, i.Carbs, i.Fat) ?? "Enter protein, carbs and fat.";
+
     /// <summary>Saves an edit of a food. A "Mine" food is changed in place (past entries keep their numbers); any other food
     /// stays as it is and the edit becomes a "Mine" copy, which keeps the barcode so the next scan finds the corrected one.</summary>
-    public async Task<FoodResult> SaveFoodEditAsync(int userId, FoodInfo original, FoodInput input)
+    internal async Task<FoodResult> SaveFoodEditAsync(int userId, FoodInfo original, FoodInput input)
     {
         if (Check(input) is { } error) return FoodResult.Fail(error);
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -567,6 +630,6 @@ public class FoodService(IDbContextFactory<AppDbContext> dbFactory, FoodCatalog 
         var serving = FoodRules.CheckServing(c.ServingGrams) is null ? c.ServingGrams : null;
         return new FoodInfo(null, FoodSource.Usda, c.FdcId.ToString(), c.Name, null, false, c.Kcal, c.Protein, c.Carbs, c.Fat,
             serving is null ? null : c.ServingName, serving,
-            Problem: FoodRules.CheckPer100(c.Kcal, c.Protein, c.Carbs, c.Fat));
+            Problem: FoodRules.CheckPer100(c.Kcal, c.Protein, c.Carbs, c.Fat) ?? FoodRules.CheckHasMacros(c.Kcal, c.Protein, c.Carbs, c.Fat));
     }
 }

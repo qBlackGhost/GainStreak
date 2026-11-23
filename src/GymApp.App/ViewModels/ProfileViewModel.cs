@@ -247,6 +247,58 @@ public partial class ProfileViewModel : ViewModelBase
 
     private const int TrendCount = 8, RecentShown = 5;
 
+    // ----- Phones (Phase 27): the Body card's weight chart, its W / M / 6M pill, and the History sheet -----
+
+    /// <summary>Every weigh-in, newest first, as last loaded.</summary>
+    private IReadOnlyList<WeightLog> _allWeighIns = [];
+    private UnitSystem _shownUnits = UnitSystem.Metric;
+
+    /// <summary>Every weigh-in in the shown unit, for the chart.</summary>
+    [ObservableProperty] public partial IReadOnlyList<(DateOnly Date, double Value)> ChartWeighIns { get; set; } = [];
+    [ObservableProperty] public partial WeightRange ChartRange { get; set; } = WeightRange.Week;
+    [ObservableProperty] public partial int ChartRangeIndex { get; set; }
+    public IReadOnlyList<PillOptionViewModel> ChartRanges => _chartRanges ??=
+    [
+        new("W", () => PickChartRange(WeightRange.Week)),
+        new("M", () => PickChartRange(WeightRange.Month)),
+        new("6M", () => PickChartRange(WeightRange.SixMonths)),
+    ];
+    private IReadOnlyList<PillOptionViewModel>? _chartRanges;
+
+    private void PickChartRange(WeightRange range)
+    {
+        ChartRange = range;
+        ChartRangeIndex = (int)range;
+        for (var i = 0; i < ChartRanges.Count; i++) ChartRanges[i].IsSelected = i == ChartRangeIndex;
+    }
+
+    private async Task LoadWeighInsAsync(UnitSystem units)
+    {
+        _allWeighIns = await _profiles.GetWeighInsAsync(UserId);
+        _shownUnits = units;
+        ChartWeighIns = _allWeighIns
+            .Select(w => (w.Date, Math.Round(units == UnitSystem.Metric ? w.WeightKg : Units.KgToLb(w.WeightKg), 1)))
+            .ToList();
+        if (ChartRanges.All(r => !r.IsSelected)) PickChartRange(ChartRange);
+    }
+
+    /// <summary>History: every weigh-in, by month, with Delete.</summary>
+    [RelayCommand]
+    private void ShowWeightHistory() => _shell().OpenSheet(new WeightHistoryViewModel(_allWeighIns, _shownUnits, DeleteWeighInAsync,
+        () => _shell().ClosePopup()));
+
+    private async Task<IReadOnlyList<WeightLog>?> DeleteWeighInAsync(WeightLog entry)
+    {
+        try
+        {
+            if (!await _profiles.DeleteWeightAsync(UserId, entry.Id)) return null;
+            Health.Changed();
+            await ReloadAsync(refillForm: false);
+            return _allWeighIns;
+        }
+        catch (Exception) { return null; }
+    }
+
     // ===== Appearance: System, Light, Dark (12e); applies at once and is saved on the user =====
     [ObservableProperty] public partial int ThemeIndex { get; set; }
     [ObservableProperty] public partial string? ThemeError { get; set; }
@@ -349,6 +401,7 @@ public partial class ProfileViewModel : ViewModelBase
             foreach (var entry in s.RecentWeights.Take(RecentShown)) History.Add(new WeightEntryViewModel(entry, units, this));
             HasHistory = History.Count > 0;
             ApplyWeight(s.RecentWeights, units);
+            await LoadWeighInsAsync(units);
 
         }
         catch (Exception)

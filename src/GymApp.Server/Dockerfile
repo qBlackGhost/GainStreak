@@ -4,6 +4,8 @@
 #   docker run -p 8080:8080 -e ConnectionStrings__Social=... -e AllowedHosts=api.example.com gymapp-server
 # Apply migrations first, with the same image:
 #   docker run --rm -e ConnectionStrings__Social=... gymapp-server migrate
+# Load (and weekly, refresh) the gyms the app asks for, with the same image too:
+#   docker run --rm -e ConnectionStrings__Social=... gymapp-server import-gyms --country romania
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
@@ -23,6 +25,8 @@ COPY src/GymApp.Server/ src/GymApp.Server/
 RUN dotnet publish src/GymApp.Server/GymApp.Server.csproj -c Release -o /app --no-restore /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+# osmium filters the Geofabrik extract for `import-gyms` (0.27.0)
+RUN apt-get update && apt-get install -y --no-install-recommends osmium-tool && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /app ./
 # The image's built-in non-root user; it can't write to /app

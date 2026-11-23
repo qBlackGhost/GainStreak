@@ -261,6 +261,16 @@ public class ProfileService(IDbContextFactory<AppDbContext> dbFactory, ISocialSy
 
     /// <summary>Logs today's weight. Today only, like workouts and sets; a second weigh-in today
     /// replaces the first one.</summary>
+    /// <summary>Every weigh-in, newest first: the phones' weight chart and its History sheet (Phase 27).</summary>
+    public async Task<IReadOnlyList<WeightLog>> GetWeighInsAsync(int userId)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await db.WeightLogs.AsNoTracking()
+            .Where(w => w.UserId == userId)
+            .OrderByDescending(w => w.Date)
+            .ToListAsync();
+    }
+
     public async Task<WeightResult> LogWeightAsync(int userId, double weightKg, DateOnly? today = null)
     {
         var day = today ?? Today;

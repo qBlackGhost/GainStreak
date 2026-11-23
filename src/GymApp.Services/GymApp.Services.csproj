@@ -19,4 +19,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- The kcal-only food methods (before Phase 27) are internal: the app types macros, the tests still build old-style data -->
+    <InternalsVisibleTo Include="GymApp.Tests" />
+  </ItemGroup>
 </Project>

@@ -12,9 +12,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 
 // `dotnet GymApp.Server.dll migrate` applies the migrations and exits; production never migrates at startup.
-// `suspend <username>`, `unsuspend <username>` and `push-test <username>` do their one thing and exit too
+// `suspend <username>`, `unsuspend <username>` and `push-test <username>` do their one thing and exit too, and so does
+// `import-gyms [--country romania] [--file path]` (0.27.0, a weekly Cloud Run Job)
 var migrateOnly = args is ["migrate"];
-var isCommand = AccountCommands.IsCommand(args) || PushCommands.IsCommand(args);
+var isCommand = AccountCommands.IsCommand(args) || PushCommands.IsCommand(args) || GymImportCommand.IsCommand(args);
 var builder = WebApplication.CreateBuilder(migrateOnly || isCommand ? [] : args);
 
 // Production reads its settings from environment variables only (ConnectionStrings__Social, AllowedHosts).
@@ -112,7 +113,9 @@ if (isCommand)
     var db = scope.ServiceProvider.GetRequiredService<ServerDbContext>();
     var (ok, message) = PushCommands.IsCommand(args)
         ? await PushCommands.RunAsync(args, db, scope.ServiceProvider.GetRequiredService<FriendNotifier>())
-        : await AccountCommands.RunAsync(args, db, TimeProvider.System);
+        : GymImportCommand.IsCommand(args)
+            ? await GymImportCommand.RunAsync(args, db, TimeProvider.System)
+            : await AccountCommands.RunAsync(args, db, TimeProvider.System);
     (ok ? Console.Out : Console.Error).WriteLine(message);
     Environment.ExitCode = ok ? 0 : 1;
     return;
@@ -164,6 +167,7 @@ app.MapReports();
 app.MapShares();
 app.MapInviteLinks();
 app.MapPush();
+app.MapGyms();   // 0.27.0
 
 app.Run();
 

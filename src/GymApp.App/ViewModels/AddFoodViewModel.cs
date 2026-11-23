@@ -45,6 +45,45 @@ public partial class FoodRowViewModel(FoodInfo info, AddFoodViewModel owner) : O
     [RelayCommand] private Task QuickAdd() => owner.QuickLogAsync(Info);
 }
 
+/// <summary>One entry in the sheet's "Logged today" list: tap to edit it (today only).</summary>
+public partial class LoggedEntryViewModel(FoodEntryInfo entry, AddFoodViewModel owner, bool canEdit) : ObservableObject
+{
+    public FoodEntryInfo Entry { get; } = entry;
+    public string Name => Entry.Name;
+    public string Detail => Entry.IsQuickAdd ? QuickDetail(Entry) : AmountText(Entry);
+
+    /// <summary>"Quick add" with the macros it was typed with; a Quick add without a label is already called that.</summary>
+    private static string QuickDetail(FoodEntryInfo e)
+    {
+        var macros = e.Protein is { } p && e.Carbs is { } c && e.Fat is { } f
+            ? $"{FoodAmountViewModel.Format(p)} P · {FoodAmountViewModel.Format(c)} C · {FoodAmountViewModel.Format(f)} F"
+            : null;
+        return e.Name == "Quick add" ? macros ?? "" : macros is null ? "Quick add" : "Quick add · " + macros;
+    }
+    public string KcalText => CalorieGoals.K(Entry.Kcal);
+    public bool CanEdit { get; } = canEdit;
+
+    private static string AmountText(FoodEntryInfo e)
+    {
+        var unit = e.IsLiquid ? "ml" : "g";
+        var grams = e.Grams is { } g ? $"{FoodAmountViewModel.Format(g)} {unit}" : "";
+        return e.Servings is { } s && e.ServingName is { } name
+            ? $"{FoodAmountViewModel.Format(s)} × {name} · {grams}"
+            : grams;
+    }
+
+    [RelayCommand] private Task Edit() => CanEdit ? owner.EditEntryAsync(Entry) : Task.CompletedTask;
+}
+
+/// <summary>One meal of the day's list with its entries and kcal.</summary>
+public class LoggedMealViewModel(Meal meal, IReadOnlyList<LoggedEntryViewModel> entries)
+{
+    public Meal Meal { get; } = meal;
+    public string Name => MealDefaults.DisplayName(Meal);
+    public IReadOnlyList<LoggedEntryViewModel> Entries { get; } = entries;
+    public string KcalText => CalorieGoals.K(Entries.Sum(e => e.Entry.Kcal));
+}
+
 /// <summary>
 /// The Add food sheet (Phase 26, a popup; a sheet from the bottom on phones). One view model with four pages: the search
 /// (user's foods, the bundled USDA catalog, then Open Food Facts after a pause; Recent and Favourites while the box is
@@ -63,6 +102,7 @@ public partial class AddFoodViewModel : ViewModelBase
     private UnitSystem _units = UnitSystem.Metric;
     private int? _entryId;
     private AddFoodPage _backTo = AddFoodPage.Search;
+    private DateOnly? _pastDay;
 
     /// <param name="closePopup">Closes the sheet (the shell's ClosePopup).</param>
     public AddFoodViewModel(FoodService food, ProfileService profiles, SessionService session, IBarcodeScanner scanner, Action closePopup)
@@ -98,8 +138,8 @@ public partial class AddFoodViewModel : ViewModelBase
     public bool IsFormPage => Page == AddFoodPage.Form;
     public bool IsQuickPage => Page == AddFoodPage.Quick;
     public bool IsBarcodePage => Page == AddFoodPage.Barcode;
-    public bool ShowMealPill => Page != AddFoodPage.Form;
-    public bool CanGoBack => Page != AddFoodPage.Search && _entryId is null;
+    public bool ShowMealPill => Page != AddFoodPage.Form && !IsReadOnlyDay;
+    public bool CanGoBack => Page != AddFoodPage.Search;
 
     public string Title => Page switch
     {
@@ -107,7 +147,7 @@ public partial class AddFoodViewModel : ViewModelBase
         AddFoodPage.Form => Form?.Title ?? "New food",
         AddFoodPage.Quick => _entryId is null ? "Quick add" : "Edit quick add",
         AddFoodPage.Barcode => "Scan barcode",
-        _ => "Add food"
+        _ => IsReadOnlyDay ? PastDayTitle : "Manage food"
     };
 
     [ObservableProperty] public partial string? Notice { get; set; }
@@ -128,6 +168,25 @@ public partial class AddFoodViewModel : ViewModelBase
     public bool HasFavourites => Favourites.Count > 0;
     public bool NoResults => ShowResults && Results.Count == 0 && !IsSearchingOnline && OnlineMessage is null;
     public bool ShowOfflineNote => IsOffline && ShowResults;
+
+    // ===== Logged today (Phase 27): the day's food by meal, moved here from the Calories screen =====
+    [ObservableProperty] public partial IReadOnlyList<LoggedMealViewModel> LoggedMeals { get; set; } = [];
+    [ObservableProperty] public partial string LoggedTotalText { get; set; } = "";
+    [ObservableProperty] public partial bool HasLogged { get; set; }
+    [ObservableProperty] public partial bool LoggedIsTotalOnly { get; set; }
+    [ObservableProperty] public partial bool LoggedIsEmpty { get; set; }
+    [ObservableProperty] public partial string LoggedMacroText { get; set; } = "";
+    [ObservableProperty] public partial bool HasLoggedMacros { get; set; }
+
+    /// <summary>Bumps when the sheet should scroll to "Logged today" (opened from "N items logged today").</summary>
+    [ObservableProperty] public partial int ScrollToLoggedRequest { get; set; }
+
+    /// <summary>A past day's food, read-only: no search, no add, entries can't be opened (Phase 26 decision 3).</summary>
+    public bool IsReadOnlyDay => _pastDay is not null;
+    public bool ShowSearchTools => !IsReadOnlyDay;
+    public string PastDayTitle => _pastDay is { } d ? d.ToString("dddd, d MMMM", CultureInfo.InvariantCulture) : "";
+    public string LoggedTitle => IsReadOnlyDay ? "FOOD LOGGED" : "LOGGED TODAY";
+    public string LoggedEmptyText => IsReadOnlyDay ? "Nothing was logged this day." : "Nothing logged yet today.";
 
     // ===== Amount =====
     [ObservableProperty] public partial FoodAmountViewModel? Amount { get; set; }
@@ -158,20 +217,51 @@ public partial class AddFoodViewModel : ViewModelBase
     public bool HasUnknownBarcode => UnknownBarcode is not null;
 
     // ===== Quick add =====
-    [ObservableProperty] public partial string QuickKcalText { get; set; } = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(QuickKcalPreview))] public partial string QuickProteinText { get; set; } = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(QuickKcalPreview))] public partial string QuickCarbsText { get; set; } = "";
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(QuickKcalPreview))] public partial string QuickFatText { get; set; } = "";
+
+    /// <summary>"= 330 kcal", worked out from the three macros (grams for the whole thing); "= — kcal" until all three are numbers.</summary>
+    public string QuickKcalPreview =>
+        FoodAmountViewModel.TryParse(QuickProteinText, out var p) && FoodAmountViewModel.TryParse(QuickCarbsText, out var c) && FoodAmountViewModel.TryParse(QuickFatText, out var f)
+            ? $"= {CalorieGoals.K(FoodRules.KcalFromMacros(p, c, f))} kcal"
+            : "= — kcal";
     [ObservableProperty] public partial string QuickLabel { get; set; } = "";
     [ObservableProperty] public partial string? QuickError { get; set; }
 
     // ===== Opening =====
 
     /// <summary>A new entry. <paramref name="meal"/> null: the meal for the time of day.</summary>
-    public void Load(Meal? meal, Func<FoodResult, Task> changed)
+    public void Load(Meal? meal, Func<FoodResult, Task> changed, bool scrollToLogged = false)
     {
         _changed = changed;
         _entryId = null;
+        _pastDay = null;
+        OnPropertyChanged(nameof(IsReadOnlyDay));
+        OnPropertyChanged(nameof(ShowSearchTools));
+        OnPropertyChanged(nameof(LoggedTitle));
+        OnPropertyChanged(nameof(LoggedEmptyText));
+        OnPropertyChanged(nameof(ShowMealPill));
+        if (scrollToLogged) ScrollToLoggedRequest++;
         PickMeal(meal ?? MealDefaults.ForTime(TimeOnly.FromDateTime(AppClock.Now)));
         Page = AddFoodPage.Search;
         _ = LoadAsync();
+    }
+
+    /// <summary>A past day's food, read-only (the past-day popup's "See what you ate").</summary>
+    public async Task LoadPastDayAsync(DateOnly date)
+    {
+        _entryId = null;
+        _pastDay = date;
+        OnPropertyChanged(nameof(IsReadOnlyDay));
+        OnPropertyChanged(nameof(ShowSearchTools));
+        OnPropertyChanged(nameof(PastDayTitle));
+        OnPropertyChanged(nameof(LoggedTitle));
+        OnPropertyChanged(nameof(LoggedEmptyText));
+        OnPropertyChanged(nameof(ShowMealPill));
+        Page = AddFoodPage.Search;
+        OnPropertyChanged(nameof(Title));
+        await LoadLoggedAsync();
     }
 
     /// <summary>Edits one of today's entries: a food entry opens at its amount, a Quick add at its calories.</summary>
@@ -186,7 +276,9 @@ public partial class AddFoodViewModel : ViewModelBase
 
         if (entry.IsQuickAdd)
         {
-            QuickKcalText = entry.Kcal.ToString(CultureInfo.InvariantCulture);
+            QuickProteinText = MacroText(entry.Protein);
+            QuickCarbsText = MacroText(entry.Carbs);
+            QuickFatText = MacroText(entry.Fat);
             QuickLabel = entry.Name == "Quick add" ? "" : entry.Name;
             Page = AddFoodPage.Quick;
             return;
@@ -209,11 +301,46 @@ public partial class AddFoodViewModel : ViewModelBase
             null, null);
     }
 
+    private static string MacroText(double? v) => v is { } x ? FoodAmountViewModel.Format(x) : "";
+
     private async Task LoadAsync()
     {
         await LoadUnitsAsync();
         await LoadSuggestionsAsync();
+        await LoadLoggedAsync();
     }
+
+    /// <summary>The day's entries by meal (only the meals that have some), the total and the macros.</summary>
+    private async Task LoadLoggedAsync()
+    {
+        if (UserId is not { } me) return;
+        try
+        {
+            var date = _pastDay ?? AppClock.Today;
+            var day = await _food.GetDayAsync(me, date);
+            var editable = !IsReadOnlyDay;
+            LoggedIsTotalOnly = day.TotalOnly;
+            LoggedIsEmpty = !day.TotalOnly && day.Entries.Count == 0;
+            LoggedTotalText = $"{CalorieGoals.K(day.Kcal)} kcal";
+            HasLogged = day.TotalOnly || day.Entries.Count > 0;
+            HasLoggedMacros = day.Entries.Count > 0;
+            LoggedMacroText = HasLoggedMacros
+                ? $"Protein {Grams(day.Protein)} · Carbs {Grams(day.Carbs)} · Fat {Grams(day.Fat)}"
+                : "";
+            LoggedMeals = day.TotalOnly
+                ? []
+                : Enum.GetValues<Meal>()
+                    .Select(m => new LoggedMealViewModel(m, day.In(m).Select(e => new LoggedEntryViewModel(e, this, editable)).ToList()))
+                    .Where(g => g.Entries.Count > 0)
+                    .ToList();
+        }
+        catch (Exception) { Error = "Could not load the food list."; }
+    }
+
+    private static string Grams(double g) => g.ToString("0.#", CultureInfo.InvariantCulture) + " g";
+
+    /// <summary>Opens one of today's entries from the list: its amount page, with Save and Remove from today.</summary>
+    internal Task EditEntryAsync(FoodEntryInfo entry) => LoadEntryAsync(entry, _changed);
 
     private async Task LoadUnitsAsync()
     {
@@ -373,6 +500,7 @@ public partial class AddFoodViewModel : ViewModelBase
             Notice = $"Added {info.Name} · {CalorieGoals.K(r.Entry?.Kcal ?? 0)} kcal";
             await _changed(r);
             if (SearchText.Trim().Length == 0) await LoadSuggestionsAsync();
+            await LoadLoggedAsync();
         }
         catch (Exception) { Error = "Could not save your food."; }
     }
@@ -391,9 +519,22 @@ public partial class AddFoodViewModel : ViewModelBase
                 : await _food.LogAsync(me, Amount.Food, SelectedMeal, a.Amount, a.Unit);
             if (!r.Success) { Error = r.Error; return; }
             await _changed(r);
-            _closePopup();
+            if (_entryId is not null) await BackToListAsync(r.Entry is { } e ? $"Saved {e.Name} · {CalorieGoals.K(e.Kcal)} kcal" : null);
+            else _closePopup();
         }
         catch (Exception) { Error = "Could not save your food."; }
+    }
+
+    /// <summary>After editing or removing an entry from the list: back to the search page with the list reloaded.</summary>
+    private async Task BackToListAsync(string? notice)
+    {
+        _entryId = null;
+        Amount = null;
+        OnPropertyChanged(nameof(IsEditingEntry));
+        OnPropertyChanged(nameof(CanEditFood));
+        Page = AddFoodPage.Search;
+        Notice = notice;
+        await LoadLoggedAsync();
     }
 
     [RelayCommand]
@@ -405,7 +546,7 @@ public partial class AddFoodViewModel : ViewModelBase
             var r = await _food.DeleteEntryAsync(me, id);
             if (!r.Success) { Error = r.Error; return; }
             await _changed(r);
-            _closePopup();
+            await BackToListAsync("Removed from today");
         }
         catch (Exception) { Error = "Could not delete that."; }
     }
@@ -464,8 +605,8 @@ public partial class AddFoodViewModel : ViewModelBase
             if (Form.TryBuild() is not { } input) return;
 
             var r = Form.Original is { } original
-                ? await _food.SaveFoodEditAsync(me, original, input)
-                : await _food.CreateFoodAsync(me, input);
+                ? await _food.SaveTypedFoodEditAsync(me, original, input)
+                : await _food.CreateTypedFoodAsync(me, input);
             if (!r.Success) { Form.Error = r.Error; return; }
 
             Form = null;
@@ -482,7 +623,7 @@ public partial class AddFoodViewModel : ViewModelBase
         Error = null;
         Notice = null;
         QuickError = null;
-        QuickKcalText = "";
+        QuickProteinText = QuickCarbsText = QuickFatText = "";
         QuickLabel = "";
         _backTo = Page;
         Page = AddFoodPage.Quick;
@@ -495,19 +636,25 @@ public partial class AddFoodViewModel : ViewModelBase
         {
             if (UserId is not { } me) return;
             QuickError = null;
-            if (!NumberParsing.TryParseWhole(QuickKcalText, out var kcal))
-            {
-                QuickError = "Enter the calories as a whole number, e.g. 450.";
-                return;
-            }
+            if (!TryQuick(QuickProteinText, "protein", out var protein) || !TryQuick(QuickCarbsText, "carbs", out var carbs) ||
+                !TryQuick(QuickFatText, "fat", out var fat)) return;
             var r = _entryId is { } id
-                ? await _food.EditQuickAddAsync(me, id, SelectedMeal, kcal, QuickLabel)
-                : await _food.QuickAddAsync(me, kcal, QuickLabel, SelectedMeal);
+                ? await _food.EditQuickAddMacrosAsync(me, id, SelectedMeal, protein, carbs, fat, QuickLabel)
+                : await _food.QuickAddMacrosAsync(me, protein, carbs, fat, QuickLabel, SelectedMeal);
             if (!r.Success) { QuickError = r.Error; return; }
             await _changed(r);
-            _closePopup();
+            if (_entryId is not null) await BackToListAsync("Saved");
+            else _closePopup();
         }
         catch (Exception) { QuickError = "Could not save your calories."; }
+    }
+
+    private bool TryQuick(string text, string what, out double value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(text)) { QuickError = $"Enter the {what} (0 is fine)."; return false; }
+        if (!FoodAmountViewModel.TryParse(text, out value)) { QuickError = $"The {what} must be a number, e.g. 12.5."; return false; }
+        return true;
     }
 
 
@@ -641,6 +788,15 @@ public partial class AddFoodViewModel : ViewModelBase
     {
         Error = null;
         Form = null;
+        if (_entryId is not null)
+        {
+            _entryId = null;
+            Amount = null;
+            OnPropertyChanged(nameof(IsEditingEntry));
+            OnPropertyChanged(nameof(CanEditFood));
+            Page = AddFoodPage.Search;
+            return;
+        }
         Page = _backTo == AddFoodPage.Form || _backTo == AddFoodPage.Quick ? AddFoodPage.Search : _backTo;
         if (Page == AddFoodPage.Search) ResetBarcode();
     }

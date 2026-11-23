@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.CalorieGoalSheetView"
+             x:DataType="vm:CalorieGoalSheetViewModel">
+    <!-- The Calorie goal sheet (Phase 27): goal type, the suggestion, your own goal, the safe limits and the macro targets. It uses
+         the Calories screen's own state (Calories), so the logic isn't duplicated. A sheet from the bottom on phones. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="46"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.tile">
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Line}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style Selector="Ellipse.dot">
+            <Setter Property="Width" Value="10"/>
+            <Setter Property="Height" Value="10"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Ellipse.dot.protein"><Setter Property="Fill" Value="{DynamicResource MacroProtein}"/></Style>
+        <Style Selector="Ellipse.dot.carbs"><Setter Property="Fill" Value="{DynamicResource MacroCarbs}"/></Style>
+        <Style Selector="Ellipse.dot.fat"><Setter Property="Fill" Value="{DynamicResource MacroFat}"/></Style>
+        <Style Selector="TextBlock.lbl">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="Margin" Value="2,0,0,4"/>
+        </Style>
+    </UserControl.Styles>
+    <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="18,12,18,20" CornerRadius="22"
+                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="14" TextElement.Foreground="{DynamicResource Ink}">
+                    <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="Calorie goal" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="icon" AutomationProperties.Name="Close" Command="{Binding CloseCommand}">
+                            <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- Lose / Maintain / Gain -->
+                    <Border Padding="4" CornerRadius="12" Background="{DynamicResource Fill}">
+                        <ItemsControl ItemsSource="{Binding GoalTypes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><v:SegmentedPill SelectedIndex="{Binding GoalTypeIndex}" PillInset="0"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PillOptionViewModel">
+                                    <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="40" FontSize="14"
+                                            Content="{Binding Name}" Command="{Binding PickCommand}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <!-- Recommended / Custom -->
+                    <Border Padding="3" CornerRadius="999" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+                        <ItemsControl ItemsSource="{Binding Modes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><v:SegmentedPill SelectedIndex="{Binding ModeIndex}" PillInset="0"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:PillOptionViewModel">
+                                    <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="34" FontSize="13" CornerRadius="999"
+                                            Content="{Binding Name}" Command="{Binding PickCommand}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Border>
+
+                    <!-- Recommended: grams per kg, and the calories they add up to -->
+                    <StackPanel Spacing="8" IsVisible="{Binding ShowRecommendation}">
+                        <ItemsControl ItemsSource="{Binding Tiles}">
+                            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MacroTileViewModel">
+                                    <Border Classes="tile" Padding="12,10" CornerRadius="12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                            <Ellipse Classes="dot" Classes.protein="{Binding IsProtein}" Classes.carbs="{Binding IsCarbs}"
+                                                     Classes.fat="{Binding IsFat}"/>
+                                            <StackPanel Grid.Column="1" Spacing="1">
+                                                <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding RateText}" FontSize="11" Classes="muted"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="{Binding GramsText}" FontSize="22" FontFamily="{StaticResource Mono}"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Border Height="1" Background="{DynamicResource Line}" Margin="0,6,0,0"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Calorie goal" FontSize="14" Classes="soft" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"><Run Text="{Binding RecommendedKcalText}" FontSize="26" FontWeight="Bold"
+                                FontFamily="{StaticResource Mono}"/><Run Text=" kcal" FontSize="13" Foreground="{DynamicResource Muted}"/></TextBlock>
+                        </Grid>
+                        <TextBlock Text="{Binding RecommendedNote}" FontSize="12" Classes="muted" LineHeight="17"/>
+                    </StackPanel>
+
+                    <!-- Recommended without body data -->
+                    <StackPanel Spacing="10" IsVisible="{Binding ShowNoRecommendation}">
+                        <TextBlock Text="{Binding NoRecommendationText}" FontSize="14" Classes="soft"/>
+                        <Button Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" Content="Add body data" Command="{Binding AddBodyDataCommand}"/>
+                    </StackPanel>
+
+                    <!-- Custom: your own grams; the goal is worked out from them -->
+                    <StackPanel Spacing="8" IsVisible="{Binding IsCustom}">
+                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                            <Ellipse Classes="dot protein"/>
+                            <TextBlock Grid.Column="1" Text="Protein" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding ProteinInput}"
+                                     InnerRightContent="g" AutomationProperties.Name="Protein in grams"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                            <Ellipse Classes="dot carbs"/>
+                            <TextBlock Grid.Column="1" Text="Carbs" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding CarbsInput}"
+                                     InnerRightContent="g" AutomationProperties.Name="Carbs in grams"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                            <Ellipse Classes="dot fat"/>
+                            <TextBlock Grid.Column="1" Text="Fat" FontSize="15" VerticalAlignment="Center"/>
+                            <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding FatInput}"
+                                     InnerRightContent="g" AutomationProperties.Name="Fat in grams"/>
+                        </Grid>
+                        <Border Height="1" Background="{DynamicResource Line}" Margin="0,6,0,0"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Calorie goal" FontSize="14" Classes="soft" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1"><Run Text="{Binding CustomKcalText}" FontSize="26" FontWeight="Bold"
+                                FontFamily="{StaticResource Mono}"/><Run Text=" kcal" FontSize="13" Foreground="{DynamicResource Muted}"/></TextBlock>
+                        </Grid>
+                        <TextBlock Text="{Binding CustomNote}" FontSize="12" Classes="muted" LineHeight="17"/>
+                        <Button Classes="link" Content="Start from recommended" Command="{Binding StartFromRecommendedCommand}"
+                                IsVisible="{Binding HasRecommendation}" HorizontalAlignment="Left"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="btn primary big" MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="{Binding SaveLabel}" Command="{Binding SaveCommand}" IsEnabled="{Binding !IsSaving}"
+                            IsVisible="{Binding !ShowNoRecommendation}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Border>
+</UserControl>

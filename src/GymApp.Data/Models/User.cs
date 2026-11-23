@@ -35,7 +35,16 @@ public class User
 
     public int? DailyCalorieGoal { get; set; }
     public GoalType GoalType { get; set; } = GoalType.Maintain;
-    public int? LastSuggestedGoal { get; set; }       // the suggestion the user last accepted or declined, so we only ask again when it changes
+    /// <summary>Optional grams-per-day targets for the macro bars (Phase 27); 1 to 1,000 or null.</summary>
+    public int? ProteinGoalGrams { get; set; }
+    public int? CarbsGoalGrams { get; set; }
+    public int? FatGoalGrams { get; set; }
+    public int? LastSuggestedGoal { get; set; }
+    /// <summary>Recommended: the goal and macro targets follow <see cref="MacroPlan"/>; Custom: the user's own grams, with the goal
+    /// worked out from them. Null until the user picks one on the goal sheet (Phase 27); the goal then stays as it was.</summary>
+    public MacroMode? MacroMode { get; set; }
+    /// <summary>The trend weight the recommended targets were last worked out from; they move again only a kilo away from it.</summary>
+    public double? MacroBasisWeightKg { get; set; }       // the suggestion the user last accepted or declined, so we only ask again when it changes
 
     public ThemePreference ThemePreference { get; set; } = ThemePreference.System;   // applied at sign-in (12e)
 

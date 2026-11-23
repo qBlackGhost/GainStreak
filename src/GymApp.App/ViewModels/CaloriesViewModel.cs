@@ -22,44 +22,20 @@ public partial class GoalTypeOptionViewModel(GoalType type, CaloriesViewModel ow
 }
 
 /// <summary>One day of the "Last 7 days" chart. Heights are in pixels of the chart (see <see cref="CaloriesViewModel.ChartHeight"/>).</summary>
-public record CalorieBarViewModel(string Day, string Label, double BarHeight, bool IsLogged, bool IsHit, DateOnly Date = default, bool IsSelected = false)
+public record CalorieBarViewModel(string Day, string Label, double BarHeight, bool IsLogged, bool IsHit, DateOnly Date = default, bool IsSelected = false,
+    double Fraction = 0)
 {
     public bool IsOff => IsLogged && !IsHit;
     public bool IsMissing => !IsLogged;
 }
 
-/// <summary>One entry in the food diary: tap to edit (today only), ✕ to delete.</summary>
-public partial class FoodEntryRowViewModel(FoodEntryInfo entry, CaloriesViewModel owner, bool canEdit) : ObservableObject
+/// <summary>One macro's bar on today's card (Phase 27): its grams and how full the bar is, 0 to 1. <see cref="IsOver"/>: past its
+/// target (only with one).</summary>
+/// <summary>One macro bar: grams eaten, the target when there is one ("90 / 144 g"), how full the bar is, and whether it went over.</summary>
+public record MacroBarViewModel(string Name, string GramsText, double Fill, bool IsOver, string AmountText = "")
 {
-    public FoodEntryInfo Entry { get; } = entry;
-    public string Name => Entry.Name;
-    public string Detail => Entry.IsQuickAdd ? "Quick add" : AmountText(Entry);
-    public string KcalText => CalorieGoals.K(Entry.Kcal);
-    public bool CanEdit { get; } = canEdit;
-
-    private static string AmountText(FoodEntryInfo e)
-    {
-        var unit = e.IsLiquid ? "ml" : "g";
-        var grams = e.Grams is { } g ? $"{FoodAmountViewModel.Format(g)} {unit}" : "";
-        return e.Servings is { } s && e.ServingName is { } name
-            ? $"{FoodAmountViewModel.Format(s)} × {name} · {grams}"
-            : grams;
-    }
-
-    [RelayCommand] private void Edit() { if (CanEdit) owner.EditEntry(Entry); }
-    [RelayCommand] private Task Delete() => CanEdit ? owner.DeleteEntryAsync(Entry) : Task.CompletedTask;
-}
-
-/// <summary>One meal of the diary with its entries, its kcal and (today) an Add button.</summary>
-public partial class MealGroupViewModel(Meal meal, IReadOnlyList<FoodEntryRowViewModel> entries, bool canAdd, CaloriesViewModel owner) : ObservableObject
-{
-    public Meal Meal { get; } = meal;
-    public string Name => MealDefaults.DisplayName(Meal);
-    public IReadOnlyList<FoodEntryRowViewModel> Entries { get; } = entries;
-    public bool HasEntries => Entries.Count > 0;
-    public bool CanAdd { get; } = canAdd;
-    public string KcalText => CalorieGoals.K(Entries.Sum(e => e.Entry.Kcal));
-    [RelayCommand] private void Add() => owner.AddFood(Meal);
+    /// <summary>"90 / 144 g" against a target, else "90 g".</summary>
+    public string Amount => string.IsNullOrEmpty(AmountText) ? GramsText : AmountText;
 }
 
 /// <summary>
@@ -106,8 +82,13 @@ public partial class CaloriesViewModel : ViewModelBase
     /// <summary>The selected goal type's position in <see cref="GoalTypes"/>, for the sliding pill.</summary>
     [ObservableProperty] public partial int SelectedGoalIndex { get; set; }
 
-    [ObservableProperty] public partial string? Error { get; set; }
-    [ObservableProperty] public partial string? Info { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMessage))]
+    public partial string? Error { get; set; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMessage))]
+    public partial string? Info { get; set; }
+    public bool HasMessage => !string.IsNullOrEmpty(Info) || !string.IsNullOrEmpty(Error);
     [ObservableProperty] public partial string HeaderPill { get; set; } = "";
 
     // ===== Today =====
@@ -145,21 +126,27 @@ public partial class CaloriesViewModel : ViewModelBase
     public bool ShowLegacyLogForm => !HasFoodLog && ShowLogForm;
     public bool ShowLegacyResult => !HasFoodLog && !ShowLogForm;
 
-    [ObservableProperty] public partial IReadOnlyList<MealGroupViewModel> Meals { get; set; } = [];
-    [ObservableProperty] public partial string DiaryTitle { get; set; } = "Food today";
-    [ObservableProperty] public partial string MacroText { get; set; } = "";
-    [ObservableProperty] public partial bool HasMacros { get; set; }
-    [ObservableProperty] public partial bool DiaryIsTotalOnly { get; set; }
-    [ObservableProperty] public partial string DiaryTotalText { get; set; } = "";
-    [ObservableProperty] public partial bool DiaryIsPast { get; set; }
-    [ObservableProperty] public partial bool DiaryIsEmpty { get; set; }
-    public DateOnly SelectedDate { get; private set; } = AppClock.Today;
+    // Phase 27 (phones): today's macro bars, and the line under Add food that opens the sheet at its list
+    [ObservableProperty] public partial MacroBarViewModel ProteinBar { get; set; } = new("Protein", "0 g", 0, false);
+    [ObservableProperty] public partial MacroBarViewModel CarbsBar { get; set; } = new("Carbs", "0 g", 0, false);
+    [ObservableProperty] public partial MacroBarViewModel FatBar { get; set; } = new("Fat", "0 g", 0, false);
+    [ObservableProperty] public partial bool HasItems { get; set; }
+    [ObservableProperty] public partial string GoalEatenText { get; set; } = "";
+    /// <summary>Phones: the Calories card's ring, Goal and Eaten and macro bars, the same model as Home's card.</summary>
+    public TodayCaloriesViewModel TodayCard { get; } = new();
+
+    /// <summary>Opens a past day's popup (27d); the shell's by default, tests set their own.</summary>
+    public Action<DateOnly>? PastDayOpener { get; set; }
 
     // ===== Last 7 days =====
     [ObservableProperty] public partial IReadOnlyList<CalorieBarViewModel> Bars { get; set; } = [];
     [ObservableProperty] public partial string HitsText { get; set; } = "";
+    [ObservableProperty] public partial string OnTargetText { get; set; } = "";
     [ObservableProperty] public partial double BandBottom { get; set; }
     [ObservableProperty] public partial double BandHeight { get; set; }
+    /// <summary>The band as shares of the chart's height (phones: the chart grows with the screen).</summary>
+    [ObservableProperty] public partial double BandBottomFraction { get; set; }
+    [ObservableProperty] public partial double BandHeightFraction { get; set; }
 
     // ===== Calorie goal =====
     [ObservableProperty] public partial string GoalText { get; set; } = "";
@@ -173,6 +160,17 @@ public partial class CaloriesViewModel : ViewModelBase
     [ObservableProperty] public partial string? SuggestionReason { get; set; }
     [ObservableProperty] public partial string CustomGoalInput { get; set; } = "";
     [ObservableProperty] public partial string? GoalError { get; set; }
+
+    // Phones: the two rows under the chart (Phase 27)
+    [ObservableProperty] public partial string GoalRowText { get; set; } = "Not set";
+    [ObservableProperty] public partial string GoalRowDetail { get; set; } = "";
+    [ObservableProperty] public partial string MaintenanceRowText { get; set; } = "Add body data";
+    [ObservableProperty] public partial bool HasMacroTargets { get; set; }
+
+    private int? _proteinTarget, _carbsTarget, _fatTarget;
+
+    /// <summary>The goal as last loaded, for the goal sheet.</summary>
+    public CalorieGoalInfo? GoalInfo { get; private set; }
 
     // ===== Maintenance =====
     [ObservableProperty] public partial bool HasMaintenance { get; set; }
@@ -192,9 +190,10 @@ public partial class CaloriesViewModel : ViewModelBase
             var o = await _calories.GetAsync(me);
             if (o is null) { Error = "Could not load your calories."; return; }
             ApplyGoal(o.Goal);
+            if (TargetsChangedText(o) is { } changed) Info = changed;
             ApplyToday(o);
             ApplyWeek(o);
-            await LoadDiaryAsync(me);
+            await LoadTodayFoodAsync(me);
         }
         catch (Exception)
         {
@@ -211,13 +210,30 @@ public partial class CaloriesViewModel : ViewModelBase
         }
     }
 
+    /// <summary>"Your targets changed to 1,990 kcal (you're down 1.2 kg)." once, after the trend weight moved them.</summary>
+    private static string? TargetsChangedText(CalorieOverview o) =>
+        o.TargetsUpdate is { } u
+            ? $"Your targets changed to {K(u.NewKcal)} kcal (you're {(u.WeightChangeKg < 0 ? "down" : "up")} " +
+              $"{Units.FormatWeight(Math.Abs(u.WeightChangeKg), o.Goal.MacroInputs?.Units ?? UnitSystem.Metric)})."
+            : null;
+
     private void ApplyGoal(CalorieGoalInfo g)
     {
         foreach (var t in GoalTypes) t.IsSelected = t.Type == g.GoalType;
         SelectedGoalIndex = GoalTypes.ToList().FindIndex(t => t.Type == g.GoalType);
         var type = CalorieGoals.DisplayName(g.GoalType);
 
+        GoalInfo = g;
         HasGoal = g.Goal is not null;
+        GoalRowText = g.Goal is { } rowGoal ? $"{K(rowGoal)} kcal" : "Not set";
+        GoalRowDetail = g.Goal is null ? "" : g.MacroMode switch
+        {
+            MacroMode.Recommended => $"{CalorieGoals.ShortName(g.GoalType)} · recommended",
+            MacroMode.Custom => $"{CalorieGoals.ShortName(g.GoalType)} · custom",
+            _ => CalorieGoals.ShortName(g.GoalType),
+        };
+        _proteinTarget = g.ProteinGoalGrams; _carbsTarget = g.CarbsGoalGrams; _fatTarget = g.FatGoalGrams;
+        HasMacroTargets = _proteinTarget is not null || _carbsTarget is not null || _fatTarget is not null;
         GoalText = g.Goal is { } goal ? K(goal) : "—";
         GoalRule = g.Goal is { } target
             ? $"A day counts as hit {CalorieGoals.TargetRule(target)}."
@@ -250,7 +266,9 @@ public partial class CaloriesViewModel : ViewModelBase
         _consumed = t?.Consumed;
 
         IsLogged = t is not null;
+        GoalEatenText = goal is { } ge ? $"Goal {K(ge)} · eaten {K(t?.Consumed ?? 0)}" : $"No goal yet · eaten {K(t?.Consumed ?? 0)}";
         GoalKcal = goal is { } gk ? K(gk) : "—";
+        TodayCard.Apply(o);
         EatenKcal = t is null ? "—" : K(t.Consumed);
 
         if (goal is { } g)
@@ -293,15 +311,17 @@ public partial class CaloriesViewModel : ViewModelBase
         var days = Enumerable.Range(0, 7).Select(i => today.AddDays(i - 6)).ToList();
         var top = Math.Max(ChartMinTop, days.Select(d => byDate.TryGetValue(d, out var c) ? c.Consumed : 0).Max());
         double Px(int kcal) => Math.Round(ChartHeight * kcal / top);
+        double Share(int kcal) => (double)kcal / top;
 
         Bars = days.Select(d => byDate.TryGetValue(d, out var c)
                 ? new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), K(c.Consumed),
-                    Math.Max(4, Px(c.Consumed)), true, c.Hit == true, d, HasFoodLog && d == SelectedDate)
-                : new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), "—", 12, false, false, d, HasFoodLog && d == SelectedDate))
+                    Math.Max(4, Px(c.Consumed)), true, c.Hit == true, d, HasFoodLog && d == today, Share(c.Consumed))
+                : new CalorieBarViewModel(d.ToString("ddd", CultureInfo.InvariantCulture), "—", 12, false, false, d, HasFoodLog && d == today, 0.04))
             .ToList();
 
         var logged = Bars.Count(b => b.IsLogged);
         var hits = Bars.Count(b => b.IsHit);
+        OnTargetText = $"{hits} on target";
         HitsText = logged == 0 ? "No days logged yet" : $"{hits} of {logged} logged day{(logged == 1 ? "" : "s")} on target";
 
         if (o.Goal.Goal is { } goal)
@@ -309,10 +329,12 @@ public partial class CaloriesViewModel : ViewModelBase
             var (lo, hi) = CalorieGoals.TargetRange(goal);
             BandBottom = Px(lo);
             BandHeight = Px(hi) - Px(lo);
+            BandBottomFraction = Share(lo);
+            BandHeightFraction = Share(hi) - Share(lo);
         }
         else
         {
-            BandBottom = BandHeight = 0;
+            BandBottom = BandHeight = BandBottomFraction = BandHeightFraction = 0;
         }
     }
 
@@ -320,6 +342,7 @@ public partial class CaloriesViewModel : ViewModelBase
     {
         var m = s.Maintenance;
         HasMaintenance = m.Kcal is not null;
+        MaintenanceRowText = m.Kcal is { } mk ? $"≈ {K(mk)} kcal" : "Add body data";
         if (m.Kcal is { } kcal)
         {
             MaintenanceKcal = $"≈ {K(kcal)}";
@@ -336,84 +359,51 @@ public partial class CaloriesViewModel : ViewModelBase
         }
     }
 
-    private async Task ReloadAsync()
+    internal async Task ReloadAsync()
     {
         if (UserId is not { } me) return;
         var o = await _calories.GetAsync(me);
         if (o is null) return;
         ApplyGoal(o.Goal);
+        if (TargetsChangedText(o) is { } changed) Info = changed;
         ApplyToday(o);
         ApplyWeek(o);
-        await LoadDiaryAsync(me);
+        await LoadTodayFoodAsync(me);
     }
 
-    // ===== Food diary =====
+    // ===== Food (Phase 27: the list itself lives in the Add food sheet) =====
 
-    /// <summary>Today's entries by meal, or a past day's read-only (picked in the week's bars).</summary>
-    private async Task LoadDiaryAsync(int me)
+    /// <summary>Today's macros for the bars, and how many items are logged.</summary>
+    private async Task LoadTodayFoodAsync(int me)
     {
         if (!HasFoodLog) return;
-        var date = SelectedDate;
-        var today = AppClock.Today;
-        var day = await _food.GetDayAsync(me, date);
-        var editable = date == today;
-
-        DiaryIsPast = !editable;
-        DiaryTitle = editable ? "Food today" : date.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
-        DiaryIsTotalOnly = day.TotalOnly;
-        DiaryTotalText = day.TotalOnly ? $"Logged as a total · {K(day.Kcal)} kcal" : "";
-        DiaryIsEmpty = !day.TotalOnly && day.Entries.Count == 0 && !editable;
-        HasMacros = day.Entries.Count > 0;
-        MacroText = HasMacros
-            ? $"Protein {Grams(day.Protein)} · Carbs {Grams(day.Carbs)} · Fat {Grams(day.Fat)}"
-            : "";
-
-        // A day logged as a total has no meals to show; today always shows the four, each with its Add button
-        Meals = day.TotalOnly
-            ? []
-            : Enum.GetValues<Meal>()
-                .Select(m => new MealGroupViewModel(m, day.In(m).Select(e => new FoodEntryRowViewModel(e, this, editable)).ToList(), editable, this))
-                .Where(g => editable || g.HasEntries)
-                .ToList();
+        var m = await _food.GetDayMacrosAsync(me, AppClock.Today);
+        TodayCard.ApplyFood(m, _proteinTarget, _carbsTarget, _fatTarget);
+        HasItems = TodayCard.HasItems;
+        ProteinBar = TodayCard.ProteinBar;
+        CarbsBar = TodayCard.CarbsBar;
+        FatBar = TodayCard.FatBar;
     }
 
-    private static string Grams(double g) => g.ToString("0.#", CultureInfo.InvariantCulture) + " g";
+    public DateOnly SelectedDate => AppClock.Today;
 
-    /// <summary>A bar of the week opens that day's diary (read-only unless it's today).</summary>
+    /// <summary>A bar of the week: a past day opens its popup, today's does nothing (27d).</summary>
     [RelayCommand]
     private Task ShowDay(DateOnly date) => ShowDayAsync(date);
 
-    internal async Task ShowDayAsync(DateOnly date)
+    internal Task ShowDayAsync(DateOnly date)
     {
-        if (!HasFoodLog || UserId is not { } me) return;
-        SelectedDate = date > AppClock.Today ? AppClock.Today : date;
-        try
-        {
-            var o = await _calories.GetAsync(me);
-            if (o is not null) ApplyWeek(o);   // moves the selection mark
-            await LoadDiaryAsync(me);
-        }
-        catch (Exception) { Error = "Could not load that day."; }
+        if (!HasFoodLog || date >= AppClock.Today) return Task.CompletedTask;
+        if (PastDayOpener is { } open) { open(date); return Task.CompletedTask; }
+        return _shell().OpenPastDayAsync(date);
     }
 
-    [RelayCommand] private Task BackToToday() => ShowDayAsync(AppClock.Today);
+    [RelayCommand] private void AddFoodNow() => _shell().OpenAddFood(null, FoodChangedAsync);
 
-    internal void AddFood(Meal? meal) => _shell().OpenAddFood(meal, FoodChangedAsync);
-    internal void EditEntry(FoodEntryInfo entry) => _shell().OpenFoodEntry(entry, FoodChangedAsync);
+    /// <summary>Manage food: the Add food sheet, scrolled to Logged today when something is logged.</summary>
+    [RelayCommand] private void ManageFood() => _shell().OpenAddFood(null, FoodChangedAsync, scrollToLogged: HasItems);
 
-    [RelayCommand] private void AddFoodNow() => AddFood(null);
-
-    internal async Task DeleteEntryAsync(FoodEntryInfo entry)
-    {
-        try
-        {
-            if (UserId is not { } me) return;
-            var r = await _food.DeleteEntryAsync(me, entry.Id);
-            if (!r.Success) { Error = r.Error; return; }
-            await FoodChangedAsync(r);
-        }
-        catch (Exception) { Error = "Could not delete that."; }
-    }
+    [RelayCommand] private void OpenGoalSheet() => _shell().OpenCalorieGoalSheet(this);
 
     /// <summary>The sheet changed today's food: show the points it earned and reload.</summary>
     private async Task FoodChangedAsync(FoodResult r)
@@ -422,7 +412,6 @@ public partial class CaloriesViewModel : ViewModelBase
         Info = r.Points is { Added.Count: > 0 } p
             ? string.Join(" · ", p.Added.GroupBy(a => a.Reason).Select(g => $"+{g.Sum(a => a.Amount)} {PointsCalculator.DisplayName(g.Key)}"))
             : null;
-        SelectedDate = AppClock.Today;
         await ReloadAsync();
     }
 

@@ -150,7 +150,7 @@ public class OpenFoodFactsClient
         }
 
         var isLiquid = IsLiquid(Text(p, "quantity"), servingText);
-        var problem = FoodRules.CheckPer100(kcal, protein, carbs, fat) ?? FoodRules.CheckServing(servingGrams);
+        var problem = FoodRules.CheckPer100(kcal, protein, carbs, fat) ?? FoodRules.CheckHasMacros(kcal, protein, carbs, fat) ?? FoodRules.CheckServing(servingGrams);
         return new FoodInfo(null, FoodSource.OpenFoodFacts, barcode, name, brand, isLiquid,
             Math.Round(kcal ?? 0, 1), Round(protein), Round(carbs), Round(fat), servingName, servingGrams, Problem: problem);
     }

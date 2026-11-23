@@ -40,7 +40,63 @@ public static class FoodRules
     public const string LooksWrong = "This product's numbers look wrong. Check them before logging.";
     public const string NoEnergy = "This product has no calorie value. Add it before logging.";
 
+    public const string NeedsMacros = "Add this product's protein, carbs and fat before logging.";
+    public const int KcalPerGramProtein = 4;
+    public const int KcalPerGramCarbs = 4;
+    public const int KcalPerGramFat = 9;
+
     public static double KjToKcal(double kj) => kj / KjPerKcal;
+
+    /// <summary>Phase 27: the calories of what the user types: protein × 4 + carbs × 4 + fat × 9, rounded to a whole number.</summary>
+    public static int KcalFromMacros(double protein, double carbs, double fat) =>
+        (int)Math.Round(protein * KcalPerGramProtein + carbs * KcalPerGramCarbs + fat * KcalPerGramFat, MidpointRounding.AwayFromZero);
+
+    /// <summary><see cref="NeedsMacros"/> for a catalog or Open Food Facts food that has energy but lacks a macro; null when the
+    /// food has all three (or no energy, which has its own message).</summary>
+    public static string? CheckHasMacros(double? kcal, double? protein, double? carbs, double? fat) =>
+        kcal is not null && (protein is null || carbs is null || fat is null) ? NeedsMacros : null;
+
+    /// <summary>The check for a hand-typed food's macros (Phase 27), per 100 g or ml: all three present, each 0 to 100 g,
+    /// together at most 100 g (+ the slack). Null when fine.</summary>
+    public static string? CheckMacros(double? protein, double? carbs, double? fat)
+    {
+        foreach (var (label, v) in new[] { ("Protein", protein), ("Carbs", carbs), ("Fat", fat) })
+        {
+            if (v is null) return $"Enter the {label.ToLowerInvariant()} (0 is fine).";
+            if (!IsFinite(v.Value) || v < 0 || v > MaxMacroPer100)
+                return $"{label} per 100 g must be between 0 and {MaxMacroPer100:0} g.";
+        }
+        return protein!.Value + carbs!.Value + fat!.Value > MaxMacroPer100 + MacroSumSlack
+            ? "Protein, carbs and fat can't add up to more than 100 g in 100 g."
+            : null;
+    }
+
+    /// <summary>The same check for a food typed per serving: each macro at most the serving's grams, and together at most its
+    /// grams (+ the slack). <paramref name="servingGrams"/> must be valid (<see cref="CheckServing"/>).</summary>
+    public static string? CheckMacrosPerServing(double? protein, double? carbs, double? fat, double servingGrams)
+    {
+        foreach (var (label, v) in new[] { ("Protein", protein), ("Carbs", carbs), ("Fat", fat) })
+        {
+            if (v is null) return $"Enter the {label.ToLowerInvariant()} (0 is fine).";
+            if (!IsFinite(v.Value) || v < 0 || v > servingGrams)
+                return $"{label} can't be more than the serving's {servingGrams:0.#} g.";
+        }
+        return protein!.Value + carbs!.Value + fat!.Value > servingGrams + MacroSumSlack
+            ? "Protein, carbs and fat can't add up to more than the serving weighs."
+            : null;
+    }
+
+    /// <summary>The check for a Quick add's macros, in grams for the whole thing: all three present, 0 or more, and a sensible
+    /// size (the calories must stay within the day's limit, which the service checks).</summary>
+    public static string? CheckQuickMacros(double? protein, double? carbs, double? fat)
+    {
+        foreach (var (label, v) in new[] { ("Protein", protein), ("Carbs", carbs), ("Fat", fat) })
+        {
+            if (v is null) return $"Enter the {label.ToLowerInvariant()} (0 is fine).";
+            if (!IsFinite(v.Value) || v < 0 || v > MaxAmountGrams) return $"{label} must be between 0 and {MaxAmountGrams:#,0} g.";
+        }
+        return null;
+    }
 
     /// <summary>Null when the numbers are usable. A missing energy value is <see cref="NoEnergy"/>; anything out of range,
     /// or macros adding up to more than the food weighs, is <see cref="LooksWrong"/>. Missing macros are fine.</summary>
