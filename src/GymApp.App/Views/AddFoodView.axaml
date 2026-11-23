@@ -7,7 +7,7 @@
     <!-- The Add food sheet (Phase 26, phones): search (your foods, the USDA catalog, Open Food Facts), the amount, the New
          food form and Quick add, all on one sheet from the bottom. Escape or a tap on the dimmed page closes it. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
         <Style Selector="TextBox.field">
             <Setter Property="MinHeight" Value="46"/>

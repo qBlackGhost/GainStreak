@@ -9,7 +9,7 @@
          Discord. Escape, the close button or a click outside closes it. -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="Border.track">
             <Setter Property="Padding" Value="4"/>
             <Setter Property="CornerRadius" Value="12"/>

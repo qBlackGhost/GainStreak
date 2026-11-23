@@ -161,7 +161,7 @@ struct Shown {
     var streakColor: Color { status == "done" ? Palette.fire : Palette.ink }
 }
 
-// MARK: - Look: the app's tokens (IronlogResources), light and dark
+// MARK: - Look: the app's tokens (GainStreakResources), light and dark
 
 enum Palette {
     static func dynamic(_ light: UInt32, _ dark: UInt32) -> Color {
@@ -170,7 +170,7 @@ enum Palette {
     static let card = dynamic(0xFFFFFF, 0x0B0B0B)
     static let line = dynamic(0xE2E2DD, 0x222222)
     static let track = dynamic(0xECECE8, 0x1A1A1A)
-    /// The week's other step bars: the track is too faint for bars standing alone (IronlogResources' Border).
+    /// The week's other step bars: the track is too faint for bars standing alone (GainStreakResources' Border).
     static let barOff = dynamic(0xD0D0CB, 0x333333)
     static let chip = dynamic(0xEFEFEB, 0x161616)
     static let ink = dynamic(0x0B0B0B, 0xFFFFFF)

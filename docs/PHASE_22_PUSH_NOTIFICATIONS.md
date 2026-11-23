@@ -171,7 +171,7 @@ Where it differs from the plan above:
 - **Profile → Notifications** (the section that holds Reminders, renamed if the artboard says so): the **Friend requests** switch, hidden when `IsSupported` is false. Turning it on asks for permission if not asked yet; refused → back off with Reminders' note. Every change saves and registers or unregisters at once.
 - **The card in Friends** (`FriendsViewModel`): shown while `FriendNotifications` is null, push is supported, permission isn't allowed yet, the card wasn't dismissed, and the user has sent or received a request or opened the QR sheet. Turn on → permission → switch on (or the refusal note). Not now → dismissed for good.
 - **Permission already allowed** (from Reminders): no card; `FriendNotifications` becomes true at startup and the token is registered.
-- Colors from `IronlogResources.axaml` in both themes; any segmented control uses `SegmentedPill`.
+- Colors from `GainStreakResources.axaml` in both themes; any segmented control uses `SegmentedPill`.
 
 **Tests:** the switch (on asks, refusal, off unregisters, hidden on the desktop); the card's show rules and both buttons; the "already allowed" start; the desktop shows neither.
 

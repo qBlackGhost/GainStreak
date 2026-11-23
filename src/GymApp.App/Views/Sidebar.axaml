@@ -7,7 +7,7 @@
          (Sidebar.axaml.cs sets "narrow" on it and on the DockPanel it sits in). -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="v|Sidebar">
             <Setter Property="DockPanel.Dock" Value="Left"/>
         </Style>

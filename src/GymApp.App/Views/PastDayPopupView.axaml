@@ -7,7 +7,7 @@
     <!-- A past day from the 7-day chart (Phase 27d): a centred card on the dimmed page with the day, its status, the macro ring
          and its legend, and "See what you ate". X, Escape or a tap on the dimmed page closes it. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock.status"><Setter Property="Foreground" Value="{DynamicResource Muted}"/></Style>
         <Style Selector="TextBlock.status.off"><Setter Property="Foreground" Value="{DynamicResource FlameText}"/></Style>
         <Style Selector="TextBlock.status.hit"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>

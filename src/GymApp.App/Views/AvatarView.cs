@@ -93,6 +93,6 @@ public class AvatarView : Control
         context.DrawText(text, new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
     }
 
-    // "flame" → IcFlame, in IronlogResources
+    // "flame" → IcFlame, in GainStreakResources
     private static string IconKey(string icon) => "Ic" + char.ToUpperInvariant(icon[0]) + icon[1..];
 }

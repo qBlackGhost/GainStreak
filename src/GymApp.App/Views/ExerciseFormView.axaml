@@ -6,7 +6,7 @@
              x:DataType="vm:ExerciseFormViewModel">
     <!-- The new exercise popup: a centred card, a sheet from the bottom on phones. Escape or a click outside cancels. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
         <Style Selector=".phone StackPanel#Form"><Setter Property="Margin" Value="16,18,16,20"/></Style>
         <Style Selector="TextBox.field">

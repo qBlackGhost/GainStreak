@@ -23,7 +23,7 @@ struct GainStreakWidgets: WidgetBundle {
     }
 }
 
-/// The app's accent and its dark page (IronlogResources' Accent and PageBg).
+/// The app's accent and its dark page (GainStreakResources' Accent and PageBg).
 private let accent = Color(red: 0xC6 / 255, green: 0xF4 / 255, blue: 0x32 / 255)
 private let track = Color.white.opacity(0.18)
 private let page = Color.black

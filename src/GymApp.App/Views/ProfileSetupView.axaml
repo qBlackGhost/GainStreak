@@ -7,7 +7,7 @@
     <!-- After the "Gym App" design canvas (Profile setup artboard): shown once, right after creating an account.
          One column of at most 640 px, so it reads the same on a phone; Skip and Save stay pinned at the bottom. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

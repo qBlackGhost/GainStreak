@@ -9,7 +9,7 @@
          adding a shared split or workout opens its popup at the bottom of this file. -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

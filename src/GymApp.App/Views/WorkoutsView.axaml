@@ -7,7 +7,7 @@
     <!-- After the "Gym App" design canvas (Workouts artboard): this week's plan, then a card per split day -->
     <UserControl.Styles>
         <!-- The shared styles, here rather than app-wide so the other screens keep their own classes -->
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

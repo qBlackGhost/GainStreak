@@ -7,7 +7,7 @@
     <!-- The Calorie goal sheet (Phase 27): goal type, the suggestion, your own goal, the safe limits and the macro targets. It uses
          the Calories screen's own state (Calories), so the logic isn't duplicated. A sheet from the bottom on phones. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
         <Style Selector="TextBox.field">
             <Setter Property="MinHeight" Value="46"/>

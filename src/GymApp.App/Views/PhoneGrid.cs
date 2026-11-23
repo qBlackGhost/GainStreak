@@ -3,7 +3,7 @@ using Avalonia.Controls;
 
 namespace GymApp.App.Views;
 
-/// <summary>A Grid laid out differently on phones (16e), since a style can't change a Grid's columns. IronlogStyles
+/// <summary>A Grid laid out differently on phones (16e), since a style can't change a Grid's columns. GainStreakStyles
 /// sets <see cref="IsPhone"/> under MainView's "phone" class. Then either <see cref="PhoneColumns"/> (and
 /// <see cref="PhoneColumnSpacing"/>, when set) replace the columns, or, with <see cref="PhoneStack"/>, the children go
 /// one under another in their markup order (a form's label above its field). The Grid's own layout comes back when the

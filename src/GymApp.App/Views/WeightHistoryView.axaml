@@ -6,7 +6,7 @@
              x:DataType="vm:WeightHistoryViewModel">
     <!-- The phones' weight History (Phase 27): every weigh-in by month, newest first, the change since the one before, Delete -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
     </UserControl.Styles>
     <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
         <v:Sheet MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="18,12,18,20" CornerRadius="22"

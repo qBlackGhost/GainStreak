@@ -7,7 +7,7 @@
     <!-- Today's calories on the phones (Phase 27), shared by the Calories screen and Home: the lime ring with what is left,
          Goal and Eaten, the target range and the macro bars. The card around it, its title and its button belong to the screen. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="Arc.phoneRing"><Setter Property="Stroke" Value="{DynamicResource Accent}"/></Style>
         <Style Selector="Arc.phoneRing.over"><Setter Property="Stroke" Value="{DynamicResource MissRed}"/></Style>
         <Style Selector="TextBlock.overText"><Setter Property="Foreground" Value="{DynamicResource MissRed}"/></Style>

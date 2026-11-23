@@ -6,7 +6,7 @@ using GymApp.Core;
 namespace GymApp.App;
 
 /// <summary>Applies the Theme setting to the whole app (12e). Signed out (the login screens) it follows the system.
-/// Every color is a DynamicResource from IronlogResources' theme dictionaries, so a change shows at once.</summary>
+/// Every color is a DynamicResource from GainStreakResources' theme dictionaries, so a change shows at once.</summary>
 public static class AppTheme
 {
     public static void Apply(ThemePreference? preference)

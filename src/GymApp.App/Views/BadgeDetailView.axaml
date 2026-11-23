@@ -7,7 +7,7 @@
     <!-- One badge (Phase 25): the badge, its name and rule (the hint while it's hidden), the tier ladder, the progress
          and when it was earned. A sheet on phones; Escape, Close or a tap outside closes it. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="ProgressBar.bar">
             <Setter Property="Height" Value="6"/>
             <Setter Property="MinHeight" Value="6"/>

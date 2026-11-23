@@ -8,7 +8,7 @@
     <!-- The "I went today" popup over Home (design: Main board, check-in dialog). Each exercise is a box that turns
          green when filled; each set is a chip you type kg and reps into, with last time's values as placeholders. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
 
         <!-- Exercise box -->
         <Style Selector="Border.exercise">

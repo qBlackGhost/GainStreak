@@ -9,7 +9,7 @@ namespace GymApp.App.Views;
 
 /// <summary>A popup's card: centred at the size its view gives it (Width, MaxHeight, CornerRadius, Margin...) on
 /// desktop and tablets, a sheet from the bottom on phones (the GainStreak Mobile canvas): full width, rounded on top,
-/// as tall as its content up to <see cref="MaxShare"/> of the screen. IronlogStyles sets <see cref="IsBottomSheet"/>
+/// as tall as its content up to <see cref="MaxShare"/> of the screen. GainStreakStyles sets <see cref="IsBottomSheet"/>
 /// under MainView's "phone" class; the card's own values come back when the screen gets wide again. A dimmed page
 /// around it (the nearest Border above it with the "scrim" class) loses its padding too, so the sheet reaches the
 /// edges.</summary>

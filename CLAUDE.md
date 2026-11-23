@@ -55,7 +55,7 @@ The production server never migrates on start: `docker run ... gymapp-server mig
 
 **Old clients stay in the wild.** Installed copies update through Velopack only when they restart. The server's `MinClientVersion` gates old builds with a 426. Keep `Contracts` and endpoint changes backward compatible, or plan a `MinClientVersion` bump. `ClientContractTests` and `ClientVersionTests` cover this.
 
-**UI.** `ViewLocator` maps `FooViewModel` to `FooView` by name, so a new screen needs both with matching names and namespaces. Colors and styles are tokens in `Views/IronlogResources.axaml` / `IronlogStyles.axaml`, with light and dark variants. Reuse `Views/SegmentedPill` for segmented toggles and `ResponsiveGrid` for adaptive layouts.
+**UI.** `ViewLocator` maps `FooViewModel` to `FooView` by name, so a new screen needs both with matching names and namespaces. Colors and styles are tokens in `Views/GainStreakResources.axaml` / `GainStreakStyles.axaml`, with light and dark variants. Reuse `Views/SegmentedPill` for segmented toggles and `ResponsiveGrid` for adaptive layouts.
 
 **Tests.**
 - `tests/GymApp.Tests`: service tests run on in-memory SQLite with the real migrations. The server side runs against `FakeHttpHandler` / `FakeSocialServer`.

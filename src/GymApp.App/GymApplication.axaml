@@ -14,7 +14,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="/Views/IronlogResources.axaml"/>
+                <ResourceInclude Source="/Views/GainStreakResources.axaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

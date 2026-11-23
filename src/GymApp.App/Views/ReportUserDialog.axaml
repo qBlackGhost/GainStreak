@@ -7,7 +7,7 @@
              IsVisible="{Binding IsOpen}">
     <!-- The report popup over Friends and the inbox: why, a note, and whether to block too. Block alone sits on the left -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

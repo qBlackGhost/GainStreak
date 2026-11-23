@@ -130,7 +130,7 @@ Empty box: **Recent** (last 20 distinct foods) and **Favourites**. Each row: nam
   grams. Validated by `FoodRules`.
 - **Home's calories card (phones):** the ring as now; the button is **Add food** (opens the sheet). The typed-number
   form moves into the sheet as **Quick add**.
-- Styles from `IronlogResources.axaml` / `IronlogStyles.axaml`, light and dark. No desktop layout.
+- Styles from `GainStreakResources.axaml` / `GainStreakStyles.axaml`, light and dark. No desktop layout.
 
 ## Generalise the User-Agent
 

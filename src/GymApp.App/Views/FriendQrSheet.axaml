@@ -9,7 +9,7 @@
          as a QR code on white, Copy link, Share (phones) and Reset link with its confirm. A sheet from the bottom on
          phones, a centred card on the desktop. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

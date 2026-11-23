@@ -7,7 +7,7 @@
              IsVisible="{Binding IsOpen}">
     <!-- The share popup over Workouts and Splits: what to share, who gets it, and what they'll receive -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="TextBlock">
             <Setter Property="TextWrapping" Value="Wrap"/>
         </Style>

@@ -21,7 +21,7 @@ Phones only (the desktop is frozen). Work through the sub-phases **in order** an
 - Read `CaloriesView.axaml` / `CaloriesViewModel`, `AddFoodView.axaml` and its view models (`AddFoodViewModel`,
   `FoodAmountViewModel`, `FoodFormViewModel`), `FoodService`, `FoodRules`, `CalorieService` (`CalorieGoalInfo`,
   `CalorieDay`), `User` (`DailyCalorieGoal`, `GoalType`), `Sheet.cs`, `QrCodeView.cs` (the model for a control that
-  draws itself), `SegmentedPill`, `IronlogResources.axaml` and `IronlogStyles.axaml` before changing anything.
+  draws itself), `SegmentedPill`, `GainStreakResources.axaml` and `GainStreakStyles.axaml` before changing anything.
 - Every existing test must still pass. The points rules don't change.
 - **The desktop** only has to keep building and starting (CLAUDE.md, "Desktop freeze"). Its Calories screen stays as it
   is; everything here is behind `IPlatform.HasFoodLog`, as Phase 26.
@@ -94,7 +94,7 @@ Phones only (the desktop is frozen). Work through the sub-phases **in order** an
 - **Centre:** the day's **kcal eaten over the day's calorie goal** ("2,010 / 1,900", the goal smaller and muted) with
   "kcal" under it. A day with no goal shows only the eaten kcal. Digits use the mono style.
 - **Under the ring:** one row per macro: a round colour dot, the name, the grams, and the share as a percentage.
-- **Colours:** new tokens `MacroProtein`, `MacroCarbs`, `MacroFat` in `IronlogResources.axaml`, light and dark,
+- **Colours:** new tokens `MacroProtein`, `MacroCarbs`, `MacroFat` in `GainStreakResources.axaml`, light and dark,
   pointing at the app's own colours: `Accent` (lime), `Flame` (orange) and `Ice` (blue). Their light-theme variants
   already exist, so don't hard-code hex values in the control. The mockups used slightly different oranges and blues;
   the tokens win.

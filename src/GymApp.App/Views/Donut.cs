@@ -8,7 +8,7 @@ using GymApp.App.ViewModels;
 namespace GymApp.App.Views;
 
 /// <summary>Brushes for the split usage donut and its legend: tone 0 is the split being viewed (the accent), 1–5 the
-/// others' greys (Tone1..Tone5 in IronlogResources), looked up for the control's current theme.</summary>
+/// others' greys (Tone1..Tone5 in GainStreakResources), looked up for the control's current theme.</summary>
 internal static class DonutTones
 {
     public static IBrush Brush(Control owner, int tone) =>

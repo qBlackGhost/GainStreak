@@ -7,7 +7,7 @@
     <!-- Phase 25, the GainStreak Badges canvas ("Profile · Pick a featured badge"): a preview of a map pin and a
          leaderboard row, the earned badges and None, and Save. A sheet on phones. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="Button.choice">
             <Setter Property="Background" Value="{DynamicResource Surface2}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>

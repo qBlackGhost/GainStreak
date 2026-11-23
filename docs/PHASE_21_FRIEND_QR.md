@@ -120,7 +120,7 @@ Where it differs from the plan above:
 - **Friends header:** **Show my QR** (icon button next to search on phones, a button on desktop).
 - **QR sheet** (`FriendQrViewModel` / `FriendQrView`, opened like the other sheets): the QR, `@username`, the link in small text, **Copy link** ("Link copied" for 2 seconds, through `TopLevel.Clipboard`), **Share** on phones (the head's share sheet through a new `IPlatform.Share(string text)`; desktop: hidden), **Reset link** with its confirm.
 - **Confirm card** at the top of Friends when `PendingInviteCode` is set: looks the code up, then "**alex** wants to be your friend" with **Accept** and **Not now**. Accept → "You and alex are now friends." and the list refreshes. Already friends → "You're already friends with alex." Unknown → "This invite link doesn't work any more. Ask for a new one." Not now or a result clears the code.
-- Segmented controls, if any, use `SegmentedPill`; colors come from `IronlogResources.axaml` in both themes.
+- Segmented controls, if any, use `SegmentedPill`; colors come from `GainStreakResources.axaml` in both themes.
 
 **Tests:** the view models (load, copy, reset confirm, each card state, offline). The desktop app looks as in 0.20 apart from the button.
 

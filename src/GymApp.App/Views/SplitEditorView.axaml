@@ -7,7 +7,7 @@
     <!-- The new split popup: a centred card, a sheet from the bottom on phones. The seven days in one row; each picked
          day gets a row to name it. Escape or a click outside cancels. -->
     <UserControl.Styles>
-        <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
         <Style Selector="StackPanel#Form"><Setter Property="Margin" Value="24"/></Style>
         <Style Selector=".phone StackPanel#Form"><Setter Property="Margin" Value="16,18,16,20"/></Style>
         <Style Selector="TextBox.field">

@@ -189,7 +189,7 @@ Ids are stable kebab-case strings, sent over the wire: never rename one. The cli
   All / Earned / Locked toggle (`SegmentedPill`), the grid of badges with their tier. Tap a badge for a detail
   sheet: name, rule, tier ladder or Heavy Lifter levels, progress, earn date.
 - `BadgeView` control: draws one badge at any size from the catalog (appendix): states earned (material by tier),
-  locked, hidden. Colors from `IronlogResources` tokens, light and dark.
+  locked, hidden. Colors from `GainStreakResources` tokens, light and dark.
 - **Unlock sheet** (**Phone · Unlock moment**): new badge or tier, the tier pips, Share with friends (`IPlatform.Share`
   text) and Done. Several unlocks at once: one sheet, newest first, swipe through. Mark them `SeenAt`.
 - **Profile** (**Profile · Your badges**): a Badges card under the header: count, "See all", the featured badge with
@@ -341,7 +341,7 @@ lime and up get a soft glow (drop shadow, blur ≈ 10% of the size, the material
 | Locked | #2A2A2A, #3A3A3A, #2A2A2A; glyph #5A5A5A | #0B0B0B | none |
 | Hidden | #161616, #222222, #161616; inner line #4A4A4A dashed 4 4; "?" #9A9A9A | #080808 | none |
 
-Glyphs not already in `IronlogResources` (`IcFlame`, `IcPin`, `IcMap`, `IcFriends`, `IcMadeUp` = I'll Be Back,
+Glyphs not already in `GainStreakResources` (`IcFlame`, `IcPin`, `IcMap`, `IcFriends`, `IcMadeUp` = I'll Be Back,
 `IcClock`, `IcGrid`, `IcTrophy` are there):
 
 ```

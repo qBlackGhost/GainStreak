@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:v="using:GymApp.App.Views">
     <!-- Sign in and Create account: the GainStreak card, labelled fields with an icon inside, an accent focus ring -->
-    <StyleInclude Source="/Views/IronlogStyles.axaml"/>
+    <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
 
     <Style Selector="TextBlock">
         <Setter Property="TextWrapping" Value="Wrap"/>
