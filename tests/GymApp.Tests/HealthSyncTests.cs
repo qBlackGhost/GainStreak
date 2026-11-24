@@ -48,9 +48,14 @@ public sealed class HealthSyncTests : IDisposable
         public HealthProfile Profile { get; set; } = new(null, null, null);
         public List<HealthWeight> Weights { get; } = [];
         public List<double> Steps { get; set; } = [];
-        public Task<HealthProfile> ReadProfileAsync() => Task.FromResult(Profile);
+        /// <summary>A read that fails outright (not just refused, which reads as no data).</summary>
+        public bool FailWeightReads { get; set; }
+        public bool FailProfileRead { get; set; }
+        public Task<HealthProfile> ReadProfileAsync() =>
+            FailProfileRead ? throw new InvalidOperationException("no") : Task.FromResult(Profile);
         public Task<HealthWeights> ReadWeightsAsync(DateTime from, byte[]? anchor)
         {
+            if (FailWeightReads) throw new InvalidOperationException("no");
             var start = anchor is { Length: 1 } ? anchor[0] : 0;
             var added = Weights.Skip(start).Where(w => w.At >= from).ToList();
             return Task.FromResult(new HealthWeights(added, [(byte)Weights.Count]));
@@ -429,6 +434,38 @@ public sealed class HealthSyncTests : IDisposable
         Assert.Equal(2, Weights().Count);
     }
 
+    [Fact] public async Task Read_PartialHealthProfile_FillsWhatItHas_AndTheUserCanStillEnterTheRest()
+    {
+        var (_, profiles, import) = await ReaderAsync(_clock.Now);
+        var health = new HealthProfile(178, null, Sex.Male);   // Health only knows height and sex
+        var applied = await import.ApplyProfileAsync(_alice, health, Today);
+        Assert.True(applied!.Value.Filled);
+
+        using (var db = _db.CreateDbContext())
+        {
+            var p = db.UserProfiles.Single(x => x.UserId == _alice);
+            Assert.Equal(178, p.HeightCm);
+            Assert.Null(p.BirthDate);
+        }
+
+        // The user adds birth date and activity, and corrects the height Health gave
+        var r = await profiles.SaveAsync(_alice, new ProfileInput(Sex.Male, new DateOnly(1998, 3, 12), 182, ActivityLevel.Active, UnitSystem.Metric));
+        Assert.True(r.Success);
+        using (var db = _db.CreateDbContext())
+        {
+            var p = db.UserProfiles.Single(x => x.UserId == _alice);
+            Assert.Equal(182, p.HeightCm);
+            Assert.Equal(new DateOnly(1998, 3, 12), p.BirthDate);
+            Assert.Equal(ActivityLevel.Active, p.ActivityLevel);
+        }
+
+        // The next read keeps the typed values: the difference is only offered
+        var again = await import.ApplyProfileAsync(_alice, health, Today);
+        Assert.False(again!.Value.Filled);
+        using (var db = _db.CreateDbContext())
+            Assert.Equal(182, db.UserProfiles.Single(x => x.UserId == _alice).HeightCm);
+    }
+
     [Fact] public async Task Read_NeverOverwritesATypedWeighIn_AndTypingOverAnImportedOneSendsItToHealth()
     {
         var (sync, profiles, _) = await ReaderAsync(_clock.Now);
@@ -443,6 +480,27 @@ public sealed class HealthSyncTests : IDisposable
         Assert.False(Weights()[0].FromHealth);
         await sync.SyncAsync();
         Assert.Contains(_store.Items, i => i.SyncId == HealthPlan.WeightId(_alice, Today.AddDays(-2)) && i.Value == 80.5);
+    }
+
+    [Fact] public async Task Read_AFailingRead_StillFillsWhatTheOthersShare()
+    {
+        // 0.27.1: weigh-ins not readable, but the profile and the steps still come in
+        var (sync, _, _) = await ReaderAsync(_clock.Now);
+        _store.FailWeightReads = true;
+        _store.Profile = new HealthProfile(182, null, null);   // only the height is shared
+        _store.Steps = Enumerable.Repeat(12000.0, 20).ToList();
+        var r = (await sync.ReadAsync(force: true))!;
+        Assert.Equal(0, r.WeighInsImported);
+        Assert.True(r.ProfileFilled);
+        Assert.NotNull(r.AverageSteps);
+        using (var db = _db.CreateDbContext())
+            Assert.Equal(182.0, db.UserProfiles.Single(x => x.UserId == _alice).HeightCm);
+
+        // And the other way round: the profile fails, a weigh-in still imports
+        _store.FailWeightReads = false;
+        _store.FailProfileRead = true;
+        _store.Weights.Add(new HealthWeight(_clock.Now.AddDays(-1), 80, "withings-1"));
+        Assert.Equal(1, (await sync.ReadAsync(force: true))!.WeighInsImported);
     }
 
     [Fact] public async Task Read_FillsEmptyFields_AndOffersDifferences_KeepMineIsRemembered()

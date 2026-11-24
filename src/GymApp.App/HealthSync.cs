@@ -122,20 +122,36 @@ public sealed class HealthSync(IHealthStore store, HealthExportService export, S
             _lastRead = now;
             var today = DateOnly.FromDateTime(now);
 
-            var imported = 0;
-            if (await import.WeightImportStartAsync(user.Id) is var (from, anchor))
-                imported = await import.ImportWeighInsAsync(user.Id, await store.ReadWeightsAsync(from, anchor), today);
+            // Each read on its own (0.27.1): what the user shares comes in even when another type fails or isn't shared
+            var imported = await Part("weigh-ins", 0, async () =>
+                await import.WeightImportStartAsync(user.Id) is var (from, anchor)
+                    ? await import.ImportWeighInsAsync(user.Id, await store.ReadWeightsAsync(from, anchor), today)
+                    : 0);
 
-            var profile = await import.ApplyProfileAsync(user.Id, await store.ReadProfileAsync(), today);
+            var profile = await Part("profile", ((bool Filled, HealthProfileOffer? Offer)?)null, async () =>
+                await import.ApplyProfileAsync(user.Id, await store.ReadProfileAsync(), today));
 
-            var steps = HealthImport.AverageSteps(await store.ReadDailyStepsAsync(today.AddDays(-HealthImport.StepDays), today));
-            var suggestion = await import.StepsSuggestionAsync(user.Id, steps);
+            var steps = await Part("steps", (double?)null, async () =>
+                HealthImport.AverageSteps(await store.ReadDailyStepsAsync(today.AddDays(-HealthImport.StepDays), today)));
+            var suggestion = await Part("steps", (ActivityLevel?)null, () => import.StepsSuggestionAsync(user.Id, steps));
             return new HealthReadResult(imported, profile?.Filled == true, profile?.Offer, suggestion, steps);
         }
         catch (Exception e)
         {
             log.Write(new InvalidOperationException($"Health read failed: {e.GetType().Name}"), "Apple Health (read)");
             return null;
+        }
+    }
+
+    /// <summary>One part of <see cref="ReadAsync"/>: a failure is logged and gives <paramref name="none"/>, so the
+    /// other parts still run.</summary>
+    private async Task<T> Part<T>(string what, T none, Func<Task<T>> read)
+    {
+        try { return await read(); }
+        catch (Exception e)
+        {
+            log.Write(new InvalidOperationException($"Health read ({what}) failed: {e.GetType().Name}"), "Apple Health (read)");
+            return none;
         }
     }
 }

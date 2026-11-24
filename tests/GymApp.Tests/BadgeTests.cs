@@ -288,6 +288,26 @@ public class BadgeBodyTests
         Assert.Equal(Badges.D(22), p.EarnedOn);
     }
 
+    [Fact] public void WeighInHabit_IgnoresWeighInsFromAppleHealth()
+    {
+        // Four weeks in a row, but one week only came from Health: the run breaks there
+        var p = Badges.One("weigh-in-habit", new BadgeInputs
+        {
+            WeighIns = [new(Badges.D(3), 80), new(Badges.D(7), 80), new(Badges.D(15), 80, FromHealth: true), new(Badges.D(22), 80)],
+        });
+        Assert.Equal(0, p.Tier);
+    }
+
+    [Fact] public void BodyweightClub_StillUsesAWeightFromAppleHealth()
+    {
+        var p = Badges.One("bodyweight-club", new BadgeInputs
+        {
+            WeighIns = [new(Badges.D(0), 80, FromHealth: true)],
+            Sets = [Badges.Working(Badges.D(1), 80)],
+        });
+        Assert.Equal(1, p.Tier);
+    }
+
     [Fact] public void WeighInHabit_AWeekWithout_StartsOver() =>
         Assert.Equal(0, Badges.One("weigh-in-habit", new BadgeInputs
         {

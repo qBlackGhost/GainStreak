@@ -68,7 +68,7 @@ public static class BadgeCatalog
         // Body & health
         new("fuel-streak", "Fuel Streak", BadgeGroup.BodyAndHealth, "Stay within your calorie goal, days in a row.",
             [7, 14, 30, 90], "fuel"),
-        new("weigh-in-habit", "Weigh-in Habit", BadgeGroup.BodyAndHealth, "Log your weight every week, weeks in a row.",
+        new("weigh-in-habit", "Weigh-in Habit", BadgeGroup.BodyAndHealth, "Log your weight in GainStreak every week, weeks in a row.",
             [4, 12, 26, 52], "scale"),
         new("cardio-minutes", "Cardio Minutes", BadgeGroup.BodyAndHealth, "Lifetime cardio minutes.", [60, 600, 3_000, 10_000], "cardio"),
 

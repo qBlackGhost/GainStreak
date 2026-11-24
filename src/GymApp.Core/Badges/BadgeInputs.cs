@@ -18,7 +18,9 @@ public sealed record BadgeSet(DateOnly Date, int ExerciseId, int SetNumber, SetK
 /// <summary>A day's calories. <paramref name="Goal"/> is the goal that day (<c>CalorieLog.GoalAtTime</c>), null when none was set.</summary>
 public sealed record BadgeCalorieDay(DateOnly Date, int? Goal, int Consumed);
 
-public sealed record BadgeWeighIn(DateOnly Date, double WeightKg);
+/// <param name="FromHealth">Imported from Apple Health (0.27.1): it gives Bodyweight Club the body weight, but only
+/// weigh-ins logged in the app build the Weigh-in Habit.</param>
+public sealed record BadgeWeighIn(DateOnly Date, double WeightKg, bool FromHealth = false);
 
 /// <summary>A live workout, in local time. <paramref name="AutoStopped"/>: the app ended it, not the user.</summary>
 public sealed record BadgeLiveWorkout(DateOnly Date, DateTime StartedLocal, DateTime? EndedLocal, bool AutoStopped);

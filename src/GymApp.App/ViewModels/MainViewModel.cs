@@ -368,6 +368,24 @@ public partial class MainViewModel : ViewModelBase
     public void ShowHome() => Open(_sp.GetRequiredService<HomeViewModel>, root: true);
     public void ShowWorkouts() => Open(_sp.GetRequiredService<WorkoutsViewModel>, root: true);
     public void ShowCalories() => Open(_sp.GetRequiredService<CaloriesViewModel>, root: true);
+
+    /// <summary>Body data's Set calorie goal (0.27.1): Calories, with the goal sheet open.</summary>
+    public void OpenCalorieGoal()
+    {
+        var once = true;   // coming back to Calories later doesn't open the sheet again
+        Open(() =>
+        {
+            var vm = _sp.GetRequiredService<CaloriesViewModel>();
+            if (once) _ = vm.OpenGoalSheetWhenLoadedAsync();
+            once = false;
+            return vm;
+        }, root: true);
+    }
+
+    /// <summary>Whether the signed-in user has a calorie goal yet (Body data's Set calorie goal button).</summary>
+    public async Task<bool> HasCalorieGoalAsync() =>
+        _session.CurrentUser?.Id is { } me
+        && (await _sp.GetRequiredService<CalorieService>().GetAsync(me))?.Goal.Goal is not null;
     /// <summary>Friends, with the leaderboard on the same screen.</summary>
     /// <summary>Friends; a waiting invite code (an opened link) goes to its confirm card, once.</summary>
     public void ShowFriends() => Open(() =>

@@ -409,6 +409,20 @@
                                 </StackPanel>
                             </Grid>
 
+                            <!-- 0.27.1: offer the phone's health store until it's connected (option H2) -->
+                            <Button Classes="btn" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="44"
+                                    Padding="12,0" Background="{DynamicResource Fill}" BorderThickness="0" CornerRadius="10"
+                                    Command="{Binding ConnectHealthCommand}" IsVisible="{Binding ShowHealthRow}">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                    <v:Icon Data="{StaticResource IcHeart}" Stroke="#FF3B5C" StrokeThickness="2.2" Width="16" Height="16"
+                                            VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding HealthRowText}" FontSize="14" FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="Connect" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource AccentInk}" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Button>
+
                             <!-- Wide: a label beside each field (phones have the compact layout below) -->
                             <v:PhoneGrid Classes="wideOnly" ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="20" RowSpacing="18"
                                          PhoneStack="True">
@@ -657,6 +671,9 @@
                                             Command="{Binding SaveCommand}" IsEnabled="{Binding IsDirty}" VerticalAlignment="Center"/>
                                 </Grid>
                             </Border>
+                            <!-- 0.27.1: body data done and no calorie goal yet (first-time setup): the next step, here -->
+                            <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="48" Content="Set calorie goal"
+                                    Command="{Binding SetCalorieGoalCommand}" IsVisible="{Binding ShowSetCalorieGoal}"/>
                         </StackPanel>
                     </Border>
                     <!-- ===== Weight ===== -->

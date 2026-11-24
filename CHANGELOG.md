@@ -23,6 +23,9 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 - **Exercise page on small phones:** the **Warm-up sets** and **Working sets** pills and the **reps** boxes no longer cut off their words.
 - **Live Activity (iPhone):** an orange flame before the day's name, and a dumbbell in the progress ring in the Dynamic Island (also when it shares the island with music or a timer). The island's bottom row shows the exercise and the percent.
 - **Live Activity count fixed:** right after **Start workout**, the Lock Screen could keep showing the starting numbers while you logged your first sets. It now updates from the first set. (Warm-ups still don't count toward the sets; only working sets do.)
+- **Weigh-in Habit counts weigh-ins you log in GainStreak:** weigh-ins that come over from Apple Health still give Bodyweight Club your body weight, but they no longer build the Weigh-in Habit badge. Log your weight in the app to keep the run going.
+- **Body data:** with Apple Health not connected yet, a **Sync with Apple Health** row at the top connects it. Once every body data field is filled and you have no calorie goal yet, saving shows **Set calorie goal**, which opens Calories with the goal sheet open (a weigh-in isn't needed). In the calorie goal's custom macros, the **g** now sits outside the number boxes.
+- **Apple Health shares what you allow:** if you share only some things (say height but not weigh-ins), those still fill in; one type GainStreak can't read no longer stops the others.
 - **Dark by default (phones):** the app, the sign-in screens included, now starts dark. Accounts still set to **System** move to **Dark**; switch back under **Profile → Theme** (System follows your phone).
 - **Migration:** the app's database (data only: `Users.ThemePreference` from System to Dark).
 

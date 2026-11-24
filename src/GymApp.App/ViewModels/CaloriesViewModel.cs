@@ -182,6 +182,14 @@ public partial class CaloriesViewModel : ViewModelBase
 
     private int? _consumed;
 
+    /// <summary>Opened from Body data's Set calorie goal (0.27.1): the goal sheet opens once the goal is loaded.
+    /// Awaits the first load itself, because that load can finish before the caller gets the view model back.</summary>
+    public async Task OpenGoalSheetWhenLoadedAsync()
+    {
+        await Loaded;
+        OpenGoalSheet();
+    }
+
     private async Task LoadAsync()
     {
         if (UserId is not { } me) return;

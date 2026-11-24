@@ -43,7 +43,7 @@ public static class BadgeEvaluator
             Running("fuel-streak", LongestRun(c.Inputs.Calories
                 .Where(d => d.Date <= today && d.Goal is { } goal && CalorieGoals.HitTarget(goal, d.Consumed))
                 .Select(d => d.Date), 1)),
-            Running("weigh-in-habit", WeeklyRun(c.Inputs.WeighIns.Where(w => w.Date <= today).Select(w => w.Date))),
+            Running("weigh-in-habit", WeeklyRun(c.Inputs.WeighIns.Where(w => w.Date <= today && !w.FromHealth).Select(w => w.Date))),
             Running("cardio-minutes", Cumulative(c.Workouts.Select(w => (w.Date, (double)(w.CardioMinutes ?? 0)))
                 .Concat(c.Cardio.Select(s => (s.Date, (double)s.Minutes))))),
 

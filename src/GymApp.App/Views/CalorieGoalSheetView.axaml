@@ -119,23 +119,26 @@
 
                     <!-- Custom: your own grams; the goal is worked out from them -->
                     <StackPanel Spacing="8" IsVisible="{Binding IsCustom}">
-                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*,100,Auto" ColumnSpacing="8">
                             <Ellipse Classes="dot protein"/>
                             <TextBlock Grid.Column="1" Text="Protein" FontSize="15" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding ProteinInput}"
-                                     InnerRightContent="g" AutomationProperties.Name="Protein in grams"/>
+                                     AutomationProperties.Name="Protein in grams"/>
+                            <TextBlock Grid.Column="3" Text="g" FontSize="15" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"/>
                         </Grid>
-                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*,100,Auto" ColumnSpacing="8">
                             <Ellipse Classes="dot carbs"/>
                             <TextBlock Grid.Column="1" Text="Carbs" FontSize="15" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding CarbsInput}"
-                                     InnerRightContent="g" AutomationProperties.Name="Carbs in grams"/>
+                                     AutomationProperties.Name="Carbs in grams"/>
+                            <TextBlock Grid.Column="3" Text="g" FontSize="15" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"/>
                         </Grid>
-                        <Grid ColumnDefinitions="Auto,*,120" ColumnSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*,100,Auto" ColumnSpacing="8">
                             <Ellipse Classes="dot fat"/>
                             <TextBlock Grid.Column="1" Text="Fat" FontSize="15" VerticalAlignment="Center"/>
                             <TextBox Grid.Column="2" Classes="field" TextInputOptions.ContentType="Digits" Text="{Binding FatInput}"
-                                     InnerRightContent="g" AutomationProperties.Name="Fat in grams"/>
+                                     AutomationProperties.Name="Fat in grams"/>
+                            <TextBlock Grid.Column="3" Text="g" FontSize="15" VerticalAlignment="Center" Foreground="{DynamicResource Muted}"/>
                         </Grid>
                         <Border Height="1" Background="{DynamicResource Line}" Margin="0,6,0,0"/>
                         <Grid ColumnDefinitions="*,Auto">

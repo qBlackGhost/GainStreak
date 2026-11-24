@@ -344,7 +344,7 @@ public class BadgeService(IDbContextFactory<AppDbContext> dbFactory)
             Calories = await db.CalorieLogs.AsNoTracking().Where(c => c.UserId == userId)
                 .Select(c => new BadgeCalorieDay(c.Date, c.GoalAtTime, c.CaloriesConsumed)).ToListAsync(),
             WeighIns = await db.WeightLogs.AsNoTracking().Where(w => w.UserId == userId)
-                .Select(w => new BadgeWeighIn(w.Date, w.WeightKg)).ToListAsync(),
+                .Select(w => new BadgeWeighIn(w.Date, w.WeightKg, w.FromHealth)).ToListAsync(),
             LiveWorkouts = await db.LiveWorkouts.AsNoTracking().Where(l => l.UserId == userId)
                 .Select(l => new BadgeLiveWorkout(l.Date, l.StartedAt, l.EndedAt, l.AutoStop != null)).ToListAsync(),
             // A session's minutes are already on the day's log (CardioService), so only the session itself is passed

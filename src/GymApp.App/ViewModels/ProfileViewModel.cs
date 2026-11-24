@@ -84,6 +84,10 @@ public partial class ProfileViewModel : ViewModelBase
         Health = new HealthViewModel(healthStore, profiles, healthSync, () => session.CurrentUser?.Id, healthImport,
             () => SelectedUnits, () => _ = ReloadAsync(refillForm: !IsDirty));   // keep unsaved edits
         _ = Health.LoadAsync();
+        Health.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(HealthViewModel.IsOn)) OnPropertyChanged(nameof(ShowHealthRow));
+        };
         Vacation = new VacationCardViewModel(vacations, () => session.CurrentUser?.Id, async () =>
         {
             await ReloadAsync(refillForm: false);   // the streak on ice, or not
@@ -110,6 +114,18 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Apple Health (Phase 20) on the iPhone, Health Connect (Phase 23) on Android.</summary>
     public HealthViewModel Health { get; }
+
+    /// <summary>Body data (0.27.1): "Sync with Apple Health" until it's connected, where the phone has one.</summary>
+    public bool ShowHealthRow => Health.IsSupported && !Health.IsOn;
+    public string HealthRowText => $"Sync with {Health.Texts.Title}";
+
+    /// <summary>Turns the health store on, the same as the switch on its page (it asks for access).</summary>
+    [RelayCommand] private void ConnectHealth() => Health.IsOn = true;
+
+    /// <summary>After saving body data while there's no calorie goal yet (first-time setup): Set calorie goal.</summary>
+    [ObservableProperty] public partial bool ShowSetCalorieGoal { get; set; }
+
+    [RelayCommand] private void SetCalorieGoal() => _shell().OpenCalorieGoal();
 
     /// <summary>Vacation (0.19.0): every head.</summary>
     public VacationCardViewModel Vacation { get; }
@@ -579,6 +595,9 @@ public partial class ProfileViewModel : ViewModelBase
             Error = null;
             await ReloadAsync();
             Info = MaintenanceText == "—" ? "Profile saved." : $"Profile saved. Maintenance is now about {MaintenanceText.TrimStart('≈', ' ')} kcal a day.";
+            // Offer the goal once every Body data field is filled, with or without a weigh-in (the goal sheet asks for weight itself).
+            var complete = SelectedSex is not null && birth is not null && cm is not null && SelectedActivity is not null;
+            ShowSetCalorieGoal = (complete || MaintenanceText != "—") && !await _shell().HasCalorieGoalAsync();
 
         }
         catch (Exception)
