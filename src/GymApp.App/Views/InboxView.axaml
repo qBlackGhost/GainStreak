@@ -386,7 +386,7 @@
                 <Button Classes="btn outline small" HorizontalAlignment="Left" Content="Go to Splits"
                         Command="{Binding GoToSplitsCommand}" IsVisible="{Binding !WorkoutAdd.HasSplit}"/>
 
-                <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto" IsVisible="{Binding WorkoutAdd.HasSplit}">
+                <ScrollViewer Classes="showBar" MaxHeight="300" VerticalScrollBarVisibility="Auto" IsVisible="{Binding WorkoutAdd.HasSplit}">
                     <ItemsControl ItemsSource="{Binding WorkoutAdd.Days}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>

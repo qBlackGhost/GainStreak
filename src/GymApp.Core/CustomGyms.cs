@@ -6,7 +6,7 @@ namespace GymApp.Core;
 public static partial class CustomGyms
 {
     public const int MaxPerUser = 10;          // active ones; deleted-but-kept-for-history gyms don't count
-    public const int MaxNameLength = 60;
+    public const int MaxNameLength = 40;      // 0.27.1: was 60; long names wrapped onto 3 or 4 lines on phones
     public const int MaxAddressLength = 120;
 
     /// <summary>Custom gyms need a picked address (18c), so workouts there can be verified.</summary>
@@ -21,7 +21,7 @@ public static partial class CustomGyms
     /// <summary>Null when the cleaned name is fine, otherwise the message to show.</summary>
     public static string? CheckName(string cleanName) =>
         cleanName.Length == 0 ? "Give your gym a name."
-        : cleanName.Length > MaxNameLength ? $"Keep the name under {MaxNameLength + 1} characters."
+        : cleanName.Length > MaxNameLength ? $"Keep the name to {MaxNameLength} characters or fewer."
         : null;
 
     public static string? CheckAddress(string? cleanAddress) =>

@@ -42,6 +42,8 @@
         <Style Selector=".phone TextBlock.cardTitle"><Setter Property="FontSize" Value="18"/></Style>
         <!-- In the narrow set rows: no 64 px floor on the boxes, and the type switch's words fit -->
         <Style Selector=".phone v|PhoneGrid TextBox"><Setter Property="MinWidth" Value="0"/></Style>
+        <!-- 0.27.1: a slimmer inside, so "reps" and "kg" aren't cut off on a 390-pt phone -->
+        <Style Selector=".phone v|PhoneGrid TextBox.field"><Setter Property="Padding" Value="8,0"/></Style>
         <Style Selector=".phone v|PhoneGrid Button.seg"><Setter Property="FontSize" Value="11"/></Style>
         <!-- A switch's words stay on one line ("Working" used to break in the phones' narrow rows) -->
         <Style Selector="Button.seg TextBlock">
@@ -49,7 +51,7 @@
         </Style>
         <!-- The phones' planned-set pills -->
         <Style Selector="Border.planPill">
-            <Setter Property="Padding" Value="10,2,2,2"/>
+            <Setter Property="Padding" Value="2"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
         </Style>
@@ -316,24 +318,26 @@
                         <!-- Phones (the canvas): the planned sets as two pills side by side -->
                         <Grid Classes="phoneOnly" ColumnDefinitions="*,*" ColumnSpacing="8">
                             <Border Classes="planPill">
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                                    <TextBlock Text="Warm-up" FontSize="12" FontWeight="SemiBold" Classes="soft" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Classes="step" Content="−" Command="{Binding FewerWarmupCommand}"
+                                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.ColumnSpan="3" Text="Warm-up sets" FontSize="12" FontWeight="SemiBold" Classes="soft"
+                                               HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                    <Button Grid.Row="1" Classes="step" Content="−" Command="{Binding FewerWarmupCommand}"
                                             AutomationProperties.Name="Fewer warm-up sets"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding WarmupSets}" Classes="mono" FontWeight="Bold" MinWidth="16"
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WarmupSets}" Classes="mono" FontWeight="Bold"
                                                TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="3" Classes="step" Content="+" Command="{Binding MoreWarmupCommand}"
+                                    <Button Grid.Row="1" Grid.Column="2" Classes="step" Content="+" Command="{Binding MoreWarmupCommand}"
                                             AutomationProperties.Name="More warm-up sets"/>
                                 </Grid>
                             </Border>
                             <Border Grid.Column="1" Classes="planPill">
-                                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                                    <TextBlock Text="Working" FontSize="12" FontWeight="SemiBold" Classes="soft" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Classes="step" Content="−" Command="{Binding FewerWorkingCommand}"
+                                <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                                    <TextBlock Grid.ColumnSpan="3" Text="Working sets" FontSize="12" FontWeight="SemiBold" Classes="soft"
+                                               HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                                    <Button Grid.Row="1" Classes="step" Content="−" Command="{Binding FewerWorkingCommand}"
                                             AutomationProperties.Name="Fewer working sets"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding WorkingSets}" Classes="mono" FontWeight="Bold" MinWidth="16"
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding WorkingSets}" Classes="mono" FontWeight="Bold"
                                                TextAlignment="Center" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="3" Classes="step" Content="+" Command="{Binding MoreWorkingCommand}"
+                                    <Button Grid.Row="1" Grid.Column="2" Classes="step" Content="+" Command="{Binding MoreWorkingCommand}"
                                             AutomationProperties.Name="More working sets"/>
                                 </Grid>
                             </Border>
@@ -401,7 +405,7 @@
 
                         <!-- The sets -->
                         <StackPanel Spacing="4" Grid.IsSharedSizeScope="True">
-                            <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4" PhoneColumns="14,124,*,0.8*,44" PhoneColumnSpacing="8">
+                            <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" Margin="0,0,0,4" PhoneColumns="14,124,*,*,44" PhoneColumnSpacing="8">
                                 <TextBlock Text="SET" Classes="colHead wideOnly"/>
                                 <TextBlock Text="#" Classes="colHead phoneOnly"/>
                                 <TextBlock Grid.Column="1" Text="TYPE" Classes="colHead"/>
@@ -413,7 +417,7 @@
                                     <DataTemplate x:DataType="vm:SetRowViewModel">
                                         <Border BorderBrush="{DynamicResource Fill}" BorderThickness="0,1,0,0" Padding="0,8">
                                             <StackPanel Spacing="6">
-                                                <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" PhoneColumns="14,124,*,0.8*,44" PhoneColumnSpacing="8">
+                                                <v:PhoneGrid ColumnDefinitions="32,190,*,*,40" ColumnSpacing="10" PhoneColumns="14,124,*,*,44" PhoneColumnSpacing="8">
                                                     <TextBlock Text="{Binding Number}" Classes="mono soft" FontSize="14" FontWeight="Bold"
                                                                VerticalAlignment="Center"/>
                                                     <Border Grid.Column="1" Padding="3" CornerRadius="10" Background="{DynamicResource Fill}">
@@ -470,7 +474,7 @@
                             </Panel>
                             <Button Grid.Column="1" Classes="btn primary" MinHeight="50" FontSize="15" CornerRadius="12"
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                    Content="Save sets" Command="{Binding SaveCommand}"/>
+                                    Content="{Binding SaveLabel}" Command="{Binding SaveCommand}"/>
                         </Grid>
                         <Grid Classes="wideOnly" ColumnDefinitions="Auto,*,Auto">
                             <Panel>
@@ -484,7 +488,7 @@
                                 </Button>
                             </Panel>
                             <Button Grid.Column="2" Classes="btn primary" MinHeight="48" Padding="26,0" FontSize="15"
-                                    Content="Save sets" Command="{Binding SaveCommand}"/>
+                                    Content="{Binding SaveLabel}" Command="{Binding SaveCommand}"/>
                         </Grid>
                         <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" Padding="0,14,0,0">
                             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">

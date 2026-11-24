@@ -141,17 +141,17 @@ public class ProfileServiceTests : IDisposable
         Assert.Equal("Push / Pull / Legs (6 days / week)", (await _svc.GetAsync(_alice, Today))!.SplitName);
     }
 
-    [Fact] public async Task Theme_StartsAtSystem_AndIsSavedPerUser()
+    [Fact] public async Task Theme_StartsAtDark_AndIsSavedPerUser()
     {
         using (var db = _db.CreateDbContext())
-            Assert.Equal(ThemePreference.System, db.Users.Single(u => u.Id == _alice).ThemePreference);
+            Assert.Equal(ThemePreference.Dark, db.Users.Single(u => u.Id == _alice).ThemePreference);
 
         Assert.True((await _svc.SetThemeAsync(_alice, ThemePreference.Light)).Success);
 
         using (var db = _db.CreateDbContext())
         {
             Assert.Equal(ThemePreference.Light, db.Users.Single(u => u.Id == _alice).ThemePreference);
-            Assert.Equal(ThemePreference.System, db.Users.Single(u => u.Id == _bob).ThemePreference);
+            Assert.Equal(ThemePreference.Dark, db.Users.Single(u => u.Id == _bob).ThemePreference);
         }
     }
 

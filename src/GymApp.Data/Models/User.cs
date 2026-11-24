@@ -46,7 +46,7 @@ public class User
     /// <summary>The trend weight the recommended targets were last worked out from; they move again only a kilo away from it.</summary>
     public double? MacroBasisWeightKg { get; set; }       // the suggestion the user last accepted or declined, so we only ask again when it changes
 
-    public ThemePreference ThemePreference { get; set; } = ThemePreference.System;   // applied at sign-in (12e)
+    public ThemePreference ThemePreference { get; set; } = ThemePreference.Dark;   // applied at sign-in (12e); Dark by default since 0.27.1
 
     // Reminders on the phones (16g): off until the user turns them on in Profile
     public bool RemindersEnabled { get; set; }

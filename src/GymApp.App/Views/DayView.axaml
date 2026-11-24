@@ -268,7 +268,7 @@
                                                TextAlignment="Center" LineHeight="19"/>
                                 </StackPanel>
                             </Panel>
-                            <ScrollViewer Classes="list" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !IsEmpty}">
+                            <ScrollViewer Classes="showBar list" VerticalScrollBarVisibility="Auto" IsVisible="{Binding !IsEmpty}">
                                 <ItemsControl x:Name="ChosenList" ItemsSource="{Binding Items}">
                                     <ItemsControl.ItemsPanel>
                                         <ItemsPanelTemplate><StackPanel Spacing="8"/></ItemsPanelTemplate>
@@ -380,7 +380,7 @@
                             </ItemsControl>
                         </StackPanel>
 
-                        <ScrollViewer Classes="list" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer Classes="showBar list" VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="18">
                                 <TextBlock Text="No exercises match. Add it with &quot;New exercise&quot;." FontSize="14" Classes="muted"
                                            IsVisible="{Binding NoPickerResults}"/>
@@ -449,7 +449,7 @@
                 </Grid>
                 <TextBlock Text="You don't have exercises on other days yet." FontSize="14" Classes="muted"
                            IsVisible="{Binding !HasCopySources}"/>
-                <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Classes="showBar" MaxHeight="300" VerticalScrollBarVisibility="Auto">
                     <ItemsControl ItemsSource="{Binding CopySources}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>

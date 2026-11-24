@@ -43,16 +43,30 @@ public static class InviteLink
     /// <summary>The links' home. Used only where no server gives one: the TestBench's local mode.</summary>
     public const string DefaultBaseUrl = "https://gainstreak.app";
 
-    /// <summary>The (normalized) code in an invite link, or null for any other link. A trailing slash or a query is fine.</summary>
+    /// <summary>The app's own scheme. The landing page's "Open in GainStreak" opens <c>gainstreak://add/&lt;code&gt;</c>,
+    /// for in-app browsers (Instagram and the like) that never hand the https link to the OS.</summary>
+    public const string AppScheme = "gainstreak";
+
+    /// <summary>The (normalized) code in an invite link (<c>https://&lt;host&gt;/add/&lt;code&gt;</c> or
+    /// <c>gainstreak://add/&lt;code&gt;</c>), or null for any other link. A trailing slash or a query is fine.</summary>
     public static string? TryParse(Uri? link)
     {
-        if (link is not { IsAbsoluteUri: true } || (link.Scheme != Uri.UriSchemeHttps && link.Scheme != Uri.UriSchemeHttp))
-            return null;
-        var path = link.AbsolutePath.TrimEnd('/');
+        if (link is not { IsAbsoluteUri: true }) return null;
+        string path;
+        if (link.Scheme.Equals(AppScheme, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!link.Host.Equals("add", StringComparison.OrdinalIgnoreCase)) return null;
+            path = "/add" + link.AbsolutePath.TrimEnd('/');
+        }
+        else if (link.Scheme == Uri.UriSchemeHttps || link.Scheme == Uri.UriSchemeHttp) path = link.AbsolutePath.TrimEnd('/');
+        else return null;
         return path.StartsWith(FriendInvites.LinkPath, StringComparison.OrdinalIgnoreCase)
             ? FriendInvites.Normalize(path[FriendInvites.LinkPath.Length..])
             : null;
     }
+
+    /// <summary>The app-scheme link for a code: <c>gainstreak://add/&lt;code&gt;</c>.</summary>
+    public static string AppLinkFor(string code) => $"{AppScheme}:/{FriendInvites.LinkPath}{code}";
 
     /// <summary>The link for a code: the server's when it gave one, else on <see cref="DefaultBaseUrl"/>.</summary>
     public static string For(InviteCodeResult invite) => invite.Url ?? $"{DefaultBaseUrl}{FriendInvites.LinkPath}{invite.Code}";

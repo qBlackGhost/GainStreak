@@ -38,9 +38,7 @@ struct WorkoutLiveActivity: Widget {
             let state = context.state
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Ring(percent: state.percent, lineWidth: 5) {
-                        Text("\(state.percent)%").font(.system(size: 13, weight: .bold)).monospacedDigit()
-                    }
+                    Ring(percent: state.percent, lineWidth: 5) { Dumbbell(size: 18) }
                     .frame(width: 48, height: 48)
                     .padding(.leading, 4)
                 }
@@ -52,28 +50,75 @@ struct WorkoutLiveActivity: Widget {
                         .padding(.trailing, 4)
                 }
                 DynamicIslandExpandedRegion(.center) {
-                    Text(context.attributes.dayName)
+                    DayTitle(dayName: context.attributes.dayName)
                         .font(.system(size: 15, weight: .semibold))
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Details(state: state).padding(.horizontal, 4)
+                    IslandProgress(state: state).padding(.horizontal, 4)
                 }
             } compactLeading: {
-                Ring(percent: state.percent, lineWidth: 3) { EmptyView() }
-                    .frame(width: 18, height: 18)
+                Ring(percent: state.percent, lineWidth: 2.5) { Dumbbell(size: 9) }
+                    .frame(width: 22, height: 22)
             } compactTrailing: {
                 Text("\(state.percent)%")
                     .font(.system(size: 14, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(accent)
             } minimal: {
-                Ring(percent: state.percent, lineWidth: 2.5) {
-                    Text("\(state.percent)").font(.system(size: 9, weight: .bold)).monospacedDigit()
-                }
-                .frame(width: 22, height: 22)
+                // Sharing the island with another app (music, a timer): the same ring and dumbbell, on one side
+                Ring(percent: state.percent, lineWidth: 2.5) { Dumbbell(size: 10) }
+                .frame(width: 24, height: 24)
             }
             .keylineTint(accent)
+        }
+    }
+}
+
+/// The streak flame's orange (the drafts' flame, 0.27.1).
+private let flameOrange = Color(red: 0xFF / 255, green: 0x7A / 255, blue: 0x1A / 255)
+
+/// "Push" with the app's outline flame in orange before it (0.27.1), not the emoji.
+struct DayTitle: View {
+    let dayName: String
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "flame").foregroundStyle(flameOrange)
+            Text(dayName)
+        }
+    }
+}
+
+/// The dumbbell inside the island's ring (0.27.1).
+struct Dumbbell: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(systemName: "dumbbell.fill")
+            .font(.system(size: size, weight: .bold))
+            .foregroundStyle(accent)
+    }
+}
+
+/// The expanded island's bottom row (0.27.1): the exercise on the card, the percent in lime, and a bar.
+struct IslandProgress: View {
+    let state: WorkoutActivityAttributes.ContentState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(state.nextExercise ?? "All sets done")
+                    .font(.system(size: 14, weight: .medium))
+                    .lineLimit(1)
+                Spacer()
+                Text("\(state.percent)%")
+                    .font(.system(size: 14, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(accent)
+            }
+            ProgressView(value: Double(min(state.doneSets, state.plannedSets)), total: Double(max(state.plannedSets, 1)))
+                .tint(accent)
         }
     }
 }
@@ -107,14 +152,14 @@ struct WorkoutTimer: View {
     }
 }
 
-/// "Next: Bench press", the sets, and a bar.
+/// "Now: Bench press", the sets, and a bar (the Lock Screen).
 struct Details: View {
     let state: WorkoutActivityAttributes.ContentState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(state.nextExercise.map { "Next: \($0)" } ?? "All sets done")
+                Text(state.nextExercise.map { "Now: \($0)" } ?? "All sets done")
                     .font(.system(size: 14, weight: .medium))
                     .lineLimit(1)
                 Spacer()
@@ -141,7 +186,7 @@ struct LockScreenView: View {
             .frame(width: 58, height: 58)
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text(attributes.dayName).font(.system(size: 16, weight: .semibold)).lineLimit(1)
+                    DayTitle(dayName: attributes.dayName).font(.system(size: 16, weight: .semibold)).lineLimit(1)
                     Spacer()
                     WorkoutTimer(attributes: attributes)
                         .font(.system(size: 14, weight: .medium))

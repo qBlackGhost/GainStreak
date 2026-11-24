@@ -31,6 +31,13 @@ public static class BarWeight
                || name.Contains("smith") || name.Contains("barbell");
     }
 
+    /// <summary>The exercise is done with dumbbells ("Dumbbell bench press", "DB row"), so its weight is per dumbbell.</summary>
+    public static bool UsesDumbbells(string exerciseName)
+    {
+        var name = exerciseName.ToLowerInvariant();
+        return name.Contains("dumbbell") || name.StartsWith("db ", StringComparison.Ordinal) || name.Contains(" db ");
+    }
+
     /// <summary>Total on the bar: both sides plus the bar (an empty bar field counts as 0).</summary>
     public static double Total(double perSideKg, double? barKg) => Math.Round(2 * perSideKg + (barKg ?? 0), 2);
 

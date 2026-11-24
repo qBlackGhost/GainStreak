@@ -108,7 +108,7 @@ public partial class GymApplication : Application
     /// background upload).</summary>
     private void WireUiEvents()
     {
-        // The Theme setting: the signed-in user's; the system's on the login screens
+        // The Theme setting: the signed-in user's; dark on the login screens (0.27.1)
         var session = Services.GetRequiredService<SessionService>();
         session.Changed += () => AppTheme.Apply(session.CurrentUser?.ThemePreference);
         if (LocalSocial) return;

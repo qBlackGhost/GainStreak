@@ -38,7 +38,12 @@ public func gs_live_activity_show(_ dayName: UnsafePointer<CChar>, _ percent: In
         let content = ActivityContent(state: state, staleDate: attributes.endsAt)
         var mine: Activity<WorkoutActivityAttributes>?
         for activity in Activity<WorkoutActivityAttributes>.activities {
-            if mine == nil, activity.activityState == .active, activity.attributes.startedAt == attributes.startedAt {
+            // 0.27.1: any activity still on screen counts as this workout's, not only an .active one. A just-requested
+            // activity isn't .active yet, so the first sets (logged seconds after Start) used to end it and request a
+            // new one, which fails once the phone is locked: the Lock Screen kept the start's numbers.
+            let live = activity.activityState != .ended && activity.activityState != .dismissed
+            let same = abs(activity.attributes.startedAt.timeIntervalSince(attributes.startedAt)) < 1
+            if mine == nil, live, same {
                 mine = activity
             } else {
                 await activity.end(nil, dismissalPolicy: .immediate)

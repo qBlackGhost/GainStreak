@@ -262,6 +262,97 @@ public sealed class LiveWorkoutWatcherTests : IDisposable
         Assert.Equal("end", _activity.Calls[^1]);
     }
 
+    // ===== The first sets of a workout (0.27.1: the Lock Screen's count looked wrong at the start) =====
+
+    /// <summary>Bob's Monday: 3 exercises, each 1 warm-up and 3 working sets.</summary>
+    private async Task<(LiveWorkoutWatcher W, int Bob, List<int> Ex)> StartBob()
+    {
+        var bob = _db.AddUser("bob");
+        var day = _db.AddSplit(bob, ("Push", DayOfWeek.Monday))[0];
+        var ex = _db.AddDayExercises(bob, day, 3, warmupSets: 1, workingSets: 3);
+        var session = new SessionService();
+        using (var db = _db.CreateDbContext()) session.SignIn(db.Users.Single(u => u.Id == bob));
+        var w = new LiveWorkoutWatcher(_live, _scheduler, session, new FakePlatform { HasLiveWorkout = true },
+            new ErrorLog(_logDir), _activity);
+        Assert.True((await _live.StartAsync(bob)).Success);
+        return (w, bob, ex);
+    }
+
+    private async Task<LiveActivityState> Locked(LiveWorkoutWatcher w)
+    {
+        await w.WentToBackgroundAsync();
+        Assert.NotNull(_activity.Shown);
+        return _activity.Shown;
+    }
+
+    private async Task<string> NameOf(int user, int exercise) =>
+        (await _live.GetOpenAsync(user))!.Exercises.First(e => e.ExerciseId == exercise).Name;
+
+    [Fact] public async Task Activity_JustStarted_ShowsNoSetsOfNine_AndTheFirstExercise()
+    {
+        var (w, bob, ex) = await StartBob();
+        var s = await Locked(w);
+        Assert.Equal((0, 0, 9), (s.Percent, s.DoneSets, s.PlannedSets));
+        Assert.Equal(await NameOf(bob, ex[0]), s.NextExercise);
+    }
+
+    [Fact] public async Task Activity_AfterAWarmup_StillCountsNoWorkingSets()
+    {
+        var (w, bob, ex) = await StartBob();
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Warmup, 10, 40));
+        var s = await Locked(w);
+        Assert.Equal((0, 9), (s.DoneSets, s.PlannedSets));
+        Assert.Equal(await NameOf(bob, ex[0]), s.NextExercise);
+    }
+
+    [Fact] public async Task Activity_EachWorkingSet_CountsOne_FromTheFirst()
+    {
+        var (w, bob, ex) = await StartBob();
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Warmup, 10, 40));
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Working, 8, 60));
+        Assert.Equal((11, 1, 9), ((await Locked(w)).Percent, _activity.Shown!.DoneSets, _activity.Shown.PlannedSets));
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Working, 8, 60));
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Working, 8, 60));
+        var s = await Locked(w);
+        Assert.Equal((33, 3), (s.Percent, s.DoneSets));
+        Assert.Equal(await NameOf(bob, ex[1]), s.NextExercise);   // the first exercise is filled
+    }
+
+    [Fact] public async Task Activity_ASetWithNoWarmupLogged_StillCounts()
+    {
+        var (w, bob, ex) = await StartBob();
+        await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Working, 8, 60));
+        Assert.Equal(1, (await Locked(w)).DoneSets);
+    }
+
+    [Fact] public async Task Activity_SkippingTheFirst_ShowsTheSecond()
+    {
+        var (w, bob, ex) = await StartBob();
+        await _live.SkipAsync(bob, ex[0]);
+        Assert.Equal(await NameOf(bob, ex[1]), (await Locked(w)).NextExercise);
+    }
+
+    [Fact] public async Task Activity_PickedExercise_IsTheOneShown_AndItsSetsCount()
+    {
+        var (w, bob, ex) = await StartBob();
+        await _live.PickAsync(bob, ex[2]);
+        await _live.SaveSetAsync(bob, ex[2], new SetInput(SetKind.Working, 8, 60));
+        var s = await Locked(w);
+        Assert.Equal(await NameOf(bob, ex[2]), s.NextExercise);
+        Assert.Equal(1, s.DoneSets);
+    }
+
+    [Fact] public async Task Activity_ShownFromTheCard_MatchesWhatTheLockShows()
+    {
+        // Home shows the card's info after each set; locking the phone then reads the database. Both must agree.
+        var (w, bob, ex) = await StartBob();
+        var saved = await _live.SaveSetAsync(bob, ex[0], new SetInput(SetKind.Working, 8, 60));
+        w.ShowActivity(Assert.IsType<LiveWorkoutInfo>(saved.Workout));
+        var fromCard = _activity.Shown;
+        var fromLock = await Locked(w);
+        Assert.Equal(fromCard, fromLock);
+    }
+
     [Fact] public void ActivityState_AllDone_HasNoNextExercise()
     {
         var info = new LiveWorkoutInfo(1, Mon, null, "Legs", _clock.Now, _clock.Now, null, [],

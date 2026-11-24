@@ -18,8 +18,8 @@ public class CustomGymsTests
 
     [Fact] public void SixtyCharacters_IsFine_SixtyOneIsNot()
     {
-        Assert.Null(CustomGyms.CheckName(new string('a', 60)));
-        Assert.NotNull(CustomGyms.CheckName(new string('a', 61)));
+        Assert.Null(CustomGyms.CheckName(new string('a', CustomGyms.MaxNameLength)));
+        Assert.NotNull(CustomGyms.CheckName(new string('a', CustomGyms.MaxNameLength + 1)));
     }
 
     [Fact] public void Address_IsOptional_AndLimited()

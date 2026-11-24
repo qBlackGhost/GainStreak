@@ -557,17 +557,22 @@ public partial class MainViewModel : ViewModelBase
         }
     }
 
-    public void ShowDay(MenuDay day, string splitName) => Open(() =>
+    /// <param name="openAdd">0.27.1: back from an exercise just added, the Add exercises list opens again.</param>
+    public void ShowDay(MenuDay day, string splitName, bool openAdd = false) => Open(() =>
     {
         var vm = _sp.GetRequiredService<DayViewModel>();
         vm.Load(day, splitName);
+        vm.IsAddOpen = openAdd;
         return vm;
     }, root: false);
 
-    public void ShowExercise(MenuDay day, string splitName, int exerciseId) => Open(() =>
+    /// <param name="justAdded">Opened from the Add exercises list (0.27.1): its button reads "Add exercise" and goes
+    /// back to that list.</param>
+    public void ShowExercise(MenuDay day, string splitName, int exerciseId, bool justAdded = false) => Open(() =>
     {
         var vm = _sp.GetRequiredService<ExerciseViewModel>();
         vm.Load(day, splitName, exerciseId);
+        vm.JustAdded = justAdded;
         return vm;
     }, root: false);
 

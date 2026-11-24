@@ -15,6 +15,10 @@ namespace GymApp.Android;
 // /.well-known/assetlinks.json. Avalonia passes the link on as an OpenUri activation (GymApplication)
 [IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
     DataScheme = "https", DataHost = "gainstreak.app", DataPathPrefix = "/add/", AutoVerify = true)]
+// The landing page's "Open in GainStreak" (0.27.1): gainstreak://add/<code>, for in-app browsers (Instagram and the
+// like) that never hand the https link to Android
+[IntentFilter([Intent.ActionView], Categories = [Intent.CategoryDefault, Intent.CategoryBrowsable],
+    DataScheme = "gainstreak", DataHost = "add")]
 public class MainActivity : AvaloniaMainActivity
 {
     /// <summary>On the intent a tapped reminder opens (16g): go to Home.</summary>

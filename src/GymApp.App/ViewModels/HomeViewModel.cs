@@ -165,7 +165,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     public bool IsCardio => Cardio is not null;
 
     /// <summary>"Continue with a cardio session?", right after Finish.</summary>
-    [ObservableProperty] public partial bool IsCardioPromptOpen { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(GymPromptOnScreen), nameof(ShareQuestionOnScreen))]
+    public partial bool IsCardioPromptOpen { get; set; }
     [ObservableProperty] public partial string? CardioPromptError { get; set; }
 
     private CardioCardViewModel CardioCard(int userId, CardioInfo info) =>
@@ -343,7 +344,12 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string? PointsNotice { get; set; }
 
     // ===== Gym (optional, after check-in; never affects points or the streak) =====
-    [ObservableProperty] public partial bool ShowGymPrompt { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(GymPromptOnScreen))]
+    public partial bool ShowGymPrompt { get; set; }
+
+    /// <summary>0.27.1: the toasts wait while "Continue with a cardio session?" covers Home, so they don't sit over it.</summary>
+    public bool GymPromptOnScreen => ShowGymPrompt && !IsCardioPromptOpen;
+    public bool ShareQuestionOnScreen => ShowShareQuestion && !IsCardioPromptOpen;
     [ObservableProperty] public partial bool HasLastGym { get; set; }
     [ObservableProperty] public partial string LastGymLabel { get; set; } = "";
     [ObservableProperty] public partial bool ShowGymLink { get; set; }
@@ -358,7 +364,8 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial bool MakeMyGym { get; set; } = true;
 
     /// <summary>Asked once, after the first check-in with a gym: share check-ins with friends?</summary>
-    [ObservableProperty] public partial bool ShowShareQuestion { get; set; }
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShareQuestionOnScreen))]
+    public partial bool ShowShareQuestion { get; set; }
     private bool? _shareGymCheckIns;
 
     // ===== Friends card =====
@@ -652,14 +659,18 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
     /// half, the note that nothing was logged.</summary>
     private async Task LiveEndedAsync(LiveEndResult result)
     {
+        if (result.Log is not null && result.Success)
+        {
+            // "Continue with a cardio session?" goes up before the card goes (0.27.1), so Home doesn't flash between
+            CardioPromptError = null;
+            IsCardioPromptOpen = true;
+        }
         Live = null;
         if (_session.CurrentUser is not { } user) return;
         if (result.Log is { } log)
         {
             await CheckedInAsync(log);
             await RefreshStartAsync(user.Id);
-            CardioPromptError = null;
-            IsCardioPromptOpen = result.Success;   // "Continue with a cardio session?"
             return;
         }
         ShowEndedNote = result.Outcome == LiveOutcome.NotCounted;
@@ -979,6 +990,7 @@ public partial class HomeViewModel : ViewModelBase, IClosesOnBack
         IsTitleHot = !IsStreakStale && (HasLiveWorkout ? IsArcHot : logged);
         ShowStartRow = HasLiveWorkout && live is null && !logged;
         ShowDoneRow = HasLiveWorkout && live is null && logged;
+        TodayWorkout.Collapsible = ShowDoneRow;
         if (live is not null)
         {
             IsMakeUpDay = false;

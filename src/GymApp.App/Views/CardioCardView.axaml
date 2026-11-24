@@ -16,15 +16,18 @@
 
     <StackPanel Spacing="12">
         <!-- Cardio, and where it's checked -->
-        <Grid ColumnDefinitions="*,Auto">
+        <!-- The place gets the rest of the row, so a long gym name wraps instead of running off the card -->
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
             <TextBlock Text="CARDIO" FontSize="12" FontWeight="SemiBold" LetterSpacing="1.6" Classes="muted" VerticalAlignment="Center"/>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                <v:Icon Data="{StaticResource IcPin}" Width="13" Height="13" StrokeThickness="2.2"
+            <DockPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                <v:Icon DockPanel.Dock="Left" Margin="0,0,5,0" Data="{StaticResource IcPin}" Width="13" Height="13" StrokeThickness="2.2"
                         Stroke="{DynamicResource AccentInk}" IsVisible="{Binding IsChecked}"/>
-                <TextBlock Text="{Binding PlaceText}" FontSize="12" FontWeight="SemiBold"
-                           Foreground="{DynamicResource AccentInk}" IsVisible="{Binding IsChecked}"/>
-                <TextBlock Text="{Binding PlaceText}" FontSize="12" Classes="muted" IsVisible="{Binding !IsChecked}"/>
-            </StackPanel>
+                <Panel>
+                    <TextBlock Text="{Binding PlaceText}" FontSize="12" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentInk}" IsVisible="{Binding IsChecked}"/>
+                    <TextBlock Text="{Binding PlaceText}" FontSize="12" Classes="muted" IsVisible="{Binding !IsChecked}"/>
+                </Panel>
+            </DockPanel>
         </Grid>
 
         <!-- The ring: the track, then the share of the way to the next point; the time in the middle -->

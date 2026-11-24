@@ -164,7 +164,7 @@
             </Border>
 
             <!-- Exercises, then the optional cardio; only this part scrolls -->
-            <ScrollViewer IsVisible="{Binding HasExercises}" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Classes="showBar" IsVisible="{Binding HasExercises}" VerticalScrollBarVisibility="Auto">
                 <StackPanel Spacing="12">
                     <ItemsControl ItemsSource="{Binding Exercises}">
                         <ItemsControl.ItemsPanel>

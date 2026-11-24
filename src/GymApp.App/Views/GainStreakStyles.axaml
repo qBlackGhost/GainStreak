@@ -224,6 +224,15 @@
         <Style Selector=".phone ScrollBar:vertical">
             <Setter Property="RenderTransform" Value="translateX(12px)"/>
         </Style>
+        <!-- Phones (0.27.1): pages scroll without a bar; only lists (ScrollViewer.showBar) keep theirs -->
+        <Style Selector=".phone ScrollBar:vertical">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+        <Style Selector=".phone ScrollViewer.showBar /template/ ScrollBar:vertical">
+            <Setter Property="Opacity" Value="1"/>
+            <Setter Property="IsHitTestVisible" Value="True"/>
+        </Style>
 
         <!-- Phones: a touch has no hover, so a pressed button dims at once (and keeps the theme's slight shrink) -->
         <Style Selector=".phone Button">

@@ -106,6 +106,13 @@ public partial class ExerciseViewModel : ViewModelBase
     public string DateText => DateTime.Now.ToString("dddd, d MMMM", CultureInfo.InvariantCulture);
     public string BackLabel => _day?.Name ?? "Back";
 
+    /// <summary>Opened from the day's Add exercises list (0.27.1): the button reads "Add exercise", and saving goes
+    /// back to that list for the next one. Opened any other way it's "Save sets" and stays here.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SaveLabel))]
+    public partial bool JustAdded { get; set; }
+
+    public string SaveLabel => JustAdded ? "Add exercise" : "Save sets";
+
     // PR card
     [ObservableProperty] public partial bool HasPr { get; set; }
     [ObservableProperty] public partial string PrWeight { get; set; } = "";
@@ -523,6 +530,7 @@ public partial class ExerciseViewModel : ViewModelBase
         Info = inputs.Count == 0 ? "Cleared today's sets."
              : improved ? (before is null ? $"Saved. First PR: {BestText}." : $"Saved. New PR: {BestText}!")
              : "Saved.";
+        if (JustAdded && _day is not null) _shell().ShowDay(_day, _splitName, openAdd: true);
     }
 
     // ---------- planned sets ----------

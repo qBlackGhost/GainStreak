@@ -450,17 +450,18 @@
                                 <Border x:Name="ToastBox" Padding="14,8,8,8" CornerRadius="12" Margin="16,12" HorizontalAlignment="Center" VerticalAlignment="Top"
                                         Background="{DynamicResource LimeTint}" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" BoxShadow="0 8 24 0 #80000000"
                                         IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                    <!-- A grid, so a long gym name wraps on a phone instead of pushing the buttons off -->
+                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                                         <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8"
                                                 Width="16" Height="16" VerticalAlignment="Center"/>
-                                        <TextBlock Text="{Binding Toast}" FontSize="13" VerticalAlignment="Center" MaxWidth="420"/>
-                                        <Button Classes="btn outline small" MinHeight="32" Content="Undo" Command="{Binding UndoToastCommand}"
-                                                IsVisible="{Binding CanUndoToast}"/>
-                                        <Button Classes="btn outline square" Foreground="{DynamicResource Soft}" Command="{Binding DismissToastCommand}"
-                                                ToolTip.Tip="Close" AutomationProperties.Name="Close">
+                                        <TextBlock Grid.Column="1" Text="{Binding Toast}" FontSize="13" VerticalAlignment="Center" MaxWidth="420" TextWrapping="Wrap"/>
+                                        <Button Grid.Column="2" Classes="btn outline small" MinHeight="32" Content="Undo" Command="{Binding UndoToastCommand}"
+                                                IsVisible="{Binding CanUndoToast}" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="3" Classes="btn outline square" Foreground="{DynamicResource Soft}" Command="{Binding DismissToastCommand}"
+                                                ToolTip.Tip="Close" AutomationProperties.Name="Close" VerticalAlignment="Center">
                                             <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.6" Width="12" Height="12"/>
                                         </Button>
-                                    </StackPanel>
+                                    </Grid>
                                 </Border>
 
                                 <!-- Nothing to pin: a small note in the corner, so the map stays usable -->
@@ -606,7 +607,7 @@
                                     </v:SegmentedPill>
                                 </Border>
                             </Grid>
-                            <ScrollViewer x:Name="FriendsScroll" Grid.Row="1" MinHeight="96" Padding="0,0,10,0"
+                            <ScrollViewer Classes="showBar" x:Name="FriendsScroll" Grid.Row="1" MinHeight="96" Padding="0,0,10,0"
                                           HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                 <StackPanel>
                                     <TextBlock Text="{Binding FriendsEmptyText}" FontSize="13" Classes="muted" LineHeight="20" Margin="2,16"

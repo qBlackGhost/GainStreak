@@ -24,8 +24,15 @@ public class InviteLinkTests
     [InlineData("https://gainstreak.app/add/abcdefghj0", null)]
     [InlineData("https://gainstreak.app/add/abcdefghjk/more", null)]
     [InlineData("https://gainstreak.app/privacy.html", null)]
-    [InlineData("gainstreak://add/abcdefghjk", null)]
+    [InlineData("gainstreak://add/abcdefghjk", "abcdefghjk")]
+    [InlineData("gainstreak://add/ABCDEFGHJK/", "abcdefghjk")]
+    [InlineData("gainstreak://add/abc", null)]
+    [InlineData("gainstreak://open/home", null)]
+    [InlineData("ftp://gainstreak.app/add/abcdefghjk", null)]
     public void TryParse(string link, string? code) => Assert.Equal(code, InviteLink.TryParse(new Uri(link)));
+
+    [Fact] public void AppLinkFor_ParsesBack() =>
+        Assert.Equal("abcdefghjk", InviteLink.TryParse(new Uri(InviteLink.AppLinkFor("abcdefghjk"))));
 
     [Fact] public void TryParse_Null_IsNull() => Assert.Null(InviteLink.TryParse(null));
 

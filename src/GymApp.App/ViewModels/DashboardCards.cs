@@ -78,7 +78,33 @@ public partial class TodayWorkoutCardViewModel(Func<MainViewModel> shell, bool c
     [ObservableProperty] public partial bool ShowPickSplit { get; set; }
 
     public bool HasExercises => Exercises.Count > 0;
-    partial void OnExercisesChanged(IReadOnlyList<TodayExerciseViewModel> value) => OnPropertyChanged(nameof(HasExercises));
+    partial void OnExercisesChanged(IReadOnlyList<TodayExerciseViewModel> value)
+    {
+        OnPropertyChanged(nameof(HasExercises));
+        OnPropertyChanged(nameof(ShowToggle));
+    }
+
+    /// <summary>Phones, once today's live workout is finished (0.27.1): the list folds away behind a button, since the
+    /// workout is done. Home moves the card under Recent PRs then.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowList), nameof(ShowToggle), nameof(ShowOpenLink))]
+    public partial bool Collapsible { get; set; }
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowList), nameof(ToggleText), nameof(ChevronAngle))]
+    public partial bool Expanded { get; set; }
+
+    /// <summary>The exercise list shows: always, unless the card is folded.</summary>
+    public bool ShowList => !Collapsible || Expanded;
+    public bool ShowToggle => Collapsible && HasExercises;
+    public bool ShowOpenLink => !Collapsible;
+    public string ToggleText => Expanded ? "Hide" : "Show";
+    public double ChevronAngle => Expanded ? 180 : 0;
+
+    partial void OnCollapsibleChanged(bool value)
+    {
+        if (!value) Expanded = false;
+    }
+
+    [RelayCommand] private void ToggleExpanded() => Expanded = !Expanded;
 
     public void Apply(TodayWorkoutInfo info)
     {

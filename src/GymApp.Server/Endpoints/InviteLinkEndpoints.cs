@@ -35,17 +35,21 @@ public static class InviteLinkEndpoints
     {
         if (FriendInvites.Normalize(code) is not { } normalized) return Results.NotFound();
 
-        var store = StoreFor(request.Headers.UserAgent.ToString()) switch
-        {
-            Store.Play => settings.PlayStoreUrl,
-            Store.AppStore => settings.AppStoreUrl,
-            _ => null
-        };
-        if (store is not null) return Results.Redirect(store);
-
+        // Phones get a page too, not a redirect to their store: a phone only lands here when the OS didn't open the app,
+        // which is every time in an in-app browser (Instagram, Facebook, TikTok…), app installed or not. Redirecting
+        // sent those people to TestFlight even with the app on the phone
+        var store = StoreFor(request.Headers.UserAgent.ToString());
         var link = settings.LinkFor(normalized, request);
-        return Results.Content(Page(link, settings), "text/html; charset=utf-8");
+        return Results.Content(Page(link, normalized, store, settings), "text/html; charset=utf-8");
     }
+
+    /// <summary>What the phone page's "Open in GainStreak" button opens. iPhone: the app's own scheme, which in-app
+    /// browsers pass on to iOS (they never pass on universal links). Android: an intent that opens the app, or Google Play
+    /// when it isn't installed.</summary>
+    public static string OpenAppUrl(string code, Store store, InviteSettings settings) => store == Store.Play
+        ? $"intent://add/{code}#Intent;scheme={InviteLink.AppScheme};package={InviteSettings.AppId};" +
+          $"S.browser_fallback_url={Uri.EscapeDataString(settings.PlayStoreUrl)};end"
+        : InviteLink.AppLinkFor(code);
 
     private static IResult AppleAppSiteAssociation(InviteSettings settings)
     {
@@ -90,13 +94,18 @@ public static class InviteLinkEndpoints
     public const string PublicPages = "https://qblackghost.github.io/GainStreak-releases/";
 
     /// <summary>The page for computers (and iPads that say they're a Mac), after the GainStreak Mobile canvas's
-    /// "Invite link on a computer": the QR code to scan with a phone, the link, both stores. System fonts and no
-    /// outside requests, like <c>site/</c>; dark unless the browser asks for light.</summary>
-    private static string Page(string link, InviteSettings settings)
+    /// "Invite link on a computer": the QR code to scan with a phone, the link, both stores. On a phone
+    /// (<paramref name="store"/> isn't None): "Open in GainStreak" and that phone's store instead of the QR code. System
+    /// fonts and no outside requests, like <c>site/</c>; dark unless the browser asks for light.</summary>
+    private static string Page(string link, string code, Store store, InviteSettings settings)
     {
-        string qr;
-        using (var data = QRCodeGenerator.GenerateQrCode(link, QRCodeGenerator.ECCLevel.M))
+        var phone = store != Store.None;
+        var qr = "";
+        if (!phone)
+        {
+            using var data = QRCodeGenerator.GenerateQrCode(link, QRCodeGenerator.ECCLevel.M);
             qr = new SvgQRCode(data).GetGraphic(8, "#000000", "#ffffff", drawQuietZones: true, sizingMode: SvgQRCode.SizingMode.ViewBoxAttribute);
+        }
 
         static string Html(string v) => System.Net.WebUtility.HtmlEncode(v);
         var shownLink = Html(link.Replace("https://", "").Replace("http://", ""));
@@ -104,6 +113,28 @@ public static class InviteLinkEndpoints
             ? $"""<a class="store" href="{Html(a)}"><span class="small">Download on the</span><span class="big">App Store</span></a>"""
             : """<span class="store soon">App Store: coming soon</span>""";
         var play = $"""<a class="store" href="{Html(settings.PlayStoreUrl)}"><span class="small">Get it on</span><span class="big">Google Play</span></a>""";
+
+        var openApp = $"""<a class="open" href="{Html(OpenAppUrl(code, store, settings))}">Open in GainStreak</a>""";
+        var text = phone
+            ? $"""
+                <h1>You've been invited to GainStreak</h1>
+                <p>Have the app? Tap <b>Open in GainStreak</b> to add your friend. No app yet? Get it first, then open this link again.</p>
+                {openApp}
+                <div class="stores">{(store == Store.Play ? play : appStore)}</div>
+                <span class="note">Nothing happens? Open this link in {(store == Store.Play ? "Chrome" : "Safari")}: tap the ••• menu and choose "Open in external browser".</span>
+              """
+            : $"""
+                <h1>You've been invited to GainStreak</h1>
+                <p>Scan the code with your phone's camera to add your friend. Get the app first if you don't have it, then scan again.</p>
+                <div class="stores">{appStore}{play}</div>
+                <span class="note">On your phone already? Open this link there instead: it goes straight to the app, or to the store if you don't have it yet.</span>
+              """;
+        var figure = phone ? "" : $"""
+              <figure>
+                <div class="qr" role="img" aria-label="QR code for this invite link">{qr}</div>
+                <figcaption>{shownLink}</figcaption>
+              </figure>
+            """;
 
         return $$"""
             <!doctype html>
@@ -115,10 +146,10 @@ public static class InviteLinkEndpoints
             <title>Add a friend on GainStreak</title>
             <style>
               :root { color-scheme: dark; --bg: #000000; --card: #0B0B0B; --line: #222222; --border: #333333; --ink: #FFFFFF; --soft: #B5B5B5;
-                      --muted: #9A9A9A; --inv: #FFFFFF; --on-inv: #000000; --accent: #C6F432; --accent-text: #C6F432; --tint: #10140A; --tint-line: #3A4A14; }
+                      --muted: #9A9A9A; --inv: #FFFFFF; --on-inv: #000000; --accent: #C6F432; --on-accent: #000000; --accent-text: #C6F432; --tint: #10140A; --tint-line: #3A4A14; }
               @media (prefers-color-scheme: light) {
                 :root { color-scheme: light; --bg: #F4F4F1; --card: #FFFFFF; --line: #E2E2DD; --border: #D0D0CB; --ink: #0B0B0B; --soft: #4A4A47;
-                        --muted: #62625E; --inv: #0B0B0B; --on-inv: #FFFFFF; --accent: #4D7C0F; --accent-text: #3F6A0A; --tint: #EEF5E0; --tint-line: #B9D48A; }
+                        --muted: #62625E; --inv: #0B0B0B; --on-inv: #FFFFFF; --accent: #4D7C0F; --on-accent: #FFFFFF; --accent-text: #3F6A0A; --tint: #EEF5E0; --tint-line: #B9D48A; }
               }
               * { box-sizing: border-box; }
               body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); color: var(--ink);
@@ -138,6 +169,8 @@ public static class InviteLinkEndpoints
                        background: var(--inv); color: var(--on-inv); text-decoration: none; line-height: 1.1; }
               .store .small { font-size: 11px; } .store .big { font-weight: 700; font-size: 16px; }
               .store.soon { background: transparent; border: 1px dashed var(--border); color: var(--muted); font-size: 14px; }
+              .open { display: flex; align-items: center; justify-content: center; min-height: 56px; border-radius: 16px; background: var(--accent);
+                      color: var(--on-accent); font-weight: 800; font-size: 17px; text-decoration: none; }
               .note { font-size: 13px; color: var(--muted); }
               figure { flex: 0 1 320px; margin: 0; display: flex; flex-direction: column; align-items: center; gap: 14px; }
               .qr { width: 300px; max-width: 100%; padding: 18px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); }
@@ -152,15 +185,9 @@ public static class InviteLinkEndpoints
             <main>
               <div class="text">
                 <span class="chip">Friend invite</span>
-                <h1>You've been invited to GainStreak</h1>
-                <p>Scan the code with your phone's camera to add your friend. Get the app first if you don't have it, then scan again.</p>
-                <div class="stores">{{appStore}}{{play}}</div>
-                <span class="note">On your phone already? Open this link there instead: it goes straight to the app, or to the store if you don't have it yet.</span>
+            {{text}}
               </div>
-              <figure>
-                <div class="qr" role="img" aria-label="QR code for this invite link">{{qr}}</div>
-                <figcaption>{{shownLink}}</figcaption>
-              </figure>
+            {{figure}}
             </main>
             <footer><a href="{{PublicPages}}privacy.html">Privacy</a><a href="{{PublicPages}}terms.html">Terms</a></footer>
             </body>

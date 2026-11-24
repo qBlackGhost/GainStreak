@@ -264,7 +264,7 @@ public partial class DayViewModel : ViewModelBase, IClosesOnBack
             if (!r.Success) { Error = r.Error; Info = null; return; }
 
             // Go straight to the new exercise so its sets can be set up right away
-            _shell().ShowExercise(_menuDay!, _splitName, exerciseId);
+            _shell().ShowExercise(_menuDay!, _splitName, exerciseId, justAdded: true);
         }
         catch (Exception)
         {

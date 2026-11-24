@@ -265,10 +265,11 @@
             <!-- Saved -->
             <Border Padding="18,14" CornerRadius="14" BorderBrush="{DynamicResource LimeTintLine}" BorderThickness="1" Background="{DynamicResource LimeTint}"
                     IsVisible="{Binding Toast, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                <StackPanel Orientation="Horizontal" Spacing="10">
+                <!-- A grid, so the sentence wraps on a phone -->
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                     <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" VerticalAlignment="Center"/>
-                    <TextBlock Text="{Binding Toast}" FontSize="14" VerticalAlignment="Center"/>
-                </StackPanel>
+                    <TextBlock Grid.Column="1" Text="{Binding Toast}" FontSize="14" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </Grid>
             </Border>
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

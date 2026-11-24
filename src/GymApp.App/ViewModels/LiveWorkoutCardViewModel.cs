@@ -11,7 +11,7 @@ using GymApp.Services;
 
 namespace GymApp.App.ViewModels;
 
-/// <summary>One set chip on the live card: "W 60 × 5", "1 90 × 8", "2 — × —". Its state is only in its style: logged
+/// <summary>One set chip on the live card: "W: 60×5", "1: 90×8", "2: —×—". Its state is only in its style: logged
 /// (tinted), the set to do now (outlined; dashed while another set is being changed), being changed (inverse), later
 /// (dashed, not tappable).</summary>
 public partial class LiveSetChipViewModel(string text, bool isLogged, bool isNow, bool isEditing, bool isAnotherEditing,
@@ -44,9 +44,9 @@ public partial class LiveExerciseRowViewModel(string name, string status, bool i
 
 /// <summary>
 /// Phase 18's live workout card on Home (the "Home during a workout" artboard): one exercise and one set at a time,
-/// Next, Skip for now, the exercises to pick from, Finish once half are filled, End workout below that. Nothing here
-/// says the workout already counts or mentions points while it runs (it's logged silently at half); the Finish sheet
-/// pushes for the whole workout. The service does the saving; this keeps only what's being typed.
+/// Next, Skip for now, the exercises to pick from, and one link under them: Finish once half are filled, End workout
+/// below that. Nothing here says the workout already counts or mentions points while it runs (it's logged silently at
+/// half); the Finish sheet pushes for the whole workout. The service does the saving; this keeps only what's being typed.
 /// </summary>
 public partial class LiveWorkoutCardViewModel : ViewModelBase
 {
@@ -175,6 +175,9 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
     // ===== Bar exercises: the weight typed as the total, or per side plus the bar (like the Exercise screen) =====
     [ObservableProperty] public partial bool UsesBar { get; set; }
 
+    /// <summary>A dumbbell exercise (0.27.1): "Per dumbbell" under the weight, since that's what people type.</summary>
+    [ObservableProperty] public partial bool IsDumbbell { get; set; }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTotalMode), nameof(WeightModeIndex), nameof(WeightLabel))]
     public partial bool IsPerSide { get; set; }
@@ -271,7 +274,7 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
         Chips.Clear();
         if (current is not null && info is not null)
         {
-            Kicker = $"EXERCISE {order.ToList().FindIndex(e => e.ExerciseId == current.ExerciseId) + 1} OF {plan.Count}";
+            Kicker = $"EXERCISE {plan.ToList().FindIndex(e => e.ExerciseId == current.ExerciseId) + 1} OF {plan.Count}";
             ExerciseName = info.Name;
             var top = info.LastSession.Where(s => s.Kind == SetKind.Working)
                 .OrderByDescending(s => s.WeightKg).ThenByDescending(s => s.Reps).FirstOrDefault();
@@ -305,8 +308,10 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
             : BarKg is { } lockedBar and > 0 ? $"Per side · {Kg(lockedBar)} kg bar" : "Per side";
         if (!keepFields) Prefill(current, info, next);
 
+        // The list keeps the plan's order (0.27.1): a skipped exercise stays where it is, marked Skipped, and still
+        // comes back after the others (LiveWorkoutRules.Current)
         Rows.Clear();
-        foreach (var x in order)
+        foreach (var x in plan)
         {
             var isCurrent = x.ExerciseId == current?.ExerciseId;
             var skipped = Info.SkippedExerciseIds.Contains(x.ExerciseId) && !x.IsFilled && !isCurrent;
@@ -354,7 +359,7 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
                 : isNow ? CancelEdit
                 : null;
             Chips.Add(new LiveSetChipViewModel(
-                set is null ? $"{tag} — × —" : $"{tag} {Kg(set.WeightKg)} × {set.Reps}",
+                set is null ? $"{tag}: —×—" : $"{tag}: {Kg(set.WeightKg)}×{set.Reps}",
                 set is not null, isNow, editing, EditingIndex is not null && !editing,
                 set is null ? name : $"Change {name.ToLowerInvariant()}, {Kg(set.WeightKg)} kilos × {set.Reps}", tap));
         }
@@ -421,6 +426,7 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
         _barExerciseId = id;
         _syncingBar = true;
         UsesBar = info is not null && BarWeight.UsesBar(info.Name);
+        IsDumbbell = info is not null && BarWeight.UsesDumbbells(info.Name);
         var setting = id is { } x && UsesBar ? _bars.GetValueOrDefault(x, BarSetting.Total) : BarSetting.Total;
         IsPerSide = setting.PerSide;
         BarText = setting.BarKg is { } bar ? Kg(bar) : "";
@@ -605,10 +611,12 @@ public partial class LiveWorkoutCardViewModel : ViewModelBase
     // ===== Finish and End =====
 
     [RelayCommand]
-    private void OpenFinish()
+    private async Task OpenFinish()
     {
         SheetError = null;
         var left = Total - Filled;
+        // Every exercise is done (0.27.1): nothing to confirm, so finish straight away
+        if (left == 0) { await FinishAsync(); if (SheetError is null) return; }
         var toFull = CheckInRule.RequiredForFull(Total) - Filled;
         // Only a verified workout earns more for finishing it, so an unverified one is asked lightly
         var verified = Info.IsVerified;

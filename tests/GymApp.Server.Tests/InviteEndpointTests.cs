@@ -106,18 +106,32 @@ public class InviteEndpointTests(PostgresFixture postgres) : ServerTest(postgres
     private const string Android = "Mozilla/5.0 (Linux; Android 16; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Mobile Safari/537.36";
     private const string Mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Safari/605.1.15";
 
-    [Fact] public async Task Landing_SendsAnIPhoneToTheAppStore()
+    private const string InstagramIPhone = "Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 400.0.0.0.0";
+
+    [Theory]
+    [InlineData(IPhone)]
+    [InlineData(InstagramIPhone)]
+    public async Task Landing_ShowsAnIPhoneOpenInAppAndTheAppStore(string userAgent)
     {
-        var response = await OpenLinkAsync("abcdefghjk", IPhone);
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Equal(AppStore, response.Headers.Location!.ToString());
+        // Not a redirect: in Instagram's browser the app may well be installed (the OS never got the link)
+        var response = await OpenLinkAsync("abcdefghjk", userAgent);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("href=\"gainstreak://add/abcdefghjk\"", html);
+        Assert.Contains(AppStore, html);
+        Assert.DoesNotContain(InviteSettings.DefaultPlayStoreUrl, html);
+        Assert.DoesNotContain("<svg", html);
     }
 
-    [Fact] public async Task Landing_SendsAnAndroidPhoneToGooglePlay()
+    [Fact] public async Task Landing_ShowsAnAndroidPhoneAnIntentWithGooglePlayAsFallback()
     {
         var response = await OpenLinkAsync("abcdefghjk", Android);
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-        Assert.Equal(InviteSettings.DefaultPlayStoreUrl, response.Headers.Location!.ToString());
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("intent://add/abcdefghjk#Intent;scheme=gainstreak;package=com.gainstreak.app;S.browser_fallback_url=" +
+                        Uri.EscapeDataString(InviteSettings.DefaultPlayStoreUrl), System.Net.WebUtility.HtmlDecode(html));
+        Assert.Contains(InviteSettings.DefaultPlayStoreUrl, System.Net.WebUtility.HtmlDecode(html));
+        Assert.DoesNotContain(AppStore, html);
     }
 
     [Fact] public async Task Landing_ShowsAComputerTheQrCode_WithoutWhoseItIs()

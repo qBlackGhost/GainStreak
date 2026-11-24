@@ -2,6 +2,30 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.27.1
+
+- **Invite links from Instagram (and other apps' browsers) open the app:** Instagram, Facebook, TikTok and similar apps open links in their own browser, which never hands an invite link to GainStreak, so your friend always ended up in TestFlight, even with the app installed. A phone that opens an invite link in a browser now sees a page with **Open in GainStreak**, which opens the app at the invite, and a button to get the app. On Android, **Open in GainStreak** goes to Google Play when the app isn't installed. If nothing happens, the page says to open the link in Safari or Chrome. Your friend needs this version of the app for **Open in GainStreak** to go straight to the invite.
+- Links opened from Messages, WhatsApp, Mail or the camera keep opening the app directly, as before.
+- **Text that ran off the screen on phones:** the "… is now your split" confirmation and the Map's "Today logged at …" note now wrap (the note's **Undo** and close buttons stay on screen). So do a long gym name in the cardio card and in the live workout's "At … ✓" pill, and the gym form's "OpenStreetMap only knows the street here." and its address.
+- **Adding a custom gym on a phone:** the gym list drew over the **Add a gym** form, the form ran under the **Cancel** button, and tapping **Name** often did nothing. While the form is open it now takes the list's place and scrolls on its own; the list comes back when you save or cancel.
+- **Changing today's gym on a narrow phone:** in **Where did you train today?**, **Cancel** ran off the right edge. **No gym today** now has its own row above **Add custom gym** and **Cancel**.
+- **Custom gym names** can be up to 40 characters (was 60), so they fit on the map, the cardio card and the live workout. Gyms you already named keep their names.
+- **Fewer scroll bars (phones):** pages scroll without a bar; only lists (gyms, exercises, history) keep theirs.
+- **Home after a workout (phones):** once today's workout is finished, **Today's workout** moves down under **Recent PRs**, just above **Friends**, folded; **Show** opens its exercises.
+- **Live workout (phones):**
+  - **Skip for now** goes to the next exercise and leaves the skipped one where it is in the list (marked Skipped); it still comes back once the others are done.
+  - **Finish** is no longer beside **Next**: a **Finish workout** link sits at the bottom of the card, where **End workout** is before half the exercises are done (only one of them shows at a time).
+  - With every exercise done, **Finish workout** finishes straight away, without asking again.
+  - Logged sets read "1: 60×8" in slimmer chips (three fit on a row), and a dumbbell exercise says **Per dumbbell** under the weight.
+- **After a workout:** "Want to log your gym?" and "Show this check-in to friends?" wait until you've answered **Continue with a cardio session?**, instead of covering it.
+  Home no longer flashes for a moment before the cardio screen.
+- **Adding exercises to a day:** an exercise picked from **Add exercises** shows **Add exercise** instead of **Save sets**, and pressing it goes back to the Add exercises list for the next one.
+- **Exercise page on small phones:** the **Warm-up sets** and **Working sets** pills and the **reps** boxes no longer cut off their words.
+- **Live Activity (iPhone):** an orange flame before the day's name, and a dumbbell in the progress ring in the Dynamic Island (also when it shares the island with music or a timer). The island's bottom row shows the exercise and the percent.
+- **Live Activity count fixed:** right after **Start workout**, the Lock Screen could keep showing the starting numbers while you logged your first sets. It now updates from the first set. (Warm-ups still don't count toward the sets; only working sets do.)
+- **Dark by default (phones):** the app, the sign-in screens included, now starts dark. Accounts still set to **System** move to **Dark**; switch back under **Profile → Theme** (System follows your phone).
+- **Migration:** the app's database (data only: `Users.ThemePreference` from System to Dark).
+
 ## 0.27.0
 
 - **A calmer Calories screen (phones):** the first card is now **Calories**, with a bigger ring that fills in lime as you eat and turns red once you're over your target range. Beside it, **Goal** and **Eaten** in plain numbers and your target range. **Last 7 days** fills the rest of the screen; **Calorie goal** and **Maintenance** sit just below, a short scroll away.

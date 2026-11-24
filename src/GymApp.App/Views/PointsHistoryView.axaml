@@ -164,7 +164,7 @@
                 </Border>
 
                 <!-- The ledger, by week -->
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Classes="showBar" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel Margin="24,8,24,16">
                         <TextBlock Text="{Binding Error}" Classes="error" FontSize="13" Margin="0,12,0,0" TextWrapping="Wrap"
                                    IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>

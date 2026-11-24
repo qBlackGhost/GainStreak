@@ -40,7 +40,7 @@
                 <StackPanel Spacing="8">
                     <TextBlock Text="{Binding ChoiceLabel}" Classes="caps" FontWeight="SemiBold"/>
                     <TextBlock Text="{Binding NoChoicesText}" FontSize="14" Classes="muted" IsVisible="{Binding HasNoChoices}"/>
-                    <ScrollViewer MaxHeight="220" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Classes="showBar" MaxHeight="220" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Choices}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
@@ -67,7 +67,7 @@
                         <Button Classes="btn outline small" HorizontalAlignment="Left" Content="Find friends"
                                 Command="{Binding FindFriendsCommand}"/>
                     </StackPanel>
-                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer Classes="showBar" MaxHeight="200" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding Friends}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ShareFriendViewModel">

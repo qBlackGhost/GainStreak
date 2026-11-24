@@ -15,13 +15,14 @@
         </Style>
 
         <!-- Set chips: the state is only in the style -->
+        <!-- 0.27.1: slimmer, so three fit on a row of a 390-pt phone (44 pt tall stays, the phones' tap minimum) -->
         <Style Selector="Button.chip">
             <Setter Property="MinHeight" Value="44"/>
-            <Setter Property="Padding" Value="12,0"/>
-            <Setter Property="Margin" Value="0,0,6,6"/>
+            <Setter Property="Padding" Value="8,0"/>
+            <Setter Property="Margin" Value="0,0,5,5"/>
             <Setter Property="CornerRadius" Value="10"/>
             <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
-            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -214,6 +215,11 @@
                                  AutomationProperties.Name="Weight in kilos"/>
                         <TextBlock Text="{Binding TotalHint}" FontSize="12" Classes="muted mono"
                                    IsVisible="{Binding TotalHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                        <!-- 0.27.1: dumbbell weights are typed per dumbbell -->
+                        <StackPanel Orientation="Horizontal" Spacing="5" IsVisible="{Binding IsDumbbell}">
+                            <v:Icon Data="{StaticResource IcInfoCircle}" StrokeThickness="2" Width="13" Height="13" VerticalAlignment="Center"/>
+                            <TextBlock Text="Per dumbbell" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                        </StackPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="6">
                         <TextBlock Text="Reps" FontSize="12" FontWeight="SemiBold" Classes="soft"/>
@@ -235,10 +241,9 @@
                         Command="{Binding CancelEditCommand}" IsVisible="{Binding EditUnchanged}"
                         AutomationProperties.Name="Logged. Back to the current set"/>
 
-                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10" IsVisible="{Binding NotEditing}">
-                    <Button Classes="btn outline" MinHeight="54" FontSize="15" Content="Finish"
-                            Command="{Binding OpenFinishCommand}" IsVisible="{Binding CanFinish}"/>
-                    <Button Grid.Column="1" Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
+                <!-- Finish moved to the bottom (0.27.1), so it isn't the easy tap beside Next -->
+                <Grid IsVisible="{Binding NotEditing}">
+                    <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="54" FontSize="16"
                             Command="{Binding NextCommand}" IsEnabled="{Binding CanNext}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <TextBlock Text="Next" VerticalAlignment="Center"/>
@@ -288,7 +293,10 @@
             </StackPanel>
         </Border>
 
+        <!-- One quiet link at the bottom: End workout below half (nothing is logged), Finish workout from half on -->
         <Button Classes="link" HorizontalAlignment="Center" MinHeight="40" FontSize="13" Foreground="{DynamicResource Muted}"
                 Content="End workout" Command="{Binding OpenEndCommand}" IsVisible="{Binding CanEnd}"/>
+        <Button Classes="link" HorizontalAlignment="Center" MinHeight="40" FontSize="13" Foreground="{DynamicResource Muted}"
+                Content="Finish workout" Command="{Binding OpenFinishCommand}" IsVisible="{Binding CanFinish}"/>
     </StackPanel>
 </UserControl>

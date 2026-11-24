@@ -92,7 +92,7 @@ public partial class ProfileViewModel : ViewModelBase
         _ = Vacation.LoadAsync();
         Badges = badges;
         ActivityOptions = Enum.GetValues<ActivityLevel>().Select(l => new ActivityOption(l, o => SelectedActivity = o)).ToList();
-        ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.System);
+        ThemeIndex = (int)(session.CurrentUser?.ThemePreference ?? ThemePreference.Dark);
         WatchSettingsRows();
         _ = ReloadAsync();
     }

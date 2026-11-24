@@ -886,11 +886,12 @@
                                     <Border Classes="pill" HorizontalAlignment="Center" Padding="12,6" Background="{DynamicResource LimeTint}"
                                             BorderBrush="{DynamicResource LimeTintLineStrong}"
                                             IsVisible="{Binding VerifiedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                        <StackPanel Orientation="Horizontal" Spacing="6">
-                                            <v:Icon Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.4"
+                                        <!-- A dock, so a long gym name wraps instead of running off the card -->
+                                        <DockPanel>
+                                            <v:Icon DockPanel.Dock="Left" Margin="0,0,6,0" Data="{StaticResource IcPin}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.4"
                                                     Width="15" Height="15" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding VerifiedText}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                        </StackPanel>
+                                        </DockPanel>
                                     </Border>
                                     <StackPanel Spacing="2" IsVisible="{Binding IsNotAtGym}">
                                         <TextBlock Text="You're not at one of your gyms. This workout won't be verified." FontSize="13"
@@ -1064,7 +1065,8 @@
             <WrapPanel x:Name="Cards" IsVisible="{Binding ShowDashboard}">
 
                 <!-- Today's workout: the same plan as the check-in -->
-                <Border Classes="card" DataContext="{Binding TodayWorkout}">
+                <!-- Phones, once the workout is finished (0.27.1): HomeView.axaml.cs moves it under Recent PRs, folded -->
+                <Border x:Name="TodayCard" Classes="card" DataContext="{Binding TodayWorkout}">
                     <StackPanel Spacing="16" x:DataType="vm:TodayWorkoutCardViewModel">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="2">
@@ -1072,8 +1074,29 @@
                                 <TextBlock Text="{Binding Title}" FontSize="13" Classes="muted"/>
                             </StackPanel>
                             <Button Grid.Column="1" Classes="link" FontSize="14" Content="Open workouts" VerticalAlignment="Center"
-                                    Command="{Binding BuildWorkoutCommand}" IsVisible="{Binding HasExercises}"/>
+                                    Command="{Binding BuildWorkoutCommand}">
+                                <Button.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                        <Binding Path="HasExercises"/>
+                                        <Binding Path="ShowOpenLink"/>
+                                    </MultiBinding>
+                                </Button.IsVisible>
+                            </Button>
+                            <Button Grid.Column="1" Classes="btn outline small" MinHeight="36" VerticalAlignment="Center"
+                                    Command="{Binding ToggleExpandedCommand}" IsVisible="{Binding ShowToggle}"
+                                    AutomationProperties.Name="Show or hide today's exercises">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding ToggleText}" VerticalAlignment="Center"/>
+                                    <v:Icon Data="{StaticResource IcChevronDown}" StrokeThickness="2.4" Width="14" Height="14"
+                                            RenderTransformOrigin="50%,50%">
+                                        <v:Icon.RenderTransform>
+                                            <RotateTransform Angle="{Binding ChevronAngle}"/>
+                                        </v:Icon.RenderTransform>
+                                    </v:Icon>
+                                </StackPanel>
+                            </Button>
                         </Grid>
+                        <Panel IsVisible="{Binding ShowList}">
                         <Panel Classes="wideOnly">
                         <StackPanel IsVisible="{Binding HasExercises}" Grid.IsSharedSizeScope="True">
                             <Grid Margin="0,0,0,8">
@@ -1128,6 +1151,7 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                        </Panel>
                         </Panel>
                         <Border MinHeight="140" CornerRadius="14" BorderBrush="{DynamicResource Control}" BorderThickness="1" Padding="20"
                                 IsVisible="{Binding EmptyText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
@@ -1229,7 +1253,7 @@
                 </Border>
 
                 <!-- Recent PRs (hidden when there are none) -->
-                <Border Classes="card" IsVisible="{Binding RecentPrs.HasAny}">
+                <Border x:Name="PrsCard" Classes="card" IsVisible="{Binding RecentPrs.HasAny}">
                     <Panel DataContext="{Binding RecentPrs}">
                     <StackPanel Spacing="12" x:DataType="vm:RecentPrsCardViewModel">
                         <Grid ColumnDefinitions="*,Auto">
@@ -1624,7 +1648,7 @@
                             Command="{Binding StartCommand}" IsEnabled="{Binding !IsBusy}"/>
                 </StackPanel>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer Classes="showBar" VerticalScrollBarVisibility="Auto">
                     <!-- Room on the right for the scroll bar, so it never covers the last sets -->
                     <StackPanel Spacing="16" Margin="0,0,12,0">
                         <TextBlock Text="No exercises match." FontSize="14" Classes="muted" IsVisible="{Binding NoResults}"/>
@@ -1685,7 +1709,7 @@
     </Border>
 
     <!-- Optional gym prompt, right after check-in. The workout is already saved. -->
-    <Border Classes="toast" Classes.show="{Binding ShowGymPrompt}" IsVisible="{Binding ShowGymPrompt}"
+    <Border Classes="toast" Classes.show="{Binding GymPromptOnScreen}" IsVisible="{Binding GymPromptOnScreen}"
             VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="16,24,16,0" MaxWidth="420"
             CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
@@ -1722,7 +1746,7 @@
         </DockPanel>
     </Border>
     <!-- Asked once, after the first check-in with a gym (FRIENDS_GYM_MAP.md 4f) -->
-    <Border Classes="toast" Classes.show="{Binding ShowShareQuestion}" IsVisible="{Binding ShowShareQuestion}"
+    <Border Classes="toast" Classes.show="{Binding ShareQuestionOnScreen}" IsVisible="{Binding ShareQuestionOnScreen}"
             VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="16,24,16,0" MaxWidth="420"
             CornerRadius="16" Background="{DynamicResource Fill}" BorderBrush="{DynamicResource Control}" BorderThickness="1" ClipToBounds="True"
             BoxShadow="0 18 50 0 #B3000000">
