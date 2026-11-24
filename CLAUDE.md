@@ -80,6 +80,14 @@ Phones are the product; the desktop app is frozen at 0.21.0, its last release, k
 - **It must keep building and starting:** `GymApp.Desktop` is still the startup project for the EF commands and hosts the TestBench, and the presentation needs it. Don't break the existing desktop branches in shared views; don't remove them before the slim-down.
 - **Keep the server accepting 0.21.0:** don't raise the server's `MinClientVersion` above 0.21.0, and keep `Contracts` and endpoints compatible with it, until the developer says the presentation is over.
 
+## Both phones, every change
+
+iOS and Android are both products. For **every** update, fix or UI change (including a small one), decide before starting, and say in the summary, whether it applies to both phone heads:
+- **Shared code** (`GymApp.App`, services, rules, views) reaches both heads. Still check that nothing in it assumes one platform, and look at how the view behaves on a narrow phone.
+- **Platform work** lives in a head (`GymApp.iOS`, `GymApp.Android`) behind an `IPlatform` or interface seam (Apple Health `IHealthStore` and Health Connect, Live Activity and Android's equivalent, widgets, push, file and share sheets, backups). If one head gets a change, the other head gets the matching one in the same piece of work, or the summary says explicitly that Android (or iOS) is not done, why, and where it is tracked (a phase doc or `docs/FUTURE_*.md`). Don't leave the other platform silently behind. Example: the Apple Health changes in 0.27.1 should have had their Health Connect counterpart.
+- A feature that truly exists on only one platform (an iOS-only API, for instance) is gated through `IPlatform` like `HasLiveWorkout` and hidden on the other; say so, don't let it just be missing.
+- Checks follow "Checks, for every phase" below, and a change to a head's own code builds that head right away (the iOS Release build for the Simulator, the Android build).
+
 For iOS, test EF Core changes with a Release build for the Simulator (full AOT). A Debug build JITs and hides runtime model-building failures.
 
 **Checks, for every phase** (this overrides a spec's own "after each sub-phase" checks, to save time and tokens):
