@@ -15,6 +15,9 @@ Phones only (the desktop is frozen, CLAUDE.md "Desktop freeze"): gate anything t
   compiled model (`dotnet ef dbcontext optimize ...`) and gets an iOS Release build for the Simulator (full AOT).
 - Keep `Contracts` backward compatible: only add optional fields, never raise `MinClientVersion` above 0.21.0.
   `ClientContractTests` and `ClientVersionTests` must pass.
+- Scrolling stays smooth: after each sub-phase that adds or changes a list or a long screen, scroll it on both phones
+  (Release build) and check for stutter or lag (CLAUDE.md, "Checks, for every phase"). The new screens in this doc
+  (backup, tips, recap, set rows with last-time text) are the ones most likely to need it.
 - Use `AppClock`, never `DateTime.Now`. A new segmented toggle uses `Views/SegmentedPill`.
 - Every user-visible change gets a `CHANGELOG.md` entry ending with a `**Migration:**` line when there is one. Commit
   subjects start with the version.
@@ -146,7 +149,22 @@ see `FUTURE_PREMIUM.md`. The free insight is the recap.
   `QrCodeView`; no server involvement. Warmups are ignored; drops never count toward PRs. Pairs with the PR card
   below, so build the image drawing once.
 
-## 5. Social (needs the server)
+## 5. Training-day reminder body (small, no schema change)
+
+The reminder that tells the user to go to the gym (the "Training day" reminder, `ReminderPlanner.Training` in
+`GymApp.Services`, scheduled by both phone heads) has a new body.
+
+- **Today:** title "Today is *workout name*" (or "Training day" when there is no name), body "Check in when you've
+  trained to keep your *N*-day streak." (or "...to start your streak.").
+- **Title: unchanged.** It stays "Today is *workout name*" (and "Training day" when there is no name).
+- **New body:** "You still have time to train today, go to the gym and start your workout!"
+- **The streak line is dropped (decided).** The body is just the new sentence; the reminder no longer says how long
+  the streak is, and the `StreakDays` text is no longer used by this reminder.
+- The wording lives in the shared planner, so iOS and Android change together; nothing in a head needs editing.
+  `ReminderPlanner` tests that check the body text must be updated.
+- The "Missed day" reminder ("Your streak is at stake") and "Welcome back" are unchanged.
+
+## 6. Social (needs the server)
 
 These change `Contracts` and the server. Plan each against `ClientContractTests` and `ClientVersionTests`, add optional
 fields only, and run the `server-compat-reviewer` agent. Server migrations are a separate command and the production
@@ -169,7 +187,8 @@ server must run `migrate` before deploy.
 2. Live workout updates: drop sets, per hand, last time on the set, quick swap.
 3. Beginner help: build a workout, tips and form tips, the weight increase hint.
 4. Weekly and monthly recap (and the image-drawing control it shares with the PR card).
-5. PR card, then reactions and weekly challenges (server work, last).
+5. Training-day reminder wording (a few lines in `ReminderPlanner`).
+6. PR card, then reactions and weekly challenges (server work, last).
 
 The numbering is the developer's call: per CLAUDE.md, a feature that needs a schema change opens a new phase
 (`0.N.0`), so expect `0.28.0` for backup and restore and later items to take their own numbers.
