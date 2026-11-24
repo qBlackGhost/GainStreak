@@ -74,6 +74,8 @@ The version is set only in `Directory.Build.props`. Before 1.0 it is `0.<phase>.
 
 ## Desktop freeze (from 0.21.0)
 
+**Lifted for the presentation (0.27.2, run from source, no desktop release):** the desktop got the Calories food log and macros (`HasFoodLog`) and the Profile Body card. It stays log-only: no live workout, no live location. Re-freeze after the presentation.
+
 Phones are the product; the desktop app is frozen at 0.21.0, its last release, kept for the developer's uni project presentation. It is slimmed only after that presentation (see `docs/PHASE_16_MOBILE_APP.md`, "Later").
 - **No desktop work:** no new desktop features, layouts or desktop-specific polish, and no more desktop releases (`build/release.sh`, `build/upload-github.sh`). Specs and phase plans target the phones only.
 - **Phone-only features are fine:** a new feature may exist only on the phones (gate it through `IPlatform`, as `HasLiveWorkout` does). On the desktop, hide it; don't build a desktop layout for it. What the desktop gets for free from shared code is fine.

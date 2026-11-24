@@ -47,7 +47,7 @@ public partial class ProfileViewModel : IClosesOnBack
     private static readonly string[] PageProperties =
     [
         nameof(IsMainPage), nameof(IsSettingsPage), nameof(IsSubPage), nameof(PageTitle), nameof(ShowsCards),
-        nameof(ShowsBodyData), nameof(ShowsWeight), nameof(ShowsHomeCity), nameof(ShowsAccountCard),
+        nameof(ShowsBodyData), nameof(ShowsHomeCity), nameof(ShowsAccountCard),
         nameof(ShowsAccountDetails), nameof(ShowsAccountDelete), nameof(ShowsVacation), nameof(ShowsNotifications),
         nameof(ShowsHealth), nameof(ShowsAppearance), nameof(ShowsBadges),
     ];
@@ -84,9 +84,6 @@ public partial class ProfileViewModel : IClosesOnBack
     public bool ShowsBodyData => Shows(ProfilePage.BodyData);
     /// <summary>Main, and the Body data page too: the setup card and Calories send people there to add their weight,
     /// and the maintenance estimate needs it.</summary>
-    /// <summary>The full weight card: the desktop only. The phones have the Body card on Main instead, and Body data shows only the
-    /// measurements (Phase 27).</summary>
-    public bool ShowsWeight => !IsPhone;
     public bool ShowsHomeCity => Shows(ProfilePage.HomeCity);
     public bool ShowsAccountDetails => Shows(ProfilePage.Account);
     public bool ShowsAccountDelete => Shows(ProfilePage.DeleteAccount);

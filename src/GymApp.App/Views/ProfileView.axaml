@@ -393,6 +393,50 @@
             <TextBlock Text="{Binding Error}" Classes="error"
                        IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 
+            <!-- The Body card (weight chart, Log, History, Body data): the phones' Main page (Phase 27) and, above the cards, the desktop -->
+            <Border Classes="card" IsVisible="{Binding IsMainPage}">
+                <StackPanel Spacing="14">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBlock Text="Body" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Border Grid.Column="1" Padding="3" CornerRadius="9" Background="{DynamicResource Fill}">
+                            <ItemsControl ItemsSource="{Binding ChartRanges}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><v:SegmentedPill SelectedIndex="{Binding ChartRangeIndex}" PillInset="0"/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PillOptionViewModel">
+                                        <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="28" Padding="10,0" FontSize="12"
+                                                Content="{Binding Name}" Command="{Binding PickCommand}"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+                    </Grid>
+                    <v:WeightTrendChart Height="270" WeighIns="{Binding ChartWeighIns}" Range="{Binding ChartRange}" Unit="{Binding WeightUnit}"/>
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <TextBox TextInputOptions.ContentType="Number" x:Name="PhoneWeightBox" Classes="field mono" MinHeight="48" FontSize="16"
+                                     PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"
+                                     AutomationProperties.Name="Today's weight"/>
+                            <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Padding="20,0" Content="Log"
+                                    Command="{Binding LogWeightCommand}"/>
+                        </Grid>
+                        <TextBlock Classes="fieldError" Text="{Binding WeightError}"
+                                   IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" Content="History" Command="{Binding ShowWeightHistoryCommand}"/>
+                        <Button Grid.Column="1" Classes="btn outline phoneOnly" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.BodyData}">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="Body data" VerticalAlignment="Center"/>
+                                <v:Icon Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="14" Height="14" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
             <Grid x:Name="Columns" ColumnDefinitions="3*,2*" RowDefinitions="Auto,Auto" ColumnSpacing="24"
                   IsVisible="{Binding ShowsCards}">
                 <StackPanel x:Name="LeftColumn" Spacing="24">
@@ -674,74 +718,6 @@
                             <!-- 0.27.1: body data done and no calorie goal yet (first-time setup): the next step, here -->
                             <Button Classes="btn primary" HorizontalAlignment="Stretch" MinHeight="48" Content="Set calorie goal"
                                     Command="{Binding SetCalorieGoalCommand}" IsVisible="{Binding ShowSetCalorieGoal}"/>
-                        </StackPanel>
-                    </Border>
-                    <!-- ===== Weight ===== -->
-                    <Border Classes="card" IsVisible="{Binding ShowsWeight}">
-                        <StackPanel Spacing="18">
-                            <TextBlock Text="Weight" Classes="h2"/>
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <StackPanel Spacing="4">
-                                    <TextBlock>
-                                        <Run Text="{Binding CurrentWeightNumber}" FontSize="44" FontWeight="ExtraBold"/><Run Text=" "/><Run
-                                             Text="{Binding WeightUnit, Mode=OneWay}" FontSize="18" FontWeight="Bold"
-                                             Foreground="{DynamicResource Soft}"/>
-                                    </TextBlock>
-                                    <TextBlock Text="{Binding CurrentWeightDate}" FontSize="13" Classes="muted"/>
-                                </StackPanel>
-                                <Border Grid.Column="1" Classes="pill" Padding="12,5" VerticalAlignment="Bottom" IsVisible="{Binding HasHistory}">
-                                    <TextBlock Text="{Binding DeltaText}" FontSize="13" FontWeight="SemiBold" Classes="soft"/>
-                                </Border>
-                            </Grid>
-                            <!-- Trend: the last weigh-ins, oldest to newest -->
-                            <StackPanel Spacing="6" IsVisible="{Binding HasTrend}">
-                                <!-- Tap a dot for that day's weight, like the Health app -->
-                                <v:WeightChart Points="{Binding TrendPoints}" Height="150"
-                                               AutomationProperties.Name="Weight trend. Tap a point to see its weight."/>
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{Binding TrendFirstLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding TrendLastLabel}" Classes="mono" FontSize="11" Foreground="{DynamicResource Faint}"/>
-                                </Grid>
-                            </StackPanel>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock FontSize="12" Classes="muted">
-                                    <Run Text="Today's weight ("/><Run Text="{Binding WeightUnit}"/><Run Text=")"/>
-                                </TextBlock>
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                    <TextBox TextInputOptions.ContentType="Number" x:Name="WeightBox" Classes="field mono" MinHeight="48" FontSize="16"
-                                             PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"/>
-                                    <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Content="{Binding LogWeightLabel}"
-                                            Command="{Binding LogWeightCommand}"/>
-                                </Grid>
-                                <TextBlock Classes="fieldError" Text="{Binding WeightError}"
-                                           IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                <TextBlock Text="One weigh-in per day. Logging again today replaces today's entry." FontSize="12"
-                                           Classes="muted"/>
-                            </StackPanel>
-
-                            <StackPanel IsVisible="{Binding HasHistory}">
-                                <TextBlock Text="RECENT WEIGH-INS" Classes="caps" FontWeight="Bold" LetterSpacing="1.4" Margin="0,0,0,6"/>
-                                <ItemsControl ItemsSource="{Binding History}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:WeightEntryViewModel">
-                                            <Border BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" MinHeight="48">
-                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding DateText}" FontSize="14" Classes="light" VerticalAlignment="Center"/>
-                                                    <TextBlock Grid.Column="1" Text="{Binding WeightText}" Classes="mono" FontSize="14"
-                                                               FontWeight="Bold" VerticalAlignment="Center"/>
-                                                    <Button Grid.Column="2" Classes="btn outline small" Width="36" Height="36" MinHeight="36"
-                                                            Padding="0" BorderBrush="{DynamicResource Line2}" Foreground="{DynamicResource Muted}"
-                                                            Command="{Binding DeleteCommand}" ToolTip.Tip="Delete"
-                                                            AutomationProperties.Name="{Binding DateText, StringFormat='Delete weigh-in from {0}'}">
-                                                        <v:Icon Data="{StaticResource IcTrash}" Width="16" Height="16"/>
-                                                    </Button>
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -1113,50 +1089,6 @@
                 </StackPanel>
             </Grid>
 
-            <!-- Phones, Main (Phase 27): the Body card (weight chart, Log, History, Body data) and Vacation on its own -->
-            <Border Classes="card phoneOnly" IsVisible="{Binding IsMainPage}">
-                <StackPanel Spacing="14">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <TextBlock Text="Body" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <Border Grid.Column="1" Padding="3" CornerRadius="9" Background="{DynamicResource Fill}">
-                            <ItemsControl ItemsSource="{Binding ChartRanges}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate><v:SegmentedPill SelectedIndex="{Binding ChartRangeIndex}" PillInset="0"/></ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:PillOptionViewModel">
-                                        <Button Classes="seg" Classes.on="{Binding IsSelected}" MinHeight="28" Padding="10,0" FontSize="12"
-                                                Content="{Binding Name}" Command="{Binding PickCommand}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Border>
-                    </Grid>
-                    <v:WeightTrendChart Height="270" WeighIns="{Binding ChartWeighIns}" Range="{Binding ChartRange}" Unit="{Binding WeightUnit}"/>
-                    <StackPanel Spacing="6">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                            <TextBox TextInputOptions.ContentType="Number" x:Name="PhoneWeightBox" Classes="field mono" MinHeight="48" FontSize="16"
-                                     PlaceholderText="{Binding WeightWatermark}" Text="{Binding WeightInput}"
-                                     AutomationProperties.Name="Today's weight"/>
-                            <Button Grid.Column="1" Classes="btn primary" MinHeight="48" Padding="20,0" Content="Log"
-                                    Command="{Binding LogWeightCommand}"/>
-                        </Grid>
-                        <TextBlock Classes="fieldError" Text="{Binding WeightError}"
-                                   IsVisible="{Binding WeightError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                    </StackPanel>
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
-                        <Button Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center" Content="History" Command="{Binding ShowWeightHistoryCommand}"/>
-                        <Button Grid.Column="1" Classes="btn outline" MinHeight="44" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                VerticalContentAlignment="Center" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.BodyData}">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="Body data" VerticalAlignment="Center"/>
-                                <v:Icon Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="14" Height="14" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                </StackPanel>
-            </Border>
             <Border Classes="card phoneOnly" Padding="0" ClipToBounds="True" IsVisible="{Binding IsMainPage}">
                 <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Vacation}">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">

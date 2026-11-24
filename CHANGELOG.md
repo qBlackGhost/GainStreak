@@ -2,6 +2,12 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.27.2
+
+- **Desktop catches up for the presentation (run from source, no release):** the desktop app now has the phones' **Calories** screen (ring, macro bars, **Manage food**, past-day card, macro goals) and the **Body** card on Profile (weight chart, **Log**, **History**). The old Weight card is gone.
+- The desktop still has no live workout or live location: you log a workout you already did that day, as before.
+- **Migration:** none.
+
 ## 0.27.1
 
 - **Invite links from Instagram (and other apps' browsers) open the app:** Instagram, Facebook, TikTok and similar apps open links in their own browser, which never hands an invite link to GainStreak, so your friend always ended up in TestFlight, even with the app installed. A phone that opens an invite link in a browser now sees a page with **Open in GainStreak**, which opens the app at the invite, and a button to get the app. On Android, **Open in GainStreak** goes to Google Play when the app isn't installed. If nothing happens, the page says to open the link in Safari or Chrome. Your friend needs this version of the app for **Open in GainStreak** to go straight to the invite.

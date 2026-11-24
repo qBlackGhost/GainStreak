@@ -40,6 +40,9 @@ public sealed class DesktopPlatform : IPlatform
     /// <summary>False for the desktop app (frozen at 0.21.0); the TestBench turns it on with its phone workout setting.</summary>
     public bool HasBadges { get; init; }
 
+    /// <summary>True from the presentation update: the food diary and macros (Phase 26 and 27) work on the desktop too.</summary>
+    public bool HasFoodLog => true;
+
     public void OpenStorePage() { }
 
     // No reminders on the desktop (16g): Profile hides them

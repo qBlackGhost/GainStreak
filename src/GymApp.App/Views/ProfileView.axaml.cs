@@ -38,7 +38,6 @@ public partial class ProfileView : UserControl
 
         // Enter submits, like the buttons (city search runs only on purpose: Nominatim allows one request a second)
         CityBox.KeyDown += (_, e) => Run(e, vm => vm.SearchCityCommand);
-        WeightBox.KeyDown += (_, e) => Run(e, vm => vm.LogWeightCommand);
         PhoneWeightBox.KeyDown += (_, e) => Run(e, vm => vm.LogWeightCommand);
     }
 

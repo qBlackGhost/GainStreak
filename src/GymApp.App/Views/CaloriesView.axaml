@@ -489,7 +489,7 @@
 
         <!-- ===== Phones (Phase 27): today, Add food, the last 7 days (takes the rest of the height), goal and maintenance ===== -->
         <!-- Phones (Phase 27): the Calories card, Manage food and the last 7 days fill the screen; the goal rows are below it -->
-        <StackPanel x:Name="PhonePage" Margin="16,10,16,12" Spacing="10" IsVisible="{Binding HasFoodLog}">
+        <StackPanel x:Name="PhonePage" Classes="phone" MaxWidth="560" Margin="16,10,16,12" Spacing="10" IsVisible="{Binding HasFoodLog}">
         <Grid x:Name="FoldPage" RowSpacing="10" RowDefinitions="Auto,Auto,Auto,*">
             <StackPanel Spacing="2" IsVisible="{Binding HasMessage}">
                 <TextBlock Text="{Binding Info}" Foreground="{DynamicResource AccentInk}" FontWeight="SemiBold" TextWrapping="Wrap"
