@@ -71,6 +71,34 @@ Working file, **not committed until reviewed**. Nothing in any database was chan
 | Iași | Hala Centrală | Str. A. Panu 46 | 47.16146, 27.59044 | 0744 384 287 |
 | Constanța | Tomis Mall | Str. Ștefan cel Mare 36-40 | 44.17841, 28.64669 | 0774 550 619 |
 
+## Other towns (checked 2026-11-25, OSM within 500 m of the chain's pin)
+
+| Club | Address | Pin (chain) | OSM | Verdict |
+|---|---|---|---|---|
+| Bistrița | OK Shopping Center, drumul Sigmirului | 47.12778, 24.46929 | n13660724545 "18Gym", 76 m | In OSM |
+| Iernut | Str. Iuliu Maniu 4 | 46.44777, 24.22884 | n10139549641 "18GYM", 60 m | In OSM |
+| Târgu Mureș Aleea Carpați | Aleea Carpați 57 | 46.55663, 24.56270 | n9481223162 "18 Gym", 8 m | In OSM |
+| Mediaș | Mihai Eminescu 4 | 46.16194, 24.34911 | n14158757619 "18 Gym", 249 m | Probably in OSM; the pins differ by 250 m, check |
+| Târgu Mureș Pandurilor | Bd. Pandurilor 98 | 46.53292, 24.58145 | n9483865470 "18 Gym", 495 m | Unsure: may be this club with a bad pin, or a second 18Gym |
+| Târgu Mureș Tudor Auchan | Bd. 1 Decembrie 1918 nr. 291 (Auchan) | 46.53313, 24.59324 | none (Agora Fitness Center 34 m, Gold Gym Tudor 140 m are other gyms) | **Missing** |
+| Târgu Mureș Mureș Mall | Piața Victoriei 14, et. 2 | 46.54000, 24.55777 | none | **Missing** |
+| Alba Iulia | Str. Tudor Vladimirescu 50A | 46.07985, 23.58480 | none | **Missing** |
+| Arad (Agora) | Calea Aurel Vlaicu 267 | 46.20081, 21.28101 | none | **Missing** |
+| Bacău (Central Plaza) | Str. Erou Ciprian Pintea 29 | 46.55567, 26.91697 | none (Alternativ Sport Club, 350 m, is another gym) | **Missing** |
+| Baia Mare | Bd. Unirii 10 | 47.65412, 23.56719 | none | **Missing** |
+| Câmpia Turzii | Str. Dr. Ioan Rațiu 14 | 46.56815, 23.78201 | none | **Missing** |
+| Luduș | Str. Viitorului 10 | 46.47903, 24.09175 | none | **Missing** |
+| Piatra Neamț | Bd. Nicolae Dăscălescu 260 | 46.91678, 26.39080 | none | **Missing** |
+| Satu Mare | Str. Corneliu Coposu 6 | 47.79028, 22.87379 | none (Robi Fitness, 141 m, is another gym) | **Missing** |
+| Sibiu Dumbrava | Piața Unirii 10 | 45.79081, 24.14947 | none (Power Kick Fitness, 177 m, is another gym) | **Missing** |
+| Turda | Calea Victoriei 100 | 46.55709, 23.80449 | none | **Missing** |
+
+Timișoara and Oradea have club pages on 18gym.ro but are not in the store locator, so they have no address or pin here;
+Timișoara's 18GYM was not in OSM at the time of the Timișoara review either.
+
+**Totals, all 48 locator clubs:** about 15 are in OSM, 2 are under the wrong name (Stay Fit Gym → 18GYM Rahovei, Fortuna
+→ 18GYM Grigorescu), about 30 are missing.
+
 **Totals for the checked cities:** 18GYM has 36 clubs in Cluj, București, Brașov, Iași and Constanța; OSM has about 10
 of them right, 2 under the wrong name, and about 20 missing. In the review of all the chains so far, 18GYM, Stay Fit
 and Downtown Fitness are the biggest gaps.
