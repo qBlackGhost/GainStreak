@@ -57,16 +57,22 @@ unverified workout and reduced points.
 - The developer approves or rejects each line of the table.
 - Approved changes go into an **override layer on the server**, not into the `OsmGyms` rows: the weekly import
   re-syncs `OsmGyms` by OpenStreetMap id and would undo a direct edit. The layer (a new server table, with a migration;
-  names to be designed) can **hide** an OpenStreetMap gym (closed or moved) and **add** a gym that has no OpenStreetMap
-  id (new or missing). `GET /v1/gyms` applies it after the import data, so it survives every import.
+  names to be designed) can **hide** an OpenStreetMap gym (closed or moved), **rename** one (same place, new owner or
+  name; it keeps the OpenStreetMap id, so past workouts keep pointing to the same gym; decided in the Timișoara review)
+  and **add** a gym that has no OpenStreetMap id (new or missing). `GET /v1/gyms` applies it after the import data, so
+  it survives every import.
+- **When OpenStreetMap catches up** (the developer may fix gyms there too, `docs/OSM_EDITING_GUIDE.md`), an override
+  must not double up: the import should report an added gym that now has an OpenStreetMap gym within about 50 m, a
+  rename whose OpenStreetMap name now matches, and a hide whose gym is gone from the data, so the developer can drop
+  that override line.
 - Applied only through a reviewed change the developer can read first (a migration or an admin command like
   `migrate`), never by editing the live database by hand. Production changes always need the developer's go-ahead.
 - **Contracts and the app:** an added gym has no `OsmType` or `OsmId`, so the gym record sent to the app needs an
   optional id of the server's own for these (additive, old builds ignore it and never call this endpoint anyway;
   confirm with the `server-compat-reviewer` agent). The app's local `Gym` (and the rule that a gym a `WorkoutLog`
   points to is never deleted, only deactivated) must handle a hidden gym and an added one, including a hidden gym that
-  past workouts point to. Tests: the layer survives an import, a hidden gym leaves the box response, an added gym
-  appears, and the app deactivates a hidden gym without deleting it.
+  past workouts point to. Tests: the layer survives an import, a hidden gym leaves the box response, a renamed gym keeps
+  its id with the new name, an added gym appears, and the app deactivates a hidden gym without deleting it.
 - Both phones: the work is the server plus shared client code, with no platform-specific part.
 - Attribution: the OpenStreetMap data stays under its license (credit it where the map credits it); the added gyms
   are the app's own data.
