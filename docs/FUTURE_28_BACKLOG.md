@@ -242,6 +242,26 @@ higher weight thresholds, and the existing strength badges count the upper body.
 - **0.28 launch: re-earn from history.** On the first start of 0.28 the app clears earned badges and recalculates them
   from the logged sets with the new rules, with the one "You earned N badges from your history" sheet and no unlock
   sheets. No other user data changes. It runs once (a stored flag), per phone.
+- **Weigh-in Habit counts Health weigh-ins, but only from when the user started using the app.** Today (0.27.1)
+  Weigh-in Habit skips every weigh-in imported from Apple Health (`WeighIn.FromHealth`), so a smart-scale user gets no
+  credit. Change it: weigh-ins imported from Health **count**, but only those dated **on or after the day the user
+  started using the app**. Weigh-ins from before that day never count, so a user who shares their whole Health history
+  (or whose last weeks of weigh-ins are imported on first connect) doesn't get the badge from past data; it starts
+  from that point on.
+  - **Cutoff (decided):** the local date the user first started using the app on this account
+    (`User.CreatedAt`, as a local date), not the day Apple Health was connected. A
+    restore from backup (section 1) must keep the original cutoff, so a new phone doesn't reset it or let the old
+    history count.
+  - Weigh-ins typed in the app always count, as today. A weigh-in typed on a day that already has an imported one
+    replaces it (existing behaviour), and then counts as typed.
+  - **Bodyweight Club** keeps using the latest weight (typed or from Health) as the body weight for its multiple;
+    that is a value, not a count, so the cutoff doesn't change it (decided).
+  - Applies to both phones: `FromHealth` covers Apple Health (iOS) and Health Connect (Android, Phase 23); the rule
+    lives in shared code (`BadgeInputs`, `BadgeEvaluator`, `BadgeCatalog`), so one change covers both.
+  - The 0.28 re-earn-from-history run uses this rule, so an existing user's Weigh-in Habit is recalculated once.
+  - Tests: a Health weigh-in before the cutoff doesn't count, one on the cutoff day does, an imported flood of past
+    weeks adds nothing, a Health weigh-in after the cutoff counts, a typed weigh-in always counts, and the weeks-in-a-row
+    logic still breaks on a missing week.
 - Friends see badges through the server: new badge ids are additive (old clients ignore unknown ones), but confirm
   with the `server-compat-reviewer` agent, and plan what a friend on an older build sees.
 - Both phones; shared code and the badge artwork (new leg glyphs in the badge set).
