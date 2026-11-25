@@ -5,6 +5,7 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 ## 0.27.2
 
 - **Desktop catches up for the presentation (run from source, no release):** the desktop app now has the phones' **Calories** screen (ring, macro bars, **Manage food**, past-day card, macro goals) and the **Body** card on Profile (weight chart, **Log**, **History**). The old Weight card is gone.
+- **Map: the gym card's button is now "Set my gym":** it used to say "Check in first" until you had logged a workout, then "I trained here today". It now makes that gym **your gym** (the white dot, which distances are measured from) in one tap, with no workout needed, and shows "Your gym" once it is. Today's gym is still set from the Today line and Home's gym prompt, and a gym in a city you're only visiting can't be your gym. Phones and desktop (shared screen).
 - The desktop still has no live workout or live location: you log a workout you already did that day, as before.
 - **Migration:** none.
 

@@ -522,7 +522,7 @@
                                                 </TextBlock>
                                                 <Button Grid.Column="1" Classes="btn small" Classes.primary="{Binding CanPickSelected}"
                                                         Classes.outline="{Binding !CanPickSelected}" MinHeight="36" Content="{Binding SelectedPickLabel}"
-                                                        Command="{Binding TrainedHereTodayCommand}" IsEnabled="{Binding !IsSelectedToday}"/>
+                                                        Command="{Binding SetMyGymCommand}" IsEnabled="{Binding CanPickSelected}"/>
                                             </Grid>
                                         </Border>
                                     </StackPanel>

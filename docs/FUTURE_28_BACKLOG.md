@@ -28,9 +28,64 @@ Rest timer (no per-exercise timers, rest notifications or countdown, and a drop 
 calculator, RPE or reps in reserve, and the deload prompt. Supersets and import from notes are deferred, not part of
 0.28 unless the developer says so (don't add a `SupersetGroup` or an import screen).
 
-## 1. Data safety (build first)
+## 0. Gym data cleanup and the override layer (build first)
 
-Workouts live only on the device, so a lost phone loses all history. Build this before everything else, since it protects the most.
+The gym list is a copy of OpenStreetMap, imported weekly on the server (`GymImport`, `OsmGyms`, served by `GET /v1/gyms`),
+so it is only as fresh as OpenStreetMap: a closed gym stays until a volunteer removes it, and a new one is missing until
+a volunteer adds it (example: Gym One 1 in Timișoara is at an old location that closed years ago, and its new location
+is not listed). It matters beyond the map: a live workout is verified by being near a gym, so a missing gym means an
+unverified workout and reduced points.
+
+**Plan (decided): a read-only pilot in Timișoara, then a reviewed override layer, then the other cities.**
+
+### 0a. Pilot in Timișoara (read-only, changes nothing)
+
+- Fetch Timișoara's gyms read-only: from the public OpenStreetMap servers (Overpass), or from a list exported from the
+  server if the developer provides one.
+- For each gym, search the web (its site, Facebook page, listings) to check whether it still seems open and where it is
+  now. Also look for well-known gyms missing from the list (the big chains and well-reviewed local gyms).
+- Write a **review table** (a working file in `docs/`, for example `docs/GYM_REVIEW_TIMISOARA.md`, not committed until
+  the developer has reviewed it): one line per gym with the status (still open, closed, moved, missing from the list,
+  unsure), what was found, source links, a confidence level, and for a moved or missing gym its address and coordinates.
+- Rules for the research: no copying from Google Maps or other sources whose terms forbid storing the data; coordinates
+  come from an address lookup on OpenStreetMap's public geocoder (with its usage limits); anything not clear stays
+  "unsure" and is never guessed. Small gyms with only a Facebook page are the weak spot; say so in the table.
+- **Nothing in any database is changed in this step.**
+
+### 0b. Review, then the override layer
+
+- The developer approves or rejects each line of the table.
+- Approved changes go into an **override layer on the server**, not into the `OsmGyms` rows: the weekly import
+  re-syncs `OsmGyms` by OpenStreetMap id and would undo a direct edit. The layer (a new server table, with a migration;
+  names to be designed) can **hide** an OpenStreetMap gym (closed or moved) and **add** a gym that has no OpenStreetMap
+  id (new or missing). `GET /v1/gyms` applies it after the import data, so it survives every import.
+- Applied only through a reviewed change the developer can read first (a migration or an admin command like
+  `migrate`), never by editing the live database by hand. Production changes always need the developer's go-ahead.
+- **Contracts and the app:** an added gym has no `OsmType` or `OsmId`, so the gym record sent to the app needs an
+  optional id of the server's own for these (additive, old builds ignore it and never call this endpoint anyway;
+  confirm with the `server-compat-reviewer` agent). The app's local `Gym` (and the rule that a gym a `WorkoutLog`
+  points to is never deleted, only deactivated) must handle a hidden gym and an added one, including a hidden gym that
+  past workouts point to. Tests: the layer survives an import, a hidden gym leaves the box response, an added gym
+  appears, and the app deactivates a hidden gym without deleting it.
+- Both phones: the work is the server plus shared client code, with no platform-specific part.
+- Attribution: the OpenStreetMap data stays under its license (credit it where the map credits it); the added gyms
+  are the app's own data.
+
+### 0c. The other cities
+
+- If the pilot works well, repeat 0a and 0b for the other Romanian cities, biggest first (București, Cluj-Napoca,
+  Iași, Constanța and so on), one review table per city. Each city goes through the same review before anything is
+  applied.
+
+### Not decided yet (ideas for later)
+
+In-app **Report** buttons ("Closed", "Moved", "Wrong name") and an **Add a gym here** button feeding the same override
+layer, promotion from several users' verified workouts, showing how long ago a gym was last edited, and loading more
+countries on the server so the map is fast everywhere. None of these is in 0.28 until the developer picks them.
+
+## 1. Data safety
+
+Workouts live only on the device, so a lost phone loses all history. Build this right after the gym data cleanup (section 0), since it protects the most.
 
 - **Backup and restore.** Back up the app's SQLite data (and the session settings that matter) to a file the user
   chooses, or to iCloud on iOS. Restore replaces local data after a clear confirmation. Open design points: what the
@@ -339,15 +394,16 @@ server must run `migrate` before deploy.
 
 ## Order and versions
 
-1. Backup and restore, CSV export.
-2. Live workout: drop sets, per hand, last time on the set, quick swap, then the requested changes (add exercise,
+1. Gym data cleanup: the Timișoara pilot, then the override layer, then the other cities.
+2. Backup and restore, CSV export.
+3. Live workout: drop sets, per hand, last time on the set, quick swap, then the requested changes (add exercise,
    warm-ups in the progress, island fix, top of page, streak line hidden, ring animation, cardio as its own session).
-3. PRs count per session.
-4. Leg and upper-body badges (and the 0.28 badge re-earn).
-5. Beginner help: build a workout, tips and form tips, the weight increase hint.
-6. Weekly and monthly recap (and the image-drawing control it shares with the PR card).
-7. Training-day reminder body (a few lines in `ReminderPlanner`).
-8. PR card, then reactions and weekly challenges (server work, last).
+4. PRs count per session.
+5. Leg and upper-body badges (and the 0.28 badge re-earn).
+6. Beginner help: build a workout, tips and form tips, the weight increase hint.
+7. Weekly and monthly recap (and the image-drawing control it shares with the PR card).
+8. Training-day reminder body (a few lines in `ReminderPlanner`).
+9. PR card, then reactions and weekly challenges (server work, last).
 
 The numbering is the developer's call: per CLAUDE.md, a feature that needs a schema change opens a new phase
 (`0.N.0`), so expect `0.28.0` for backup and restore and later items to take their own numbers.

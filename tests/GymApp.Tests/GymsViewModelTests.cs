@@ -95,4 +95,38 @@ public class GymsViewModelTests : IDisposable
         Assert.Equal(newGym, vm.MyPin?.GymId);
         Assert.Null(vm.Error);
     }
+
+    [Fact] public async Task GymCard_SetMyGym_MakesItYourGym_WithoutALoggedWorkout()
+    {
+        var vm = NewMap();
+        await LoadedAsync(vm);
+
+        vm.SelectGym(_gym);
+        Assert.True(vm.CanPickSelected);
+        Assert.Equal("Set my gym", vm.SelectedPickLabel);
+
+        await vm.SetMyGymCommand.ExecuteAsync(null);
+
+        Assert.Null(vm.Error);
+        using var db = _db.CreateDbContext();
+        Assert.Equal(_gym, db.UserProfiles.Single(p => p.UserId == _me).HomeGymId);
+        Assert.False(vm.CanPickSelected);
+        Assert.Equal("Your gym", vm.SelectedPickLabel);
+        Assert.Contains("is now your gym", vm.Toast);
+    }
+
+    [Fact] public async Task GymCard_SetMyGym_KeepsTodaysGym()
+    {
+        var other = AddGym("Stay Fit", 8);
+        LogToday(other);
+        var vm = NewMap();
+        await LoadedAsync(vm);
+
+        vm.SelectGym(_gym);
+        await vm.SetMyGymCommand.ExecuteAsync(null);
+
+        using var db = _db.CreateDbContext();
+        Assert.Equal(other, db.WorkoutLogs.Single(w => w.UserId == _me && w.Date == AppClock.Today).GymId);
+        Assert.Equal(_gym, db.UserProfiles.Single(p => p.UserId == _me).HomeGymId);
+    }
 }

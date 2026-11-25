@@ -227,7 +227,6 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
     [ObservableProperty] public partial string SelectedMine { get; set; } = "";
     [ObservableProperty] public partial string SelectedPickLabel { get; set; } = "";
     [ObservableProperty] public partial bool CanPickSelected { get; set; }
-    [ObservableProperty] public partial bool IsSelectedToday { get; set; }
 
     // Toast after today's gym changed
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowMapNote))] public partial string? Toast { get; set; }
@@ -641,20 +640,24 @@ public partial class GymsViewModel : ViewModelBase, IClosesOnBack
 
         var mine = _myVisits.GetValueOrDefault(gymId);
         SelectedMine = mine == 1 ? "1 visit" : $"{mine} visits";
-        var logged = _today?.LoggedToday == true;
-        IsSelectedToday = logged && _today!.Gym?.Id == gymId;
-        CanPickSelected = !IsSelectedToday && row is not null;
-        SelectedPickLabel = !logged ? "Check in first" : IsSelectedToday ? "Logged here today" : "I trained here today";
+        // "Set my gym" (0.27.2): the gym becomes your gym. Your gym stays in your home city, so a gym in a city you're
+        // only visiting can't be picked here; today's gym is set from the Today line and Home's prompt
+        var isMine = gymId == _homeGym?.Id;
+        CanPickSelected = !isMine && row is not null && (_homeCity is null || ShownCity?.Id == _homeCity.Id);
+        SelectedPickLabel = isMine ? "Your gym" : "Set my gym";
     }
 
-    /// <summary>The gym card's button: today's gym becomes this one. Without a check-in today it goes to the
-    /// Dashboard instead, since a check-in needs the 50% rule (the gym is asked right after).</summary>
+    /// <summary>The gym card's button: this gym becomes your gym (the white dot; distances are measured from it). Today's
+    /// log keeps its gym.</summary>
     [RelayCommand]
-    private async Task TrainedHereTodayAsync()
+    private async Task SetMyGymAsync()
     {
-        if (SelectedGymId is not { } id) return;
-        if (_today?.LoggedToday != true) { _shell().ShowHome(); return; }
-        await SetTodaysGymAsync(id, makeHome: false);
+        if (SelectedGymId is not { } id || !CanPickSelected) return;
+        await SetHomeGymAsync(id);
+        if (Error is not null) return;
+        CanUndoToast = false;
+        Toast = $"{SelectedName} is now your gym.";
+        ShowGymCard(id);
     }
 
     private async Task<bool> SetTodaysGymAsync(int? gymId, bool makeHome)
