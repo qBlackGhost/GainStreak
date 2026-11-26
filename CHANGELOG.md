@@ -10,7 +10,8 @@ Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&g
 - **Profile:** only one **Vacation** card shows (phones showed two), and the **Calorie goal and maintenance** button is gone; the goal is on the Calories screen. On the desktop the two columns are balanced: **Home city** moved under **Body data**.
 - **Calories on the desktop:** a wide window shows the screen in two columns, today's card and the goal on the left, **Last 7 days** on the right.
 - **Home on the desktop:** **Calories** and **Friends** sit side by side on top, with **Recent PRs** and **Today's workout** below; a hidden card no longer leaves a gap.
-- **TestBench:** **Load demo data** (or `--seed-demo`) fills a local demo account, alex, with five weeks of workouts, weigh-ins, a week of food, badges and four friends in Timișoara who share their gym check-ins on the map. The TestBench now always shows badges.
+- **Create account:** the **Terms of Use** checkbox no longer overlaps its text.
+- **TestBench:** **Load demo data** (or `--seed-demo`) fills a local demo account, alex, with five weeks of workouts, weigh-ins, a week of food, badges and four friends in Timișoara who share their gym check-ins on the map. There is also an empty account, new_user, for showing the first start. The TestBench now always shows badges.
 - **Migration:** none.
 
 ## 0.27.1

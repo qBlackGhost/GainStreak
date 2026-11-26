@@ -19,6 +19,8 @@ public static class DemoData
 {
     public const string Password = "demo1234";
     public const string MainUser = "alex";
+    /// <summary>An account with nothing on it, for showing the first start (profile setup, empty Home).</summary>
+    public const string EmptyUser = "new_user";
 
     private sealed record Person(string Username, int Weeks, int SkipEvery, double Strength, double WeightKg, Sex Sex, int Age, double HeightCm);
 
@@ -67,6 +69,14 @@ public static class DemoData
             }
             if (existing is not null) ids[p.Username] = existing.Id;
         }
+        // The empty account: registered only, never given a profile, city, workouts or friends
+        await using (var db = await dbFactory.CreateDbContextAsync())
+            if (!await db.Users.AnyAsync(u => u.Username == EmptyUser))
+            {
+                var r = await accounts.RegisterAsync(EmptyUser, $"{EmptyUser}@demo.test", Password);
+                if (!r.Success) problems.Add($"{EmptyUser}: {r.Error}");
+            }
+
         if (!ids.ContainsKey(MainUser)) return $"Could not create the demo account. {string.Join("; ", problems)}";
 
         // 2. Each person: body data, a split with exercises, five weeks of workouts, weigh-ins
@@ -102,7 +112,7 @@ public static class DemoData
         await SeedBadgesAsync(sp, ids);
 
         var tail = problems.Count == 0 ? "" :$" ({problems.Count} problem(s): {string.Join("; ", problems.Take(3))})";
-        return $"Demo data loaded. Sign in as {MainUser} (password {Password}). Today's workout is open to log live.{tail}";
+        return $"Demo data loaded. Sign in as {MainUser} (password {Password}). Today's workout is open to log live. {EmptyUser} (same password) is empty.{tail}";
     }
 
     private static async Task SeedPersonAsync(IServiceProvider sp, IDbContextFactory<AppDbContext> dbFactory, int userId, Person p, List<string> problems)
@@ -195,8 +205,8 @@ public static class DemoData
             .OrderBy(g => g.Id).ToListAsync();
         if (gyms.Count == 0) { problems.Add("Timișoara has no gyms yet"); return; }
 
-        // Home city for every account, the test ones too
-        foreach (var userId in await db.Users.Select(u => u.Id).ToListAsync())
+        // Home city for every account, the test ones too (not the empty one)
+        foreach (var userId in await db.Users.Where(u => u.Username != EmptyUser).Select(u => u.Id).ToListAsync())
         {
             var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
             if (profile is null) { profile = new UserProfile { UserId = userId }; db.UserProfiles.Add(profile); }
