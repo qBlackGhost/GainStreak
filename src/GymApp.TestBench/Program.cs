@@ -29,11 +29,23 @@ sealed class Program
         AppClock.Offset = TimeSpan.FromDays(settings.DayOffset);
         // Local accounts and friends by default: the server refuses a clock more than 2 days off
         GymApplication.LocalSocial = !settings.ServerSocial;
-        GymApplication.Platform = new DesktopPlatform { HasLiveWorkout = settings.PhoneWorkout, HasBadges = settings.PhoneWorkout, Location = Location };
+        GymApplication.Platform = new DesktopPlatform { HasLiveWorkout = settings.PhoneWorkout, HasBadges = true, Location = Location };
 
         GymApplication.MainWindowCreated = main =>
         {
             main.Title = "GainStreak (TestBench)";
+            // --seed-demo: load the presentation's data, write the outcome next to the data and quit
+            if (Array.IndexOf(args, "--seed-demo") >= 0)
+                main.Opened += async (_, _) =>
+                {
+                    string result;
+                    try { result = await DemoData.LoadAsync(GymApplication.Services); }
+                    catch (Exception e) { result = "Failed: " + e; }
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(BenchSettings.Root, "seed.log"), result);
+                    // Opened can fire before the lifetime has finished starting, and Shutdown then crashes; the data is
+                    // saved by now, so just leave
+                    Environment.Exit(result.StartsWith("Failed") ? 1 : 0);
+                };
             main.Opened += (_, _) => new AdminWindow { DataContext = new AdminViewModel(settings) }.Show(main);
         };
 

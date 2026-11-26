@@ -392,6 +392,27 @@ server must run `migrate` before deploy.
   design: how a challenge starts (one friend invites, or an automatic weekly one), how volume is uploaded (stats are
   uploaded already; volume is not), and what happens when someone joins late.
 
+## 9. Inbox badge shows only after opening the Inbox (bug fix)
+
+The red number next to Inbox (the sidebar on the desktop, the app bar on the phones) must show for any new
+notification, not only after the user has opened the Inbox once.
+
+- **What happens today:** `InboxService.UnreadCount` is 0 until something calls `GetAsync` or `RefreshUnreadAsync`
+  (`GymApp.Services/InboxService.cs`). It is refreshed only from a few places (`HomeViewModel` after some loads,
+  `FriendsViewModel` after accepting, `MainViewModel` on a friend push), and `SessionService.Changed` resets it to 0.
+  So a request or notification that arrives while the user is on another screen, or right after sign-in, shows no number
+  until they open the Inbox.
+- **Wanted:** refresh the count (a) right after sign-in and on app start, (b) when the app returns to the foreground
+  (iOS and Android both), (c) after each social sync and each Friends, Home and Leaderboard load, and (d) on a slow timer
+  while the app is open (about every 60 seconds, paused offline). A push for a friend event refreshes it at once
+  (already done for Phase 22 pushes; check it also covers a request that is accepted or declined).
+- **Rules:** the refresh only reads and sets the number (no marking as seen); an offline refresh leaves the last number
+  alone instead of clearing it; opening the Inbox still clears it with `MarkAllRead`. Keep it cheap: one inbox read per
+  refresh, never on every scroll.
+- **Both phones and the desktop:** the count lives in shared code, so the foreground hook is the only per-head part
+  (`IPlatform` or the existing lifecycle seam). Tests in `InboxServiceTests`: count appears without a prior `GetAsync`
+  of the screen, survives an offline refresh, and goes to 0 after `MarkAllRead`.
+
 ## Before the 1.0 App Store launch
 
 - **Wipe all badges to zero** when 1.0 launches on the App Store (a one-time reset on the first start of 1.0, with
@@ -409,7 +430,8 @@ server must run `migrate` before deploy.
 6. Beginner help: build a workout, tips and form tips, the weight increase hint.
 7. Weekly and monthly recap (and the image-drawing control it shares with the PR card).
 8. Training-day reminder body (a few lines in `ReminderPlanner`).
-9. PR card, then reactions and weekly challenges (server work, last).
+9. Inbox badge refresh (small bug fix, no schema change; can ship first).
+10. PR card, then reactions and weekly challenges (server work, last).
 
 The numbering is the developer's call: per CLAUDE.md, a feature that needs a schema change opens a new phase
 (`0.N.0`), so expect `0.28.0` for backup and restore and later items to take their own numbers.

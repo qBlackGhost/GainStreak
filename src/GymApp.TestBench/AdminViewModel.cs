@@ -211,6 +211,18 @@ public partial class AdminViewModel : ObservableObject
 
     [RelayCommand] private Task ReloadUsers() => LoadUsersAsync();
 
+    /// <summary>The presentation's data: an account with five weeks of history and friends (DemoData). Local social mode only.</summary>
+    [RelayCommand(CanExecute = nameof(IsLocalSocial))]
+    private Task LoadDemoData() => RunAsync(async () =>
+    {
+        var result = await DemoData.LoadAsync(GymApplication.Services);
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        if (await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == DemoData.MainUser) is { } user)
+            _session.SignIn(user);
+        await LoadUsersAsync();
+        return result;
+    }, reloadHome: true);
+
     private async Task LoadUsersAsync()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();

@@ -47,7 +47,7 @@ public partial class ProfileViewModel : IClosesOnBack
     private static readonly string[] PageProperties =
     [
         nameof(IsMainPage), nameof(IsSettingsPage), nameof(IsSubPage), nameof(PageTitle), nameof(ShowsCards),
-        nameof(ShowsBodyData), nameof(ShowsHomeCity), nameof(ShowsAccountCard),
+        nameof(ShowsBodyData), nameof(ShowsVacationRow), nameof(ShowsHomeCity), nameof(ShowsAccountCard),
         nameof(ShowsAccountDetails), nameof(ShowsAccountDelete), nameof(ShowsVacation), nameof(ShowsNotifications),
         nameof(ShowsHealth), nameof(ShowsAppearance), nameof(ShowsBadges),
     ];
@@ -81,6 +81,8 @@ public partial class ProfileViewModel : IClosesOnBack
     /// <summary>The cards' grid: everywhere but the phones' Settings list.</summary>
     /// <summary>The cards grid: on the phones only on the pages it has a card for (Main has the Body card instead, Phase 27).</summary>
     public bool ShowsCards => !IsPhone || Page is not (ProfilePage.Settings or ProfilePage.Main);
+    /// <summary>The phones' Vacation row on Main. A local IsVisible beats the phoneOnly style, so the desktop (which has the Vacation card) is excluded here.</summary>
+    public bool ShowsVacationRow => IsPhone && IsMainPage;
     public bool ShowsBodyData => Shows(ProfilePage.BodyData);
     /// <summary>Main, and the Body data page too: the setup card and Calories send people there to add their weight,
     /// and the maintenance estimate needs it.</summary>

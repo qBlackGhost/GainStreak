@@ -1234,7 +1234,7 @@
                 </Border>
 
                 <!-- Phones (Phase 27): the Calories screen's card, with Manage food; the goal chip opens Calories -->
-                <Border Classes="card" IsVisible="{Binding HasFoodLog}">
+                <Border x:Name="FoodCard" Classes="card" IsVisible="{Binding HasFoodLog}">
                     <StackPanel Spacing="14">
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                             <TextBlock Text="Calories" FontSize="22" FontWeight="ExtraBold" VerticalAlignment="Center"/>
@@ -1293,7 +1293,7 @@
                 </Border>
 
                 <!-- Friends: this week's (or all-time) board -->
-                <Border Classes="card">
+                <Border x:Name="FriendsCard" Classes="card">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <TextBlock Text="Friends" Classes="h2" VerticalAlignment="Center"/>

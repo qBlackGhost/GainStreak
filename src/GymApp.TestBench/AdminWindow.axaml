@@ -118,6 +118,8 @@
                             <Button Content="Sign in as (no password)" Command="{Binding SignInAsCommand}"
                                     ToolTip.Tip="Local mode only: the server needs the account's password"/>
                             <Button Content="Sign out" Command="{Binding SignOutCommand}"/>
+                            <Button Content="Load demo data" Command="{Binding LoadDemoDataCommand}"
+                                    ToolTip.Tip="Local mode: alex (password demo1234) with five weeks of workouts, food and weigh-ins, and friends"/>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
