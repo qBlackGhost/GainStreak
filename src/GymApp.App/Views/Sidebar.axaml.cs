@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using GymApp.App.ViewModels;
 using GymApp.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,6 +52,9 @@ public partial class Sidebar : UserControl
 
     private InboxService? _inbox;
 
+    // The badge's timer and syncs refresh it from a background thread
+    private void OnUnreadChanged() => Dispatcher.UIThread.Post(ShowUnread);
+
     private void ShowUnread()
     {
         var n = _inbox?.UnreadCount ?? 0;
@@ -66,7 +70,7 @@ public partial class Sidebar : UserControl
         if (_host is not null) _host.SizeChanged += OnHostSizeChanged;
         if (Design.IsDesignMode) return;
         _inbox = GymApplication.Services.GetRequiredService<InboxService>();
-        _inbox.UnreadChanged += ShowUnread;
+        _inbox.UnreadChanged += OnUnreadChanged;
         ShowUnread();
     }
 
@@ -74,7 +78,7 @@ public partial class Sidebar : UserControl
     {
         if (_host is not null) _host.SizeChanged -= OnHostSizeChanged;
         _host = null;
-        if (_inbox is not null) _inbox.UnreadChanged -= ShowUnread;
+        if (_inbox is not null) _inbox.UnreadChanged -= OnUnreadChanged;
         _inbox = null;
         base.OnDetachedFromVisualTree(e);
     }

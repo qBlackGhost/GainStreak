@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using GymApp.App.ViewModels;
 using GymApp.Services;
 using Microsoft.Extensions.DependencyInjection;
@@ -29,16 +30,19 @@ public partial class AppBar : UserControl
         base.OnAttachedToVisualTree(e);
         if (Design.IsDesignMode) return;
         _inbox = GymApplication.Services.GetRequiredService<InboxService>();
-        _inbox.UnreadChanged += ShowUnread;
+        _inbox.UnreadChanged += OnUnreadChanged;
         ShowUnread();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        if (_inbox is not null) _inbox.UnreadChanged -= ShowUnread;
+        if (_inbox is not null) _inbox.UnreadChanged -= OnUnreadChanged;
         _inbox = null;
         base.OnDetachedFromVisualTree(e);
     }
+
+    // The badge's timer and syncs refresh it from a background thread
+    private void OnUnreadChanged() => Dispatcher.UIThread.Post(ShowUnread);
 
     private void ShowUnread()
     {

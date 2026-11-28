@@ -161,7 +161,7 @@ public class VacationService(IDbContextFactory<AppDbContext> dbFactory, StreakSe
     {
         await using var db = await dbFactory.CreateDbContextAsync();
         var profile = await db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
-        if (profile is null) return false;
+        if (profile is null || fix is null) return false;   // no fix (GPS didn't answer): not a look, so it's tried again soon
         profile.LastAwayCheckAt = now ?? AppClock.Now;
         var away = fix is { } f && VacationRules.IsAway(f, home.South, home.West, home.North, home.East);
         if (fix is not null && !away) profile.VacationPromptDismissedAt = null;   // back home: the next trip asks again

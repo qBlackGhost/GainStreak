@@ -123,6 +123,9 @@ public sealed class SocialSync(
         }
     }
 
+    /// <summary>A sync for this user finished (from a background thread). The inbox badge refreshes on it.</summary>
+    public event Action<int>? Synced;
+
     /// <summary>Uploads whatever is dirty for <paramref name="userId"/>: the avatar, sharing, then check-ins, then stats. Stops at
     /// the first offline step, leaving it and the rest for next time.</summary>
     public async Task SyncAsync(int userId)
@@ -156,6 +159,7 @@ public sealed class SocialSync(
         {
             gate.Release();
         }
+        if (IsSignedInLinked(userId)) Synced?.Invoke(userId);
     }
 
     private enum Step { Done, Stop, SharingFirst }

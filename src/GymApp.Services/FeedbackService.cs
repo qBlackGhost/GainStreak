@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GymApp.Client;
 using GymApp.Contracts;
@@ -15,13 +16,18 @@ public interface IFeedbackService
 {
     /// <param name="report">The error report for a problem (<see cref="ErrorLog.BuildReport"/>), or null.</param>
     Task<FeedbackSendResult> SendAsync(FeedbackKind kind, string text, string? report);
+
+    /// <summary>When the user can send again (UTC, the 10-minute wait of 0.28.1), or null when they can now.</summary>
+    DateTime? WaitUntil => null;
 }
 
 /// <summary>Through the social server (<c>POST /v1/feedback</c>), which stores it and forwards it to the developer's
 /// Discord. Not queued: offline it says so and the note stays in the popup. The user's name is scrubbed from file paths
 /// here, so it never leaves the device; the server scrubs again.</summary>
-public class RemoteFeedbackService(SocialApiClient api) : IFeedbackService
+public class RemoteFeedbackService(SocialApiClient api, SendCooldowns? cooldowns = null) : IFeedbackService
 {
+    public DateTime? WaitUntil => cooldowns?.Until(CooldownKind.Feedback);
+
     public async Task<FeedbackSendResult> SendAsync(FeedbackKind kind, string text, string? report)
     {
         text = FeedbackRules.Scrub(text.Trim());
@@ -29,6 +35,8 @@ public class RemoteFeedbackService(SocialApiClient api) : IFeedbackService
         if (text.Length > FeedbackRules.MaxTextLength) return new(false, FeedbackRules.TooLongMessage);
 
         var r = await api.SendFeedbackAsync(new FeedbackRequest(kind, text, report is null ? null : FeedbackRules.Scrub(report)));
+        if (r.IsOk) cooldowns?.Sent(CooldownKind.Feedback);
+        else if (r.RetryAt is { } retryAt) cooldowns?.Refused(CooldownKind.Feedback, retryAt);
         return r.IsOk ? FeedbackSendResult.Ok : new(false, r.Error);
     }
 }

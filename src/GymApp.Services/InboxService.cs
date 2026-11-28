@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using GymApp.Social;
 
@@ -116,14 +117,26 @@ public class InboxService
     private readonly Func<IEnumerable<IInboxSource>> _sources;
     private readonly InboxStore _store;
     private readonly Func<DateTime> _utcNow;
+    private readonly SessionService _session;
+    private readonly TimeProvider _time;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+
+    /// <summary>How often the badge reads the inbox while the app is open (backlog section 9).</summary>
+    public static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(60);
 
     public InboxService(Func<IEnumerable<IInboxSource>> sources, InboxStore store, SessionService session,
-                        Func<DateTime>? utcNow = null)
+                        Func<DateTime>? utcNow = null, TimeProvider? time = null)
     {
         _sources = sources;
         _store = store;
+        _session = session;
         _utcNow = utcNow ?? (() => DateTime.UtcNow);
-        session.Changed += () => UnreadCount = 0;
+        _time = time ?? TimeProvider.System;
+        session.Changed += () =>
+        {
+            UnreadCount = 0;
+            RequestRefresh();   // a sign-in shows the new user's count at once
+        };
     }
 
     private int _unread;
@@ -162,8 +175,70 @@ public class InboxService
         return view;
     }
 
-    /// <summary>For screens that only need the badge.</summary>
-    public async Task RefreshUnreadAsync(int userId) => await GetAsync(userId);
+    /// <summary>For the badge: reads the inbox and sets the count, without marking anything seen. Offline (the lists
+    /// came from the cache) or failing, it keeps the last number instead of clearing it. One read at a time.</summary>
+    public async Task RefreshUnreadAsync(int userId)
+    {
+        await _refreshGate.WaitAsync();
+        try
+        {
+            var batches = new List<InboxBatch>();
+            foreach (var source in _sources()) batches.Add(await source.GetAsync(userId));
+            if (batches.Any(b => b.IsStale)) return;
+            if (_session.CurrentUser?.Id != userId) return;   // signed out or switched meanwhile
+            var seen = _store.Seen(userId);
+            UnreadCount = batches.SelectMany(b => b.Items).Count(i => !seen.Contains(i.Key));
+        }
+        catch (Exception) { /* keep the last number */ }
+        finally { _refreshGate.Release(); }
+    }
+
+    /// <summary><see cref="RefreshUnreadAsync"/> for the signed-in user, in the background. For sign-in, app start,
+    /// the foreground, a social sync and the timer.</summary>
+    public void RequestRefresh()
+    {
+        if (_session.CurrentUser is { } user) _ = RefreshUnreadAsync(user.Id);
+    }
+
+    private readonly Lock _timerLock = new();
+    private CancellationTokenSource? _timerStop;
+
+    /// <summary>Refreshes the badge every <see cref="RefreshInterval"/> while the app is open, unless already running.
+    /// The phones stop it in the background.</summary>
+    public void StartTimer()
+    {
+        CancellationToken token;
+        lock (_timerLock)
+        {
+            if (_timerStop is not null) return;
+            _timerStop = new CancellationTokenSource();
+            token = _timerStop.Token;
+        }
+        _ = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(RefreshInterval, _time);
+            try
+            {
+                while (await timer.WaitForNextTickAsync(token)) RequestRefresh();
+            }
+            catch (OperationCanceledException) { /* stopped */ }
+        });
+    }
+
+    public void StopTimer()
+    {
+        lock (_timerLock)
+        {
+            _timerStop?.Cancel();
+            _timerStop?.Dispose();
+            _timerStop = null;
+        }
+    }
+
+    public bool IsTimerRunning
+    {
+        get { lock (_timerLock) return _timerStop is not null; }
+    }
 
     /// <summary>Everything in <paramref name="view"/> counts as seen; older keys are forgotten.</summary>
     public void MarkAllRead(int userId, InboxView view)

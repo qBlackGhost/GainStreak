@@ -1,3 +1,5 @@
+using System;
+
 namespace GymApp.Contracts;
 
 /// <summary>Why a user is reported. Sent as a camelCase string.</summary>
@@ -14,6 +16,12 @@ public static class UserReportRules
 
     public const string TooLongMessage = "Keep it under 1,000 characters.";
     public const string SelfMessage = "You can't report yourself.";
+
+    /// <summary>The wait between reports (0.28.1, anti-spam), counted apart from feedback. Like
+    /// <see cref="FeedbackRules.Cooldown"/>, a 429 with <see cref="ProblemExtensions.RetryAt"/>.</summary>
+    public static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(10);
+
+    public static string TooSoonMessage(TimeSpan left) => $"You can send another report in {Cooldowns.Minutes(left)}.";
 
     public static string Label(UserReportReason reason) => reason switch
     {

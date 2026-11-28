@@ -1,6 +1,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -41,6 +42,40 @@ public partial class ReportUserDialogViewModel(IFriendService friends, IUserRepo
     [ObservableProperty] public partial bool AlsoBlock { get; set; }
     [ObservableProperty] public partial string? Error { get; set; }
 
+    /// <summary>"You can send another report at 14:35." during the 10-minute wait after a report (0.28.1); Send report
+    /// is greyed out, Block still works.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendCommand))]
+    [NotifyPropertyChangedFor(nameof(IsWaiting))]
+    public partial string? WaitNotice { get; private set; }
+
+    public bool IsWaiting => WaitNotice is not null;
+
+    private CancellationTokenSource? _waitEnd;
+
+    private void UpdateWait()
+    {
+        _waitEnd?.Cancel();
+        _waitEnd = null;
+        if (reports.WaitUntil is not { } until)
+        {
+            WaitNotice = null;
+            return;
+        }
+        WaitNotice = FeedbackViewModel.SendAgainText(until, "send another report");
+        var cts = _waitEnd = new CancellationTokenSource();
+        _ = LiftAsync(until - DateTime.UtcNow, cts.Token);
+
+        async Task LiftAsync(TimeSpan delay, CancellationToken token)
+        {
+            try { await Task.Delay(delay < TimeSpan.Zero ? TimeSpan.Zero : delay, token); }
+            catch (OperationCanceledException) { return; }
+            UpdateWait();
+        }
+    }
+
+    private bool CanSend() => !IsWaiting;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(BlockLabel))]
     public partial bool IsConfirmingBlock { get; set; }
@@ -69,6 +104,7 @@ public partial class ReportUserDialogViewModel(IFriendService friends, IUserRepo
         IsConfirmingBlock = false;
         Reasons.Clear();
         foreach (var r in AllReasons) Reasons.Add(new ReportReasonViewModel(r, this));
+        UpdateWait();
         IsOpen = true;
     }
 
@@ -78,16 +114,26 @@ public partial class ReportUserDialogViewModel(IFriendService friends, IUserRepo
         Error = null;
     }
 
-    [RelayCommand] private void Close() => IsOpen = false;
-
     [RelayCommand]
+    private void Close()
+    {
+        _waitEnd?.Cancel();
+        IsOpen = false;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanSend))]
     private async Task SendAsync()
     {
         if (Reasons.FirstOrDefault(r => r.IsSelected) is not { } reason) { Error = "Pick a reason first."; return; }
         var name = Username;
         try
         {
-            if (await reports.ReportAsync(_otherId, reason.Reason, Note) is { } error) { Error = error; return; }
+            if (await reports.ReportAsync(_otherId, reason.Reason, Note) is { } error)
+            {
+                UpdateWait();
+                Error = IsWaiting ? null : error;   // the wait says it already
+                return;
+            }
             await FinishAsync(!AlsoBlock ? "Report sent. Thanks for letting us know."
                 : await BlockAsync() is { } blockError ? $"Report sent, but {name} couldn't be blocked: {blockError}"
                 : $"Report sent, and {name} is blocked.");

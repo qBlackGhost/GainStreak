@@ -1,5 +1,7 @@
 using System;
+using System.Globalization;
 using System.Text;
+using System.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
@@ -57,6 +59,47 @@ public partial class FeedbackViewModel(ErrorLog errorLog, IFeedbackService feedb
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
     public partial bool IsSending { get; set; }
 
+    public const string FooterDefault = "Sent to the developer with your username.";
+
+    /// <summary>"You can send again at 14:35." during the 10-minute wait after a message (0.28.1), when Send is greyed out.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(SendCommand))]
+    [NotifyPropertyChangedFor(nameof(IsWaiting), nameof(FooterText))]
+    public partial string? WaitNotice { get; private set; }
+
+    public bool IsWaiting => WaitNotice is not null;
+
+    /// <summary>The footer beside Send: where it goes, or the wait.</summary>
+    public string FooterText => WaitNotice ?? FooterDefault;
+
+    private CancellationTokenSource? _waitEnd;
+
+    /// <summary>Reads the wait from <see cref="IFeedbackService.WaitUntil"/>, and lifts it on its own when it ends.</summary>
+    private void UpdateWait()
+    {
+        _waitEnd?.Cancel();
+        _waitEnd = null;
+        if (feedback.WaitUntil is not { } until)
+        {
+            WaitNotice = null;
+            return;
+        }
+        WaitNotice = SendAgainText(until);
+        var cts = _waitEnd = new CancellationTokenSource();
+        _ = LiftAsync(until - DateTime.UtcNow, cts.Token);
+
+        async Task LiftAsync(TimeSpan delay, CancellationToken token)
+        {
+            try { await Task.Delay(delay < TimeSpan.Zero ? TimeSpan.Zero : delay, token); }
+            catch (OperationCanceledException) { return; }
+            UpdateWait();
+        }
+    }
+
+    /// <summary>"You can send again at 14:35.", in the phone's own time and format.</summary>
+    public static string SendAgainText(DateTime untilUtc, string what = "send again") =>
+        $"You can {what} at {untilUtc.ToLocalTime().ToString("t", CultureInfo.CurrentCulture)}.";
+
     /// <summary>"Copy instead" shows after a failed send, so the note can still reach the developer.</summary>
     [ObservableProperty] public partial bool CanCopyInstead { get; set; }
 
@@ -87,12 +130,18 @@ public partial class FeedbackViewModel(ErrorLog errorLog, IFeedbackService feedb
         Kind = kind;
         Message = Error = null;
         CanCopyInstead = IsReportPreviewOpen = false;
+        UpdateWait();
         Opened?.Invoke();
     }
 
-    [RelayCommand] private void Close() => _closed();
+    [RelayCommand]
+    private void Close()
+    {
+        _waitEnd?.Cancel();
+        _closed();
+    }
 
-    private bool CanSend() => !IsSending;
+    private bool CanSend() => !IsSending && !IsWaiting;
 
     /// <summary>Sends the current tab's note. On success it's cleared; otherwise it stays, with the reason and "Copy instead".</summary>
     [RelayCommand(CanExecute = nameof(CanSend))]
@@ -110,9 +159,10 @@ public partial class FeedbackViewModel(ErrorLog errorLog, IFeedbackService feedb
         try
         {
             var r = await feedback.SendAsync(Kind, text, IsProblem && AttachReport ? errorLog.BuildReport() : null);
+            UpdateWait();
             if (!r.Success)
             {
-                Error = r.Error;
+                Error = IsWaiting ? null : r.Error;   // the wait says it already, under Send
                 CanCopyInstead = true;
                 return;
             }

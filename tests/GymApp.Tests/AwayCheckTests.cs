@@ -84,7 +84,7 @@ public sealed class AwayCheckTests : IDisposable
     public async Task NotDue_WithinSixHoursOfTheLastLook()
     {
         var home = (await _svc.AwayCheckDueAsync(_alice, At(2, 8)))!;
-        await _svc.RecordAwayFixAsync(_alice, home, null, At(2, 8));
+        await _svc.RecordAwayFixAsync(_alice, home, Home, At(2, 8));
         Assert.Null(await _svc.AwayCheckDueAsync(_alice, At(2, 13)));
         Assert.NotNull(await _svc.AwayCheckDueAsync(_alice, At(2, 14)));
     }
@@ -115,12 +115,20 @@ public sealed class AwayCheckTests : IDisposable
     }
 
     [Fact]
-    public async Task AFixAtHome_OrNoFix_DoesntAsk()
+    public async Task AFixAtHome_DoesntAsk_AndTheLookIsRecorded()
     {
         var home = (await _svc.AwayCheckDueAsync(_alice, At(2, 8)))!;
         Assert.False(await _svc.RecordAwayFixAsync(_alice, home, Home, At(2, 8)));
-        Assert.False(await _svc.RecordAwayFixAsync(_alice, home, null, At(2, 15)));
-        Assert.Equal(At(2, 15), Profile(_alice).LastAwayCheckAt);
+        Assert.Equal(At(2, 8), Profile(_alice).LastAwayCheckAt);
+    }
+
+    [Fact]
+    public async Task NoFix_DoesntAsk_AndIsntALook()   // GPS didn't answer: the 6-hour wait mustn't start
+    {
+        var home = (await _svc.AwayCheckDueAsync(_alice, At(2, 8)))!;
+        Assert.False(await _svc.RecordAwayFixAsync(_alice, home, null, At(2, 8)));
+        Assert.Null(Profile(_alice).LastAwayCheckAt);
+        Assert.NotNull(await _svc.AwayCheckDueAsync(_alice, At(2, 9)));
     }
 
     [Fact]
@@ -139,13 +147,14 @@ public sealed class AwayCheckTests : IDisposable
 
     private sealed class FakeLocation(LocationFix? fix, bool permission = true, bool precise = true) : GymApp.App.ILocationProvider
     {
+        public LocationFix? Fix { get; set; } = fix;
         public int Reads { get; private set; }
         public bool IsSupported => true;
         public bool HasPermission => permission;
         public bool IsPrecise => precise;
         public bool NeedsNoteBeforePrompt => false;
         public Task<bool> RequestPermissionAsync() => throw new InvalidOperationException("The away check never asks.");
-        public Task<LocationFix?> GetFixAsync(TimeSpan timeout) { Reads++; return Task.FromResult(fix); }
+        public Task<LocationFix?> GetFixAsync(TimeSpan timeout) { Reads++; return Task.FromResult(Fix); }
         public void OpenSettings() { }
     }
 
@@ -193,5 +202,25 @@ public sealed class AwayCheckTests : IDisposable
     public async Task Watcher_AtHome_NoPrompt()
     {
         Assert.Null(await new AwayWatcher(_svc, new FakeLocation(Home)).CheckAsync(AliceToday()));
+    }
+
+    [Fact]
+    public async Task Watcher_NoFix_TriesAgainAfterFifteenMinutes_NotSixHours()
+    {
+        var user = AliceToday();
+        var now = AppClock.Now;
+        var loc = new FakeLocation(null);
+        var watcher = new AwayWatcher(_svc, loc) { Now = () => now };
+
+        Assert.Null(await watcher.CheckAsync(user));          // GPS didn't answer
+        Assert.Equal(1, loc.Reads);
+        now += TimeSpan.FromMinutes(5);
+        Assert.Null(await watcher.CheckAsync(user));          // Home again soon: no new read
+        Assert.Equal(1, loc.Reads);
+
+        loc.Fix = Rome;
+        now += AwayWatcher.NoFixRetry;
+        Assert.Equal("Timișoara", await watcher.CheckAsync(user));   // tried again, well before 6 hours
+        Assert.Equal(2, loc.Reads);
     }
 }

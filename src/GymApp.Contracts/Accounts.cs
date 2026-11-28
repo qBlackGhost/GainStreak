@@ -56,3 +56,10 @@ public static class ProblemFields
     public const string Password = "password";
     public const string NewPassword = "newPassword";
 }
+
+/// <summary>Extensions of a ProblemDetails besides <see cref="ProblemFields"/> (0.28.1). Old apps ignore them.</summary>
+public static class ProblemExtensions
+{
+    /// <summary>On a 429 from a cooldown (feedback, reports): when the next try works, UTC.</summary>
+    public const string RetryAt = "retryAt";
+}

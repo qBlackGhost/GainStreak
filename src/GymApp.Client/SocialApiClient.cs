@@ -242,7 +242,7 @@ public sealed class SocialApiClient
         return result.Outcome switch
         {
             ApiOutcome.Ok => ApiResult.Ok(result.Status!.Value),
-            ApiOutcome.Refused => ApiResult.Refused(result.Status!.Value, result.Detail, result.Field),
+            ApiOutcome.Refused => ApiResult.Refused(result.Status!.Value, result.Detail, result.Field, result.RetryAt),
             _ => ApiResult.Offline()
         };
     }
@@ -275,8 +275,8 @@ public sealed class SocialApiClient
                         : ApiResult<T>.Offline();
             else
             {
-                var (detail, field) = await ReadProblemAsync(response, timeout.Token);
-                result = ApiResult<T>.Refused(status, detail, field);
+                var (detail, field, retryAt) = await ReadProblemAsync(response, timeout.Token);
+                result = ApiResult<T>.Refused(status, detail, field, retryAt);
             }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
@@ -303,20 +303,23 @@ public sealed class SocialApiClient
         return result;
     }
 
-    /// <summary>The ProblemDetails' <c>detail</c> and <c>field</c>; nulls if the body is empty or isn't one.</summary>
-    private static async Task<(string? Detail, string? Field)> ReadProblemAsync(HttpResponseMessage response, CancellationToken ct)
+    /// <summary>The ProblemDetails' <c>detail</c>, <c>field</c> and <c>retryAt</c> (UTC); nulls if the body is empty or
+    /// isn't one.</summary>
+    private static async Task<(string? Detail, string? Field, DateTime? RetryAt)> ReadProblemAsync(HttpResponseMessage response, CancellationToken ct)
     {
         try
         {
             var text = await response.Content.ReadAsStringAsync(ct);
-            if (string.IsNullOrWhiteSpace(text)) return (null, null);
+            if (string.IsNullOrWhiteSpace(text)) return (null, null, null);
             using var doc = JsonDocument.Parse(text);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object) return (null, null);
-            return (StringProperty(doc.RootElement, "detail"), StringProperty(doc.RootElement, "field"));
+            if (doc.RootElement.ValueKind != JsonValueKind.Object) return (null, null, null);
+            DateTime? retryAt = doc.RootElement.TryGetProperty(ProblemExtensions.RetryAt, out var r)
+                && r.ValueKind == JsonValueKind.String && r.TryGetDateTimeOffset(out var at) ? at.UtcDateTime : null;
+            return (StringProperty(doc.RootElement, "detail"), StringProperty(doc.RootElement, "field"), retryAt);
         }
         catch (JsonException)
         {
-            return (null, null);
+            return (null, null, null);
         }
     }
 

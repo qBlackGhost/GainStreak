@@ -25,13 +25,20 @@ public static class ReportEndpoints
         if (note is { Length: > UserReportRules.MaxNoteLength }) return Problems.BadRequest(UserReportRules.TooLongMessage);
         if (!await db.Users.AnyAsync(u => u.Id == userId)) return Problems.NotFound(FriendService.UnknownUserError);
 
+        // 10 minutes between reports (0.28.1), whoever they're about; the hourly rate limit stays as a backstop
+        var now = clock.GetUtcNow().UtcDateTime;
+        var last = await db.UserReports.Where(r => r.ReporterId == reporterId).MaxAsync(r => (DateTime?)r.CreatedAt);
+        if (last is { } l && now < l + UserReportRules.Cooldown)
+            return Problems.TooManyRequests(UserReportRules.TooSoonMessage(l + UserReportRules.Cooldown - now),
+                extensions: new Dictionary<string, object?> { [ProblemExtensions.RetryAt] = l + UserReportRules.Cooldown });
+
         db.UserReports.Add(new UserReport
         {
             ReporterId = reporterId,
             ReportedUserId = userId,
             Reason = request.Reason,
             Note = note,
-            CreatedAt = clock.GetUtcNow().UtcDateTime
+            CreatedAt = now
         });
         await db.SaveChangesAsync();
         // Not the request's token: the row is saved, so the post should finish even if the phone stops waiting

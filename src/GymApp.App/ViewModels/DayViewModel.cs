@@ -42,8 +42,9 @@ public partial class DayExerciseItemViewModel : ObservableObject
 
     // While dragging (DayView.axaml.cs): the dragged row fades, the drop target shows a line above or below
     [ObservableProperty] public partial bool IsDragging { get; set; }
-    [ObservableProperty] public partial bool IsDropAbove { get; set; }
-    [ObservableProperty] public partial bool IsDropBelow { get; set; }
+
+    /// <summary>The handle's hover help, on the desktop only: on a phone it popped up under the finger (0.28.1).</summary>
+    public string? HandleTip { get; } = GymApplication.Platform is PhonePlatform ? null : "Drag to reorder";
 
     [RelayCommand] private Task MoveUp() => _owner.MoveAsync(this, -1);
     [RelayCommand] private Task MoveDown() => _owner.MoveAsync(this, +1);

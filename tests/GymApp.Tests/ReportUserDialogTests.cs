@@ -10,6 +10,7 @@ public class ReportUserDialogTests : IDisposable
     private sealed class FakeReports : IUserReportService
     {
         public string? Refusal;
+        public DateTime? WaitUntil { get; set; }
         public List<(int OtherId, UserReportReason Reason, string? Note)> Sent { get; } = new();
 
         public Task<string?> ReportAsync(int otherId, UserReportReason reason, string? note)
@@ -105,5 +106,34 @@ public class ReportUserDialogTests : IDisposable
         Assert.DoesNotContain(_vm.Reasons, r => r.IsSelected);
         Assert.Equal("", _vm.Note);
         Assert.True(_vm.AlsoBlock);
+    }
+
+    // --- The 10-minute wait (0.28.1) ---
+
+    [Fact] public async Task DuringTheWait_SendIsGreyedOut_ButBlockStillWorks()
+    {
+        _reports.WaitUntil = DateTime.UtcNow.AddMinutes(6);
+        _vm.Open(_bob, "bob", n => { _notice = n; return Task.CompletedTask; });
+
+        Assert.True(_vm.IsWaiting);
+        Assert.StartsWith("You can send another report at ", _vm.WaitNotice);
+        Assert.False(_vm.SendCommand.CanExecute(null));
+
+        await _vm.BlockOnlyCommand.ExecuteAsync(null);
+        await _vm.BlockOnlyCommand.ExecuteAsync(null);
+        Assert.Equal("bob is blocked.", _notice);
+    }
+
+    [Fact] public async Task RefusedForTheWait_ShowsTheWait_InsteadOfTheMessage()
+    {
+        _vm.Reasons[0].ChooseCommand.Execute(null);
+        _reports.Refusal = UserReportRules.TooSoonMessage(TimeSpan.FromMinutes(3));
+        _reports.WaitUntil = DateTime.UtcNow.AddMinutes(3);
+
+        await _vm.SendCommand.ExecuteAsync(null);
+
+        Assert.True(_vm.IsOpen);
+        Assert.Null(_vm.Error);
+        Assert.True(_vm.IsWaiting);
     }
 }

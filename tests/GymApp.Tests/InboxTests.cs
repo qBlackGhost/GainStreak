@@ -161,4 +161,101 @@ public class InboxTests : IDisposable
         Assert.Equal("Mon", Ago(TimeSpan.FromDays(3)));
         Assert.Equal("14 Oct", Ago(TimeSpan.FromDays(8)));
     }
+
+    // The badge refresh (0.28.1, backlog section 9)
+
+    /// <summary>A source that can go offline: then it answers from the cache, marked stale, or fails outright.</summary>
+    private sealed class SwitchableSource(IInboxSource inner) : IInboxSource
+    {
+        public bool Offline { get; set; }
+        public bool Throws { get; set; }
+        public async Task<InboxBatch> GetAsync(int userId)
+        {
+            if (Throws) throw new HttpRequestException("no signal");
+            var batch = await inner.GetAsync(userId);
+            return Offline ? batch with { Items = [], IsStale = true } : batch;
+        }
+    }
+
+    [Fact] public async Task Refresh_ShowsTheCount_WithoutOpeningTheInbox_AndMarksNothingSeen()
+    {
+        await _friends.SendRequestAsync(_bob, _alice);
+        await _friends.SendRequestAsync(_cara, _alice);
+
+        await _inbox.RefreshUnreadAsync(_alice);
+
+        Assert.Equal(2, _inbox.UnreadCount);
+        Assert.All((await _inbox.GetAsync(_alice)).Items, i => Assert.True(i.IsNew));
+    }
+
+    [Fact] public async Task Refresh_Offline_KeepsTheLastNumber()
+    {
+        var source = new SwitchableSource(new FriendRequestInboxSource(_friends));
+        var inbox = new InboxService(() => [source], new InboxStore(_dir), _session);
+        await _friends.SendRequestAsync(_bob, _alice);
+        await inbox.RefreshUnreadAsync(_alice);
+        Assert.Equal(1, inbox.UnreadCount);
+
+        source.Offline = true;
+        await inbox.RefreshUnreadAsync(_alice);
+        Assert.Equal(1, inbox.UnreadCount);
+
+        source.Offline = false;
+        source.Throws = true;
+        await inbox.RefreshUnreadAsync(_alice);
+        Assert.Equal(1, inbox.UnreadCount);
+    }
+
+    [Fact] public async Task Refresh_AfterMarkAllRead_IsZero()
+    {
+        await _friends.SendRequestAsync(_bob, _alice);
+        await _inbox.RefreshUnreadAsync(_alice);
+        _inbox.MarkAllRead(_alice, await _inbox.GetAsync(_alice));
+
+        await _inbox.RefreshUnreadAsync(_alice);
+        Assert.Equal(0, _inbox.UnreadCount);
+    }
+
+    [Fact] public async Task Refresh_ForSomeoneWhoSignedOut_DoesntSetTheBadge()
+    {
+        await _friends.SendRequestAsync(_bob, _alice);
+        _session.SignOut();
+        await _inbox.RefreshUnreadAsync(_alice);
+        Assert.Equal(0, _inbox.UnreadCount);
+    }
+
+    [Fact] public async Task SigningIn_RefreshesTheBadge()
+    {
+        await _friends.SendRequestAsync(_alice, _bob);
+        var changed = new TaskCompletionSource();
+        _inbox.UnreadChanged += () => { if (_inbox.UnreadCount == 1) changed.TrySetResult(); };
+
+        using (var db = _db.CreateDbContext()) _session.SignIn(db.Users.Single(u => u.Id == _bob));
+
+        await changed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal(1, _inbox.UnreadCount);
+    }
+
+    /// <summary>The real clock, with every timer 600 times faster: a minute takes 100 ms.</summary>
+    private sealed class FastTimers : TimeProvider
+    {
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period) =>
+            System.CreateTimer(callback, state, dueTime / 600, period / 600);
+    }
+
+    [Fact] public async Task TheTimer_RefreshesEveryMinute_UntilStopped()
+    {
+        var inbox = new InboxService(() => [new FriendRequestInboxSource(_friends)], new InboxStore(_dir), _session, time: new FastTimers());
+        var changed = new TaskCompletionSource();
+        inbox.UnreadChanged += () => changed.TrySetResult();
+
+        await _friends.SendRequestAsync(_bob, _alice);
+        inbox.StartTimer();
+        Assert.True(inbox.IsTimerRunning);
+        await changed.Task.WaitAsync(TimeSpan.FromSeconds(5));   // nobody opened anything: the timer read it
+        Assert.Equal(1, inbox.UnreadCount);
+
+        inbox.StopTimer();
+        Assert.False(inbox.IsTimerRunning);
+    }
 }

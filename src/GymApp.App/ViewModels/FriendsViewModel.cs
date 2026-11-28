@@ -420,6 +420,7 @@ public partial class FriendsViewModel : ViewModelBase, IClosesOnBack
             StaleNotice = StaleText.For(friends as ICachedResult) ?? StaleText.For(requests) ?? BoardStale;
             SentCountText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} requests sent";
             SentShortText = $"{Outgoing.Count} / {FriendService.MaxPendingOutgoing} sent";
+            _inbox.RequestRefresh();   // the badge, with the leaderboard and requests just read
         }
         catch (Exception)
         {

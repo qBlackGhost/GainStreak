@@ -68,6 +68,7 @@ public partial class GymApplication : Application
                 var window = Platform.CreateWindow(CreateShellView(), isStartupError: false);
                 desktop.MainWindow = window;
                 if (!LocalSocial) window.Activated += (_, _) => Services.GetRequiredService<SocialSync>().RequestSync();
+                StartInboxBadge();
                 if (Platform.HasLiveWorkout)
                 {
                     // The TestBench's live workout: the window going to the back stands in for the phone's background
@@ -98,6 +99,7 @@ public partial class GymApplication : Application
                 if (error is null) Platform.OnShellReady(_shell!, Services.GetRequiredService<ErrorLog>());
                 if (error is null) Services.GetRequiredService<ReminderSync>().RequestRefresh();
                 if (error is null) _ = Services.GetRequiredService<LiveWorkoutWatcher>().CameToForegroundAsync();   // a cold start
+                if (error is null) StartInboxBadge();
             }));
         }
 
@@ -124,6 +126,17 @@ public partial class GymApplication : Application
         });
     }
 
+    /// <summary>The Inbox badge (0.28.1, backlog section 9): read now, after every social sync, and every minute while
+    /// the app is open. Sign-in refreshes it from <see cref="InboxService"/> itself; the phones' foreground in
+    /// <see cref="WireForeground"/>.</summary>
+    private void StartInboxBadge()
+    {
+        var inbox = Services.GetRequiredService<InboxService>();
+        if (!LocalSocial) Services.GetRequiredService<SocialSync>().Synced += _ => inbox.RequestRefresh();
+        inbox.RequestRefresh();
+        inbox.StartTimer();
+    }
+
     /// <summary>The phones: coming back to the front syncs and restarts the 15-minute timer; going to the background
     /// stops it. The live workout (18b) hears both: the nudge, the return popup, the 4-hour stop.</summary>
     private void WireForeground()
@@ -134,6 +147,7 @@ public partial class GymApplication : Application
         var sync = LocalSocial ? null : Services.GetRequiredService<SocialSync>();
         var push = Services.GetRequiredService<IPushRegistration>();
         var widgets = Services.GetRequiredService<WidgetSync>();
+        var inbox = Services.GetRequiredService<InboxService>();
         lifetime.Activated += (_, e) =>
         {
             // An invite link the phone opened in the app (Phase 21): a Universal Link on iOS, an App Link on Android.
@@ -144,6 +158,8 @@ public partial class GymApplication : Application
             health.RequestSync();   // Apple Health (Phase 20)
             push.RequestSync();   // friend notifications (Phase 22): the permission may have changed in Settings
             Services.GetRequiredService<BadgeSync>().RequestRefresh(withFriends: true);   // a day may have passed (Phase 25)
+            inbox.RequestRefresh();   // the Inbox badge (0.28.1)
+            inbox.StartTimer();
             if (sync is null) return;
             _shell?.CameToForeground();   // a friend may have renamed (Phase 28)
             sync.StartTimer();
@@ -156,6 +172,7 @@ public partial class GymApplication : Application
             _ = watcher.WentToBackgroundAsync();
             health.RequestSync();   // a workout, cardio or weigh-in from this visit goes to Health
             sync?.StopTimer();
+            inbox.StopTimer();
             widgets.RequestRefresh();   // the Home Screen widgets show what this visit changed (Phase 24)
         };
         StartWorkoutTimer();

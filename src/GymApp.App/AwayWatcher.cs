@@ -17,7 +17,14 @@ public sealed class AwayWatcher(VacationService vacations, ILocationProvider loc
 {
     public static readonly TimeSpan FixTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>After a look that got no fix, the next try waits this long (not the 6 hours of a real look).</summary>
+    public static readonly TimeSpan NoFixRetry = TimeSpan.FromMinutes(15);
+
+    /// <summary>The clock; tests set it so they don't shift <see cref="AppClock"/>.</summary>
+    public Func<DateTime> Now { get; init; } = () => AppClock.Now;
+
     private readonly Dictionary<int, string> _pending = new();   // user → home city name, while the prompt is up
+    private readonly Dictionary<int, DateTime> _noFixAt = new();  // user → when a look last got no fix
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     /// <summary>The home city's name when Home should ask "Away from …?", or null. Looks again only when it's due.</summary>
@@ -28,9 +35,13 @@ public sealed class AwayWatcher(VacationService vacations, ILocationProvider loc
         try
         {
             if (_pending.TryGetValue(userId, out var city)) return city;
-            if (await vacations.AwayCheckDueAsync(userId) is not { } home) return null;
+            var now = Now();
+            if (_noFixAt.TryGetValue(userId, out var failed) && now >= failed && now - failed < NoFixRetry) return null;
+            if (await vacations.AwayCheckDueAsync(userId, now) is not { } home) return null;
             var fix = await location.GetFixAsync(FixTimeout);
-            if (!await vacations.RecordAwayFixAsync(userId, home, fix)) return null;
+            if (fix is null) { _noFixAt[userId] = now; return null; }
+            _noFixAt.Remove(userId);
+            if (!await vacations.RecordAwayFixAsync(userId, home, fix, now)) return null;
             _pending[userId] = home.CityName;
             return home.CityName;
         }

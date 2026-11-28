@@ -3,6 +3,7 @@ using GymApp.Contracts;
 using GymApp.Server.Auth;
 using GymApp.Server.Data;
 using GymApp.Server.Feedback;
+using Microsoft.EntityFrameworkCore;
 
 namespace GymApp.Server.Endpoints;
 
@@ -27,15 +28,23 @@ public static class FeedbackEndpoints
         if (report is not null && request.Kind != FeedbackKind.Problem) return Problems.BadRequest(FeedbackRules.ReportOnIdeaMessage);
         if (report is { Length: > FeedbackRules.MaxReportLength }) return Problems.BadRequest(FeedbackRules.ReportTooLongMessage);
 
+        // 10 minutes between messages (0.28.1); the hourly rate limit stays as a backstop
+        var now = clock.GetUtcNow().UtcDateTime;
+        var userId = me.UserId();
+        var last = await db.Feedback.Where(f => f.UserId == userId).MaxAsync(f => (DateTime?)f.CreatedAt);
+        if (last is { } l && now < l + FeedbackRules.Cooldown)
+            return Problems.TooManyRequests(FeedbackRules.TooSoonMessage(l + FeedbackRules.Cooldown - now),
+                extensions: new Dictionary<string, object?> { [ProblemExtensions.RetryAt] = l + FeedbackRules.Cooldown });
+
         var version = http.Request.Headers[ClientVersions.Header].ToString();
         var entry = new FeedbackEntry
         {
-            UserId = me.UserId(),
+            UserId = userId,
             Kind = request.Kind,
             Text = text,
             Report = report,
             AppVersion = version.Length == 0 ? null : version[..Math.Min(version.Length, 32)],
-            CreatedAt = clock.GetUtcNow().UtcDateTime
+            CreatedAt = now
         };
         db.Feedback.Add(entry);
         await db.SaveChangesAsync();

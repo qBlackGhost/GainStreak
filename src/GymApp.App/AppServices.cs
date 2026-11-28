@@ -57,6 +57,7 @@ public static class AppServices
             sc.AddTransient<IFriendService, RemoteFriendService>();
             sc.AddTransient<ILeaderboardService, RemoteLeaderboardService>();
             sc.AddTransient<IFriendCheckInSource, RemoteFriendCheckInSource>();
+            sc.AddSingleton<SendCooldowns>();   // the 10-minute waits after feedback and reports (0.28.1)
             sc.AddTransient<IFeedbackService, RemoteFeedbackService>();
             sc.AddTransient<ISplitUsageService, RemoteSplitUsageService>();
             sc.AddTransient<IShareService, RemoteShareService>();

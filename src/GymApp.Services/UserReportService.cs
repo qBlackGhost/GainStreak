@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using GymApp.Client;
 using GymApp.Contracts;
@@ -8,14 +9,21 @@ namespace GymApp.Services;
 public interface IUserReportService
 {
     Task<string?> ReportAsync(int otherId, UserReportReason reason, string? note);
+
+    /// <summary>When the user can report again (UTC, the 10-minute wait of 0.28.1), or null when they can now.</summary>
+    DateTime? WaitUntil => null;
 }
 
 /// <summary>Through the social server. Not queued: offline, it says so.</summary>
-public class RemoteUserReportService(SocialApiClient api) : IUserReportService
+public class RemoteUserReportService(SocialApiClient api, SendCooldowns? cooldowns = null) : IUserReportService
 {
+    public DateTime? WaitUntil => cooldowns?.Until(CooldownKind.Report);
+
     public async Task<string?> ReportAsync(int otherId, UserReportReason reason, string? note)
     {
         var r = await api.ReportUserAsync(otherId, new UserReportRequest(reason, note));
+        if (r.IsOk) cooldowns?.Sent(CooldownKind.Report);
+        else if (r.RetryAt is { } retryAt) cooldowns?.Refused(CooldownKind.Report, retryAt);
         return r.IsOk ? null : r.Error;
     }
 }

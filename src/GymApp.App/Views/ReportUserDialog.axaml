@@ -69,6 +69,8 @@
 
                 <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
                            IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                <TextBlock Text="{Binding WaitNotice}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                           IsVisible="{Binding IsWaiting}"/>
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                     <Button Classes="btn outline" Classes.danger="{Binding IsConfirmingBlock}" Content="{Binding BlockLabel}"
                             Command="{Binding BlockOnlyCommand}"/>

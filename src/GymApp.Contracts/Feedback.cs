@@ -1,3 +1,4 @@
+using System;
 using System.Text.RegularExpressions;
 
 namespace GymApp.Contracts;
@@ -22,6 +23,12 @@ public static partial class FeedbackRules
     public const string ReportOnIdeaMessage = "Only a problem can carry an error report.";
     public const string ReportTooLongMessage = "The error report is too long.";
 
+    /// <summary>The wait after each message before the next one (0.28.1, anti-spam). The server enforces it with a 429
+    /// that carries <see cref="ProblemExtensions.RetryAt"/>; the app greys out Send until then.</summary>
+    public static readonly TimeSpan Cooldown = TimeSpan.FromMinutes(10);
+
+    public static string TooSoonMessage(TimeSpan left) => $"You can send more feedback in {Cooldowns.Minutes(left)}.";
+
     /// <summary>The user's name in file paths of stack traces (/Users/name, /home/name, C:\Users\name) becomes
     /// "&lt;user&gt;": a report should say where the app broke, not whose computer it was.</summary>
     public static string Scrub(string text) => UserFolder().Replace(text, m => m.Groups["prefix"].Value + "<user>");
@@ -30,4 +37,15 @@ public static partial class FeedbackRules
     [GeneratedRegex(@"(?<prefix>/Users/|/home/)(?!<user>)[^/\s:]+|(?<prefix>[A-Za-z]:\\Users\\)(?!<user>)[^\\\r\n:]+",
         RegexOptions.CultureInvariant)]
     private static partial Regex UserFolder();
+}
+
+/// <summary>Wording for the 0.28.1 cooldowns.</summary>
+public static class Cooldowns
+{
+    /// <summary>"1 minute", "7 minutes": rounded up, so it's never "0 minutes".</summary>
+    public static string Minutes(TimeSpan left)
+    {
+        var n = Math.Max(1, (int)Math.Ceiling(left.TotalMinutes));
+        return n == 1 ? "1 minute" : $"{n} minutes";
+    }
 }

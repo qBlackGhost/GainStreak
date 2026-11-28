@@ -9,6 +9,7 @@ public sealed class FakeFeedbackService : IFeedbackService
 {
     public List<(FeedbackKind Kind, string Text, string? Report)> Sent { get; } = new();
     public FeedbackSendResult Result { get; set; } = FeedbackSendResult.Ok;
+    public DateTime? WaitUntil { get; set; }
 
     public Task<FeedbackSendResult> SendAsync(FeedbackKind kind, string text, string? report)
     {
@@ -201,5 +202,58 @@ public class FeedbackViewModelTests : IDisposable
         _vm.Open(() => { }, FeedbackKind.Idea);
         Assert.True(_vm.IsIdea);
         Assert.Equal(1, _vm.KindIndex);
+    }
+
+    // --- The 10-minute wait (0.28.1) ---
+
+    [Fact] public void Open_DuringTheWait_GreysOutSend_AndSaysUntilWhen()
+    {
+        var until = DateTime.UtcNow.AddMinutes(7);
+        _service.WaitUntil = until;
+        _vm.Open(() => { });
+
+        Assert.True(_vm.IsWaiting);
+        Assert.False(_vm.SendCommand.CanExecute(null));
+        Assert.Equal(FeedbackViewModel.SendAgainText(until), _vm.FooterText);
+    }
+
+    [Fact] public async Task AfterSending_TheWaitStarts()
+    {
+        Assert.Equal(FeedbackViewModel.FooterDefault, _vm.FooterText);
+        _vm.Kind = FeedbackKind.Idea;
+        _vm.IdeaText = "Dark mode";
+        _service.WaitUntil = DateTime.UtcNow.AddMinutes(10);   // what the real service knows after a send
+
+        await _vm.SendCommand.ExecuteAsync(null);
+
+        Assert.Equal(FeedbackViewModel.SentText, _vm.Message);
+        Assert.True(_vm.IsWaiting);
+        Assert.False(_vm.SendCommand.CanExecute(null));
+    }
+
+    [Fact] public async Task RefusedForTheWait_ShowsTheWait_NotTheServersMessage_AndKeepsCopyInstead()
+    {
+        _vm.ProblemText = "It froze";
+        _service.Result = new FeedbackSendResult(false, FeedbackRules.TooSoonMessage(TimeSpan.FromMinutes(4)));
+        _service.WaitUntil = DateTime.UtcNow.AddMinutes(4);
+
+        await _vm.SendCommand.ExecuteAsync(null);
+
+        Assert.Null(_vm.Error);
+        Assert.True(_vm.IsWaiting);
+        Assert.True(_vm.CanCopyInstead);
+        Assert.Equal("It froze", _vm.ProblemText);
+    }
+
+    [Fact] public async Task TheWait_LiftsByItself()
+    {
+        _service.WaitUntil = DateTime.UtcNow.AddMilliseconds(150);
+        _vm.Open(() => { });
+        Assert.True(_vm.IsWaiting);
+
+        _service.WaitUntil = null;   // the time came
+        for (var i = 0; i < 50 && _vm.IsWaiting; i++) await Task.Delay(50);
+        Assert.False(_vm.IsWaiting);
+        Assert.True(_vm.SendCommand.CanExecute(null));
     }
 }

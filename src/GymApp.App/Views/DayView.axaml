@@ -53,16 +53,11 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
         <Style Selector=".phone Border.exRow"><Setter Property="Padding" Value="2,4,4,4"/></Style>
+        <!-- 0.28.1: the held row lifts (DayView.axaml.cs scales it and moves it with the finger; the others slide) -->
         <Style Selector="Border.exRow.dragging">
             <Setter Property="Background" Value="{DynamicResource Fill}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource ControlHover}"/>
-            <Setter Property="Opacity" Value="0.45"/>
-        </Style>
-        <Style Selector="Border.dropLine">
-            <Setter Property="Height" Value="3"/>
-            <Setter Property="CornerRadius" Value="2"/>
-            <Setter Property="Background" Value="{DynamicResource Accent}"/>
-            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+            <Setter Property="BoxShadow" Value="0 10 24 0 #66000000"/>
         </Style>
         <Style Selector="Border#Handle">
             <Setter Property="Cursor" Value="SizeAll"/>
@@ -276,13 +271,12 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:DayExerciseItemViewModel">
                                             <Grid RowDefinitions="Auto,Auto,Auto">
-                                                <Border Classes="dropLine" Margin="0,-6,0,3" IsVisible="{Binding IsDropAbove}"/>
                                                 <Border Grid.Row="1" Classes="exRow" Classes.dragging="{Binding IsDragging}">
                                                     <v:PhoneGrid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12"
                                                                  PhoneColumns="Auto,Auto,*,Auto" PhoneColumnSpacing="8">
                                                         <!-- Drag handle; also focusable, so the arrow keys move the row -->
                                                         <Border x:Name="Handle" Width="28" Height="44" CornerRadius="8" Focusable="True"
-                                                                ToolTip.Tip="Drag to reorder" Tag="{Binding}"
+                                                                ToolTip.Tip="{Binding HandleTip}" Tag="{Binding}"
                                                                 AutomationProperties.Name="{Binding Name, StringFormat='Reorder {0}'}">
                                                             <Path Data="{StaticResource IcGrip}" Fill="{DynamicResource Faint}" Width="16" Height="20"
                                                                   Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -329,7 +323,6 @@
                                                         </StackPanel>
                                                     </v:PhoneGrid>
                                                 </Border>
-                                                <Border Grid.Row="2" Classes="dropLine" Margin="0,3,0,-6" IsVisible="{Binding IsDropBelow}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

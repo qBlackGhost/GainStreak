@@ -34,6 +34,9 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         return db.Feedback.AsNoTracking().OrderBy(f => f.Id).ToList();
     }
 
+    /// <summary>Past the 10-minute wait between messages and between reports (0.28.1).</summary>
+    private void Later() => Clock.Fixed = Clock.GetUtcNow() + FeedbackRules.Cooldown + TimeSpan.FromSeconds(1);
+
     private static Task<HttpResponseMessage> ReportAsync(SignedIn user, int otherId, UserReportRequest request) =>
         user.Client.PostAsJsonAsync($"/v1/users/{otherId}/report", request, ApiFormat.Json);
 
@@ -84,7 +87,10 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         var bob = await SignUpAsync("bobby");
 
         for (var i = 0; i < 10; i++)
+        {
             Assert.Equal(HttpStatusCode.NoContent, (await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+            Later();
+        }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, (await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
     }
@@ -123,6 +129,7 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         Assert.Null(Assert.Single(Stored()).ForwardedAt);
 
         _discord.Status = HttpStatusCode.NoContent;
+        Later();
         await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "second"));
 
         Assert.All(Stored(), f => Assert.NotNull(f.ForwardedAt));
@@ -155,7 +162,10 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         var alice = await SignUpAsync("alice");
         var bob = await SignUpAsync("bob");
         for (var i = 0; i < 5; i++)
+        {
             Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, $"idea {i}"))).StatusCode);
+            Later();
+        }
 
         Assert.Equal(HttpStatusCode.TooManyRequests, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "one more"))).StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(bob, new FeedbackRequest(FeedbackKind.Idea, "mine"))).StatusCode);
@@ -172,6 +182,85 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
         Assert.Equal(HttpStatusCode.NoContent, (await alice.Client.SendAsync(delete)).StatusCode);
 
         Assert.Equal(["bob's"], Stored().Select(f => f.Text));
+    }
+
+    // --- The 10-minute wait (0.28.1) ---
+
+    private static async Task<DateTime> RetryAtAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        return doc.RootElement.GetProperty(ProblemExtensions.RetryAt).GetDateTime().ToUniversalTime();
+    }
+
+    [Fact] public async Task Feedback_WaitsTenMinutes_AndSaysUntilWhen_ForEachUserApart()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bob");
+        var t0 = new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero);
+        Clock.Fixed = t0;
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "one"))).StatusCode);
+
+        Clock.Fixed = t0.AddMinutes(3);
+        var refused = await SendAsync(alice, new FeedbackRequest(FeedbackKind.Problem, "two"));
+        Assert.Equal(t0.AddMinutes(10).UtcDateTime, await RetryAtAsync(refused));
+        Assert.Equal(FeedbackRules.TooSoonMessage(TimeSpan.FromMinutes(7)),
+            await ProblemAsync(await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "two")), HttpStatusCode.TooManyRequests));
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(bob, new FeedbackRequest(FeedbackKind.Idea, "bob's"))).StatusCode);
+
+        Clock.Fixed = t0.AddMinutes(10);
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "two"))).StatusCode);
+        Assert.Equal(3, Stored().Count);
+    }
+
+    [Fact] public async Task Reports_WaitTenMinutes_ApartFromFeedback()
+    {
+        var alice = await SignUpAsync("alice");
+        var bob = await SignUpAsync("bobby");
+        var cara = await SignUpAsync("carab");
+        var t0 = new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero);
+        Clock.Fixed = t0;
+        Assert.Equal(HttpStatusCode.NoContent, (await ReportAsync(alice, bob.User.Id, new UserReportRequest(UserReportReason.Spam))).StatusCode);
+
+        Clock.Fixed = t0.AddMinutes(1);
+        var refused = await ReportAsync(alice, cara.User.Id, new UserReportRequest(UserReportReason.Username));   // someone else: still waits
+        Assert.Equal(t0.AddMinutes(10).UtcDateTime, await RetryAtAsync(refused));
+        Assert.Equal(HttpStatusCode.NoContent, (await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "feedback isn't a report"))).StatusCode);
+
+        Clock.Fixed = t0.AddMinutes(10);
+        Assert.Equal(HttpStatusCode.NoContent, (await ReportAsync(alice, cara.User.Id, new UserReportRequest(UserReportReason.Username))).StatusCode);
+    }
+
+    [Fact] public async Task TheAppsClient_ReadsTheRetryTime()
+    {
+        var tokens = new MemoryTokenStore();
+        var api = Api(tokens, appVersion: "0.28.1");
+        var auth = await api.RegisterAsync(new RegisterRequest("alice", "alice@example.com", DefaultPassword, "phone"));
+        tokens.Set(auth.Value!.Token);
+        var t0 = new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero);
+        Clock.Fixed = t0;
+        Assert.True((await api.SendFeedbackAsync(new FeedbackRequest(FeedbackKind.Idea, "Dark mode"))).IsOk);
+
+        var r = await api.SendFeedbackAsync(new FeedbackRequest(FeedbackKind.Idea, "And a light one"));
+        Assert.Equal(429, r.Status);
+        Assert.Equal(t0.AddMinutes(10).UtcDateTime, r.RetryAt);
+        Assert.Equal(DateTimeKind.Utc, r.RetryAt!.Value.Kind);
+    }
+
+    /// <summary>0.21.0 (the presentation build) knows nothing of the cooldown: it gets a Refused with the
+    /// server's sentence, not Offline.</summary>
+    [Fact] public async Task An021Client_GetsTheWaitAsARefusal()
+    {
+        var tokens = new MemoryTokenStore();
+        var api = Api(tokens, appVersion: "0.21.0");
+        var auth = await api.RegisterAsync(new RegisterRequest("alice", "alice@example.com", DefaultPassword, "phone"));
+        tokens.Set(auth.Value!.Token);
+        Clock.Fixed = new DateTimeOffset(2026, 11, 28, 12, 0, 0, TimeSpan.Zero);
+        Assert.True((await api.SendFeedbackAsync(new FeedbackRequest(FeedbackKind.Idea, "Dark mode"))).IsOk);
+
+        var r = await api.SendFeedbackAsync(new FeedbackRequest(FeedbackKind.Idea, "And a light one"));
+        Assert.True(r.IsRefused);
+        Assert.Equal(FeedbackRules.TooSoonMessage(TimeSpan.FromMinutes(10)), r.Error);
     }
 
     [Fact] public async Task TheAppsClient_SendsIt()
@@ -246,6 +335,7 @@ public class FeedbackEndpointTests(PostgresFixture postgres) : ServerTest(postgr
     {
         var alice = await SignUpAsync("alice");
         await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, "short idea"));
+        Later();
         await SendAsync(alice, new FeedbackRequest(FeedbackKind.Idea, new string('a', DiscordFeedbackForwarder.MaxEmbedText + 100)));
         var ids = Stored().Select(f => f.Id).ToList();
         var recorder = new Recorder();

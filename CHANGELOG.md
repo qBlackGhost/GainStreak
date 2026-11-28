@@ -2,6 +2,14 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.28.1
+
+- **Reordering a workout day's exercises works on phones again:** on a day long enough to scroll, dragging an exercise by its handle (⋮⋮) scrolled the page instead, and the exercise stayed faded. Now the handle moves the exercise, and swiping anywhere else on the list still scrolls the page. The "Drag to reorder" tip no longer pops up under your finger.
+- **"Away from …?" asks again after a missed location:** when your phone couldn't get a location in time, Home waited 6 hours before looking again, so a trip could go unnoticed. Now it tries again after about 15 minutes.
+- **The Inbox number shows up on its own:** a new friend request or share now shows its red number next to Inbox right after you sign in, when you open the app or come back to it, after a sync, and about once a minute while the app is open. Before, it often showed only after you'd opened the Inbox once. With no signal, the last number stays instead of disappearing.
+- **A short wait between feedback messages, and between reports:** after you send feedback, or report someone, the next one can go 10 minutes later. Feedback and the report popup say when ("You can send again at 14:35."), with Send greyed out until then; blocking still works at once. The wait is the same for everyone and is checked by the server, so it keeps protecting the developer's inbox from spam. Older versions of the app see "Too many tries" instead.
+- **Migration:** none.
+
 ## 0.28.0
 
 - **Change your username (phones):** **Profile → Settings → Username** opens **Change username**. Type the new name, your current password, and tap **Change**.
