@@ -122,18 +122,6 @@
             </RadialGradientBrush>
         </Setter>
     </Style>
-    <!-- Show password, beside the Password label -->
-    <Style Selector="Button.showPassword">
-        <!-- Never takes focus: the field keeps it, so a tap doesn't close the keyboard -->
-        <Setter Property="Focusable" Value="False"/>
-        <!-- On press, not release: the keyboard's bar can change during the tap and move the page, which cancels a click
-             that waits for the release -->
-        <Setter Property="ClickMode" Value="Press"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
-        <Setter Property="FontSize" Value="13"/>
-        <!-- Keeps the 44 pt touch area without making the label's row taller than the others -->
-        <Setter Property="Margin" Value="0,-14"/>
-    </Style>
 
     <!-- A whole-form message (wrong password, could not connect) -->
     <Style Selector="Border.formError">

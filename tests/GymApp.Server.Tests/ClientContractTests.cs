@@ -51,6 +51,26 @@ public class ClientContractTests : ServerTest
         Assert.Equal(1, expired);
     }
 
+    [Fact] public async Task ChangeUsername_ReturnsTheAccount_AndRefusalsCarryTheirField()
+    {
+        var (alice, me) = await RegisterAsync("alice");
+        await RegisterAsync("bobby");
+
+        var taken = await alice.ChangeUsernameAsync(new ChangeUsernameRequest("BOBBY", DefaultPassword));
+        Assert.Equal((409, "That username is taken.", ProblemFields.Username), (taken.Status, taken.Detail, taken.Field));
+        var wrong = await alice.ChangeUsernameAsync(new ChangeUsernameRequest("alice2", "wrong password"));
+        Assert.Equal((400, ProblemFields.Password), (wrong.Status, wrong.Field));
+
+        var renamed = await alice.ChangeUsernameAsync(new ChangeUsernameRequest("alice2", DefaultPassword));
+        var allowedAt = Clock.Fixed!.Value.UtcDateTime + GymApp.Core.Credentials.UsernameChangeCooldown;
+        Assert.Equal(me with { Username = "alice2", UsernameChangeAllowedAt = allowedAt }, renamed.Value);
+        Assert.Equal(allowedAt, (await alice.GetMeAsync()).Value!.UsernameChangeAllowedAt);
+
+        var tooSoon = await alice.ChangeUsernameAsync(new ChangeUsernameRequest("alice3", DefaultPassword));
+        Assert.Equal((429, "You can change your username again on 13 November 2026.", ProblemFields.Username),
+            (tooSoon.Status, tooSoon.Detail, tooSoon.Field));
+    }
+
     [Fact] public async Task PushDevice_RegisterAndUnregister()
     {
         var (alice, _) = await RegisterAsync("alice");

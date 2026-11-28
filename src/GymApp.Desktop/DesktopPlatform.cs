@@ -43,6 +43,9 @@ public sealed class DesktopPlatform : IPlatform
     /// <summary>True from the presentation update: the food diary and macros (Phase 26 and 27) work on the desktop too.</summary>
     public bool HasFoodLog => true;
 
+    /// <summary>False for the desktop app (frozen); the TestBench turns it on (Phase 28).</summary>
+    public bool HasUsernameChange { get; init; }
+
     public void OpenStorePage() { }
 
     // No reminders on the desktop (16g): Profile hides them

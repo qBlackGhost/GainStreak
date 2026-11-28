@@ -202,6 +202,19 @@ public sealed class RemoteSocialServicesTests : IDisposable
         Assert.Equal((new DateOnly(2026, 10, 12), 150), (nextWeek.WeekStart, nextWeek.Rows.Single().Points));
     }
 
+    [Fact] public async Task AFriendWhoRenamed_ShowsTheNewName_AfterTheNextFetch_AndOfflineToo()
+    {
+        ServeFriends();
+        Assert.Equal(["bob", "carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+
+        // Phase 28: bob renamed on his phone; the server joins names on every request
+        _server.On("GET v1/friends", HttpStatusCode.OK, new List<FriendResponse> { new(901, "bob_lifts", Since), new(902, "carol", Since) });
+        Assert.Equal(["bob_lifts", "carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+
+        _server.Offline = true;
+        Assert.Equal(["bob_lifts", "carol"], (await _friends.GetFriendsAsync(_me)).Select(f => f.Username));
+    }
+
     // --- A write that worked also leaves the cache: the next read may be offline ---
 
     /// <summary>Bob (901) and carol (902) everywhere: friends, both boards, the map and the requests.</summary>

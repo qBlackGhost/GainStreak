@@ -145,6 +145,7 @@ public partial class GymApplication : Application
             push.RequestSync();   // friend notifications (Phase 22): the permission may have changed in Settings
             Services.GetRequiredService<BadgeSync>().RequestRefresh(withFriends: true);   // a day may have passed (Phase 25)
             if (sync is null) return;
+            _shell?.CameToForeground();   // a friend may have renamed (Phase 28)
             sync.StartTimer();
             sync.RequestSync();
             Services.GetRequiredService<ReminderSync>().RequestRefresh();   // a day may have passed (16g)

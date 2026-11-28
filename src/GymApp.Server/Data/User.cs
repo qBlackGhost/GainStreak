@@ -44,6 +44,10 @@ public class User
 
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>When the user last renamed themselves (Phase 28); null if never. A change of capital letters only
+    /// doesn't set it. The next rename works <see cref="Core.Credentials.UsernameChangeCooldown"/> after it.</summary>
+    public DateTime? UsernameChangedAt { get; set; }
+
     /// <summary>Set by the <c>suspend</c> command (<see cref="AccountCommands"/>). A suspended account can't sign in and
     /// doesn't show to anyone, but keeps its data, so <c>unsuspend</c> puts everything back.</summary>
     public DateTime? SuspendedAt { get; set; }

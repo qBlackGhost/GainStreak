@@ -2,6 +2,20 @@
 
 Versions follow the rules in the README: before 1.0, **0.&lt;phase&gt;.&lt;fix&gt;**, where the middle number is the implementation plan's phase and the last counts fixes within it. 1.0.0 will be the first public release.
 
+## 0.28.0
+
+- **Change your username (phones):** **Profile → Settings → Username** opens **Change username**. Type the new name, your current password, and tap **Change**.
+  - **Friends see the new name straight away** in their list, the leaderboard, their inbox and the map. Your friendships, shares, badges and stats stay as they were.
+  - **Your invite link and QR code keep working**, even ones you already shared or printed; whoever opens them sees your new name.
+  - **You sign in with the new name** from then on. The old one stops working, and anyone can take it.
+  - **Once every 30 days.** The sheet tells you the date when you can change it again. Changing only capital letters ("alex" to "Alex") is always allowed and doesn't start the 30 days.
+  - The same rules as a new account: 3 to 32 letters, digits, `_`, `.` or `-`, at least one letter. The sheet checks as you type; a name someone already has is refused when you tap **Change**.
+  - It needs a connection: offline, the sheet says so and **Change** stays off.
+- **Show password everywhere:** every box that asks for your password now has **Show password**, as Log in and Create account already did: **Change email**, **Change password** (one button for all three boxes), **Delete account** and **Change username**.
+- **Friends and Inbox refresh when you come back to the app**, so a friend's new name (or a new request) shows without leaving the screen.
+- The desktop doesn't get these (it stays as it is for the presentation).
+- **Migration:** the server's database (`UsernameChange`: when you last renamed, and a short history of your previous usernames for moderation).
+
 ## 0.27.2
 
 - **Desktop catches up for the presentation (run from source, no release):** the desktop app now has the phones' **Calories** screen (ring, macro bars, **Manage food**, past-day card, macro goals) and the **Body** card on Profile (weight chart, **Log**, **History**). The old Weight card is gone.

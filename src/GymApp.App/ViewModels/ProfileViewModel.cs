@@ -175,6 +175,11 @@ public partial class ProfileViewModel : ViewModelBase
     public string EditEmailLabel => HasEmail ? "Change" : "Add email";
     partial void OnHasEmailChanged(bool value) => OnPropertyChanged(nameof(EditEmailLabel));
 
+    /// <summary>Show password on each account form, as on Log in (the phones).</summary>
+    public PasswordVisibility EmailPasswordView { get; } = new();
+    public PasswordVisibility PasswordView { get; } = new();
+    public PasswordVisibility DeletePasswordView { get; } = new();
+
     [ObservableProperty] public partial bool IsChangingPassword { get; set; }
     [ObservableProperty] public partial string CurrentPassword { get; set; } = "";
     [ObservableProperty] public partial string NewPassword { get; set; } = "";
@@ -346,6 +351,24 @@ public partial class ProfileViewModel : ViewModelBase
 
     /// <summary>Phones with the food log (Phase 26) credit where the food data comes from.</summary>
     public bool ShowFoodCredit { get; } = GymApplication.Platform?.HasFoodLog == true;
+    /// <summary>Settings' Username row and its sheet (Phase 28): the phones and the TestBench, not the frozen desktop.</summary>
+    public bool ShowUsernameRow { get; } = GymApplication.Platform?.HasUsernameChange == true;
+
+    [RelayCommand]
+    private void ChangeUsername()
+    {
+        Info = Error = null;
+        var sheet = new ChangeUsernameSheetViewModel(_accounts, Username, () => _shell().ClosePopup(), name =>
+        {
+            Username = name;
+            Initials = UserInitials.Of(name);
+            if (Badges is not null) Badges.Initials = Initials;
+            Info = $"You're now @{name}.";
+        });
+        _shell().OpenSheet(sheet);
+        _ = sheet.LoadAsync();
+    }
+
     public string FoodCredit => "Food data: USDA FoodData Central and Open Food Facts (openfoodfacts.org, ODbL)";
 
     // The phones have no sidebar, so Profile holds these there

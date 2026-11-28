@@ -77,6 +77,10 @@ public sealed class SocialApiClient
     public Task<ApiResult> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Put, "v1/me/password", request, ct);
 
+    /// <summary>0.28.0. Answers the account with its new name. A server before 0.28.0 answers 404 (Refused).</summary>
+    public Task<ApiResult<MeResponse>> ChangeUsernameAsync(ChangeUsernameRequest request, CancellationToken ct = default) =>
+        SendAsync<MeResponse>(HttpMethod.Put, "v1/me/username", request, ct);
+
     public Task<ApiResult> DeleteAccountAsync(DeleteAccountRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, "v1/me", request, ct);
 

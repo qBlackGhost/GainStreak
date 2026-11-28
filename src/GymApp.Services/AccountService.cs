@@ -26,11 +26,16 @@ public class AccountService(
     public const string WrongLogin = "Wrong username or password.";
     public const string SessionEndedNotice = "Your session ended. Sign in again.";
     public const string NeedsEmailMessage = "Add an email to move your account online.";
+    public const string RenameNeedsConnectionMessage = "Changing your username needs a connection. Try again when you're online.";
+    public const string RenameNotAvailableMessage = "Changing your username isn't available yet. Try again later.";
 
     private readonly string _device = deviceName ?? Environment.MachineName;
 
     /// <summary>Only ever from the server this session, so it isn't kept on the phone.</summary>
     public bool? EmailConfirmed { get; private set; }
+
+    /// <summary>From the server, like <see cref="EmailConfirmed"/>.</summary>
+    public DateTime? UsernameChangeAllowedAt { get; private set; }
 
     public async Task<AccountResult> RegisterAsync(string username, string email, string password)
     {
@@ -129,6 +134,7 @@ public class AccountService(
             }
             await RefreshAsync(db, user, r.Value!, password: null);
             EmailConfirmed = r.Value!.EmailConfirmed;
+            UsernameChangeAllowedAt = r.Value.UsernameChangeAllowedAt;
             user.RememberTokenHash = TokenHash(token);
             await db.SaveChangesAsync();
             session.SignIn(user);
@@ -238,6 +244,64 @@ public class AccountService(
         return AccountResult.Ok(user);
     }
 
+    public async Task<AccountResult> ChangeUsernameAsync(string newUsername, string currentPassword)
+    {
+        if (session.CurrentUser is not { } current) return AccountResult.Fail("Sign in first.");
+        var username = newUsername.Trim();
+        if (Credentials.CheckUsername(username) is { } nameError) return AccountResult.Fail(nameError, FormField.Username);
+
+        var r = await api.ChangeUsernameAsync(new ChangeUsernameRequest(username, currentPassword));
+        if (r.IsOffline) return AccountResult.Fail(RenameNeedsConnectionMessage);
+        // A server from before 0.28.0 has no such endpoint
+        if (r.Status == 404) return AccountResult.Fail(RenameNotAvailableMessage);
+        if (!r.IsOk)
+        {
+            // Inside the waiting time: the message has the date, and the screen wants it too
+            if (r.Status == 429 && r.Field == ProblemFields.Username && (await api.GetMeAsync()).Value is { } fresh)
+                UsernameChangeAllowedAt = fresh.UsernameChangeAllowedAt;
+            return Failed(r);
+        }
+
+        var me = r.Value!;
+        User user;
+        await using (var db = await dbFactory.CreateDbContextAsync())
+        {
+            user = await db.Users.FirstAsync(u => u.Id == current.Id);
+            await RefreshAsync(db, user, me, password: null);
+            await db.SaveChangesAsync();
+        }
+        UsernameChangeAllowedAt = me.UsernameChangeAllowedAt;
+        await RenameInCacheAsync(dbFactory, current.Id, me.Username);
+        current.Username = me.Username;
+        session.NotifyUserUpdated();
+        return AccountResult.Ok(user);
+    }
+
+    public async Task<UsernameChangeCheck> CheckUsernameChangeAsync()
+    {
+        var r = await api.GetMeAsync();
+        if (r.IsOk)
+        {
+            UsernameChangeAllowedAt = r.Value!.UsernameChangeAllowedAt;
+            EmailConfirmed = r.Value.EmailConfirmed;
+        }
+        // Refused (too old a build, say) counts as not reachable for a rename too
+        return new UsernameChangeCheck(r.IsOk, UsernameChangeAllowedAt);
+    }
+
+    /// <summary>The cached boards show this user's own row under its old name until the next fetch: rewrite those rows
+    /// now, so a rename shows at once, offline too. Friends, requests, the inbox and friends' check-ins only hold
+    /// other people's names.</summary>
+    internal static async Task RenameInCacheAsync(IDbContextFactory<AppDbContext> dbFactory, int userId, string username)
+    {
+        var cache = new SocialCacheStore(dbFactory);
+        foreach (var key in new[] { SocialCacheKeys.LeaderboardThisWeek, SocialCacheKeys.LeaderboardAllTime, SocialCacheKeys.LeaderboardLastWeek })
+            await cache.UpdateAsync<LeaderboardResponse>(userId, key, board => board with
+            {
+                Rows = board.Rows.Select(row => row.IsYou ? row with { Username = username } : row).ToList()
+            });
+    }
+
     public async Task<AccountResult> DeleteAccountAsync(string password)
     {
         if (session.CurrentUser is not { } current) return AccountResult.Fail("Sign in first.");
@@ -267,6 +331,7 @@ public class AccountService(
     private async Task ForgetAsync(bool clearCache)
     {
         EmailConfirmed = null;
+        UsernameChangeAllowedAt = null;
         tokens.Clear();
         if (session.CurrentUser is not { } user) return;
         await using var db = await dbFactory.CreateDbContextAsync();
@@ -288,6 +353,7 @@ public class AccountService(
         user.ServerUserId = me.Id;
         user.RememberTokenHash = TokenHash(token);
         EmailConfirmed = me.EmailConfirmed;
+        UsernameChangeAllowedAt = me.UsernameChangeAllowedAt;
         await RefreshAsync(db, user, me, password);
         await db.SaveChangesAsync();
         return user;

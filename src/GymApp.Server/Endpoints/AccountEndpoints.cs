@@ -20,6 +20,7 @@ public static class AccountEndpoints
     private const string WrongPassword = "That password is not right.";
     public const string Suspended = "This account is suspended. Write to gainstreak.app@gmail.com if you think that's a mistake.";
     private const string SameEmail = "That is already your email.";
+    private const string SameUsername = "That is already your username.";
 
     /// <summary>Every reset request takes at least this long, longer than sending an email usually does, so the time
     /// it takes doesn't say whether an account has that address.</summary>
@@ -43,6 +44,7 @@ public static class AccountEndpoints
         me.MapPost("/email/code", SendConfirmCode).RequireRateLimiting(RateLimits.EmailCode);
         me.MapPost("/email/confirm", ConfirmEmail).RequireRateLimiting(RateLimits.EmailCode);
         me.MapPut("/password", ChangePassword).RequireRateLimiting(RateLimits.Password);
+        me.MapPut("/username", ChangeUsername).RequireRateLimiting(RateLimits.Password);
         me.MapDelete("", DeleteAccount).RequireRateLimiting(RateLimits.Password);
     }
 
@@ -94,7 +96,7 @@ public static class AccountEndpoints
         if (signUps.Record(address) is { } lastHour && http.RequestServices.GetService<DiscordFeedbackForwarder>() is { } discord)
             await discord.PostSignUpAlertAsync(lastHour);
 
-        return Results.Created("/v1/me", new AuthResponse(token, ToMe(user)));
+        return Results.Created("/v1/me", new AuthResponse(token, ToMe(user, now)));
     }
 
     private static async Task<IResult> Login(LoginRequest request, ServerDbContext db, TimeProvider clock)
@@ -122,9 +124,10 @@ public static class AccountEndpoints
         // Only after the password: a stranger can't find out that an account is suspended
         if (user!.SuspendedAt is not null) return Problems.Forbidden(Suspended);
 
-        var token = SessionTokens.Start(db, user.Id, request.DeviceName, clock.GetUtcNow().UtcDateTime);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var token = SessionTokens.Start(db, user.Id, request.DeviceName, now);
         await db.SaveChangesAsync();
-        return Results.Ok(new AuthResponse(token, ToMe(user)));
+        return Results.Ok(new AuthResponse(token, ToMe(user, now)));
     }
 
     private static async Task<IResult> Logout(ClaimsPrincipal principal, ServerDbContext db)
@@ -134,12 +137,64 @@ public static class AccountEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<IResult> GetMe(ClaimsPrincipal principal, ServerDbContext db)
+    private static async Task<IResult> GetMe(ClaimsPrincipal principal, ServerDbContext db, TimeProvider clock)
     {
         var userId = principal.UserId();
         var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
-        return user is null ? Results.NotFound() : Results.Ok(ToMe(user));
+        return user is null ? Results.NotFound() : Results.Ok(ToMe(user, clock.GetUtcNow().UtcDateTime));
     }
+
+    /// <summary>Phase 28. Everything else relates to the user by id, so friendships, shares, blocks, reports and the
+    /// invite code all carry over; other users read the new name on their next request. The old name is free at once.
+    /// A change of capital letters only doesn't count towards the waiting time.</summary>
+    private static async Task<IResult> ChangeUsername(ChangeUsernameRequest request, ClaimsPrincipal principal,
+        ServerDbContext db, TimeProvider clock)
+    {
+        var username = (request.Username ?? "").Trim();
+        if (Credentials.CheckUsername(username) is { } nameError) return Problems.BadRequest(nameError, ProblemFields.Username);
+
+        var userId = principal.UserId();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return Results.NotFound();
+        // Suspending ends every session, so this is only a backstop
+        if (user.SuspendedAt is not null) return Problems.Forbidden(Suspended);
+        if (!IsCurrentPassword(request.CurrentPassword, user))
+            return Problems.BadRequest(WrongPassword, ProblemFields.Password);
+        if (user.Username == username) return Problems.BadRequest(SameUsername, ProblemFields.Username);
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var normalized = User.NormalizeUsername(username);
+        var capitalsOnly = normalized == user.UsernameNormalized;
+        if (!capitalsOnly)
+        {
+            if (AllowedAt(user, now) is { } allowedAt)
+                return Problems.TooManyRequests(Credentials.UsernameChangeTooSoonMessage(allowedAt), ProblemFields.Username,
+                    new Dictionary<string, object?> { ["usernameChangeAllowedAt"] = allowedAt });
+            if (await db.Users.AnyAsync(u => u.UsernameNormalized == normalized))
+                return Problems.Conflict(UsernameTaken, ProblemFields.Username);
+            user.UsernameChangedAt = now;
+        }
+
+        db.UsernameChanges.Add(new UsernameChange { UserId = user.Id, OldUsername = user.Username, NewUsername = username, ChangedAt = now });
+        user.Username = username;
+        user.UsernameNormalized = normalized;
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Someone took the name between the check and the update
+            return Problems.Conflict(UsernameTaken, ProblemFields.Username);
+        }
+        return Results.Ok(ToMe(user, now));
+    }
+
+    /// <summary>When the next rename works, or null when it works now.</summary>
+    private static DateTime? AllowedAt(User user, DateTime now) =>
+        user.UsernameChangedAt is { } changed && changed + Credentials.UsernameChangeCooldown > now
+            ? DateTime.SpecifyKind(changed + Credentials.UsernameChangeCooldown, DateTimeKind.Utc)
+            : null;
 
     private static async Task<IResult> ChangeEmail(ChangeEmailRequest request, ClaimsPrincipal principal, ServerDbContext db)
     {
@@ -257,7 +312,8 @@ public static class AccountEndpoints
         if (!IsCurrentPassword(request.Password, user))
             return Problems.BadRequest(WrongPassword, ProblemFields.Password);
 
-        // The database cascades to sessions and, from 13e on, friendships, stats and check-ins
+        // The database cascades to sessions and, from 13e on, friendships, stats and check-ins; from 0.28.0 the
+        // username history too
         await db.Users.Where(u => u.Id == userId).ExecuteDeleteAsync();
         return Results.NoContent();
     }
@@ -266,5 +322,6 @@ public static class AccountEndpoints
     private static bool IsCurrentPassword(string? given, User user) =>
         given is { Length: <= Credentials.MaxPasswordLength } && PasswordHasher.Verify(given, user.PasswordHash);
 
-    private static MeResponse ToMe(User user) => new(user.Id, user.Username, user.Email, user.ShareGymCheckIns, user.Avatar, user.EmailConfirmedAt is not null);
+    private static MeResponse ToMe(User user, DateTime now) => new(user.Id, user.Username, user.Email, user.ShareGymCheckIns,
+        user.Avatar, user.EmailConfirmedAt is not null, AllowedAt(user, now));
 }

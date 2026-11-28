@@ -8,9 +8,15 @@ public sealed record LoginRequest(string Login, string Password, string DeviceNa
 /// <summary>Returned by register and login. Send <see cref="Token"/> as <c>Authorization: Bearer &lt;token&gt;</c>.</summary>
 public sealed record AuthResponse(string Token, MeResponse User);
 
-/// <summary><see cref="ShareGymCheckIns"/> is null until the user has been asked.</summary>
+/// <summary><see cref="ShareGymCheckIns"/> is null until the user has been asked. <see cref="UsernameChangeAllowedAt"/>
+/// (UTC, 0.28.0) is set only while a rename has to wait; older servers never send it.</summary>
 public sealed record MeResponse(int Id, string Username, string Email, bool? ShareGymCheckIns, string? Avatar = null,
-    bool EmailConfirmed = false);
+    bool EmailConfirmed = false, DateTime? UsernameChangeAllowedAt = null);
+
+/// <summary><c>PUT /v1/me/username</c> (0.28.0). Same rules as register; the current password is asked for, like any
+/// account change. Answers with the new <see cref="MeResponse"/>. A 429 inside the waiting time carries the date as
+/// the <c>usernameChangeAllowedAt</c> extension of the ProblemDetails.</summary>
+public sealed record ChangeUsernameRequest(string Username, string CurrentPassword);
 
 /// <summary>Replaces the avatar: a colour, optionally with an icon ("violet" or "violet:flame"), or null for the plain initials.</summary>
 public sealed record AvatarRequest(string? Avatar);

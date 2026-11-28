@@ -28,6 +28,7 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
     public DbSet<InviteAccept> InviteAccepts => Set<InviteAccept>();
     public DbSet<OsmGym> OsmGyms => Set<OsmGym>();
     public DbSet<OsmGymCountry> OsmGymCountries => Set<OsmGymCountry>();
+    public DbSet<UsernameChange> UsernameChanges => Set<UsernameChange>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -58,6 +59,15 @@ public class ServerDbContext(DbContextOptions<ServerDbContext> options) : DbCont
             e.Property(u => u.ShareBadges).HasDefaultValue(true).HasSentinel(true);
             e.HasIndex(u => u.UsernameNormalized).IsUnique().HasDatabaseName(UsernameIndex);
             e.HasIndex(u => u.Email).IsUnique().HasDatabaseName(EmailIndex);
+        });
+
+        // Renames (Phase 28), for moderation; deleted with the account
+        b.Entity<UsernameChange>(e =>
+        {
+            e.Property(c => c.OldUsername).HasMaxLength(Credentials.MaxUsernameLength);
+            e.Property(c => c.NewUsername).HasMaxLength(Credentials.MaxUsernameLength);
+            e.HasIndex(c => c.UserId);
+            e.HasOne<User>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.Cascade);
         });
 
         b.Entity<Session>(e =>

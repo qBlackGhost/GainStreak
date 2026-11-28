@@ -475,6 +475,135 @@ public sealed class AccountServiceTests : IDisposable
         Assert.True(PasswordHasher.Verify("brand new pass", Local(id).PasswordHash));
     }
 
+    // --- Change username (Phase 28) ---
+
+    [Fact] public async Task ChangeUsername_UpdatesTheSavedUserAndTheSession_AndTellsTheScreens()
+    {
+        var id = await SignedInAsync();
+        var current = _session.CurrentUser!;
+        var updates = 0;
+        var changes = 0;
+        _session.UserUpdated += () => updates++;
+        _session.Changed += () => changes++;
+        var allowedAt = new DateTime(2026, 12, 27, 12, 0, 0, DateTimeKind.Utc);
+        _server.On("PUT v1/me/username", HttpStatusCode.OK, Alice with { Username = "Alice_Lifts", UsernameChangeAllowedAt = allowedAt });
+
+        var r = await _accounts.ChangeUsernameAsync(" Alice_Lifts ", Pw);
+
+        Assert.True(r.Success, r.Error);
+        Assert.Equal(new ChangeUsernameRequest("Alice_Lifts", Pw), _server.LastBody<ChangeUsernameRequest>("PUT v1/me/username"));
+        Assert.Equal("Alice_Lifts", Local(id).Username);
+        Assert.Same(current, _session.CurrentUser);   // the same signed-in user, renamed in place
+        Assert.Equal("Alice_Lifts", current.Username);
+        Assert.Equal((1, 0), (updates, changes));   // no navigation
+        Assert.Equal(allowedAt, _accounts.UsernameChangeAllowedAt);
+    }
+
+    [Fact] public async Task ChangeUsername_RenamesTheOwnRowInTheCachedBoards()
+    {
+        var id = await SignedInAsync();
+        var cache = new SocialCacheStore(_db);
+        await cache.SaveAsync(id, SocialCacheKeys.LeaderboardThisWeek, new LeaderboardResponse(GymApp.Contracts.LeaderboardPeriod.ThisWeek,
+            new DateOnly(2026, 10, 12), new DateOnly(2026, 10, 18),
+            [new(1, 41, "alice", 150, 2, "Novice", 3, true), new(2, 42, "bob", 90, 1, "Beginner", 1, false)]));
+        _server.On("PUT v1/me/username", HttpStatusCode.OK, Alice with { Username = "alice2" });
+
+        Assert.True((await _accounts.ChangeUsernameAsync("alice2", Pw)).Success);
+
+        var board = (await cache.GetAsync<LeaderboardResponse>(id, SocialCacheKeys.LeaderboardThisWeek))!.Value.Value;
+        Assert.Equal(["alice2", "bob"], board.Rows.Select(r => r.Username));
+    }
+
+    [Fact] public async Task ChangeUsername_Refusals_GoUnderTheRightField_AndChangeNothing()
+    {
+        var id = await SignedInAsync();
+
+        _server.On("PUT v1/me/username", HttpStatusCode.BadRequest, FakeSocialServer.Problem(400, "That password is not right.", "password"));
+        var wrong = await _accounts.ChangeUsernameAsync("alice2", "wrong password");
+        Assert.Equal(("That password is not right.", FormField.Password), (wrong.Error, wrong.Field));
+
+        _server.On("PUT v1/me/username", HttpStatusCode.Conflict, FakeSocialServer.Problem(409, "That username is taken.", "username"));
+        var taken = await _accounts.ChangeUsernameAsync("bobby", Pw);
+        Assert.Equal(("That username is taken.", FormField.Username), (taken.Error, taken.Field));
+
+        _server.On("PUT v1/me/username", HttpStatusCode.BadRequest,
+            FakeSocialServer.Problem(400, "That username isn't allowed. Pick another one.", "username"));
+        Assert.Equal(FormField.Username, (await _accounts.ChangeUsernameAsync("gainstreak_admin", Pw)).Field);
+
+        Assert.Equal("alice", Local(id).Username);
+        Assert.Equal("alice", _session.CurrentUser!.Username);
+    }
+
+    [Fact] public async Task ChangeUsername_ABadName_IsRefusedBeforeAskingTheServer()
+    {
+        await SignedInAsync();
+        _server.Calls.Clear();
+
+        var r = await _accounts.ChangeUsernameAsync("al ice", Pw);
+
+        Assert.Equal(FormField.Username, r.Field);
+        Assert.Empty(_server.Calls);
+    }
+
+    [Fact] public async Task ChangeUsername_TooSoon_ShowsTheServersDate_AndLearnsWhenItWorks()
+    {
+        await SignedInAsync();
+        var allowedAt = new DateTime(2026, 11, 13, 12, 0, 0, DateTimeKind.Utc);
+        var message = Credentials.UsernameChangeTooSoonMessage(allowedAt);
+        _server.On("PUT v1/me/username", HttpStatusCode.TooManyRequests, FakeSocialServer.Problem(429, message, "username"));
+        _server.On("GET v1/me", HttpStatusCode.OK, Alice with { UsernameChangeAllowedAt = allowedAt });
+
+        var r = await _accounts.ChangeUsernameAsync("alice3", Pw);
+
+        Assert.Equal((message, FormField.Username), (r.Error, r.Field));
+        Assert.Equal(allowedAt, _accounts.UsernameChangeAllowedAt);
+    }
+
+    [Fact] public async Task ChangeUsername_TheRateLimit_IsTheUsualTooManyTries()
+    {
+        await SignedInAsync();
+        _server.On("PUT v1/me/username", HttpStatusCode.TooManyRequests);
+
+        var r = await _accounts.ChangeUsernameAsync("alice3", Pw);
+
+        Assert.Equal(GymApp.Client.ApiResult.TooManyMessage, r.Error);
+        Assert.Null(_accounts.UsernameChangeAllowedAt);
+    }
+
+    [Fact] public async Task ChangeUsername_Offline_NeedsAConnection_AndQueuesNothing()
+    {
+        var id = await SignedInAsync();
+        _server.Offline = true;
+
+        var r = await _accounts.ChangeUsernameAsync("alice2", Pw);
+
+        Assert.Equal(AccountService.RenameNeedsConnectionMessage, r.Error);
+        Assert.Equal("alice", Local(id).Username);
+        _server.Offline = false;
+        _server.Calls.Clear();
+        await _accounts.RestoreAsync();
+        Assert.DoesNotContain("PUT v1/me/username", _server.Calls);
+    }
+
+    [Fact] public async Task ChangeUsername_AServerFromBefore028_SaysNotYet()
+    {
+        await SignedInAsync();
+        _server.On("PUT v1/me/username", HttpStatusCode.NotFound);
+
+        Assert.Equal(AccountService.RenameNotAvailableMessage, (await _accounts.ChangeUsernameAsync("alice2", Pw)).Error);
+    }
+
+    [Fact] public async Task UsernameChangeAllowedAt_ComesFromSignIn_AndGoesAtSignOut()
+    {
+        var allowedAt = new DateTime(2026, 12, 1, 0, 0, 0, DateTimeKind.Utc);
+        _server.Accepts(Alice with { UsernameChangeAllowedAt = allowedAt });
+        Assert.True((await _accounts.SignInAsync("alice", Pw)).Success);
+        Assert.Equal(allowedAt, _accounts.UsernameChangeAllowedAt);
+
+        await _accounts.LogOutAsync();
+        Assert.Null(_accounts.UsernameChangeAllowedAt);
+    }
+
     [Fact] public async Task DeleteAccount_RemovesTheLocalUser_OnlyAfterTheServerSaid204()
     {
         var id = await SignedInAsync();

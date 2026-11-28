@@ -29,7 +29,7 @@ sealed class Program
         AppClock.Offset = TimeSpan.FromDays(settings.DayOffset);
         // Local accounts and friends by default: the server refuses a clock more than 2 days off
         GymApplication.LocalSocial = !settings.ServerSocial;
-        GymApplication.Platform = new DesktopPlatform { HasLiveWorkout = settings.PhoneWorkout, HasBadges = true, Location = Location };
+        GymApplication.Platform = new DesktopPlatform { HasLiveWorkout = settings.PhoneWorkout, HasBadges = true, HasUsernameChange = true, Location = Location };
 
         GymApplication.MainWindowCreated = main =>
         {

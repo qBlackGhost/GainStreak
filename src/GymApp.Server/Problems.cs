@@ -13,7 +13,18 @@ public static class Problems
 
     public static IResult Conflict(string detail, string? field = null) => Problem(StatusCodes.Status409Conflict, detail, field);
 
-    private static IResult Problem(int status, string detail, string? field = null) =>
-        Results.Problem(detail: detail, statusCode: status,
-            extensions: field is null ? null : new Dictionary<string, object?> { ["field"] = field });
+    /// <summary>A 429 that says why and until when, unlike the rate limiter's (which has no body).</summary>
+    public static IResult TooManyRequests(string detail, string? field = null, IDictionary<string, object?>? extensions = null) =>
+        Problem(StatusCodes.Status429TooManyRequests, detail, field, extensions);
+
+    private static IResult Problem(int status, string detail, string? field = null, IDictionary<string, object?>? extensions = null)
+    {
+        Dictionary<string, object?>? all = null;
+        if (field is not null || extensions is not null)
+        {
+            all = extensions is null ? [] : new Dictionary<string, object?>(extensions);
+            if (field is not null) all["field"] = field;
+        }
+        return Results.Problem(detail: detail, statusCode: status, extensions: all);
+    }
 }

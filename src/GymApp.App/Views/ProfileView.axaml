@@ -806,8 +806,12 @@
                                                IsVisible="{Binding EmailError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="6">
-                                    <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
-                                    <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="Current password" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding EmailPasswordView.Label}"
+                                                Command="{Binding EmailPasswordView.ToggleCommand}"/>
+                                    </Grid>
+                                    <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding EmailPasswordView.Mask}"
                                              Text="{Binding EmailPassword}" AutomationProperties.Name="Current password"/>
                                     <TextBlock Classes="fieldError" Text="{Binding EmailPasswordError}"
                                                IsVisible="{Binding EmailPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -836,23 +840,28 @@
                                                 Command="{Binding ChangePasswordCommand}" VerticalAlignment="Center"/>
                                     </Grid>
                                     <StackPanel Spacing="10" IsVisible="{Binding IsChangingPassword}">
+                                        <!-- One Show password for all three boxes, as on Create account -->
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="Current password" FontSize="12" Classes="muted"/>
-                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="Current password" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding PasswordView.Label}"
+                                                        Command="{Binding PasswordView.ToggleCommand}"/>
+                                            </Grid>
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}"
                                                      Text="{Binding CurrentPassword}" AutomationProperties.Name="Current password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding CurrentPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding CurrentPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="New password" FontSize="12" Classes="muted"/>
-                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}"
                                                      Text="{Binding NewPassword}" AutomationProperties.Name="New password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding NewPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding NewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                         </StackPanel>
                                         <StackPanel Spacing="6">
                                             <TextBlock Text="Confirm new password" FontSize="12" Classes="muted"/>
-                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}"
                                                      Text="{Binding ConfirmNewPassword}" AutomationProperties.Name="Confirm new password"/>
                                             <TextBlock Classes="fieldError" Text="{Binding ConfirmNewPasswordError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding ConfirmNewPasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -883,8 +892,12 @@
                                         <TextBlock Text="Delete your account?" FontSize="15" FontWeight="SemiBold"/>
                                         <TextBlock Text="{Binding DeleteWarning}" FontSize="13" Classes="soft" TextWrapping="Wrap"/>
                                         <StackPanel Spacing="6">
-                                            <TextBlock Text="Password" FontSize="12" Classes="muted"/>
-                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="●"
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="Password" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding DeletePasswordView.Label}"
+                                                        Command="{Binding DeletePasswordView.ToggleCommand}"/>
+                                            </Grid>
+                                            <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding DeletePasswordView.Mask}"
                                                      Text="{Binding DeletePassword}" AutomationProperties.Name="Password to delete the account"/>
                                             <TextBlock Classes="fieldError" Text="{Binding DeleteError}" TextWrapping="Wrap"
                                                        IsVisible="{Binding DeleteError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
@@ -1089,6 +1102,18 @@
                 <TextBlock Classes="groupLabel" Text="ACCOUNT"/>
                 <Border Classes="card" Padding="0" ClipToBounds="True">
                   <StackPanel>
+                    <!-- Phase 28: opens the Change username sheet -->
+                    <StackPanel IsVisible="{Binding ShowUsernameRow}">
+                    <Button Classes="rowLink settingsRow" Command="{Binding ChangeUsernameCommand}">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                            <v:Icon Data="{StaticResource IcUser}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Classes="rowLabel" Text="Username"/>
+                            <TextBlock Grid.Column="2" Classes="rowValue" Text="{Binding Username}"/>
+                            <v:Icon Grid.Column="3" Data="{StaticResource IcChevronRight}" Stroke="{DynamicResource Muted}" Width="16" Height="16" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Button>
+                    <Border Classes="rowDivider"/>
+                    </StackPanel>
                     <Button Classes="rowLink settingsRow" Command="{Binding OpenPageCommand}" CommandParameter="{x:Static vm:ProfilePage.Account}">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
                             <v:Icon Data="{StaticResource IcMail}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18" VerticalAlignment="Center"/>

@@ -75,6 +75,30 @@ public class AuthService(IDbContextFactory<AppDbContext> dbFactory)
         return new(true, User: user);
     }
 
+    /// <summary>Renames the user after checking the current password, with the server's rules (Phase 28) but the
+    /// waiting time left to the caller. Usernames are unique ignoring case (the column is NOCASE).</summary>
+    public async Task<AuthResult> ChangeUsernameAsync(int userId, string newUsername, string currentPassword)
+    {
+        var username = newUsername.Trim();
+        if (Credentials.CheckUsername(username) is { } nameError) return new(false, nameError, Field: FormField.Username);
+
+        await using var db = await dbFactory.CreateDbContextAsync();
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user is null) return new(false, "User not found.");
+        if (!PasswordHasher.Verify(currentPassword, user.PasswordHash))
+            return new(false, "That password is not right.", Field: FormField.Password);
+        if (user.Username == username) return new(false, "That is already your username.", Field: FormField.Username);
+        if (await db.Users.AnyAsync(u => u.Username == username && u.Id != userId))
+            return new(false, TakenUsername, Field: FormField.Username);
+
+        user.Username = username;
+        try { await db.SaveChangesAsync(); }
+        catch (DbUpdateException) { return new(false, TakenUsername, Field: FormField.Username); }
+        return new(true, User: user);
+    }
+
+    private const string TakenUsername = "That username is taken.";
+
     /// <summary>Changes the password after checking the current one.</summary>
     public async Task<AuthResult> ChangePasswordAsync(int userId, string currentPassword, string newPassword)
     {

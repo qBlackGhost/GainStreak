@@ -48,4 +48,56 @@ public sealed class LocalAccountServiceTests : IDisposable
         using var db = _db.CreateDbContext();
         Assert.Empty(db.Users);
     }
+
+    // --- Change username (Phase 28) ---
+
+    [Fact] public async Task ChangeUsername_FollowsTheServersRules_AndWaits30Days()
+    {
+        var shift = AppClock.Offset;
+        try
+        {
+            await _accounts.RegisterAsync("alice", "alice@example.com", Pw);
+            await _accounts.RegisterAsync("bobby", "bobby@example.com", Pw);
+            await _accounts.SignInAsync("alice", Pw);
+            var updates = 0;
+            _session.UserUpdated += () => updates++;
+
+            Assert.Equal(FormField.Username, (await _accounts.ChangeUsernameAsync("al ice", Pw)).Field);
+            Assert.Equal(FormField.Username, (await _accounts.ChangeUsernameAsync("gainstreak_admin", Pw)).Field);
+            Assert.Equal(FormField.Password, (await _accounts.ChangeUsernameAsync("alice2", "wrong password")).Field);
+            Assert.Equal(("That username is taken.", FormField.Username),
+                ((await _accounts.ChangeUsernameAsync("BOBBY", Pw)).Error, (await _accounts.ChangeUsernameAsync("BOBBY", Pw)).Field));
+            Assert.Equal(FormField.Username, (await _accounts.ChangeUsernameAsync("alice", Pw)).Field);   // already yours
+            Assert.Null(_accounts.UsernameChangeAllowedAt);
+
+            // Capitals only: free, and doesn't start the wait
+            Assert.True((await _accounts.ChangeUsernameAsync("Alice", Pw)).Success);
+            Assert.Null(_accounts.UsernameChangeAllowedAt);
+
+            Assert.True((await _accounts.ChangeUsernameAsync("alice2", Pw)).Success);
+            Assert.Equal(("alice2", 2), (_session.CurrentUser!.Username, updates));
+            Assert.NotNull(_accounts.UsernameChangeAllowedAt);
+
+            var tooSoon = await _accounts.ChangeUsernameAsync("alice3", Pw);
+            Assert.Equal(FormField.Username, tooSoon.Field);
+            Assert.StartsWith("You can change your username again on ", tooSoon.Error);
+            Assert.Equal(FormField.Password, (await _accounts.ChangeUsernameAsync("alice3", "wrong password")).Field);
+            Assert.True((await _accounts.ChangeUsernameAsync("Alice2", Pw)).Success);   // capitals still free
+
+            AppClock.Offset = shift + Credentials.UsernameChangeCooldown + TimeSpan.FromMinutes(1);
+            Assert.Null(_accounts.UsernameChangeAllowedAt);
+            Assert.True((await _accounts.ChangeUsernameAsync("alice3", Pw)).Success);
+
+            // The new name signs in, the old one doesn't, and the old one is free
+            await _accounts.LogOutAsync();
+            Assert.False((await _accounts.SignInAsync("alice", Pw)).Success);
+            Assert.True((await _accounts.SignInAsync("alice3", Pw)).Success);
+            await _accounts.LogOutAsync();
+            Assert.True((await _accounts.RegisterAsync("alice", "other@example.com", Pw)).Success);
+        }
+        finally
+        {
+            AppClock.Offset = shift;
+        }
+    }
 }

@@ -19,6 +19,7 @@ Notes for filling in the store forms for the GainStreak phone betas (Phase 16h).
 | Data | Why | Who sees it |
 |---|---|---|
 | Username, email, password (stored only as a hash) | The account; signing in | Username: friends and people searching for a username. Email: nobody else |
+| Previous usernames and when they changed (0.28.0, only after a rename) | Moderation: a report about an old name can still be read; the 30-day limit | Nobody but the developer. Deleted with the account |
 | A device name per signed-in session | Telling sessions apart | Nobody else |
 | Points, weekly points, level, current streak | The friends leaderboard | Friends |
 | Active split (which built-in preset, or "custom") | "Who uses it" percentages on split pages | Everyone, only as totals |
@@ -56,7 +57,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **Users can request deletion:** yes (see "Deleting an account").
 - **Data types:**
   - **Personal info:**
-    - Name (the username): collected; required; used for app functionality and account management.
+    - Name (the username): collected; required; used for app functionality and account management. From 0.28.0 the server also keeps previous usernames after a rename (moderation); same data type, add "Fraud prevention, security and compliance" to its purposes when updating the form.
     - Email address: collected; required; used for account management.
     - User IDs: collected; required; used for account management.
   - **App activity:**
@@ -89,6 +90,7 @@ The email address also receives codes, for confirming it and resetting the passw
 - **The prompt (Phase 19):** `NSLocationWhenInUseUsageDescription` now reads "GainStreak checks that you're at one of your gyms during a workout and notices when you're travelling. Your location stays on your phone unless you ask for gyms near you." Android's note before its prompt says the same.
 - **Health & Fitness (Phase 20):** **not collected.** What's read from Apple Health and what's saved there never leaves the phone (same reasoning as precise location). Nothing to declare; Apple's HealthKit rules still apply: no ads or marketing use, no iCloud storage of Health data (the app keeps it in its local database only), and a privacy policy that says how it's used (`site/privacy.html`, "Apple Health").
 - **Food log and camera (Phase 26), decided:** food data is **not collected** (stays on the phone). Barcodes and search text sent to Open Food Facts carry no identifier and aren't linked to the user; they are the same kind of lookup as the OpenStreetMap ones, so nothing new to declare (if you want to be strict, add "Search History, not linked, App Functionality"). Camera prompt, `NSCameraUsageDescription`: "GainStreak uses the camera to scan food barcodes." Nothing is recorded.
+- **Previous usernames (0.28.0):** the same kind of data as the username, kept for moderation and deleted with the account. Nothing new to declare: it's linked to the user, used for App Functionality, and not used for tracking.
 - **Data used to track you:** none.
 - **Data not linked to the user:**
   - Location: Coarse Location (App Functionality), from 0.19.0. Not used for tracking.

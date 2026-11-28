@@ -1,6 +1,7 @@
 namespace GymApp.Core;
 
-/// <summary>Rules for new accounts. Existing usernames that don't follow them keep working; only registration checks.</summary>
+/// <summary>Rules for new accounts and new usernames. Existing usernames that don't follow them keep working; only
+/// registration and a rename (Phase 28) check, and a rename checks only the new name.</summary>
 public static class Credentials
 {
     /// <summary>The terms new accounts agree to, from <c>site/terms.html</c>.</summary>
@@ -13,6 +14,13 @@ public static class Credentials
     public const int MaxEmailLength = 254;
 
     public const string NeedsALetterMessage = "Your username needs at least one letter.";
+
+    /// <summary>How long after a rename the next one works (Phase 28). A change of capital letters only is free.</summary>
+    public static readonly TimeSpan UsernameChangeCooldown = TimeSpan.FromDays(30);
+
+    /// <summary>The cooldown refusal, shared by the server and the app's local mode.</summary>
+    public static string UsernameChangeTooSoonMessage(DateTime allowedAtUtc) =>
+        $"You can change your username again on {allowedAtUtc.ToString("d MMMM yyyy", System.Globalization.CultureInfo.InvariantCulture)}.";
 
     /// <summary>Letters, digits, '_', '.' and '-' only (no spaces, emoji or control characters), 3 to 32 of them, at
     /// least one letter (0.23.1: the avatar shows a letter, see <see cref="UserInitials"/>), and nothing

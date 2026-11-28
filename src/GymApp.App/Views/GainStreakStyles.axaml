@@ -118,6 +118,18 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Foreground" Value="{DynamicResource Ink}"/>
         </Style>
+        <!-- Show password, beside a password box's label: Log in, Create account, Forgot password, Profile's account forms and the Change username sheet -->
+        <Style Selector="Button.showPassword">
+            <!-- Never takes focus: the field keeps it, so a tap doesn't close the keyboard -->
+            <Setter Property="Focusable" Value="False"/>
+            <!-- On press, not release: the keyboard's bar can change during the tap and move the page, which cancels a click
+                 that waits for the release -->
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="FontSize" Value="13"/>
+            <!-- Keeps the 44 pt touch area without making the label's row taller than the others -->
+            <Setter Property="Margin" Value="0,-14"/>
+        </Style>
         <Style Selector="Button.link">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>

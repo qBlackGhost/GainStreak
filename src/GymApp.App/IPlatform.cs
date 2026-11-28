@@ -58,6 +58,10 @@ public interface IPlatform
     /// A head without it keeps the one-number form. Decided by the head, never by the window's width.</summary>
     bool HasFoodLog => false;
 
+    /// <summary>Changing your username (Phase 28): the phones only, as Settings' Username row and its sheet. The
+    /// desktop (frozen) hides it; the TestBench turns it on. Decided by the head, never by the window's width.</summary>
+    bool HasUsernameChange => false;
+
     /// <summary>The camera barcode scanner for the food log (Phase 26): iOS and Android have one; the desktop's is a no-op.</summary>
     IBarcodeScanner CreateBarcodeScanner() => new NoBarcodeScanner();
 

@@ -26,6 +26,9 @@ public class EmailScreensTests
         public Task LogOutAsync() => throw new NotSupportedException();
         public Task<AccountResult> ChangeEmailAsync(string newEmail, string currentPassword) => throw new NotSupportedException();
         public Task<AccountResult> ChangePasswordAsync(string currentPassword, string newPassword) => throw new NotSupportedException();
+        public Task<AccountResult> ChangeUsernameAsync(string newUsername, string currentPassword) => throw new NotSupportedException();
+        public DateTime? UsernameChangeAllowedAt => null;
+        public Task<UsernameChangeCheck> CheckUsernameChangeAsync() => throw new NotSupportedException();
         public Task<AccountResult> DeleteAccountAsync(string password) => throw new NotSupportedException();
     }
 

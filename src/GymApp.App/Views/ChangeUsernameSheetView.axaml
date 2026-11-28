@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:GymApp.App.ViewModels"
+             xmlns:v="using:GymApp.App.Views"
+             x:Class="GymApp.App.Views.ChangeUsernameSheetView"
+             x:DataType="vm:ChangeUsernameSheetViewModel">
+    <!-- The Change username sheet (Phase 28, phones): the current name, the new one with live feedback, the current
+         password and Change. The frame is the Calorie goal sheet's, the fields are Profile's account forms'. -->
+    <UserControl.Styles>
+        <StyleInclude Source="/Views/GainStreakStyles.axaml"/>
+        <Style Selector="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+        <Style Selector="TextBox.field">
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Background" Value="{DynamicResource PageBg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Control}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="TextBlock.hint">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+        </Style>
+        <Style Selector="TextBlock.hint.ok"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
+        <Style Selector="TextBlock.hint.bad"><Setter Property="Foreground" Value="IndianRed"/></Style>
+        <Style Selector="TextBlock.counter">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontFamily" Value="{StaticResource Mono}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Muted}"/>
+            <Setter Property="TextWrapping" Value="NoWrap"/>
+        </Style>
+        <Style Selector="TextBlock.counter.ok"><Setter Property="Foreground" Value="{DynamicResource AccentInk}"/></Style>
+    </UserControl.Styles>
+    <Border x:Name="Scrim" Classes="scrim" Background="{DynamicResource Scrim}" Padding="24">
+        <v:Sheet MaxWidth="460" HorizontalAlignment="Center" VerticalAlignment="Center" Padding="18,12,18,20" CornerRadius="22"
+                 Background="{DynamicResource Surface2}" BorderBrush="{DynamicResource Control}" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="14" TextElement.Foreground="{DynamicResource Ink}">
+                    <Border Classes="phoneOnly" Width="40" Height="5" CornerRadius="3" Background="{DynamicResource Control}" HorizontalAlignment="Center"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBlock Text="Change username" FontSize="20" FontWeight="ExtraBold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Classes="icon" AutomationProperties.Name="Close" Command="{Binding CloseCommand}">
+                            <v:Icon Data="{StaticResource IcX}" StrokeThickness="2.4"/>
+                        </Button>
+                    </Grid>
+
+                    <!-- The current name, in the account tiles' icon box -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Border Width="40" Height="40" CornerRadius="10" Background="{DynamicResource Fill}">
+                            <v:Icon Data="{StaticResource IcUser}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="18" Height="18"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+                            <TextBlock Text="Current username" FontSize="12" Classes="muted"/>
+                            <TextBlock Text="{Binding CurrentUsername}" FontSize="15" FontWeight="SemiBold" TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Waiting time: the date stays up; capitals-only changes still work -->
+                    <Border Padding="12,10" CornerRadius="12" Background="{DynamicResource Fill3}" IsVisible="{Binding IsWaiting}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                            <v:Icon Data="{StaticResource IcClock}" Stroke="{DynamicResource Soft}" StrokeThickness="2" Width="16" Height="16"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding WaitNotice}" FontSize="13" Classes="soft" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Offline: the Friend QR sheet's pill -->
+                    <Border HorizontalAlignment="Left" Padding="10,6" CornerRadius="999" Background="{DynamicResource Fill}"
+                            BorderBrush="{DynamicResource Control}" BorderThickness="1" IsVisible="{Binding IsOffline}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                            <v:Icon Data="{StaticResource IcWifiOff}" Width="14" Height="14" StrokeThickness="2.2" Stroke="{DynamicResource Soft}"
+                                    VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Changing your username needs a connection. Try again when you're online."
+                                       FontSize="12" Classes="soft" VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="New username" FontSize="12" Classes="muted"/>
+                        <TextBox x:Name="NewName" Classes="field" MaxLength="32" PlaceholderText="New username" Text="{Binding NewUsername}"
+                                 AutomationProperties.Name="New username"/>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" IsVisible="{Binding ShowHint}">
+                            <v:Icon Data="{StaticResource IcCheck}" Stroke="{DynamicResource AccentInk}" StrokeThickness="2.8" Width="12" Height="12"
+                                    VerticalAlignment="Center" IsVisible="{Binding IsHintOk}"/>
+                            <TextBlock Grid.Column="1" Classes="hint" Classes.ok="{Binding IsHintOk}" Classes.bad="{Binding IsHintError}"
+                                       Text="{Binding Hint}"/>
+                            <TextBlock Grid.Column="2" Classes="counter" Classes.ok="{Binding IsHintOk}" Text="{Binding CounterText}"
+                                       VerticalAlignment="Top"/>
+                        </Grid>
+                        <TextBlock Classes="fieldError" Text="{Binding UsernameError}" IsVisible="{Binding HasUsernameError}"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="Current password" FontSize="12" Classes="muted" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Classes="link showPassword phoneOnly" Content="{Binding PasswordView.Label}"
+                                    Command="{Binding PasswordView.ToggleCommand}"/>
+                        </Grid>
+                        <TextBox TextInputOptions.ContentType="Password" Classes="field" MaxLength="128" PasswordChar="{Binding PasswordView.Mask}"
+                                 PlaceholderText="Your password" Text="{Binding Password}" AutomationProperties.Name="Current password"/>
+                        <TextBlock Classes="fieldError" Text="{Binding PasswordError}"
+                                   IsVisible="{Binding PasswordError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{x:Static vm:ChangeUsernameSheetViewModel.TesterText}" FontSize="12" Classes="muted" LineHeight="17"/>
+
+                    <TextBlock Text="{Binding Error}" Classes="error" FontSize="13"
+                               IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    <Button Classes="btn primary big" MinHeight="48" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Content="{Binding ChangeLabel}" Command="{Binding ChangeCommand}"/>
+                </StackPanel>
+            </ScrollViewer>
+        </v:Sheet>
+    </Border>
+</UserControl>

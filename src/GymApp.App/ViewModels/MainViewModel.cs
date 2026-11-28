@@ -79,6 +79,8 @@ public partial class MainViewModel : ViewModelBase
         _session = session;
         _sp = sp;
         _session.Changed += Refresh;
+        // A rename (Phase 28) changes the app bar's letters without navigating; the screens read the name when opened
+        _session.UserUpdated += () => Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(Initials)));
         if (sp.GetService<BadgeSync>() is { } badgeSync)   // new badges show their sheet (Phase 25)
         {
             badgeSync.Unlocked += unlocks => Dispatcher.UIThread.Post(() => _ = PresentBadgeNewsAsync());
@@ -558,6 +560,22 @@ public partial class MainViewModel : ViewModelBase
 
     /// <summary>A friend notification came while the app is open (Phase 22). The Inbox badge refreshes; Inbox and
     /// Friends reload in place. True when the head should still show it (any other screen). On the UI thread.</summary>
+    /// <summary>The phone brought the app back to the front (Phase 28): Friends and Inbox, the screens that show other
+    /// people's names, fetch again, so a friend who renamed meanwhile shows the new name. Other screens load when opened.</summary>
+    public void CameToForeground()
+    {
+        if (!_session.IsLoggedIn) return;
+        switch (Current)
+        {
+            case InboxViewModel inbox:
+                _ = inbox.LoadAsync();
+                break;
+            case FriendsViewModel friends:
+                _ = friends.RefreshAsync();
+                break;
+        }
+    }
+
     public bool PushArrived(PushKind kind)
     {
         if (_session.CurrentUser is not { } user) return true;

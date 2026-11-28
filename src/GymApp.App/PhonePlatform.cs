@@ -40,6 +40,8 @@ public abstract class PhonePlatform(string? serverUrl) : IPlatform
 
     public bool HasFoodLog => true;
 
+    public bool HasUsernameChange => true;
+
     /// <summary>The head's camera scanner (Phase 26); iOS and Android override it.</summary>
     public virtual IBarcodeScanner CreateBarcodeScanner() => new NoBarcodeScanner();
 

@@ -505,6 +505,9 @@ namespace GymApp.Server.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<DateTime?>("UsernameChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("UsernameNormalized")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -605,6 +608,37 @@ namespace GymApp.Server.Data.Migrations
                     b.HasIndex("ReporterId");
 
                     b.ToTable("UserReports");
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.UsernameChange", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewUsername")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("OldUsername")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UsernameChanges");
                 });
 
             modelBuilder.Entity("GymApp.Server.Data.CheckIn", b =>
@@ -756,6 +790,15 @@ namespace GymApp.Server.Data.Migrations
                     b.HasOne("GymApp.Server.Data.User", null)
                         .WithMany()
                         .HasForeignKey("ReporterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("GymApp.Server.Data.UsernameChange", b =>
+                {
+                    b.HasOne("GymApp.Server.Data.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

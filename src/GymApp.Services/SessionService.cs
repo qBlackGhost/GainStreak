@@ -20,6 +20,16 @@ public class SessionService
 
     public event Action? Changed;
 
+    /// <summary>The signed-in user's own details changed in place (a new username, Phase 28) without anyone signing in
+    /// or out. Unlike <see cref="Changed"/>, nothing navigates: screens showing the name just read it again.</summary>
+    public event Action? UserUpdated;
+
+    /// <summary>Raises <see cref="UserUpdated"/>, after a change to <see cref="CurrentUser"/>'s fields.</summary>
+    public void NotifyUserUpdated()
+    {
+        if (CurrentUser is not null) UserUpdated?.Invoke();
+    }
+
     public void SignIn(User user, bool offline = false, bool newAccount = false)
     {
         CurrentUser = user;

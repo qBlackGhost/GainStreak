@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using GymApp.Core;
 using GymApp.Data;
@@ -54,6 +56,47 @@ public class LocalAccountService(
         var r = await auth.ChangePasswordAsync(current.Id, currentPassword, newPassword);
         if (!r.Success) return AccountResult.Fail(r.Error!, r.Field);
         current.PasswordHash = r.User!.PasswordHash;
+        return AccountResult.Ok(r.User);
+    }
+
+    /// <summary>When each local user last renamed (UTC). Kept in memory only: local mode is the TestBench's, and a
+    /// restart starting the wait over is fine there (Phase 28 adds no app table).</summary>
+    private readonly Dictionary<int, DateTime> _renamedAt = [];
+
+    private static DateTime UtcNow => AppClock.Now.ToUniversalTime();
+
+    public DateTime? UsernameChangeAllowedAt =>
+        session.CurrentUser is { } u && _renamedAt.TryGetValue(u.Id, out var at) && at + Credentials.UsernameChangeCooldown > UtcNow
+            ? at + Credentials.UsernameChangeCooldown
+            : null;
+
+    public Task<UsernameChangeCheck> CheckUsernameChangeAsync() =>
+        Task.FromResult(new UsernameChangeCheck(true, UsernameChangeAllowedAt));
+
+    public async Task<AccountResult> ChangeUsernameAsync(string newUsername, string currentPassword)
+    {
+        if (session.CurrentUser is not { } current) return AccountResult.Fail("Sign in first.");
+        var username = newUsername.Trim();
+        // The same order as the server: the name, the password, then the waiting time
+        if (Credentials.CheckUsername(username) is { } nameError) return AccountResult.Fail(nameError, FormField.Username);
+        var capitalsOnly = string.Equals(username, current.Username, StringComparison.OrdinalIgnoreCase)
+                           && username != current.Username;
+        if (!capitalsOnly && UsernameChangeAllowedAt is { } allowedAt)
+        {
+            // Checked after the password, like the server
+            await using var db = await dbFactory.CreateDbContextAsync();
+            var hash = await db.Users.Where(u => u.Id == current.Id).Select(u => u.PasswordHash).FirstOrDefaultAsync();
+            if (hash is null || !PasswordHasher.Verify(currentPassword, hash))
+                return AccountResult.Fail("That password is not right.", FormField.Password);
+            if (username != current.Username)
+                return AccountResult.Fail(Credentials.UsernameChangeTooSoonMessage(allowedAt), FormField.Username);
+        }
+
+        var r = await auth.ChangeUsernameAsync(current.Id, username, currentPassword);
+        if (!r.Success) return AccountResult.Fail(r.Error!, r.Field);
+        if (!capitalsOnly) _renamedAt[current.Id] = UtcNow;
+        current.Username = r.User!.Username;
+        session.NotifyUserUpdated();
         return AccountResult.Ok(r.User);
     }
 
