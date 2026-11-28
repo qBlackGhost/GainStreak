@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Change Username Mockup</title>
+<!-- Phase 28c mockup (docs/PHASE_28_CHANGE_USERNAME.md, "Screen (28c), phones"). Static, for review only.
+     Tokens copied from src/GymApp.App/Views/GainStreakResources.axaml (light and dark dictionaries). -->
+<style>
+  /* ---------- Tokens: GainStreakResources.axaml ---------- */
+  .t-light {
+    --Accent:#C6F432; --AccentInk:#4D7C0F; --PageBg:#F4F4F1; --Surface:#FFFFFF; --Surface2:#F7F7F4;
+    --Fill:#ECECE8; --Fill2:#EDEDE9; --Fill3:#E8E8E4; --Inverse:#0B0B0B; --OnInverse:#FFFFFF;
+    --Ink:#0B0B0B; --Light:#2E2E2E; --Soft:#4A4A47; --Muted:#62625E; --Faint:#8A8A86; --Divider:#EAEAE6;
+    --Line:#E2E2DD; --Line2:#DADAD5; --Control:#D0D0CB; --ErrorText:#C4362A; --FlameText:#B35300;
+    --LimeTint:#EFF7D6; --LimeTintLine:#C9DD8E; --Scrim:rgba(20,20,18,.40);
+    --kb:#D1D3D9; --key:#FFFFFF; --keyAlt:#ABB0BA; --keyInk:#000;
+  }
+  .t-dark {
+    --Accent:#C6F432; --AccentInk:#C6F432; --PageBg:#000000; --Surface:#0B0B0B; --Surface2:#111111;
+    --Fill:#161616; --Fill2:#1A1A1A; --Fill3:#1E1E1E; --Inverse:#FFFFFF; --OnInverse:#000000;
+    --Ink:#FFFFFF; --Light:#D6D6D6; --Soft:#B5B5B5; --Muted:#9A9A9A; --Faint:#6E6E6E; --Divider:#1C1C1C;
+    --Line:#222222; --Line2:#2A2A2A; --Control:#333333; --ErrorText:#FF8A7A; --FlameText:#FFB066;
+    --LimeTint:#10140A; --LimeTintLine:#2E3A12; --Scrim:rgba(0,0,0,.72);
+    --kb:#2B2B2D; --key:#6B6B6E; --keyAlt:#47474A; --keyInk:#fff;
+  }
+  /* GymApplication.axaml:29, TextBlock.fieldError (what ProfileView's field errors actually use) */
+  :root { --FieldError:#CD5C5C; }
+
+  /* ---------- Page around the frames (not part of the app) ---------- */
+  :root { --pg:#e9e9e4; --pgInk:#1b1b1b; --pgMuted:#5d5d58; --pgCard:#fff; --pgLine:#d6d6d0; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --pg:#121212; --pgInk:#eee; --pgMuted:#a3a39e; --pgCard:#1b1b1b; --pgLine:#2c2c2c; } }
+  :root[data-theme="dark"] { --pg:#121212; --pgInk:#eee; --pgMuted:#a3a39e; --pgCard:#1b1b1b; --pgLine:#2c2c2c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--pg); color:var(--pgInk);
+         font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size:14px; }
+  header.doc { max-width:1240px; margin:0 auto; padding:32px 16px 8px; }
+  header.doc h1 { font-size:26px; margin:0 0 6px; font-weight:800; }
+  header.doc p { margin:0; color:var(--pgMuted); max-width:760px; line-height:1.5; }
+  .frames { display:flex; flex-wrap:wrap; gap:36px 28px; justify-content:center; padding:28px 16px; max-width:1680px; margin:0 auto; }
+  figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  figcaption { max-width:375px; font-size:13px; line-height:1.45; color:var(--pgMuted); text-align:center; }
+  figcaption b { color:var(--pgInk); }
+
+  /* ---------- Phone frame ---------- */
+  .phone { width:375px; height:812px; border-radius:48px; border:10px solid #161616; box-shadow:0 0 0 1px #3a3a3a, 0 18px 50px rgba(0,0,0,.25);
+           overflow:hidden; position:relative; display:flex; flex-direction:column; background:var(--PageBg); color:var(--Ink); }
+  .phone.small { width:320px; height:568px; border-radius:36px; }
+  .status { height:44px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 26px 0 30px; font-size:14px; font-weight:600; }
+  .small .status { height:20px; font-size:11px; padding:0 12px; }
+  .status .dots { display:flex; gap:5px; align-items:center; }
+  .status .bat { width:22px; height:11px; border:1.5px solid currentColor; border-radius:3px; position:relative; }
+  .status .bat::after { content:""; position:absolute; inset:1.5px 5px 1.5px 1.5px; background:currentColor; border-radius:1px; }
+
+  /* AppBar.axaml: PageBg, bottom Line, MinHeight 64, Padding 14,8 */
+  .appbar { flex:none; height:64px; padding:8px 14px; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px;
+            background:var(--PageBg); border-bottom:1px solid var(--Line); }
+  .appbar .left { display:flex; align-items:center; gap:6px; }
+  .logo { width:36px; height:36px; }
+  .streakpill { height:26px; padding:0 8px; border-radius:13px; background:var(--Fill); display:flex; align-items:center; gap:3px;
+                color:#FF8A2A; font:700 13px "Cascadia Mono", Menlo, Consolas, monospace; }
+  .brand { font-size:19px; font-weight:800; letter-spacing:.6px; }
+  .brand span { color:var(--AccentInk); }
+  .appbar .right { display:flex; justify-content:flex-end; align-items:center; gap:10px; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:var(--Inverse); color:var(--OnInverse); display:grid; place-items:center; font-size:12px; font-weight:800; }
+  .small .appbar { height:56px; padding:6px 10px; }
+  .small .brand { font-size:16px; }
+
+  .body { flex:1; position:relative; overflow:hidden; }
+  .page { padding:14px 16px 32px; display:flex; flex-direction:column; gap:24px; }
+
+  /* TabBar.axaml: 12 px rise strip, bar PageBg + top Line, tabs 58 high, label 11 Medium Muted, Home circle 64 */
+  .tabbar { flex:none; position:relative; height:104px; }
+  .tabbar .bar { position:absolute; left:0; right:0; bottom:0; top:12px; background:var(--PageBg); border-top:1px solid var(--Line);
+                 display:grid; grid-template-columns:repeat(5,1fr); padding:0 8px 34px; }
+  .tab { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:3px; color:var(--Muted); font-size:11px; font-weight:500; padding-top:6px; }
+  .tab .pillx { width:48px; height:30px; border-radius:15px; display:grid; place-items:center; }
+  .homecircle { position:absolute; top:0; left:50%; transform:translateX(-50%); width:64px; height:64px; border-radius:32px;
+                border:4px solid var(--PageBg); background:var(--Inverse); color:var(--OnInverse); display:grid; place-items:center; }
+  .homeind { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; border-radius:3px; background:var(--Ink); }
+
+  /* ---------- ProfileView phone pages ---------- */
+  .backrow { display:flex; align-items:center; gap:10px; font-size:24px; font-weight:800; }
+  .groupLabel { font-size:11px; font-weight:700; letter-spacing:.9px; color:var(--Muted); margin:0 0 -14px 4px; }   /* ProfileView.axaml:185 */
+  .card { background:var(--Surface); border:1px solid var(--Line); border-radius:18px; padding:16px; }            /* GainStreakStyles.axaml:36, 391 */
+  .card.rows { padding:0; overflow:hidden; }
+  .row { min-height:54px; padding:10px 16px; display:grid; grid-template-columns:auto 1fr auto auto; gap:12px; align-items:center; } /* settingsRow */
+  .row .lbl { font-size:15px; white-space:nowrap; }
+  .row .val { font-size:14px; color:var(--Muted); max-width:170px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row.danger .lbl { color:var(--ErrorText); }
+  .row.new { box-shadow: inset 3px 0 0 var(--Accent); }
+  .div { height:1px; margin:0 16px; background:var(--Divider); }
+  .ic { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .row .ic.lead { color:var(--Soft); }
+  .row .ic.chev { width:16px; height:16px; color:var(--Muted); }
+  .version { text-align:center; color:var(--Faint); font:12px "Cascadia Mono", Menlo, Consolas, monospace; }
+
+  /* Account card tiles (ProfileView.axaml:781-792, 826-837) */
+  .tile { display:grid; grid-template-columns:auto 1fr auto; gap:14px; align-items:center; }
+  .tilebox { width:40px; height:40px; border-radius:10px; background:var(--Fill2); display:grid; place-items:center; color:var(--Ink); }
+  .tilebox .ic { width:20px; height:20px; }
+  .cap { font-size:12px; color:var(--Muted); }
+  .tileval { font-size:15px; font-weight:600; }
+  .sep { border-top:1px solid var(--Line); padding-top:14px; }
+
+  /* GainStreakStyles.axaml buttons */
+  .btn { min-height:44px; padding:0 18px; border-radius:10px; font-size:14px; font-weight:700; border:0; display:inline-flex; align-items:center; justify-content:center; font-family:inherit; }
+  .btn.small { min-height:40px; padding:0 14px; font-size:13px; border-radius:8px; }
+  .btn.outline { background:transparent; border:1px solid var(--Control); color:var(--Ink); font-weight:600; }
+  .btn.primary { background:var(--Accent); color:#000; }
+  .btn.block { width:100%; min-height:48px; }
+  .btn:disabled { background:var(--Fill); color:var(--Faint); }
+  .iconbtn { width:36px; height:36px; border-radius:8px; display:grid; place-items:center; color:var(--Muted); }
+  .iconbtn .ic { stroke-width:2.4; }
+
+  /* ---------- Sheet (Sheet.cs + CalorieGoalSheetView.axaml:40-51) ---------- */
+  .scrim { position:absolute; inset:0; background:var(--Scrim); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; max-height:88%; background:var(--Surface2); border-top:1px solid var(--Control);
+           border-radius:22px 22px 0 0; padding:12px 18px 20px; display:flex; flex-direction:column; gap:14px; overflow:hidden; }
+  .handle { width:40px; height:5px; border-radius:3px; background:var(--Control); align-self:center; flex:none; }
+  .sheettitle { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+  .sheettitle h3 { margin:0; font-size:20px; font-weight:800; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .input { min-height:44px; border-radius:10px; background:var(--PageBg); border:1px solid var(--Control); font-size:15px; padding:0 12px;
+           display:flex; align-items:center; color:var(--Ink); }
+  .input.ph { color:var(--Faint); }
+  .input.focus { border-color:var(--AccentInk); }
+  .input.disabled { opacity:.5; }
+  .input .caret { display:inline-block; width:1.5px; height:19px; background:var(--AccentInk); margin-left:1px; }
+  .hintrow { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; font-size:12px; color:var(--Muted); line-height:16px; }
+  .hintrow .count { font-family:"Cascadia Mono", Menlo, Consolas, monospace; color:var(--Faint); flex:none; }
+  .hintrow .count.ok { color:var(--AccentInk); }
+  .hintrow .ok { color:var(--AccentInk); display:inline-flex; align-items:center; gap:4px; }
+  .hintrow .ok .ic { width:13px; height:13px; stroke-width:2.8; }
+  .fieldError { font-size:12px; color:var(--FieldError); line-height:16px; }
+  .free { font-size:12px; font-weight:600; color:var(--AccentInk); }      /* FriendQrSheet.axaml:66 notice style */
+  .note { font-size:12px; color:var(--Muted); line-height:17px; margin:0; }
+  .notice { padding:14px; border-radius:12px; background:var(--Fill3); display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:start;
+            font-size:13px; color:var(--Soft); line-height:18px; }        /* Vacation confirm box, ProfileView.axaml:939 */
+  .notice .ic { width:16px; height:16px; color:var(--Soft); margin-top:1px; }
+  .offpill { align-self:flex-start; padding:6px 10px; border-radius:999px; background:var(--Fill); border:1px solid var(--Control);
+             display:flex; gap:6px; align-items:flex-start; font-size:12px; color:var(--Soft); line-height:16px; }   /* FriendQrSheet.axaml:59-65 */
+  .offpill .ic { width:14px; height:14px; stroke-width:2.2; color:var(--Soft); flex:none; margin-top:1px; }
+  .spinner { width:16px; height:16px; border-radius:50%; border:2px solid var(--Faint); border-top-color:transparent; margin-right:8px; }
+
+  /* Toast (GymsView.axaml:450-465) */
+  .toast { position:absolute; top:12px; left:16px; right:16px; margin:0 auto; width:max-content; max-width:calc(100% - 32px);
+           padding:10px 14px; border-radius:12px; background:var(--LimeTint); border:1px solid var(--LimeTintLine);
+           box-shadow:0 8px 24px rgba(0,0,0,.5); display:flex; gap:12px; align-items:center; font-size:13px; z-index:3; }
+  .t-light .toast { box-shadow:0 8px 24px rgba(0,0,0,.18); }
+  .toast .ic { width:16px; height:16px; color:var(--AccentInk); stroke-width:2.8; }
+
+  /* Keyboard (stand-in for the system keyboard) */
+  .kb { flex:none; height:216px; background:var(--kb); padding:8px 3px 4px; display:flex; flex-direction:column; gap:10px; }
+  .kb .r { display:flex; gap:5px; justify-content:center; }
+  .kb .k { height:38px; flex:0 0 26px; border-radius:5px; background:var(--key); color:var(--keyInk); display:grid; place-items:center; font-size:17px; box-shadow:0 1px 0 rgba(0,0,0,.35); }
+  .kb .k.alt { background:var(--keyAlt); flex-basis:38px; font-size:13px; }
+  .kb .k.space { flex:1 1 auto; font-size:14px; }
+  .kb .k.go { background:var(--keyAlt); flex-basis:72px; font-size:14px; }
+  .kb .qt { height:26px; display:flex; justify-content:space-around; align-items:center; font-size:14px; color:var(--keyInk); opacity:.8; }
+  .scrollhint { position:absolute; top:0; left:0; right:0; height:22px; background:linear-gradient(var(--Surface2), transparent); z-index:2; }
+
+  /* Field states strip */
+  .strip { max-width:1240px; margin:0 auto; padding:8px 16px 0; }
+  .strip h2, .notes h2 { font-size:18px; margin:0 0 12px; }
+  .states { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; }
+  .state { border-radius:16px; padding:14px; background:var(--Surface2); color:var(--Ink); border:1px solid var(--Line); display:flex; flex-direction:column; gap:8px; }
+  .state .tag { font-size:11px; font-weight:700; letter-spacing:.9px; color:var(--Muted); }
+
+  .notes { max-width:1240px; margin:0 auto; padding:32px 16px 64px; }
+  .notes ol { margin:0; padding-left:22px; line-height:1.55; }
+  .notes li { margin-bottom:10px; max-width:900px; }
+  .notes code { font-size:12.5px; background:var(--pgCard); border:1px solid var(--pgLine); padding:1px 5px; border-radius:5px; }
+  .notes .src { margin-top:28px; font-size:13px; color:var(--pgMuted); line-height:1.6; }
+  @media (max-width:420px) { .phone { transform:scale(.86); transform-origin:top center; margin-bottom:-110px; } }
+</style>
+</head>
+<body>
+
+<!-- Icon sprite: geometries copied from GainStreakResources.axaml (24×24 grid, stroked like Icon.cs) -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="IcUser" viewBox="0 0 24 24"><path d="M8 8a4 4 0 1 0 8 0a4 4 0 1 0-8 0M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+  <symbol id="IcMail" viewBox="0 0 24 24"><path d="M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM3 7l9 6 9-6"/></symbol>
+  <symbol id="IcLock" viewBox="0 0 24 24"><path d="M6 10h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="IcChevronRight" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="IcChevronLeft" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="IcBell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3c0 0 3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/></symbol>
+  <symbol id="IcHeart" viewBox="0 0 24 24"><path d="M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z"/></symbol>
+  <symbol id="IcPin" viewBox="0 0 24 24"><path d="M12 22s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12zM9.5 10a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0"/></symbol>
+  <symbol id="IcMoon" viewBox="0 0 24 24"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></symbol>
+  <symbol id="IcChat" viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM8 9h8M8 12.5h5"/></symbol>
+  <symbol id="IcLogout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H3"/></symbol>
+  <symbol id="IcTrash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="IcX" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="IcCheck" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="IcClock" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 7v5l3 2"/></symbol>
+  <symbol id="IcWifiOff" viewBox="0 0 24 24"><path d="M2 2l20 20M8.5 16.4a5 5 0 0 1 7 0M5 12.9a10 10 0 0 1 5.2-2.8M19 12.9a10 10 0 0 0-2.3-1.6M12 20h.01"/></symbol>
+  <symbol id="IcCalendar" viewBox="0 0 24 24"><path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM3 9h18M8 2v4M16 2v4"/></symbol>
+  <symbol id="IcDumbbell" viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12"/></symbol>
+  <symbol id="IcFlame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-3 7-7 0-5-4-7-5-12-2 3-3 5-3 7-1-1-2-2-2-4-2 2-4 5-4 9 0 4 3 7 7 7z"/></symbol>
+  <symbol id="IcFriends" viewBox="0 0 24 24"><path d="M5.5 8a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M14.5 9a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M16.5 14.2c2.9 0.3 5 2.4 5 5.8"/></symbol>
+  <symbol id="IcHome" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 9.5V20h5v-6h4v6h5V9.5"/></symbol>
+  <!-- GainStreakLogo, 100×100 -->
+  <symbol id="Logo" viewBox="0 0 100 100">
+    <path fill="#0B0B0B" stroke="#222" d="M22.5 0.5H77.5A22 22 0 0 1 99.5 22.5V77.5A22 22 0 0 1 77.5 99.5H22.5A22 22 0 0 1 0.5 77.5V22.5A22 22 0 0 1 22.5 0.5Z"/>
+    <path fill="none" stroke="#C6F432" stroke-width="7" stroke-linejoin="round" d="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z"/>
+    <path fill="#FF4A00" d="M50 15 L65 33 H57 C66 42 71 50 71 61 A21 21 0 0 1 29 61 C29 50 34 42 43 33 H35 Z"/>
+    <path fill="#FF9A00" d="M50 45 C57 52 60 57 60 63 A10 10 0 0 1 40 63 C40 57 43 52 50 45 Z"/>
+    <path fill="#FFD400" d="M50 55 C53 58 54.5 60.5 54.5 63.5 A4.5 4.5 0 0 1 45.5 63.5 C45.5 60.5 47 58 50 55 Z"/>
+  </symbol>
+</svg>
+
+<header class="doc">
+  <h1>Phase 28c: Change username (phones)</h1>
+  <p>A static mockup for review, not app code. Colours, sizes, radii and icons come from <code>GainStreakResources.axaml</code>,
+     <code>GainStreakStyles.axaml</code>, <code>ProfileView.axaml</code>, <code>CalorieGoalSheetView.axaml</code> and <code>GymsView.axaml</code>.
+     The same shared view runs on iOS and Android. Only the status bar and keyboard are drawn per platform, and here they're generic stand-ins. The green bar on the left of a row only marks what's new in this mockup. It isn't in the app.</p>
+</header>
+
+<div class="frames">
+
+<!-- ================= 1. Settings with the new row (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page">
+      <div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div>
+      <div class="groupLabel">ACCOUNT</div>
+      <div class="card rows">
+        <div class="row new"><svg class="ic lead"><use href="#IcUser"/></svg><span class="lbl">Username</span><span class="val">cristi</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcMail"/></svg><span class="lbl">Email</span><span class="val">cristi@example.com</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcLock"/></svg><span class="lbl">Password</span><span></span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+      </div>
+      <div class="groupLabel">APP</div>
+      <div class="card rows">
+        <div class="row"><svg class="ic lead"><use href="#IcBell"/></svg><span class="lbl">Notifications</span><span class="val">On</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcHeart"/></svg><span class="lbl">Apple Health</span><span class="val">Connected</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcPin"/></svg><span class="lbl">Home city</span><span class="val">Timișoara</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcMoon"/></svg><span class="lbl">Appearance</span><span class="val">System</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+      </div>
+      <div class="card rows">
+        <div class="row"><svg class="ic lead"><use href="#IcChat"/></svg><span class="lbl">Send feedback</span><span></span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>1 · Profile › Settings, light.</b> A new <b>Username</b> row at the top of the ACCOUNT group. It uses the same <code>settingsRow</code> as Email and Password: an 18 px <code>IcUser</code> in Soft, the name as the row value in Muted, and a chevron. Tapping it opens the sheet.</figcaption>
+</figure>
+
+<!-- ================= 1b. Account page alternative (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page">
+      <div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Account</div>
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <div class="tile" style="box-shadow:-19px 0 0 -16px var(--Accent)">
+          <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+          <div><div class="cap">Username</div><div class="tileval">cristi</div></div>
+          <button class="btn outline small">Change</button>
+        </div>
+        <div class="sep tile">
+          <div class="tilebox"><svg class="ic"><use href="#IcMail"/></svg></div>
+          <div><div class="cap">Email</div><div class="tileval">cristi@example.com</div></div>
+          <button class="btn outline small">Change</button>
+        </div>
+        <div class="cap">You can sign in with your username or this email.</div>
+        <div class="sep tile">
+          <div class="tilebox"><svg class="ic"><use href="#IcLock"/></svg></div>
+          <div><div class="cap">Password</div><div class="tileval">●●●●●●●●</div></div>
+          <button class="btn outline small">Change</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>1b · Profile › Account page, light (also proposed).</b> The Settings rows open this page, where Email and Password sit as icon tiles with a <b>Change</b> button. A matching Username tile goes first. Its <b>Change</b> opens the same sheet. See question 1.</figcaption>
+</figure>
+
+<!-- ================= 2. Sheet filling in (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page"><div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div>
+      <div class="groupLabel">ACCOUNT</div><div class="card rows"><div class="row"><svg class="ic lead"><use href="#IcUser"/></svg><span class="lbl">Username</span><span class="val">cristi</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sheettitle"><h3>Change username</h3><div class="iconbtn"><svg class="ic"><use href="#IcX"/></svg></div></div>
+      <div class="tile" style="grid-template-columns:auto 1fr">
+        <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+        <div><div class="cap">Current username</div><div class="tileval">cristi</div></div>
+      </div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input focus">cristi_lift<span class="caret"></span></div>
+        <div class="hintrow"><span class="ok"><svg class="ic"><use href="#IcCheck"/></svg>Letters, digits, _ . -</span><span class="count ok">11 / 32</span></div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input ph">Your password</div>
+      </div>
+      <p class="note">Friends see your new name straight away. Your invite link and QR code keep working. You'll sign in with the new name. You can change it again after 30 days.</p>
+      <button class="btn primary block" disabled>Change</button>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>2 · The sheet, filling in, light.</b> The name is valid, so the hint shows a lime check and the counter reads <b>11 / 32</b>. <b>Change</b> stays disabled until the password is typed too. The sheet sits between the app bar and the tab bar, like every <code>MainView.Popup</code>. The field states are below the frames.</figcaption>
+</figure>
+
+<!-- ================= 3. Error (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page"><div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sheettitle"><h3>Change username</h3><div class="iconbtn"><svg class="ic"><use href="#IcX"/></svg></div></div>
+      <div class="tile" style="grid-template-columns:auto 1fr">
+        <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+        <div><div class="cap">Current username</div><div class="tileval">cristi</div></div>
+      </div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input">gymrat</div>
+        <div class="fieldError">That username is taken.</div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input">●●●●●●●●●</div>
+      </div>
+      <p class="note">Friends see your new name straight away. Your invite link and QR code keep working. You'll sign in with the new name. You can change it again after 30 days.</p>
+      <button class="btn primary block">Change</button>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>3 · Server error, light.</b> The server refused the name, so its message shows under the username in place of the hint. It uses <code>fieldError</code> (12 px, <code>IndianRed</code>), as the Email and Password forms do. <b>That password is not right.</b> goes under the password box the same way (see the field states). The button turns active again.</figcaption>
+</figure>
+
+<!-- ================= 4. Cooldown (dark) ================= -->
+<figure>
+<div class="phone t-dark">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page"><div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div>
+      <div class="groupLabel">ACCOUNT</div><div class="card rows"><div class="row"><svg class="ic lead"><use href="#IcUser"/></svg><span class="lbl">Username</span><span class="val">cristi_lifts</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div></div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sheettitle"><h3>Change username</h3><div class="iconbtn"><svg class="ic"><use href="#IcX"/></svg></div></div>
+      <div class="tile" style="grid-template-columns:auto 1fr">
+        <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+        <div><div class="cap">Current username</div><div class="tileval">cristi_lifts</div></div>
+      </div>
+      <div class="notice"><svg class="ic"><use href="#IcClock"/></svg><span>You can change your username again on 27 December 2026.</span></div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input ph disabled">New username</div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input ph disabled">Your password</div>
+      </div>
+      <p class="note">Friends see your new name straight away. Your invite link and QR code keep working. You'll sign in with the new name. You can change it again after 30 days.</p>
+      <button class="btn primary block" disabled>Change</button>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>4 · Waiting time, dark.</b> The date comes from <code>Credentials.UsernameChangeTooSoonMessage</code> and shows in a Fill3 box, the same box the Vacation card uses for its confirmation. The fields are at half opacity and <b>Change</b> is disabled. The date is your example. A real one would be up to 30 days after today. See question 4 for capital-letter changes during the wait.</figcaption>
+</figure>
+
+<!-- ================= 5. Keyboard, small phone (dark) ================= -->
+<figure>
+<div class="phone small t-dark">
+  <div class="status"><span>9:41</span><span class="dots"><span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo" style="width:30px;height:30px"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><div class="avatar" style="width:28px;height:28px">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="scrim"></div>
+    <div class="sheet" style="max-height:100%;height:100%;padding-top:0;justify-content:flex-end">
+      <div class="scrollhint"></div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input">cristi_lifts</div>
+        <div class="hintrow"><span class="ok"><svg class="ic"><use href="#IcCheck"/></svg>Letters, digits, _ . -</span><span class="count ok">12 / 32</span></div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input focus">●●●●●●<span class="caret"></span></div>
+      </div>
+      <button class="btn primary block">Change</button>
+    </div>
+  </div>
+  <div class="kb">
+    <div class="r"><div class="k">q</div><div class="k">w</div><div class="k">e</div><div class="k">r</div><div class="k">t</div><div class="k">y</div><div class="k">u</div><div class="k">i</div><div class="k">o</div><div class="k">p</div></div>
+    <div class="r"><div class="k">a</div><div class="k">s</div><div class="k">d</div><div class="k">f</div><div class="k">g</div><div class="k">h</div><div class="k">j</div><div class="k">k</div><div class="k">l</div></div>
+    <div class="r"><div class="k alt">⇧</div><div class="k">z</div><div class="k">x</div><div class="k">c</div><div class="k">v</div><div class="k">b</div><div class="k">n</div><div class="k">m</div><div class="k alt">⌫</div></div>
+    <div class="r"><div class="k alt">123</div><div class="k space">space</div><div class="k go">done</div></div>
+  </div>
+</div>
+<figcaption><b>5 · Keyboard open on a small phone (320 × 568), dark.</b> The tab bar hides while the keyboard is up, as it already does. The sheet's <code>ScrollViewer</code> scrolls the focused password box into view, and the button stays reachable just above the keys. The handle, title and current name have scrolled off the top. Large text sizes need a check on a real phone.</figcaption>
+</figure>
+
+<!-- ================= 6. Offline (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page"><div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sheettitle"><h3>Change username</h3><div class="iconbtn"><svg class="ic"><use href="#IcX"/></svg></div></div>
+      <div class="tile" style="grid-template-columns:auto 1fr">
+        <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+        <div><div class="cap">Current username</div><div class="tileval">cristi</div></div>
+      </div>
+      <div class="offpill"><svg class="ic"><use href="#IcWifiOff"/></svg><span>Changing your username needs a connection. Try again when you're online.</span></div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input">cristi_lifts</div>
+        <div class="hintrow"><span class="ok"><svg class="ic"><use href="#IcCheck"/></svg>Letters, digits, _ . -</span><span class="count ok">12 / 32</span></div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input">●●●●●●●●●</div>
+      </div>
+      <p class="note">Friends see your new name straight away. Your invite link and QR code keep working. You'll sign in with the new name. You can change it again after 30 days.</p>
+      <button class="btn primary block" disabled>Change</button>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>6 · Offline, light.</b> The text is the one that already exists, <code>AccountService.RenameNeedsConnectionMessage</code>. It shows in the offline pill from the Friend QR sheet (Fill, a Control border and <code>IcWifiOff</code>). You can keep typing, but <b>Change</b> stays disabled until there's a connection.</figcaption>
+</figure>
+
+<!-- ================= 7. Capitals only (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="page"><div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div></div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="handle"></div>
+      <div class="sheettitle"><h3>Change username</h3><div class="iconbtn"><svg class="ic"><use href="#IcX"/></svg></div></div>
+      <div class="tile" style="grid-template-columns:auto 1fr">
+        <div class="tilebox"><svg class="ic"><use href="#IcUser"/></svg></div>
+        <div><div class="cap">Current username</div><div class="tileval">cristi</div></div>
+      </div>
+      <div class="field">
+        <div class="cap">New username</div>
+        <div class="input">Cristi</div>
+        <div class="hintrow"><span class="free">No waiting time for capital letters</span><span class="count ok">6 / 32</span></div>
+      </div>
+      <div class="field">
+        <div class="cap">Current password</div>
+        <div class="input">●●●●●●●●●</div>
+      </div>
+      <p class="note">Friends see your new name straight away. Your invite link and QR code keep working. You'll sign in with the new name. You can change it again after 30 days.</p>
+      <button class="btn primary block" disabled><span class="spinner"></span>Changing…</button>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>7 · Capitals only, while saving, light.</b> <code>cristi</code> → <code>Cristi</code> shows <b>No waiting time for capital letters</b> in the hint line, set in AccentInk SemiBold 12 like the QR sheet's notice. The button shows the saving state: disabled, reading <b>Changing…</b>. The spinner is a stand-in, since no button in the app has one today.</figcaption>
+</figure>
+
+<!-- ================= 8. Success (light) ================= -->
+<figure>
+<div class="phone t-light">
+  <div class="status"><span>9:41</span><span class="dots">●●● <span class="bat"></span></span></div>
+  <div class="appbar">
+    <div class="left"><svg class="logo"><use href="#Logo"/></svg><div class="streakpill"><svg class="ic" style="width:13px;height:13px;fill:#FF8A2A;stroke:none"><use href="#IcFlame"/></svg>12</div></div>
+    <div class="brand">GAIN<span>STREAK</span></div>
+    <div class="right"><svg class="ic" style="width:22px;height:22px"><use href="#IcBell"/></svg><div class="avatar">CR</div></div>
+  </div>
+  <div class="body">
+    <div class="toast"><svg class="ic"><use href="#IcCheck"/></svg><span>You're now @cristi_lifts</span></div>
+    <div class="page">
+      <div class="backrow"><svg class="ic" style="width:22px;height:22px;stroke-width:2.4"><use href="#IcChevronLeft"/></svg>Settings</div>
+      <div class="groupLabel">ACCOUNT</div>
+      <div class="card rows">
+        <div class="row"><svg class="ic lead"><use href="#IcUser"/></svg><span class="lbl">Username</span><span class="val">cristi_lifts</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcMail"/></svg><span class="lbl">Email</span><span class="val">cristi@example.com</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcLock"/></svg><span class="lbl">Password</span><span></span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+      </div>
+      <div class="groupLabel">APP</div>
+      <div class="card rows">
+        <div class="row"><svg class="ic lead"><use href="#IcBell"/></svg><span class="lbl">Notifications</span><span class="val">On</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcHeart"/></svg><span class="lbl">Apple Health</span><span class="val">Connected</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+        <div class="div"></div>
+        <div class="row"><svg class="ic lead"><use href="#IcPin"/></svg><span class="lbl">Home city</span><span class="val">Timișoara</span><svg class="ic chev"><use href="#IcChevronRight"/></svg></div>
+      </div>
+    </div>
+  </div>
+  <div class="tabbar"><div class="bar">
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcCalendar"/></svg></div>Splits</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcDumbbell"/></svg></div>Workouts</div>
+    <div></div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFlame"/></svg></div>Calories</div>
+    <div class="tab"><div class="pillx"><svg class="ic" style="width:22px;height:22px"><use href="#IcFriends"/></svg></div>Friends</div>
+  </div><div class="homecircle"><svg class="ic" style="width:28px;height:28px"><use href="#IcHome"/></svg></div><div class="homeind"></div></div>
+</div>
+<figcaption><b>8 · Success, light.</b> The sheet closes and the row shows the new name. A toast floats at the top: LimeTint fill, a LimeTintLine border and a lime <code>IcCheck</code>, copied from the Map's "is now your gym" toast. It goes away by itself after 5 s, as that one does.</figcaption>
+</figure>
+
+</div>
+
+<!-- ================= Field states ================= -->
+<section class="strip">
+  <h2>New username field: live feedback (from <code>Credentials.CheckUsername</code>, nothing sent to the server)</h2>
+  <div class="states">
+    <div class="state t-light"><span class="tag">EMPTY</span><div class="cap">New username</div><div class="input ph">New username</div>
+      <div class="hintrow"><span>Letters, digits, _ . -</span><span class="count">0 / 32</span></div></div>
+    <div class="state t-light"><span class="tag">TOO SHORT</span><div class="cap">New username</div><div class="input focus">ab<span class="caret"></span></div>
+      <div class="hintrow"><span class="fieldError">Username must be at least 3 characters.</span><span class="count">2 / 32</span></div></div>
+    <div class="state t-light"><span class="tag">BAD CHARACTER</span><div class="cap">New username</div><div class="input focus">gym rat<span class="caret"></span></div>
+      <div class="hintrow"><span class="fieldError">Use only letters, digits, '_', '.' and '-' in your username.</span><span class="count">7 / 32</span></div></div>
+    <div class="state t-light"><span class="tag">NO LETTER</span><div class="cap">New username</div><div class="input focus">2026<span class="caret"></span></div>
+      <div class="hintrow"><span class="fieldError">Your username needs at least one letter.</span><span class="count">4 / 32</span></div></div>
+    <div class="state t-light"><span class="tag">AT THE LIMIT</span><div class="cap">New username</div><div class="input focus" style="font-size:14px">the.strongest.lifter.in.timisoa<span class="caret"></span></div>
+      <div class="hintrow"><span class="ok"><svg class="ic"><use href="#IcCheck"/></svg>Letters, digits, _ . -</span><span class="count" style="color:var(--FlameText)">32 / 32</span></div></div>
+    <div class="state t-light"><span class="tag">FILTERED</span><div class="cap">New username</div><div class="input">admin</div>
+      <div class="hintrow"><span class="fieldError">That username isn't allowed. Pick another one.</span><span class="count">5 / 32</span></div></div>
+    <div class="state t-dark"><span class="tag">SAME AS NOW</span><div class="cap">New username</div><div class="input">cristi</div>
+      <div class="hintrow"><span>That's your username now.</span><span class="count">6 / 32</span></div></div>
+    <div class="state t-dark"><span class="tag">WRONG PASSWORD (SERVER)</span><div class="cap">Current password</div><div class="input">●●●●●●●●</div>
+      <div class="fieldError">That password is not right.</div></div>
+  </div>
+</section>
+
+<!-- ================= Notes ================= -->
+<section class="notes">
+  <h2>Notes and open questions</h2>
+  <ol>
+    <li><b>The siblings aren't sheets.</b> On the phones, Settings › Email and Settings › Password both open the <b>Account page</b> (<code>ProfilePage.Account</code>), and their forms open inline in the Account card (<code>IsEditingEmail</code> / <code>IsChangingPassword</code>). Neither uses a <code>Sheet</code>. The spec asks for a sheet, so I drew one. It's built from the <code>CalorieGoalSheetView</code> frame, and its fields copy the Email form inside it. <b>Confirm:</b> a sheet (as drawn), or an inline form on the Account page like the siblings? Frame 1b shows where the tile would go in that case.</li>
+    <li><b>Where the row sits.</b> I put Username <b>first</b> in the ACCOUNT group (Username, Email, Password), because it's what you sign in with and what friends see. It could go after Password instead. On the Account page (1b) I put it first too.</li>
+    <li><b>The current name</b> shows as text in the same icon tile as the Account card's Email and Password, not as a read-only field. The row value and the tile show it without "@". Only the toast uses "@name", as the Friend QR sheet does.</li>
+    <li><b>Capital letters during the wait.</b> Capital-only changes are free (decision 2), so they could still be allowed during the 30 days. I drew the wait as fully disabled, as asked. The other option is to keep the field on and accept only a capitals-only change. <b>Confirm which.</b> Also, should the tester note stay visible while waiting? (It does in the drawing.)</li>
+    <li><b>Offline is shown before you try.</b> Today <code>RenameNeedsConnectionMessage</code> only comes back after a failed call (<code>AccountService.cs:254</code>). For the "button disabled" state, the sheet has to know it's offline when it opens (the session's offline flag). If you'd rather try and then show the message, it would sit above the button as a sheet-level error (<code>TextBlock.error</code>, 13 px), as in <code>CalorieGoalSheetView</code>.</li>
+    <li><b>Live counter and check: no precedent.</b> No screen has a character counter or a "valid" check today. Create account only shows the placeholder "Letters, digits, _ . -" and an error after you submit. To keep it minimal, I used one 12 px line under the field: the hint or the <code>CheckUsername</code> message on the left, and a mono counter on the right that turns lime when valid (orange at 32 / 32). You could drop the counter and keep only the message.</li>
+    <li><b>The same name.</b> The spec doesn't cover typing your current name. I drew a muted "That's your username now." with the button disabled. The wording is new.</li>
+    <li><b>Error colour.</b> Profile's field errors use <code>TextBlock.fieldError</code> from <code>GymApplication.axaml:29</code>, which is <b>IndianRed</b> (#CD5C5C) in both themes. It isn't the <code>ErrorText</code> token. I matched it. Should it move to <code>ErrorText</code>, which has light and dark values?</li>
+    <li><b>Focus border.</b> Profile's <code>TextBox.field</code> has no focus style, so the Fluent default would show. I drew the AccentInk focus border from <code>AuthStyles.axaml</code> (Sign in and Create account). Copy that style into the sheet?</li>
+    <li><b>Saving state.</b> No button in the app shows a spinner today. Other sheets just disable the button while <code>IsSaving</code>. I drew "Changing…" with a small spinner. Dropping the spinner and keeping the disabled "Changing…" would match better.</li>
+    <li><b>Toast.</b> The Map toast also has Undo and a close button. A rename can't be undone, so I left both out. Profile has no toast host today, so one would be added to the Profile view (or to <code>MainView</code>, over the screen).</li>
+    <li><b>Field order and buttons.</b> I used: current name, new name, password, tester note, then a full-width <b>Change</b>, with the close ✕ in the title row, as in the Calorie goal sheet. The account forms use a right-aligned Cancel + Save pair instead. Which pattern should win?</li>
+    <li><b>Platforms.</b> It's all shared <code>GymApp.App</code> code, so iOS and Android get the same sheet. Only the system keyboard differs. The desktop hides the row (the <code>IPlatform</code> gate in the spec). The TestBench's local mode gets it too.</li>
+  </ol>
+  <div class="src">
+    <b>Copied from:</b> tokens <code>GainStreakResources.axaml:6-178</code>, icons <code>:238-291</code>, logo <code>:223-235</code>;
+    card / button / disabled styles <code>GainStreakStyles.axaml:36-42, 52-113, 391-394</code>;
+    Settings rows <code>ProfileView.axaml:135-192</code> (styles) and <code>:1089-1108</code> (ACCOUNT group); back row <code>:200-206</code>;
+    Account tiles and Email form <code>:781-821</code>; Password form <code>:823-866</code>; field style <code>:37-44</code>;
+    sheet frame <code>CalorieGoalSheetView.axaml:40-51</code>, primary button <code>:156-158</code>, <code>Sheet.cs:54-61</code> (22 px top corners, top border, 88 % height);
+    field error <code>GymApplication.axaml:29-33</code>; focus ring <code>AuthStyles.axaml:32-35</code>;
+    toast <code>GymsView.axaml:450-465</code>, 5 s <code>GymsViewModel.cs:234</code>; offline pill <code>FriendQrSheet.axaml:59-65</code>; positive notice <code>FriendQrSheet.axaml:66</code>;
+    notice box <code>ProfileView.axaml:939-940</code> (Vacation); app bar <code>AppBar.axaml:27-60</code>; tab bar <code>TabBar.axaml</code>; popup host above the tab bar <code>MainView.axaml:40-53</code>.
+    Texts: <code>Credentials.cs:22-35</code>, <code>AccountService.cs:29</code>, <code>AccountEndpoints.cs:17,20</code>.
+  </div>
+</section>
+</body>
+</html>

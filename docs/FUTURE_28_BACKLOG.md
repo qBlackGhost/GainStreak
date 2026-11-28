@@ -413,6 +413,48 @@ notification, not only after the user has opened the Inbox once.
   (`IPlatform` or the existing lifecycle seam). Tests in `InboxServiceTests`: count appears without a prior `GetAsync`
   of the screen, survives an offline refresh, and goes to 0 after `MarkAllRead`.
 
+## 10. Noted on 27 November 2026 (to sort and design)
+
+The developer's list from testing, not designed yet. Each gets the usual design review (options to pick from) before
+it's built; the bugs get a cause found first. Both phones unless noted.
+
+**Changes:**
+- **Previous sets under the PR section.** On an exercise's page, move the list of previous sets so it sits under the
+  PR section. Open: the exercise page only, or the live workout's exercise view too.
+- **Checkboxes: lime theme with an animation.** Restyle the app's checkboxes in the GainStreak accent (lime) with a
+  short check animation, in the shared styles (`GainStreakStyles.axaml`), light and dark. Draft it first (CLAUDE.md
+  memory: a visual before UI work).
+- **Live Activity progress ring a little more visible.** The percent ring in the Live Activity and Dynamic Island is
+  too faint: more contrast or a thicker stroke. Do it with **2g** (the ring is cut off), since both are the same view.
+  Android: check the ongoing workout notification's progress the same way.
+- **Prefill weights from the same workout day, not just the same exercise.** Push's Chest press and Upper's Chest
+  press are different setups, so "last time" should come from the last time *that split day* did the exercise, falling
+  back to the exercise anywhere when the day has no history. This refines **2c** (last time on the set): decide it there.
+- **Estimated time left in a live workout.** Show roughly how long the rest of the workout takes. Open: what it's
+  based on (sets left × the user's own average time per set from past workouts, or a fixed guess until there's
+  history), and where it shows (the live workout card, the Live Activity, the Android notification).
+- **Feedback cooldown (anti-spam), decided.** A wait between messages, so nobody can flood Feedback (and the Discord
+  channel it goes to) with a bot. Today the server only has a rate limit (`RateLimits.Feedback`: 5 an hour per user,
+  answered with a bare 429 the app shows as "Too many tries").
+  - **10 minutes** after each message before the next one. The existing hourly rate limit stays as a backstop; no
+    daily cap.
+  - **Reports about other users get the same 10-minute wait** (`RateLimits.Report`), counted separately from feedback.
+  - **The same for every account:** no stricter limit for new accounts.
+  - **The screens show it:** Feedback (and the report dialog) show the time until you can send again, and **Send** is
+    greyed out until then. The server enforces the wait and says when it ends (like the username cooldown's 429 with
+    the date); the app only shows it, so a reinstall or a second phone doesn't get around it.
+  - Old clients: they keep getting a 429, shown as "Too many tries"; nothing breaks for 0.21.0.
+- **Encryption.** Open, to clarify with the developer first: encrypting the app's local database, the backups from
+  **1** (Data safety), or both. Any choice must keep the compiled model and migrations working on iOS (full AOT) and
+  never lose the user's data when a key is missing.
+
+**Bugs:**
+- **Drag to reorder exercises doesn't work.** Find which list (a split day's exercises, the live workout) and on which
+  phones; reproduce, fix, and add a test where the order is saved.
+- **The vacation prompt doesn't appear when you're out of your home city.** The developer is away from home and got no
+  prompt. Check what should trigger it (the home city set, location permission, the live location's city lookup,
+  the time of day it checks) and why it didn't fire.
+
 ## Before the 1.0 App Store launch
 
 - **Wipe all badges to zero** when 1.0 launches on the App Store (a one-time reset on the first start of 1.0, with
@@ -432,6 +474,9 @@ notification, not only after the user has opened the Inbox once.
 8. Training-day reminder body (a few lines in `ReminderPlanner`).
 9. Inbox badge refresh (small bug fix, no schema change; can ship first).
 10. PR card, then reactions and weekly challenges (server work, last).
+11. The 27 November list (section 10): the two bugs first (drag to reorder, vacation prompt), then the changes where
+    they fit above (the ring with 2g, the prefill rule with 2c, encryption with backups, the feedback cooldown with
+    the server work).
 
 The numbering is the developer's call: per CLAUDE.md, a feature that needs a schema change opens a new phase
 (`0.N.0`), so expect `0.28.0` for backup and restore and later items to take their own numbers.

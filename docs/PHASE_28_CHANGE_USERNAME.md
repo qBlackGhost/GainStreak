@@ -17,6 +17,19 @@ one for review.
   (Docker) and the `server-compat-reviewer` agent. 28b changes only app code (no entity), so no compiled-model step
   unless that changes. After each sub-phase, report: files created, files changed, the migration (28a adds one), what
   you checked by hand on each platform and what you couldn't.
+- **Builds for the phones: Debug while working, one iOS Release build at the end.** A Release build for the Simulator
+  (full AOT) takes about 20 minutes, so don't make one after every sub-phase or fix:
+  - **Hands-on checks during the phase** (28c's screen, a fix after review) use a **Debug** build for the Simulator
+    (`-c Debug`, about 5 minutes) and the Android Debug build. Debug builds talk to a local server
+    (`http://localhost:5080`, the emulator's `10.0.2.2`), which is also the only way to try the new endpoint before
+    it's deployed; a Release build refuses a plain `http` address.
+  - **An iOS Release build is needed only** to check something a Debug build hides: a change to the app's entities or
+    `OnModelCreating` (EF Core model building, CLAUDE.md), or to the iOS head's own code (`Info.plist`,
+    entitlements, the Live Activity). Phase 28 changes none of these (28a's migration is the server's, not the app's).
+  - **When several updates need one, batch them:** finish them all, then make one Release build and check them
+    together. Never rebuild Release for a change that doesn't need it.
+  - **The phase's single Release build is in 28d**, against the beta server, for the end-of-phase checks and the
+    scrolling pass.
 - Read `AccountEndpoints.cs` (`Register`, `ChangeEmail`, `ChangePassword`, `GetMe`), `RateLimits.cs`, `Server/Data/User.cs`
   and `ServerDbContext` (the unique `IX_Users_UsernameNormalized` index), `Credentials.CheckUsername`, `UsernameFilter`,
   `Contracts/Accounts.cs` (`MeResponse`, `ProblemFields`), `AccountService` / `IAccountService` /
@@ -145,8 +158,10 @@ one for review.
 - `site/privacy.html` and `docs/STORE_LISTING.md`: the server now keeps a short history of a user's previous
   usernames (for moderation). Update the privacy text and say what you changed. The history is deleted with the account.
 - Deploy order: `migrate` on the beta server **before** the new server image, then the app. Say so in the report.
-- The end-of-phase checks from CLAUDE.md: full `dotnet test`, the Android build, the iOS Release build for the Simulator
-  and running both phone heads, and the scrolling pass on Profile and Friends.
+- The end-of-phase checks from CLAUDE.md, run once, after the other 28d items: full `dotnet test`, the Android build,
+  the phase's one iOS Release build for the Simulator (see "Builds for the phones" in the ground rules) and running
+  both phone heads on it, and the scrolling pass on Profile and Friends in that same build. If the report turns up a
+  fix, check it in a Debug build; a new Release build only if the fix needs one.
 
 **Stop and report**, with what must be checked on a real phone.
 
